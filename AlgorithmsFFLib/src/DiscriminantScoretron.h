@@ -20,6 +20,8 @@ public:
 
     static QVector<Features> featuresCalibration();
 
+    static QVector<FeaturesDDA> featuresCalibrationDDA();
+
     static QVector<Features> featuresOptimization();
 
     static QVector<Features> featuresNeuralNetwork();
@@ -38,6 +40,7 @@ public:
     );
 
     static QVector<float> defaultWeights(const QVector<Features> &features);
+    static QVector<float> defaultWeights(const QVector<FeaturesDDA> &features);
 
     static Err convertScoreCandidatesToFeaturesArrays(
         const QVector<Features> &features,

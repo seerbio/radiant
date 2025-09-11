@@ -4,13 +4,13 @@
 
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 
-// #include "DiscriminantScoretron.h"
+#include "DiscriminantScoretron.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
-// #include "FDRCLassifierNeuralNet.h"
-// #include "MsFrame.h"
-// #include "QValueSettertron.h"
-// #include "TurboXIC.h"
+#include "FDRCLassifierNeuralNet.h"
+#include "MsFrame.h"
+#include "QValueSettertron.h"
+#include "TurboXIC.h"
 
 
 Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
@@ -57,431 +57,431 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
     ERR_RETURN
 }
 
-// namespace {
-//     struct TurboXICLoadInput {
-//         QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
-//         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-//         MzTargetKey mzTargetKey;
-//     };
-//
-//     std::tuple<Err, MzTargetKey, TurboXIC*> buildTurboXICLogic(const TurboXICLoadInput &turboXicLoadInput) {
-//
-//         ERR_INIT
-//
-//         MsFrame msFrame;
-//         e = msFrame.init(
-//             turboXicLoadInput.scanNumberVsScanPoints,
-//             turboXicLoadInput.scanNumberVsScanTime
-//             ); rtee;
-//
-//         auto turboXic = new TurboXIC();
-//         e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
-//
-//         return {e, turboXicLoadInput.mzTargetKey, turboXic};
-//     }
-// }//namespace
-// Err PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
-//     const QVector<MsScanInfo>& uniqueMsScanInfos,
-//     const QMap<ScanNumber, ScanTime>& scanNumberVsScanTime,
-//     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-//     QMap<MzTargetKey, TurboXIC*>* mzTargetKeyVsTurboXicPntr
-//     ) {
-//
-//     ERR_INIT
-//
-//             e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
-//     e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
-//     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
-//
-//     QVector<TurboXICLoadInput> turboXicLoadInputs;
-//     for (const MsScanInfo &msScanInfo : uniqueMsScanInfos) {
-//
-//         const MzTargetKey mzTargetKey = msScanInfo.targetKey();
-//         e = ErrorUtils::contains(mzTargetKey, *diaTargetFrames); ree;
-//
-//         TurboXICLoadInput turboXicLoadInput;
-//         turboXicLoadInput.scanNumberVsScanPoints = diaTargetFrames->value(mzTargetKey);
-//         turboXicLoadInput.scanNumberVsScanTime = scanNumberVsScanTime;
-//         turboXicLoadInput.mzTargetKey = mzTargetKey;
-//
-//         turboXicLoadInputs.push_back(turboXicLoadInput);
-//     }
-//
-//     QFuture<std::tuple<Err, MzTargetKey, TurboXIC*>> futures = QtConcurrent::mapped(
-//         turboXicLoadInputs,
-//         buildTurboXICLogic
-//         );
-//     futures.waitForFinished();
-//
-//     for (const std::tuple<Err, MzTargetKey, TurboXIC*> &result : futures) {
-//         e = std::get<0>(result); ree;
-//         mzTargetKeyVsTurboXicPntr->insert(std::get<1>(result), std::get<2>(result));
-//     }
-//
-//     ERR_RETURN
-//
-// }
-// //
-// // Err PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
-// //         QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
-// //         QVector<CandidateScores*> *candidateScoresPntrs
-// //         ) {
-// //
-// //     ERR_INIT
-// //
-// //     e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
-// //
-// //     for (QPair<CandidateScoresTarget, CandidateScoresDecoy> & pr : candidateScoresPairsVecBatch) {
-// //         candidateScoresPntrs->append({&pr.first, &pr.second});
-// //     }
-// //
-// //     ERR_RETURN
-// //
-// // }
-// //
-// // void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(QVector<CandidateScores*> *candidateScoresPntrs) {
-// //     std::sort(candidateScoresPntrs->begin(), candidateScoresPntrs->end(), [](const CandidateScores *l, const CandidateScores *r){
-// //
-// //         if (MathUtils::tSame(l->discriminantScore, r->discriminantScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-// //
-// //             if (MathUtils::tSame(l->featuresArray[CosineSimSum100], r->featuresArray[CosineSimSum100], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-// //
-// //                 if (MathUtils::tSame(l->featuresArray[CosineSimSpectrumOverTime], r->featuresArray[CosineSimSpectrumOverTime], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-// //                     return l->isDecoy > r->isDecoy;
-// //                 }
-// //
-// //                 return l->featuresArray[CosineSimSpectrumOverTime] > r->featuresArray[CosineSimSpectrumOverTime];
-// //             }
-// //
-// //             return l->featuresArray[CosineSimSum100] > r->featuresArray[CosineSimSum100];
-// //         }
-// //
-// //         return l->discriminantScore > r->discriminantScore;
-// //     });
-// // }
-// //
-// // void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersClassifierScoreAsc(QVector<CandidateScores*> *candidateScoresPntrs) {
-// //     std::sort(
-// //         candidateScoresPntrs->begin(),
-// //         candidateScoresPntrs->end(),
-// //         [](const CandidateScores *l, const CandidateScores *r){
-// //             if (MathUtils::tSame(l->classifierScore, r->classifierScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-// //                 return l->discriminantScore > r->discriminantScore;
-// //             }
-// //             return l->classifierScore < r->classifierScore;
-// //         });
-// // }
-// //
-// // namespace {
-// //
-// //     Err buildProcessBatchPointers(
-// //         const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs,
-// //         QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy,
-// //         QVector<CandidateScores*> *candidateScoresesPntrs,
-// //         QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *featuresArrayTargetVsDecoyPntrs
-// //         ) {
-// //
-// //         ERR_INIT
-// //
-// //         e = ErrorUtils::isFalse(featuresArrayTargetVsDecoy->isEmpty()); ree;
-// //
-// // // #define CHECK_MIN_MAX_MEANS
-// //         QVector<QVector<float>> vecs;
-// //         for (int i = 0; i < featuresArrayTargetVsDecoy->size(); i++) {
-// //
-// //             const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
-// //             QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = (*featuresArrayTargetVsDecoy)[i];
-// //             featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
-// //
-// // #ifdef CHECK_MIN_MAX_MEANS
-// //             vecs.append({featuresArrayPair.first, featuresArrayPair.second});
-// // #endif
-// //             candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
-// //         }
-// //
-// // #ifdef CHECK_MIN_MAX_MEANS
-// //         qDebug() << "Min max mean check";
-// //         Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
-// //         for (int i = 0; i < mat.cols(); i++) {
-// //             const Eigen::VectorX<float> c = mat.col(i);
-// //             qDebug()
-// //             << "Column" << i
-// //             << "min" << c.minCoeff()
-// //             << "max" << c.maxCoeff()
-// //             << "mean" << c.mean()
-// //             << "stdDev" << EigenUtils::calculateStDevOfVector(c)
-// //             ;
-// //         }
-// // #endif
-// //
-// //         ERR_RETURN
-// //     }
-// //
-// //     Err setCandidateScoresDiscriminantScore(
-// //         const QVector<float> &discriminantScores,
-// //         QVector<CandidateScores*> *candidateScoresesPntrs
-// //         ) {
-// //
-// //         ERR_INIT
-// //
-// //         e = ErrorUtils::isNotEmpty(discriminantScores); ree;
-// //         e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs->size()); ree;
-// //
-// //         for (int i = 0; i < discriminantScores.size(); i++) {
-// //             CandidateScores* cs = (*candidateScoresesPntrs)[i];
-// //             cs->discriminantScore = discriminantScores.at(i);
-// //         }
-// //
-// //         ERR_RETURN
-// //     }
-// //
-// //     Err featureSelection(const QVector<FeaturesArray*> &featuresArrayPntrs) {
-// //
-// //         ERR_INIT
-// //
-// //         e = ErrorUtils::isNotEmpty(featuresArrayPntrs); ree;
-// //
-// //         const Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(featuresArrayPntrs);
-// //
-// //         QHash<int, bool> columnsToRemove;
-// //
-// //         for (int col1 = 0; col1 < mat.cols(); col1++) {
-// //
-// //             const Eigen::VectorX<float> v1 = mat.col(col1);
-// //
-// //             for (int col2 = col1 + 1; col2 < mat.cols(); col2++) {
-// //
-// //                 if (columnsToRemove.value(col1)) {
-// //                     continue;
-// //                 }
-// //
-// //                 const Eigen::VectorX<float> v2 = mat.col(col2);
-// //
-// //                 double pearsonsCorr;
-// //                 e = EigenUtils::pearsonCorrelation(v1, v2, &pearsonsCorr); ree;
-// //
-// //                 if (std::isnan(pearsonsCorr)) {
-// //                     continue;
-// //                 }
-// //
-// //                 if (constexpr float threshold = 0.9;  pearsonsCorr >= threshold) {
-// //                     qDebug() << "PearsonsCorr" << pearsonsCorr << col1 << col2;
-// //                     columnsToRemove.insert(col2, true);
-// //                 }
-// //
-// //             }
-// //
-// //         }
-// //
-// //         ERR_RETURN
-// //     }
-// //
-// // }//namespace
-// // Err PythiaDIAFFWorkflowSharedMethods::processBatch(
-// //     const QVector<Features> &features,
-// //     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
-// //     const PythiaParameters &pythiaParameters,
-// //     QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-// //     QMap<int, int> *fdrVsCounts,
-// //     QVector<float> *weights
-// //     ) {
-// //
-// //     ERR_INIT
-// //
-// //     // e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
-// //     // e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-// //     //
-// //     // e = buildCandidateScoresPtrs(
-// //     //     candidateScoresPairsVecBatch,
-// //     //     candidateScoresVecBatchPntrs
-// //     //     ); ree;
-// //     //
-// //     // QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
-// //     // e = buildTargetDecoyCandidateScorePairsPntrs(
-// //     //     candidateScoresPairsVecBatch,
-// //     //     &targetDecoyCandidateScorePairsPntrs
-// //     //     ); ree;
-// //     //
-// //     // std::sort(
-// //     //     targetDecoyCandidateScorePairsPntrs.begin(),
-// //     //     targetDecoyCandidateScorePairsPntrs.end(),
-// //     //     [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &l, const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &r) {
-// //     //         return l.first->peptideSequenceWithModsChargeAndTargetKey < r.first->peptideSequenceWithModsChargeAndTargetKey;
-// //     //     });
-// //     //
-// //     // QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
-// //     // e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-// //     //     features,
-// //     //     targetDecoyCandidateScorePairsPntrs,
-// //     //     &featuresArrayTargetVsDecoy
-// //     //     ); ree;
-// //     //
-// //     // e = ErrorUtils::isEqual(
-// //     //     targetDecoyCandidateScorePairsPntrs.size(),
-// //     //     featuresArrayTargetVsDecoy.size()
-// //     //     ); ree;
-// //     //
-// //     // QVector<CandidateScores*> candidateScoresesPntrs;
-// //     // QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
-// //     // e = buildProcessBatchPointers(
-// //     //     targetDecoyCandidateScorePairsPntrs,
-// //     //     &featuresArrayTargetVsDecoy,
-// //     //     &candidateScoresesPntrs,
-// //     //     &featuresArrayTargetVsDecoyPntrs
-// //     //     ); ree;
-// //     //
-// //     // QVector<FeaturesArray*> featuresArrayPntrs;
-// //     // for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
-// //     //     featuresArrayPntrs.append({pr.first, pr.second});
-// //     // }
-// //     //
-// //     // // e = featureSelection(featuresArrayPntrs); ree;
-// //     //
-// //     // e = DiscriminantScoretron::trainLDAClassifier(
-// //     //         featuresArrayTargetVsDecoyPntrs,
-// //     //         pythiaParameters.verbosity,
-// //     //         weights
-// //     //         ); ree;
-// //     //
-// //     // QVector<float> discriminantScores;
-// //     // e = DiscriminantScoretron::applyWeights(
-// //     //     *weights,
-// //     //     pythiaParameters.threadCount,
-// //     //     featuresArrayPntrs,
-// //     //     &discriminantScores
-// //     //     ); ree;
-// //     //
-// //     // e = setCandidateScoresDiscriminantScore(
-// //     //     discriminantScores,
-// //     //     &candidateScoresesPntrs
-// //     //     ); ree;
-// //     //
-// //     // //Need to speed this up
-// //     // e = QValueSettertron::setQValueForCandidates(
-// //     //     QValueSettertron::QValueScoreType::DiscriminantScore,
-// //     //     &targetDecoyCandidateScorePairsPntrs
-// //     //     ); ree;
-// //     //
-// //     // e = FDRCLassifierNeuralNet::outputFDRResults(
-// //     //     *candidateScoresVecBatchPntrs,
-// //     //     pythiaParameters.verbosity,
-// //     //     fdrVsCounts
-// //     //     ); ree;
-// //
-// //     ERR_RETURN
-// // }
-// //
-// // Err PythiaDIAFFWorkflowSharedMethods::buildTargetDecoyCandidateScorePairsPntrs(
-// //     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
-// //     QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
-// //     ) {
-// //
-// //     ERR_INIT
-// //
-// //     e = ErrorUtils::isNotEmpty(targetDecoyCandidateScorePairs); ree;
-// //
-// //     targetDecoyCandidateScorePairsPntrs->clear();
-// //
-// //     for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : targetDecoyCandidateScorePairs) {
-// //         targetDecoyCandidateScorePairsPntrs->push_back({&pr.first, &pr.second});
-// //     }
-// //
-// //     ERR_RETURN
-// // }
-//
-// namespace {
-//
-//     void filterTargetDecoyPairPointersByPrecursorMzRange(
-//         float precursorMzMin,
-//         float precursorMzMax,
-//         QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
-//         ) {
-//
-//         const auto terminatorLogic = [precursorMzMin, precursorMzMax](const TargetDecoyCandidatePair *tdcp) {
-//             const float mzPrecursorTargetDecoyPair = tdcp->mz(false);
-//             return !(precursorMzMin <= mzPrecursorTargetDecoyPair && mzPrecursorTargetDecoyPair <= precursorMzMax);
-//         };
-//
-//         const auto terminator = std::remove_if(
-//             targetDecoyCandidatePairs->begin(),
-//             targetDecoyCandidatePairs->end(),
-//             terminatorLogic
-//             );
-//
-//         targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
-//     }
-//
-// } //namespace
-// Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-//         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-//         const PythiaParameters &pythiaParameters,
-//         const QVector<MsScanInfo> &msScanInfos,
-//         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
-//         ) {
-//
-//     ERR_INIT
-//
-//     e = ErrorUtils::isNotEmpty(msScanInfos); ree;
-//
-//     mzTargetKeyVsTargetDecoyCandidatePointers->clear();
-//
-// #define USE_PARALLEL_FILTERING2
-// #ifdef USE_PARALLEL_FILTERING2
-//     const auto filterBinder = std::bind(
-//         filterParallelLogic,
-//         targetDecoyCandidatePairs,
-//         pythiaParameters,
-//         std::placeholders::_1
-//         );
-//
-//     QFuture<QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>>> futures = QtConcurrent::mapped(
-//         msScanInfos,
-//         filterBinder
-//         );
-//     futures.waitForFinished();
-//
-//     for (const QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> &res: futures) {
-//         e = res.first; ree;
-//         mzTargetKeyVsTargetDecoyCandidatePointers->insert(res.second.first, res.second.second);
-//     }
-// #else
-//     for (const MsScanInfo &msScanInfo : msScanInfos) {
-//         QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> result = filterParallelLogic(
-//             targetDecoyCandidatePairs,
-//             pythiaParameters,
-//             msScanInfo
-//             );
-//         e = result.first; ree;
-//         mzTargetKeyVsTargetDecoyCandidatePointers->insert(result.second.first, result.second.second);
-//     }
-// #endif
-//
-//     ERR_RETURN
-// }
-//
-// QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWorkflowSharedMethods::filterParallelLogic(
-//     const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-//     const PythiaParameters &pythiaParameters,
-//     const MsScanInfo &msScanInfo
-//     ) {
-//
-//     ERR_INIT
-//
-//     e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
-//
-//     const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-//     const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-//
-//     QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
-//     filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
-//
-//     if (pythiaParameters.verbosity > 0) {
-//         qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
-//     }
-//
-//     return {e, {msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered}};
-// }
-//
+namespace {
+    struct TurboXICLoadInput {
+        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
+        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+        MzTargetKey mzTargetKey;
+    };
+
+    std::tuple<Err, MzTargetKey, TurboXIC*> buildTurboXICLogic(const TurboXICLoadInput &turboXicLoadInput) {
+
+        ERR_INIT
+
+        MsFrame msFrame;
+        e = msFrame.init(
+            turboXicLoadInput.scanNumberVsScanPoints,
+            turboXicLoadInput.scanNumberVsScanTime
+            ); rtee;
+
+        auto turboXic = new TurboXIC();
+        // e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
+
+        return {e, turboXicLoadInput.mzTargetKey, turboXic};
+    }
+}//namespace
+Err PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
+    const QVector<MsScanInfo>& uniqueMsScanInfos,
+    const QMap<ScanNumber, ScanTime>& scanNumberVsScanTime,
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+    QMap<MzTargetKey, TurboXIC*>* mzTargetKeyVsTurboXicPntr
+    ) {
+
+    ERR_INIT
+
+            e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
+    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
+
+    QVector<TurboXICLoadInput> turboXicLoadInputs;
+    for (const MsScanInfo &msScanInfo : uniqueMsScanInfos) {
+
+        const MzTargetKey mzTargetKey = msScanInfo.targetKey();
+        e = ErrorUtils::contains(mzTargetKey, *diaTargetFrames); ree;
+
+        TurboXICLoadInput turboXicLoadInput;
+        turboXicLoadInput.scanNumberVsScanPoints = diaTargetFrames->value(mzTargetKey);
+        turboXicLoadInput.scanNumberVsScanTime = scanNumberVsScanTime;
+        turboXicLoadInput.mzTargetKey = mzTargetKey;
+
+        turboXicLoadInputs.push_back(turboXicLoadInput);
+    }
+
+    QFuture<std::tuple<Err, MzTargetKey, TurboXIC*>> futures = QtConcurrent::mapped(
+        turboXicLoadInputs,
+        buildTurboXICLogic
+        );
+    futures.waitForFinished();
+
+    for (const std::tuple<Err, MzTargetKey, TurboXIC*> &result : futures) {
+        e = std::get<0>(result); ree;
+        mzTargetKeyVsTurboXicPntr->insert(std::get<1>(result), std::get<2>(result));
+    }
+
+    ERR_RETURN
+
+}
+
+Err PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
+        QVector<CandidateScores*> *candidateScoresPntrs
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
+
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> & pr : candidateScoresPairsVecBatch) {
+        candidateScoresPntrs->append({&pr.first, &pr.second});
+    }
+
+    ERR_RETURN
+
+}
+
+void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(QVector<CandidateScores*> *candidateScoresPntrs) {
+    std::sort(candidateScoresPntrs->begin(), candidateScoresPntrs->end(), [](const CandidateScores *l, const CandidateScores *r){
+
+        if (MathUtils::tSame(l->discriminantScore, r->discriminantScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+
+            if (MathUtils::tSame(l->featuresArray[CosineSimSum100], r->featuresArray[CosineSimSum100], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+
+                if (MathUtils::tSame(l->featuresArray[CosineSimSpectrumOverTime], r->featuresArray[CosineSimSpectrumOverTime], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                    return l->isDecoy > r->isDecoy;
+                }
+
+                return l->featuresArray[CosineSimSpectrumOverTime] > r->featuresArray[CosineSimSpectrumOverTime];
+            }
+
+            return l->featuresArray[CosineSimSum100] > r->featuresArray[CosineSimSum100];
+        }
+
+        return l->discriminantScore > r->discriminantScore;
+    });
+}
+
+void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersClassifierScoreAsc(QVector<CandidateScores*> *candidateScoresPntrs) {
+    std::sort(
+        candidateScoresPntrs->begin(),
+        candidateScoresPntrs->end(),
+        [](const CandidateScores *l, const CandidateScores *r){
+            if (MathUtils::tSame(l->classifierScore, r->classifierScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                return l->discriminantScore > r->discriminantScore;
+            }
+            return l->classifierScore < r->classifierScore;
+        });
+}
+
+namespace {
+
+    Err buildProcessBatchPointers(
+        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs,
+        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy,
+        QVector<CandidateScores*> *candidateScoresesPntrs,
+        QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *featuresArrayTargetVsDecoyPntrs
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(featuresArrayTargetVsDecoy->isEmpty()); ree;
+
+// #define CHECK_MIN_MAX_MEANS
+        QVector<QVector<float>> vecs;
+        for (int i = 0; i < featuresArrayTargetVsDecoy->size(); i++) {
+
+            const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
+            QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = (*featuresArrayTargetVsDecoy)[i];
+            featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
+
+#ifdef CHECK_MIN_MAX_MEANS
+            vecs.append({featuresArrayPair.first, featuresArrayPair.second});
+#endif
+            candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
+        }
+
+#ifdef CHECK_MIN_MAX_MEANS
+        qDebug() << "Min max mean check";
+        Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
+        for (int i = 0; i < mat.cols(); i++) {
+            const Eigen::VectorX<float> c = mat.col(i);
+            qDebug()
+            << "Column" << i
+            << "min" << c.minCoeff()
+            << "max" << c.maxCoeff()
+            << "mean" << c.mean()
+            << "stdDev" << EigenUtils::calculateStDevOfVector(c)
+            ;
+        }
+#endif
+
+        ERR_RETURN
+    }
+
+    Err setCandidateScoresDiscriminantScore(
+        const QVector<float> &discriminantScores,
+        QVector<CandidateScores*> *candidateScoresesPntrs
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(discriminantScores); ree;
+        e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs->size()); ree;
+
+        for (int i = 0; i < discriminantScores.size(); i++) {
+            CandidateScores* cs = (*candidateScoresesPntrs)[i];
+            cs->discriminantScore = discriminantScores.at(i);
+        }
+
+        ERR_RETURN
+    }
+
+    Err featureSelection(const QVector<FeaturesArray*> &featuresArrayPntrs) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(featuresArrayPntrs); ree;
+
+        const Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(featuresArrayPntrs);
+
+        QHash<int, bool> columnsToRemove;
+
+        for (int col1 = 0; col1 < mat.cols(); col1++) {
+
+            const Eigen::VectorX<float> v1 = mat.col(col1);
+
+            for (int col2 = col1 + 1; col2 < mat.cols(); col2++) {
+
+                if (columnsToRemove.value(col1)) {
+                    continue;
+                }
+
+                const Eigen::VectorX<float> v2 = mat.col(col2);
+
+                double pearsonsCorr;
+                e = EigenUtils::pearsonCorrelation(v1, v2, &pearsonsCorr); ree;
+
+                if (std::isnan(pearsonsCorr)) {
+                    continue;
+                }
+
+                if (constexpr float threshold = 0.9;  pearsonsCorr >= threshold) {
+                    qDebug() << "PearsonsCorr" << pearsonsCorr << col1 << col2;
+                    columnsToRemove.insert(col2, true);
+                }
+
+            }
+
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAFFWorkflowSharedMethods::processBatch(
+    const QVector<Features> &features,
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
+    const PythiaParameters &pythiaParameters,
+    QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
+    QMap<int, int> *fdrVsCounts,
+    QVector<float> *weights
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+
+    e = buildCandidateScoresPtrs(
+        candidateScoresPairsVecBatch,
+        candidateScoresVecBatchPntrs
+        ); ree;
+
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
+    e = buildTargetDecoyCandidateScorePairsPntrs(
+        candidateScoresPairsVecBatch,
+        &targetDecoyCandidateScorePairsPntrs
+        ); ree;
+
+    std::sort(
+        targetDecoyCandidateScorePairsPntrs.begin(),
+        targetDecoyCandidateScorePairsPntrs.end(),
+        [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &l, const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &r) {
+            return l.first->peptideSequenceWithModsChargeAndTargetKey < r.first->peptideSequenceWithModsChargeAndTargetKey;
+        });
+
+    QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
+    e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
+        features,
+        targetDecoyCandidateScorePairsPntrs,
+        &featuresArrayTargetVsDecoy
+        ); ree;
+
+    e = ErrorUtils::isEqual(
+        targetDecoyCandidateScorePairsPntrs.size(),
+        featuresArrayTargetVsDecoy.size()
+        ); ree;
+
+    QVector<CandidateScores*> candidateScoresesPntrs;
+    QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
+    e = buildProcessBatchPointers(
+        targetDecoyCandidateScorePairsPntrs,
+        &featuresArrayTargetVsDecoy,
+        &candidateScoresesPntrs,
+        &featuresArrayTargetVsDecoyPntrs
+        ); ree;
+
+    QVector<FeaturesArray*> featuresArrayPntrs;
+    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
+        featuresArrayPntrs.append({pr.first, pr.second});
+    }
+
+    // e = featureSelection(featuresArrayPntrs); ree;
+
+    e = DiscriminantScoretron::trainLDAClassifier(
+            featuresArrayTargetVsDecoyPntrs,
+            pythiaParameters.verbosity,
+            weights
+            ); ree;
+
+    QVector<float> discriminantScores;
+    e = DiscriminantScoretron::applyWeights(
+        *weights,
+        pythiaParameters.threadCount,
+        featuresArrayPntrs,
+        &discriminantScores
+        ); ree;
+
+    e = setCandidateScoresDiscriminantScore(
+        discriminantScores,
+        &candidateScoresesPntrs
+        ); ree;
+
+    //Need to speed this up
+    e = QValueSettertron::setQValueForCandidates(
+        QValueSettertron::QValueScoreType::DiscriminantScore,
+        &targetDecoyCandidateScorePairsPntrs
+        ); ree;
+
+    e = FDRCLassifierNeuralNet::outputFDRResults(
+        *candidateScoresVecBatchPntrs,
+        pythiaParameters.verbosity,
+        fdrVsCounts
+        ); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflowSharedMethods::buildTargetDecoyCandidateScorePairsPntrs(
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(targetDecoyCandidateScorePairs); ree;
+
+    targetDecoyCandidateScorePairsPntrs->clear();
+
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : targetDecoyCandidateScorePairs) {
+        targetDecoyCandidateScorePairsPntrs->push_back({&pr.first, &pr.second});
+    }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    void filterTargetDecoyPairPointersByPrecursorMzRange(
+        float precursorMzMin,
+        float precursorMzMax,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
+        ) {
+
+        const auto terminatorLogic = [precursorMzMin, precursorMzMax](const TargetDecoyCandidatePair *tdcp) {
+            const float mzPrecursorTargetDecoyPair = tdcp->mz(false);
+            return !(precursorMzMin <= mzPrecursorTargetDecoyPair && mzPrecursorTargetDecoyPair <= precursorMzMax);
+        };
+
+        const auto terminator = std::remove_if(
+            targetDecoyCandidatePairs->begin(),
+            targetDecoyCandidatePairs->end(),
+            terminatorLogic
+            );
+
+        targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
+    }
+
+} //namespace
+Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const PythiaParameters &pythiaParameters,
+        const QVector<MsScanInfo> &msScanInfos,
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(msScanInfos); ree;
+
+    mzTargetKeyVsTargetDecoyCandidatePointers->clear();
+
+#define USE_PARALLEL_FILTERING2
+#ifdef USE_PARALLEL_FILTERING2
+    const auto filterBinder = std::bind(
+        filterParallelLogic,
+        targetDecoyCandidatePairs,
+        pythiaParameters,
+        std::placeholders::_1
+        );
+
+    QFuture<QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>>> futures = QtConcurrent::mapped(
+        msScanInfos,
+        filterBinder
+        );
+    futures.waitForFinished();
+
+    for (const QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> &res: futures) {
+        e = res.first; ree;
+        mzTargetKeyVsTargetDecoyCandidatePointers->insert(res.second.first, res.second.second);
+    }
+#else
+    for (const MsScanInfo &msScanInfo : msScanInfos) {
+        QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> result = filterParallelLogic(
+            targetDecoyCandidatePairs,
+            pythiaParameters,
+            msScanInfo
+            );
+        e = result.first; ree;
+        mzTargetKeyVsTargetDecoyCandidatePointers->insert(result.second.first, result.second.second);
+    }
+#endif
+
+    ERR_RETURN
+}
+
+QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWorkflowSharedMethods::filterParallelLogic(
+    const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+    const PythiaParameters &pythiaParameters,
+    const MsScanInfo &msScanInfo
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
+
+    const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+    const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+
+    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
+    filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
+
+    if (pythiaParameters.verbosity > 0) {
+        qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
+    }
+
+    return {e, {msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered}};
+}
+
 namespace {
 
     void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScoresV2*> *candidateScores) {

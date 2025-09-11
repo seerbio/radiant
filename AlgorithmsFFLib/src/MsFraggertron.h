@@ -79,7 +79,6 @@ private:
 
 	QPair<Err, QVector<CandidateScoresDDATuple>> processTargetDecoyCandidatePairsPntrsTranch(
 		const QVector<TargetDecoyCandidatePair*> &tdcps
-
 		);
 
 private:

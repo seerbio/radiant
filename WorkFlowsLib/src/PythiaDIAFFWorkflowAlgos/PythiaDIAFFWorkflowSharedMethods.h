@@ -7,6 +7,7 @@
 
 #include "WorkFlowsLib_Exports.h"
 
+#include "CandidateScores.h"
 #include "CandidateScoresV2.h"
 #include "Error.h"
 #include "GlobalSettings.h"
@@ -30,51 +31,51 @@ public:
         QVector<MsScanInfo> *uniqueMsScanInfosPurpose
         );
 
-    // static Err buildMzTargetKeyVsTurboXicPntrs(
-    //     const QVector<MsScanInfo> &uniqueMsScanInfos,
-    //     const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-    //     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-    //     QMap<MzTargetKey, TurboXIC*> *mzTargetKeyVsTurboXicPntr
-    //     );
+    static Err buildMzTargetKeyVsTurboXicPntrs(
+        const QVector<MsScanInfo> &uniqueMsScanInfos,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<MzTargetKey, TurboXIC*> *mzTargetKeyVsTurboXicPntr
+        );
 
-    // static Err buildCandidateScoresPtrs(
-    //     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
-    //     QVector<CandidateScores*> *candidateScoresPntrs
-    //     );
-    //
-    // static void sortCandidatePointersDiscScoreDesc(
-    //     QVector<CandidateScores*> *candidateScoresPntrs
-    //     );
-    //
-    // static void sortCandidatePointersClassifierScoreAsc(QVector<CandidateScores*> *candidateScoresPntrs);
-    //
-    // static Err processBatch(
-    //         const QVector<Features> &features,
-    //         QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
-    //         const PythiaParameters &pythiaParameters,
-    //         QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-    //         QMap<int, int> *fdrVsCounts,
-    //         QVector<float> *weights
-    //     );
-    //
-    // static Err buildTargetDecoyCandidateScorePairsPntrs(
-    //     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
-    //     QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairssPntrs
-    //     );
-    //
-    // static Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-    //     const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-    //     const PythiaParameters &pythiaParameters,
-    //     const QVector<MsScanInfo> &msScanInfos,
-    //     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
-    //     );
-    //
-    // static QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
-    //     const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-    //     const PythiaParameters &pythiaParameters,
-    //     const MsScanInfo &msScanInfo
-    //     );
-    //
+    static Err buildCandidateScoresPtrs(
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
+        QVector<CandidateScores*> *candidateScoresPntrs
+        );
+
+    static void sortCandidatePointersDiscScoreDesc(
+        QVector<CandidateScores*> *candidateScoresPntrs
+        );
+
+    static void sortCandidatePointersClassifierScoreAsc(QVector<CandidateScores*> *candidateScoresPntrs);
+
+    static Err processBatch(
+            const QVector<Features> &features,
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
+            const PythiaParameters &pythiaParameters,
+            QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
+            QMap<int, int> *fdrVsCounts,
+            QVector<float> *weights
+        );
+
+    static Err buildTargetDecoyCandidateScorePairsPntrs(
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
+        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairssPntrs
+        );
+
+    static Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const PythiaParameters &pythiaParameters,
+        const QVector<MsScanInfo> &msScanInfos,
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
+        );
+
+    static QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const PythiaParameters &pythiaParameters,
+        const MsScanInfo &msScanInfo
+        );
+
     static Err buildMsCalibrationReaderRows(
         const MSLevelEnum &msLevel,
         const QVector<CandidateScoresV2*> &_candidateScores,

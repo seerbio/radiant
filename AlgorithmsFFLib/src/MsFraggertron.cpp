@@ -568,7 +568,7 @@ namespace {
 
 				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
-				cs.featuresArray[Occurences] = static_cast<float>(tally.occurrence);
+				cs.featuresArray[Occurrences] = static_cast<float>(tally.occurrence);
 				cs.foundInWindowsCount = tallyResultsTarget.size();
 				cs.isDecoy = false;
 				cs.featuresArray[CosineSimilaritySpectrum] = tally.cosineSimilarity;
@@ -586,6 +586,14 @@ namespace {
 					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
 				}
 
+				e = ErrorUtils::isGreaterThanZero(maxIntensity); rree;
+
+				constexpr int top6 = 6;
+				for (int j = 0; j < top6; j++) {
+					cs.featuresArray[Top6RelativePercent] += cs.featuresArray[RelativeIntensityRank0 + j];
+				}
+
+
 				tallyResultsFinalTarget.push_back(cs);
 			}
 
@@ -598,7 +606,7 @@ namespace {
 
 				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
-				cs.featuresArray[Occurences] = static_cast<float>(tally.occurrence);
+				cs.featuresArray[Occurrences] = static_cast<float>(tally.occurrence);
 				cs.foundInWindowsCount = tallyResultsTarget.size();
 				cs.isDecoy = false;
 				cs.featuresArray[CosineSimilaritySpectrum] = tally.cosineSimilarity;

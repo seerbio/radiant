@@ -64,6 +64,43 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 
 namespace {
 
+
+	QPair<Err, CandidateScoresDDA*> selectBestCandidate(
+		const QVector<FeaturesDDA> &featureArray,
+		const Eigen::VectorX<float> &weights,
+		QVector<CandidateScoresDDA> &csDDAs
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(csDDAs); rree;
+
+		CandidateScoresDDA *bestCandidateScoresDDA;
+		float bestScore = std::numeric_limits<float>::lowest();
+		for (int row = 0; row < csDDAs.size(); row++) {
+
+			const Eigen::VectorX<float> v = EigenUtils::convertQVectorToEigenVector(
+				CandidateScoresDDA::selectFeaturesArrayFeatures(
+					csDDAs[row].featuresArray,
+					featureArray
+					)
+				);
+
+			const float score = v.dot(weights);
+			if (score > bestScore) {
+				bestCandidateScoresDDA = &csDDAs[row];
+				bestScore = score;
+			}
+
+
+		}
+
+
+
+		return {e, bestCandidateScoresDDA};
+	}
+
+
 	Err buildLdaInputData(
 		const QVector<CandidateScoresDDATuple> &candidateScoresDDATuples,
 		const QVector<float> &weights,

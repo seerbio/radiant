@@ -32,7 +32,7 @@ SET(SOURCE_FILES
         src/DiscriminantScoretron.cpp
 #        src/DeMultiplexScanerator.cpp
 #        src/DeMultiplexScaneratorManager.cpp
-#        src/FDRCLassifierNeuralNet.cpp
+        src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
 #        src/IonMobilitron.cpp
@@ -42,14 +42,14 @@ SET(SOURCE_FILES
         src/Ms2IonFraggertronManager.cpp
         src/MsCalibratomatic.cpp
         src/MsFraggertron.cpp
-#        src/MsFrame.cpp
+        src/MsFrame.cpp
         src/MsFrameV2.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/PrecursorMzArrangetron.cpp
 #        src/QuanFileBuilder.cpp
 #        src/QuanTransitionRefinertron.cpp
-#        src/QValueSettertron.cpp
+        src/QValueSettertron.cpp
         src/QValueSettertronV2.cpp
 #        src/SequenceSubstringSearchomatic.cpp
 #        src/SpectrumCentricMzTargetFrameSearch.cpp
@@ -77,7 +77,7 @@ SET(HEADER_FILES
 #        src/DeMultiplexScanerator.h
 #        src/DeMultiplexScaneratorManager.h
         src/DiscriminantScoretron.h
-#        src/FDRCLassifierNeuralNet.h
+        src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
 #        src/InterferingCandidatesEliminatomatic.h
@@ -87,14 +87,14 @@ SET(HEADER_FILES
         src/Ms2IonFraggertronManager.h
         src/MsCalibratomatic.h
         src/MsFraggertron.h
-#        src/MsFrame.h
+        src/MsFrame.h
         src/MsFrameV2.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/PrecursorMzArrangetron.h
 #        src/QuanFileBuilder.h
 #        src/QuanTransitionRefinertron.h
-#        src/QValueSettertron.h
+        src/QValueSettertron.h
         src/QValueSettertronV2.h
 #        src/SequenceSubstringSearchomatic.h
 #        src/SpectrumCentricMzTargetFrameSearch.h
@@ -131,7 +131,7 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
-#        ${NANOFLANN_DIRECTORY}
+        ${NANOFLANN_DIRECTORY}
 #        ${SEQAN_INCLUDE_DIRS}
         )
 
@@ -147,7 +147,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         EigenLib
         FileReadersLib
-#        PyTorchLib
+        PyTorchLib
         UtilsLib
 #        ${SEQAN_LIBRARIES}
         )

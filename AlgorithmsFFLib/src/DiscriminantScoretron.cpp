@@ -45,6 +45,17 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
     return baseFeatures;
 }
 
+QVector<FeaturesDDA> DiscriminantScoretron::featuresCalibrationDDA() {
+
+	const QVector<FeaturesDDA> baseFeatures = {
+		Occurrences,
+		CosineSimilaritySpectrum,
+		Top6RelativePercent
+	};
+
+	return baseFeatures;
+}
+
 QVector<Features> DiscriminantScoretron::featuresOptimization() {
 
     const QVector<Features> vec = {
@@ -384,6 +395,17 @@ QVector<float> DiscriminantScoretron::defaultWeights(const QVector<Features> &fe
     // cs.featuresArray[ShadowsCosineSimSum] = -1.0f;
 
     return CandidateScores::selectFeaturesArrayFeatures(cs.featuresArray, features);
+}
+
+QVector<float> DiscriminantScoretron::defaultWeights(const QVector<FeaturesDDA> &features) {
+
+	CandidateScoresDDA cs;
+	cs.initFeaturesArray();
+
+	cs.featuresArray[Occurrences] = 1.0f;
+	cs.featuresArray[CosineSimilaritySpectrum] = 1.0f;
+
+	return CandidateScoresDDA::selectFeaturesArrayFeatures(cs.featuresArray, features);
 }
 
 namespace {

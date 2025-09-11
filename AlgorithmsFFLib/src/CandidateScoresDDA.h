@@ -14,7 +14,7 @@ using namespace Error;
 
 enum FeaturesDDA {
 
-	Occurences = 0,
+	Occurrences = 0,
 	CosineSimilaritySpectrum,
 	RelativeIntensityDifferenceAverage,
 	IntensitiesSum,
@@ -24,6 +24,9 @@ enum FeaturesDDA {
 	SeqTagLongestB,
 	ScanTimeDeltaDDA,
 	ScanTimeDeltaDDAFromMean,
+	ScanTimeDeltaDDAAbs,
+	ScanTimeDeltaDDAFromMeanAbs,
+	Top6RelativePercent,
 
 	RelativeIntensityRank0,
 	RelativeIntensityRank1,
