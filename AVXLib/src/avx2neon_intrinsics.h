@@ -241,11 +241,15 @@ static inline __m128 _mm_shuffle_ps(__m128 a, __m128 b, int imm8) {
     return vld1q_f32(temp);
 }
 
-// _mm256_testc_si256: Test if all bits in (a AND b) are clear (return 1 if all zero, 0 otherwise)
+// _mm256_testc_si256: Test if all bits in (NOT a AND b) are clear (return 1 if all zero, 0 otherwise)
 static inline int _mm256_testc_si256(__m256i a, __m256i b) {
-    // Perform bitwise AND on both 128-bit lanes
-    uint32x4_t and_low = vandq_u32(a.vect_u32[0], b.vect_u32[0]);
-    uint32x4_t and_high = vandq_u32(a.vect_u32[1], b.vect_u32[1]);
+    // For testc: returns 1 if all bits in (NOT a AND b) are clear
+    // This means a has all bits set where b has bits set
+    uint32x4_t not_a_low = vmvnq_u32(a.vect_u32[0]);
+    uint32x4_t not_a_high = vmvnq_u32(a.vect_u32[1]);
+
+    uint32x4_t and_low = vandq_u32(not_a_low, b.vect_u32[0]);
+    uint32x4_t and_high = vandq_u32(not_a_high, b.vect_u32[1]);
 
     // Check if all bits are zero in both lanes
     uint64x2_t or_low = vreinterpretq_u64_u32(and_low);
