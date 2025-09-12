@@ -9,8 +9,10 @@
 
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
+#include "ParallelUtils.h"
 #include "SqlUtils.h"
 
+#include <QtConcurrent/QtConcurrent>
 #include <QFileInfo>
 
 using namespace Error;
@@ -174,14 +176,32 @@ public:
 
         ERR_INIT
 
+#define PARQUET_CONVERT_PARALLEL
+#ifdef PARQUET_CONVERT_PARALLEL
+    	auto parallelConvertLogicPtr =
+			static_cast<QPair<Err, T> (*)(const ParquetReaderInputBase &)>(
+				&parallelConvertLogic<T>
+			);
+
+    	QFuture<QPair<Err, T>> future = QtConcurrent::mapped(
+			parquetReaderInputBases,
+			parallelConvertLogicPtr
+		);
+    	future.waitForFinished();
+
+    	for (const QPair<Err, T> &pr : future) {
+    		e = pr.first; ree; // Collect errors, if any
+    		outputStructs->push_back(pr.second); // Add the structure to the output vector
+    	}
+#else
         for (const ParquetReaderInputBase &prib : parquetReaderInputBases) {
             T strct;
             e = strct.initFromRead(prib); ree;
             outputStructs->push_back(strct);
         }
-
-        ERR_RETURN
-    }
+#endif
+    	ERR_RETURN
+}
 
     /**
     * @brief Checks if expected keys are present in the data map.
@@ -212,6 +232,16 @@ public:
 protected:
 
     QMap<QString, QVariant> m_dataMap;
+
+	template<typename T>
+	static QPair<Err, T> parallelConvertLogic(const ParquetReaderInputBase &prib) {
+			ERR_INIT
+
+			T strct;
+			e = strct.initFromRead(prib); rree;
+
+			return {e, strct};
+		}
 
 };
 
@@ -437,7 +467,7 @@ public:
     Err writeDataToParquet(
             const QString &outputFilePath,
             const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
-            );
+            ) const;
 
     /**
     * @brief Reads data from a Parquet file.
@@ -457,7 +487,7 @@ public:
     Err readDataFromParquet(
             const QString &parquetFilePath,
             QVector<ParquetReaderInputBase> *rowsRead
-            );
+            ) const;
 
     /**
     * @brief Reads data from a Parquet file based on a specified column and filter range.
@@ -482,7 +512,7 @@ public:
             const QString &columnToFilterBy,
             const QPair<double, double> &filterRange,
             QVector<ParquetReaderInputBase> *rowsRead
-    );
+    ) const;
 
 private:
 

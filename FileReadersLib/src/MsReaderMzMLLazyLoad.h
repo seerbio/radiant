@@ -28,7 +28,7 @@ public:
 
     MsReaderMzMLLazyLoad();
 
-    ~MsReaderMzMLLazyLoad();
+    ~MsReaderMzMLLazyLoad() override;
 
     /**
     * @brief Opens an MzML file in MsReaderMzMLMapped::PrivateData.
@@ -86,6 +86,12 @@ public:
 		const QVector<MsScanInfo*> &msScanInfos,
 		QVector<MsScan> *msScans
 		);
+
+	// static Err extractScanPoints(
+	// 	const QString &fileName,
+	// 	QVector<MsScanInfo> *msScanInfos,
+	// 	QVector<MsScan> *msScans
+	// 	);
 
 private:
 

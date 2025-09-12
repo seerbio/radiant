@@ -68,9 +68,9 @@ public:
 
 	static void printMask(const __m256& mask, size_t size);
 
-	static Err convolveWithKernelAVXFloat(
+	static Err convolveEightVecsWithKernelAVXFloat(
 		const QVector<float> &kernel,
-		size_t size,
+		size_t maxVecSize,
 		float* v0,
 		float* v1,
 		float* v2,
@@ -81,12 +81,180 @@ public:
 		float* v7
 		);
 
+	static Err findApexesEightVecs (
+		size_t maxVecSize,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		float *masterVectorApexes
+		);
+
+	static Err sumParallel (
+		size_t maxVecSize,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		float *sums
+		);
+
+	static Err meanParallel(
+		size_t maxVecSize,
+		bool excludeZeros,
+		float *v0,
+		float *v1,
+		float *v2,
+		float *v3,
+		float *v4,
+		float *v5,
+		float *v6,
+		float *v7,
+		float *sums
+		);
+
+	static Err stDevParallel(
+		size_t maxVecSize,
+		bool excludeZeros,
+		float *means,
+		float *v0,
+		float *v1,
+		float *v2,
+		float *v3,
+		float *v4,
+		float *v5,
+		float *v6,
+		float *v7,
+		float *stDevs
+		);
+
+	static Err findPeaksEightVecs (
+		size_t maxVecSize,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7
+		);
+
+	static Err subtractArraysAVX2(
+		float* array1,
+		const float* array2,
+		size_t size,
+		bool zeroNegatives
+		);
+
 	static Err splitAVXUInt16to32(
 		__m256i intShort,
 		__m256i *int32Output1,
 		__m256i *int32Output2
 		);
 
+	static bool isNByteAligned(
+		const void* ptr,
+		size_t byteSize
+		) {
+		return reinterpret_cast<uintptr_t>(ptr) % byteSize == 0;
+	}
+
+	static void replaceArrayValuesAVXGreaterThan(
+		float threshold,
+		float relacementValue,
+		__m256 &arr
+		);
+
+	static void replaceArrayValuesAVXLessThan(
+		float threshold,
+		float relacementValue,
+		__m256 &arr
+		);
+
+	static float cosineSimilarityAVX(
+		__m256 vec1,
+		__m256 vec2
+		);
+
+	static float dotProductAvx(
+		const float* arrayA,
+		const float* arrayB,
+		size_t length
+		);
+
+	static float magnitudeAvx(
+		const float* array,
+		size_t length
+		);
+
+	static float cosineSimilarityAVX(
+		const float* arrayA,
+		const float* arrayB,
+		size_t length
+		);
+
+	static void cosineSimilarityIntraAVXParallel(
+		const float* arrRef,
+		const float* array0,
+		const float* array1,
+		const float* array2,
+		const float* array3,
+		const float* array4,
+		const float* array5,
+		const float* array6,
+		const float* array7,
+		size_t length,
+		float* cosineSimResultsAligned
+		);
+
+	static float maxFloat(__m256 vec);
+
+	static bool isAllOnes(__m256 mask);
+
+	static bool isAllZeros(__m256 vec);
+
+	static void interleaveVectors(
+		size_t size,
+		size_t paddingSingleRegister,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		float* resultVector
+		);
+
+	static void separateInterleavedVectors(
+		const float* interleavedVectors,
+		size_t size,
+		size_t paddingSingleRegister,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7
+		);
+
+	static __m256 log256(__m256 x);
+
+	static float sum256(__m256 vec);
+
+	static QVector<QPair<int, float>> findApexesAVX2(const float* array, size_t size);
 
 };
 

@@ -94,12 +94,11 @@ void ParallelUtilsTests::trancheVectorForParallelizationInOrderTest() {
             QVector<int>({16, 17, 18, 19}),
             QVector<int>({20, 21, 22, 23}),
             QVector<int>({24, 25, 26, 27}),
-            QVector<int>({28, 29, 30, 31}),
-            QVector<int>({32, 33, 34})
+            QVector<int>({28, 29, 30, 31, 32, 33, 34})
     };
     e = ParallelUtils::trancheVectorForParallelizationInOrder(bigger, 8, 0, &output);
     QCOMPARE(e, eNoError);
-    QCOMPARE(output.size(), 9);
+    QCOMPARE(output.size(), 8);
     QCOMPARE(output, expectedResultBigger);
 
     output.clear();
@@ -111,12 +110,11 @@ void ParallelUtilsTests::trancheVectorForParallelizationInOrderTest() {
             QVector({16, 17, 18, 19, 20}),
             QVector({20, 21, 22, 23, 24}),
             QVector({24, 25, 26, 27, 28}),
-            QVector({28, 29, 30, 31, 32}),
-            QVector({32, 33, 34})
+            QVector({28, 29, 30, 31, 32, 32, 33, 34}),
     };
     e = ParallelUtils::trancheVectorForParallelizationInOrder(bigger, 8, 1, &output);
     QCOMPARE(e, eNoError);
-    QCOMPARE(output.size(), 9);
+    QCOMPARE(output.size(), 8);
     QCOMPARE(output, expectedResultBiggerBuffer);
 
 }

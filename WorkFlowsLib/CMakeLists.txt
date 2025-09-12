@@ -20,20 +20,24 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/ConvertMzMLToParquetWorkFlow.cpp
+#        src/ConvertMzMLToParquetWorkFlow.cpp
         src/PythiaDDAWorkflow.cpp
-        src/PythiaDIAFFWorkflow.cpp
-        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.cpp
-        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.cpp
+#        src/PythiaDIAFFWorkflow.cpp
+        src/PythiaDIAFFWorkflowV2.cpp
+#        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.cpp
+        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.cpp
+#        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.cpp
         src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.cpp
     )
 
 SET(HEADER_FILES
-        src/ConvertMzMLToParquetWorkFlow.h
+#        src/ConvertMzMLToParquetWorkFlow.h
         src/PythiaDDAWorkflow.h
-        src/PythiaDIAFFWorkflow.h
-        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
-        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h
+#        src/PythiaDIAFFWorkflow.h
+        src/PythiaDIAFFWorkflowV2.h
+#        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
+        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h
+#        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h
         src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h
     )
 

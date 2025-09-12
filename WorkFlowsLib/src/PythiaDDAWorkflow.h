@@ -8,13 +8,18 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "FragLibReader.h"
 #include "GlobalSettings.h"
-
-class MsReaderMzMLLazyLoad;
-class MsScanInfo;
+#include "MsFraggertron.h"
+#include "MsCalibratomatic.h"
+#include "MsReaderBase.h"
+#include "PythiaParameterReader.h"
+#include "TargetDecoyCandidatePairManager.h"
 
 using namespace Error;
 
+
+class MsReaderPointerAcc;
 
 class WORKFLOWSLIB_EXPORTS PythiaDDAWorkflow {
 
@@ -23,25 +28,29 @@ public:
 	PythiaDDAWorkflow() = default;
 	~PythiaDDAWorkflow() = default;
 
-	Err init();
+	Err init(
+		const PythiaParameters &parameters,
+		const QString& libraryFilePath
+		);
 
 	Err processFile(const QString &msDataFilePath);
 
-
-private:
-
-	Err processChunk(
-		const QVector<MsScanInfo*> &scanInfosPntrs,
-		size_t msScanInfosMinIndex,
-		size_t msScanInfosMaxIndex,
-		MsReaderMzMLLazyLoad *msReaderMzMlLazyLoad
-		);
+	Err buildMsCalibratomatic();
 
 
 private:
+
+
+
+private:
+
+	PythiaParameters m_parameters;
+	MsFraggertron m_msFraggertron;
+	MsCalibratomatic m_msCalibratomatic;
+	QVector<FragLibReaderRow> m_fragLibReaderRows;
+	TargetDecoyCandidatePairManager m_tdcpManager;
+	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
 
 };
-
-
 
 #endif //PYTHIADDAWORKFLOW_H

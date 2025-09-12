@@ -41,6 +41,12 @@ public:
         ERR_RETURN
     }
 
+	static Err writeRawPointerToFile(
+		 float* vec,
+		 int size,
+		 const QString &filePathDestination
+	 );
+
     template <typename T>
     static Err readVectorFromFile(
         const QString &filePath,

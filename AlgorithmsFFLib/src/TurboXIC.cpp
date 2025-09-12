@@ -80,6 +80,7 @@ Err TurboXIC::init(const QVector<MsScan> &msScans) {
 			xicPoint.mz = s.mzVals[i];
 			xicPoint.intensity = s.intensityVals[i];
 			xicPoint.scanNumber = s.msScanInfoPntr->scanNumber;
+			xicPoint.frameIndex = s.msScanInfoPntr->frameIndex;
 			xicPoint.ionMobilityIndex = -1;
 			m_xicPoints.push_back(xicPoint);
 		}
@@ -93,9 +94,13 @@ Err TurboXIC::init(const QVector<MsScan> &msScans) {
 	int indexCounter = 0;
 	for (int i = 0; i <  m_xicPoints.size(); i++) {
 		m_mzVals[i] = m_xicPoints[i].mz;
-		if (i % 8 == 0) {
+		if (i % AVXUtils::AVX2_FLOAT_REGISTER_SIZE == 0) {
 			m_indexesMz[indexCounter] = m_xicPoints[i].mz;
 			m_indexesI[indexCounter++] = i;
+
+			if (i % AVXUtils::AVX2_FLOAT_REGISTER_SIZE != 0) {
+				std::cout << i << " SDJFLDSJDLSJD" << std::endl;
+			}
 		}
 	}
 
@@ -153,7 +158,13 @@ Err TurboXIC::init(const QString &filePath) {
 	ERR_RETURN
 }
 
-XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
+Err TurboXIC::extractPointsXIC(
+	float mzMin,
+	float mzMax,
+	XICPointsPntrs *xicPointsPntrs
+	) {
+
+	ERR_INIT
 
 	XICPointsPntrs results;
 
@@ -175,11 +186,20 @@ XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 		}
 	}
 
+	if (left >= m_alignasPiecesOfEight - AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+		ERR_RETURN
+	}
+
 	for (
 		size_t i = m_indexesI[left];
 		i + AVXUtils::AVX2_FLOAT_REGISTER_SIZE <= m_scanPointsCountAlignas;
 		i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE
 		) {
+
+		e = ErrorUtils::isTrue(
+			i % AVXUtils::AVX2_FLOAT_REGISTER_SIZE == 0,
+			eValueError
+			); ree;
 
 		__m256 mz_v = _mm256_load_ps(&m_mzVals[i]);
 
@@ -205,7 +225,9 @@ XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 		}
 	}
 
-	return results;
+	*xicPointsPntrs = results;
+
+	ERR_RETURN
 }
 
 bool TurboXIC::isInit() const {

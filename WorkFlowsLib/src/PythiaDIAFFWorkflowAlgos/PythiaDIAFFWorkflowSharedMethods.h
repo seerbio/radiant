@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "CandidateScores.h"
+#include "CandidateScoresV2.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
@@ -77,7 +78,7 @@ public:
 
     static Err buildMsCalibrationReaderRows(
         const MSLevelEnum &msLevel,
-        const QVector<CandidateScores*> &_candidateScores,
+        const QVector<CandidateScoresV2*> &_candidateScores,
         int verbosity,
         QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
         );

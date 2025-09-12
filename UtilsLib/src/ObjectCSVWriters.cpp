@@ -4,6 +4,21 @@
 
 #include "ObjectCSVWriters.h"
 
+Err ObjectCSVWriters::writeRawPointerToFile(
+	float* vec,
+	int size,
+	const QString &filePathDestination
+	) {
+
+	ERR_INIT
+
+	QVector<float> vectorFromPointerIntx(size, 0);
+	std::copy_n(vec, size, vectorFromPointerIntx.data());
+	e = writeVectorToFile(vectorFromPointerIntx, filePathDestination); ree;
+
+	ERR_RETURN
+}
+
 Err ObjectCSVWriters::writeScanPoints(
     const QMap<int, QVector<PointFF>> &scanPoints,
     const QString &filePathDestination

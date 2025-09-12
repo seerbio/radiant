@@ -100,7 +100,7 @@ void MsReaderMZMLLazyLoadTests::troubleShoot() {
     // QSKIP("Troubleshooting");
     //TODO make more tests.
 
-    const QString filename  = "/home/ubuntu/Data/EXP23111_2023ms0979bX45_A.raw.mzML";
+    const QString filename  = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
     // const QString filename = "/home/andrewnichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML";
     // const QString filename = "/home/andrewnichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
 

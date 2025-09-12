@@ -4,15 +4,46 @@
 
 #include "PythiaDDAWorkflow.h"
 
-#include "DeIsotopotron.h"
+#include "DiscriminantScoretron.h"
+#include "EigenUtils.h"
+#include "Ms2IonFraggertronManager.h"
 #include "MsReaderMzMLLazyLoad.h"
+#include "MsReaderPointerAcc.h"
 #include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
 
-Err PythiaDDAWorkflow::init() {
+Err PythiaDDAWorkflow::init(
+	const PythiaParameters &parameters,
+	const QString& libraryFilePath
+	) {
 
 	ERR_INIT
 
+	e = ErrorUtils::isTrue(parameters.isValid()); ree;
+	e = ErrorUtils::fileExists(libraryFilePath); ree;
+
+	m_parameters = parameters;
+	m_parameters.ms2ExtractionWidthPPM = 7;
+	m_parameters.threadCount = 64; //TODO use higher threadcount to load balans
+	m_parameters.print();
+
+	e = FragLibReader::getFragLibReaderRows(
+		libraryFilePath,
+		&m_fragLibReaderRows
+		); ree;
+
+	e = m_tdcpManager.init(
+		m_parameters,
+		&m_fragLibReaderRows
+		); ree;
+
+	m_tdcpManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyCandidatePairsPntrs);
+
+	qDebug()
+	<< qPrintable(S_GLOBAL_TIMER.elapsed())
+	<< m_targetDecoyCandidatePairsPntrs.size()
+	<< "targets from library of" << m_fragLibReaderRows.size()
+	<< "after filter.";
 
 	ERR_RETURN
 }
@@ -21,142 +52,245 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 
 	ERR_INIT
 
-	MsReaderMzMLLazyLoad msReaderMzMLLazyLoad;
-	e = msReaderMzMLLazyLoad.openFile(msDataFilePath); ree;
+	MsReaderPointerAcc msReaderPtr;
+	e = msReaderPtr.openFile(msDataFilePath); ree;
 
-	constexpr size_t msLevel = 2;
+	e = m_msFraggertron.init(m_parameters, &msReaderPtr); ree;
+	e = buildMsCalibratomatic(); ree;
 
-	const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderMzMLLazyLoad.getMsScanInfos(msLevel);
-	QVector<MsScanInfo> scanNumbers = msScanInfos.values().toVector();
-
-	QVector<MsScanInfo*> scanInfosPntrs;
-	std::transform(
-		scanNumbers.begin(),
-		scanNumbers.end(),
-		std::back_inserter(scanInfosPntrs),
-		[](MsScanInfo &scanInfo) {return &scanInfo;}
-		);
-
-
-	constexpr int chunkSize = 1e4;
-	for (int chunkIndexMin = 0; chunkIndexMin < scanNumbers.size(); chunkIndexMin += chunkSize) {
-		e = processChunk(
-			scanInfosPntrs,
-			chunkIndexMin,
-			std::min(chunkIndexMin + chunkSize, scanNumbers.size()),
-			&msReaderMzMLLazyLoad
-			); ree;
-	}
 
 	ERR_RETURN
 }
 
 namespace {
 
-	QPair<Err, QMap<ScanNumber, ScanPoints>> readScanPointsParallel(
-		const QVector<MsScanInfo*> &msScanInfosSubset,
-		float ppmTol,
-		MsReaderMzMLLazyLoad *msReaderMzMlLazyLoad
+	QPair<Err, CandidateScoresDDA*> selectBestCandidate(
+		const QVector<FeaturesDDA> &featureArray,
+		const Eigen::VectorX<float> &weights,
+		QVector<CandidateScoresDDA> *csDDAs
 		) {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(msScanInfosSubset); rree;
+		e = ErrorUtils::isNotEmpty(*csDDAs); rree;
 
-		QMap<ScanNumber, ScanPoints> scanPoints;
-		e = msReaderMzMlLazyLoad->extractScanPoints(
-			msScanInfosSubset,
-			&scanPoints
-			); rree;
+		CandidateScoresDDA *bestCandidateScoresDDA;
+		float bestScore = std::numeric_limits<float>::lowest();
+		for (int row = 0; row < csDDAs->size(); row++) {
 
-		for (auto it = scanPoints.begin(); it != scanPoints.end(); ++it) {
-			const ScanNumber scanNumber = it.key();
-			ScanPoints &scanPointsIter = it.value();
+			const Eigen::VectorX<float> v = EigenUtils::convertQVectorToEigenVector(
+				CandidateScoresDDA::selectFeaturesArrayFeatures(
+					(*csDDAs)[row].featuresArray,
+					featureArray
+					)
+				);
 
-			DeIsotopotron::deisotopeTandemScan(ppmTol, &scanPointsIter);
+			const float score = v.dot(weights);
+			if (score > bestScore) {
+				bestCandidateScoresDDA = &(*csDDAs)[row];
+				bestScore = score;
+			}
 		}
 
-		return {e, scanPoints};
+		return {e, bestCandidateScoresDDA};
 	}
 
-	Err processChunkParallelLogic(
-		const QVector<MsScanInfo*> &msScanInfosSubset,
-		MsReaderMzMLLazyLoad *msReaderMzMlLazyLoad
+
+	Err buildLdaInputData(
+		QVector<CandidateScoresDDATuple> &candidateScoresDDATuples,
+		const QVector<FeaturesDDA> &features,
+		const QVector<float> &weights,
+		QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *targetDecoyPairScores,
+		QVector<QPair<CandidateScoresDDA*, CandidateScoresDDA*>> *targetDecoyPairCandidateScorePntrs
 		) {
 
 		ERR_INIT
 
-		QVector<QVector<MsScanInfo*>> msScanInfosSubsetTranched;
-		e = ParallelUtils::trancheVectorForParallelization(
-			msScanInfosSubset,
-			ParallelUtils::numberOfAvailableSystemProcessors(),
-			&msScanInfosSubsetTranched
-			); ree;
+		e = ErrorUtils::isNotEmpty(candidateScoresDDATuples); ree;
+		targetDecoyPairScores->clear();
 
-#define DDA_PARALLEL
-#ifdef DDA_PARALLEL
+		const Eigen::VectorX<float> weightsEigen = EigenUtils::convertQVectorToEigenVector(weights);
 
-		const auto binderLogic = std::bind(
-			readScanPointsParallel,
-			std::placeholders::_1,
-			10.0, //TODO replace this w/ extractionPPM
-			msReaderMzMlLazyLoad
-			);
+		for (CandidateScoresDDATuple &pr : candidateScoresDDATuples) {
 
-		QFuture<QPair<Err, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
-			msScanInfosSubsetTranched,
-			binderLogic
-			);
-		futures.waitForFinished();
+			QVector<CandidateScoresDDA> *scoresTarget = &std::get<1>(pr);
+			const QPair<Err, CandidateScoresDDA*> bestTargetResult = selectBestCandidate(
+				features,
+				weightsEigen,
+				scoresTarget
+				); ree;
+			e = bestTargetResult.first; ree;
+			CandidateScoresDDA *bestTarget = bestTargetResult.second;
 
-		for (const QPair<Err, QMap<ScanNumber, ScanPoints>> &result : futures) {
-			e = result.first; ree;
+			QVector<CandidateScoresDDA> *scoresDecoy = &std::get<2>(pr);
+			const QPair<Err, CandidateScoresDDA*> bestDecoyResult = selectBestCandidate(
+				features,
+				weightsEigen,
+				scoresDecoy
+				); ree;
+			e = bestDecoyResult.first; ree;
+			CandidateScoresDDA *bestDecoy = bestDecoyResult.second;
+
+			const QVector<float> featuresTarget = bestTarget->selectFeaturesArrayFeatures(features);
+			const QVector<float> featuresDecoy = bestDecoy->selectFeaturesArrayFeatures(features);
+
+			targetDecoyPairScores->push_back({featuresTarget, featuresDecoy});
+			targetDecoyPairCandidateScorePntrs->push_back({bestTarget, bestDecoy});
 		}
-#else
-
-		QPair<Err, QMap<ScanNumber, ScanPoints>> result = readScanPointsParallel(
-			msScanInfosSubset,
-			10.0f,
-			msReaderMzMlLazyLoad
-			);
-		e = result.first; ree;
-
-
-#endif
-
-
 
 		ERR_RETURN
 	}
 
-}//namespace
-Err PythiaDDAWorkflow::processChunk(
-	const QVector<MsScanInfo*> &scanInfosPntrs,
-	size_t msScanInfosMinIndex,
-	size_t msScanInfosMaxIndex,
-	MsReaderMzMLLazyLoad *msReaderMzMlLazyLoad
-	) {
+	Err setCandidateScoresDiscriminantScore(
+		const QVector<float> &discriminantScores,
+		QVector<CandidateScoresDDA*> *candidateScoresesPntrs
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(discriminantScores); ree;
+		e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs->size()); ree;
+
+		for (int i = 0; i < discriminantScores.size(); i++) {
+			CandidateScoresDDA* cs = (*candidateScoresesPntrs)[i];
+			cs->discriminantScore = discriminantScores.at(i);
+		}
+
+		ERR_RETURN
+	}
+
+}
+Err PythiaDDAWorkflow::buildMsCalibratomatic() {
 
 	ERR_INIT
 
-	const QVector<MsScanInfo*> msScanInfosSubset(
-		scanInfosPntrs.begin() + msScanInfosMinIndex,
-		scanInfosPntrs.begin() + msScanInfosMaxIndex
-		);
+	e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairsPntrs); ree;
 
+	QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsCalibration;
+	for (int i = 0; i < m_targetDecoyCandidatePairsPntrs.size(); i++) {
+		constexpr int skipCount = 1;
+		if (i % skipCount != 0 ) {
+			continue;
+		}
+		targetDecoyCandidatePairsCalibration.push_back(m_targetDecoyCandidatePairsPntrs[i]);
+	}
 
-	e = processChunkParallelLogic(
-		msScanInfosSubset,
-		msReaderMzMlLazyLoad
+	QPair<Err, QVector<CandidateScoresDDATuple>> result
+		= m_msFraggertron.performFragging(targetDecoyCandidatePairsCalibration);
+	e = result.first; ree;
+
+	QVector<CandidateScoresDDATuple> &tallyResults = result.second;
+
+	const QVector<FeaturesDDA> features = DiscriminantScoretron::featuresCalibrationDDA();
+	const QVector<float> defaultWeights = DiscriminantScoretron::defaultWeights(features);
+
+	QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> targetDecoyPairScores;
+	QVector<QPair<CandidateScoresDDA*, CandidateScoresDDA*>> targetDecoyPairCandidateScorePntrs;
+	e = buildLdaInputData(
+		tallyResults,
+		features,
+		defaultWeights,
+		&targetDecoyPairScores,
+		&targetDecoyPairCandidateScorePntrs
 		); ree;
 
+	QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> targetDecoyPairScoresPntrs;
+	targetDecoyPairScoresPntrs.reserve(targetDecoyPairScores.size());
+	for (QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &pr : targetDecoyPairScores) {
+		targetDecoyPairScoresPntrs.push_back({&pr.first, &pr.second});
+	}
 
+	QVector<float> trainedWeights;
+	e = DiscriminantScoretron::trainLDAClassifier(
+		targetDecoyPairScoresPntrs,
+		false,
+		&trainedWeights
+		); ree;
+
+	QVector<FeaturesArray> featuresArray;
+	QVector<CandidateScoresDDA*> candidateScoresesPntrs;
+	for (int i = 0; i < targetDecoyPairCandidateScorePntrs.size(); i++) {
+
+		const QPair<CandidateScoresDDA*, CandidateScoresDDA*> &csPntrs = targetDecoyPairCandidateScorePntrs[i];
+
+		featuresArray.append({
+			csPntrs.first->selectFeaturesArrayFeatures(features),
+			csPntrs.second->selectFeaturesArrayFeatures(features)
+		});
+
+		e = ErrorUtils::isNotEqual(csPntrs.first->isDecoy, csPntrs.second->isDecoy); ree;
+		candidateScoresesPntrs.append({csPntrs.first, csPntrs.second});
+	}
+
+	QVector<FeaturesArray*> featuresArrayPntrs;
+	std::transform(
+		featuresArray.begin(),
+		featuresArray.end(),
+		std::back_inserter(featuresArrayPntrs),
+		[](FeaturesArray &fa){return &fa;}
+		);
+
+	QVector<float> discriminantScores;
+	e = DiscriminantScoretron::applyWeights(
+		trainedWeights,
+		m_parameters.threadCount,
+		featuresArrayPntrs,
+		&discriminantScores
+		); ree;
+
+	e = setCandidateScoresDiscriminantScore(
+		discriminantScores,
+		&candidateScoresesPntrs
+		); ree;
+
+	std::sort(
+		candidateScoresesPntrs.rbegin(),
+		candidateScoresesPntrs.rend(),
+		[](const CandidateScoresDDA *l, const CandidateScoresDDA *r) {
+			return l->discriminantScore < r->discriminantScore;
+		});
+
+	// std::sort(
+	// 	candidateScoresesPntrs.begin(),
+	// 	candidateScoresesPntrs.end(),
+	// 	[](const CandidateScoresDDA *l, const CandidateScoresDDA *r) {
+	// 		if (l->featuresArray[Occurrences] == r->featuresArray[Occurrences]) {
+	// 			return l->featuresArray[CosineSimilaritySpectrum] > r->featuresArray[CosineSimilaritySpectrum];
+	// 		}
+	//
+	// 		return l->featuresArray[Occurrences] > r->featuresArray[Occurrences];
+	// 	});
+
+	int count = 0;
+	int decoys = 0;
+	for (auto cs : candidateScoresesPntrs) {
+
+		count++;
+		if (cs->isDecoy) {
+			decoys++;
+		}
+
+		const float q = static_cast<float>(decoys) / static_cast<float>(count);
+
+		std::cout
+		<< count << " "
+		<< q << " "
+		<< cs->isDecoy << " "
+		<< cs->targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
+		<< cs->featuresArray[Occurrences] << " "
+		<< cs->featuresArray[CosineSimilaritySpectrum] << " "
+		<< cs->featuresArray[Top6RelativePercent] << " "
+		<< cs->discriminantScore
+		<< " SDLFJKDS"
+		<<std::endl;
+
+		if (q > 0.01 || count > 11000) {
+			break;
+		}
+	}
 
 	ERR_RETURN
 }
-
-
-
 
 
 

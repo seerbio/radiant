@@ -6,13 +6,39 @@
 #define MS2IONFRAGGERTRONMANAGER_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "MS2Ion.h"
+#include "MsReaderBase.h"
+#include "TargetDecoyCandidatePair.h"
 
 #include "Error.h"
 
 using namespace Error;
 
+struct MsScanPoint {
+	MsScanInfo *scanInfoPntr = nullptr;
+	float mzVal = -1.0;
+	float intensityVal = -1.0;
+};
+
+struct MS2IonLibrary {
+	TargetDecoyCandidatePair *targeDecoyCandidatePairPntr = nullptr;
+	MS2Ion *ms2IonPntr = nullptr;
+	bool isDecoy = false;
+};
+
+struct ProcessingGroup {
+	QPair<float, float> mzPrecursorRangeMinMax;
+	QVector<MsScanPoint*> *msScanPointsPntr = nullptr;
+	QVector<MS2IonLibrary*> ms2IonsLibrary;
+};
+
+struct IonSearchResult {
+	MsScanPoint* msScanPointPntr = nullptr;
+	MS2IonLibrary *ms2IonLibraryPntr = nullptr;
+};
+
+
 class CandidateScores;
-class MS2Ion;
 class MsCalibratomatic;
 
 class ALGORITHMSFFLIB_EXPORTS Ms2IonFraggertronManager {
@@ -25,22 +51,18 @@ public:
     ~Ms2IonFraggertronManager();
 
     [[nodiscard]] Err init(
-        const MsCalibratomatic &msCalibratomatic,
-        const QVector<CandidateScores*> &candidateScoresPntrs
-        ) const;
-
+		const QVector<MS2IonLibrary*> &ms2IonsLibrary
+    	) const;
 
     Err extractMs2Points(
-        float mzMin,
-        float mzMax,
-        float scanTimeMin,
-        float scanTimeMax,
-        QVector<QPair<MS2Ion, CandidateScores*>> *ms2IonsVsCandidateScoresPntrses
-        );
+	    float mzPrecursorMin,
+		float mzPrecursorMax,
+		float mzMin,
+		float mzMax,
+        QVector<MS2IonLibrary*> *tdPeptideFrags
+        ) const;
 
 private:
-
-    [[nodiscard]] Err initTesting(const QVector<CandidateScores*> &candidateScoresPntrs) const;
 
 private:
 

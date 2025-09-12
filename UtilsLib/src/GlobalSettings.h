@@ -163,7 +163,9 @@ public:
 
     const int NUMBER_OF_THE_BEAST = 666;
 
-    const int MIN_MS2_IONS = 6;
+    const int MIN_MS2_IONS = 8;
+    const int MAX_MS2_IONS = 16;
+
 
     const QString MS1Key = QStringLiteral("-1000");
 
@@ -181,7 +183,12 @@ public:
         const int minutesElapsed = static_cast<int>(std::floor(static_cast<double>(m_timer.elapsed()) / (1000 * 60.0)));
         const int secondsElapsed = static_cast<int>(std::floor(static_cast<double>(m_timer.elapsed()) / 1000.0) - (minutesElapsed * 60.0));
         const QString timerGoneBy = secondsElapsed < 10 ? QStringLiteral("[%1:0%2 Peak:Current RSS %3:%4 mB]") : QStringLiteral("[%1:%2 Peak:Current RSS %3:%4 mB]");
-        return timerGoneBy.arg(minutesElapsed).arg(secondsElapsed).arg(ParallelUtils::getPeakRSS()).arg(ParallelUtils::getCurrentRSS());
+        return timerGoneBy
+        	.arg(minutesElapsed)
+        	.arg(secondsElapsed)
+        	.arg(ParallelUtils::getPeakRSS())
+        	.arg(ParallelUtils::getCurrentRSS()
+        	);
     }
 
     QElapsedTimer* timer() {

@@ -41,7 +41,11 @@ PeptideStringWithMods TargetDecoyCandidatePair::peptideStringWithMods() const {
 
 namespace {
 
-    QVector<MS2Ion> buildMS2Ions(const FragLibReaderRow *flrr) {
+    QVector<MS2Ion> buildMS2Ions(
+		float mzMin,
+		float mzMax,
+    	const FragLibReaderRow *flrr
+    	) {
 
         const QStringList ionLabelsSplit = flrr->ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
 
@@ -49,16 +53,14 @@ namespace {
         ms2IonsBuilder.reserve(flrr->mzVals.size());
         for (int i = 0; i < flrr->mzVals.size(); i++) {
             MS2Ion ms2Ion;
-            ms2Ion.mz = flrr->mzVals.at(i);
-            ms2Ion.intensity = flrr->intensityVals.at(i);
-            ms2Ion.ionLabel = ionLabelsSplit.at(i);
+            ms2Ion.mz = flrr->mzVals[i];
+            ms2Ion.intensity = flrr->intensityVals[i];
+            ms2Ion.ionLabel = ionLabelsSplit[i];
             ms2Ion.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
             ms2IonsBuilder.push_back(ms2Ion);
         }
 
-        constexpr float mzMin = 200.0;
-        constexpr float mzMax = 1500.0;
         MS2Ion::filterMS2IonsByMz(
                 mzMin,
                 mzMax,
@@ -71,22 +73,29 @@ namespace {
             ms2Ion.rank = i;
         }
 
-        if (ms2IonsBuilder.isEmpty()) {
-            qDebug()
-            << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "No MS2 ions found for"
-            << flrr->peptideSequenceChargeKey
-            << flrr->mzVals
-            << flrr->intensityVals
-            << flrr->ionLabels;
-        }
+        // if (ms2IonsBuilder.isEmpty()) {
+        //     qDebug()
+        //     << qPrintable(S_GLOBAL_TIMER.elapsed())
+        //     << "No MS2 ions found for"
+        //     << flrr->peptideSequenceChargeKey
+        //     << flrr->mzVals
+        //     << flrr->intensityVals
+        //     << flrr->ionLabels;
+        // }
 
         return ms2IonsBuilder;
     }
 
 }//namespace
-QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
-    return buildMS2Ions(m_fragLibReaderRowPntr);
+QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget(
+	float mzMin,
+	float mzMax
+	) const {
+    return buildMS2Ions(
+    	mzMin,
+    	mzMax,
+    	m_fragLibReaderRowPntr
+    	);
 }
 
 namespace {
@@ -178,13 +187,19 @@ namespace {
     }
 
 }//namespace
-QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
+QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy(
+		float mzMin,
+		float mzMax
+	) const {
+	return ms2IonsDecoy(ms2IonsTarget(mzMin, mzMax));
+}
 
-    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(peptideStringWithMods(), ms2IonsTarget());
-    if (m_decoySharesSequenceWithOtherTarget) {
-        mangleMs2IonsDecoy(&ms2IonsDec);
-    }
-    return ms2IonsDec;
+QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy(const QVector<MS2Ion> &ms2IonsTarget) const {
+	QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(peptideStringWithMods(), ms2IonsTarget);
+	if (m_decoySharesSequenceWithOtherTarget) {
+		mangleMs2IonsDecoy(&ms2IonsDec);
+	}
+	return ms2IonsDec;
 }
 
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {

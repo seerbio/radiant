@@ -75,7 +75,7 @@ namespace {
             ); rtee;
 
         auto turboXic = new TurboXIC();
-        e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
+        // e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
 
         return {e, turboXicLoadInput.mzTargetKey, turboXic};
     }
@@ -484,17 +484,17 @@ QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWo
 
 namespace {
 
-    void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores*> *candidateScores) {
+    void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScoresV2*> *candidateScores) {
 
         std::sort(
             candidateScores->rbegin(),
             candidateScores->rend(),
-            [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+            [](const CandidateScoresV2 *l, const CandidateScoresV2 *r){return l->discriminantScore < r->discriminantScore;}
             );
 
-        QMap<QString, CandidateScores*> keyVsCandidatesFoundBest;
+        QMap<QString, CandidateScoresV2*> keyVsCandidatesFoundBest;
 
-        for (CandidateScores *cs : *candidateScores) {
+        for (CandidateScoresV2 *cs : *candidateScores) {
 
             const QString key
                 = cs->targetDecoyCandidatePair->peptideStringWithMods() + QString::number(cs->targetDecoyCandidatePair->charge());
@@ -510,7 +510,7 @@ namespace {
 }
 Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             const MSLevelEnum &msLevel,
-            const QVector<CandidateScores*> &_candidateScores,
+            const QVector<CandidateScoresV2*> &_candidateScores,
             int verbosity,
             QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
             ) {
@@ -519,7 +519,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
 
         e = ErrorUtils::isNotEmpty(_candidateScores); ree;
 
-        QVector<CandidateScores*> candidateScoresFiltered = _candidateScores;
+        QVector<CandidateScoresV2*> candidateScoresFiltered = _candidateScores;
 
         filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
 
@@ -528,41 +528,41 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
         }
 
-        constexpr int top6 = 6;
-        const auto msCalibrationReaderRowsInsertLogic = [msLevel, top6](CandidateScores *cs){
+		constexpr int top8 = 8;
+        const auto msCalibrationReaderRowsInsertLogic = [msLevel, top8](CandidateScoresV2 *cs){
 
             MsCalibarationReaderRow row;
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
             row.iRTPredicted = cs->targetDecoyCandidatePair->iRt();
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
-            row.driftTime = cs->imDriftTime;
+            // row.driftTime = cs->imDriftTime;
             row.iMPredicted = cs->targetDecoyCandidatePair->iIM();
 
-            if (msLevel == MSLevelEnum::MS2) {
-
-                const QVector<MS2Ion> ms2Ions = cs->isDecoy
-                              ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                              : cs->targetDecoyCandidatePair->ms2IonsTarget();
-
-                QVector<float> mzSearchedVals(top6, -1.0f);
-                const int maxSize = std::min(top6, ms2Ions.size());
-
-                for (int i = 0; i < maxSize; i++) {
-                    mzSearchedVals[i] = ms2Ions.at(i).mz;
-                }
-
-                row.mzSearchedVec = mzSearchedVals;
-                row.mzFoundMeanVec = cs->featuresArray.mid(MzFoundMean1, top6);
-                row.mzFoundStDevVec = cs->featuresArray.mid(MzFoundStDev1, top6);
-                row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top6);
-            }
-            else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
-                row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
-                row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
-                row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};
-            }
+            // if (msLevel == MSLevelEnum::MS2) {
+            //
+            //     const QVector<MS2Ion> ms2Ions = cs->isDecoy
+            //                   ? cs->targetDecoyCandidatePair->ms2IonsDecoy(ms2MzMin, ms2MzMax)
+            //                   : cs->targetDecoyCandidatePair->ms2IonsTarget(ms2MzMin, ms2MzMax);
+            //
+            //     QVector<float> mzSearchedVals(top8, -1.0f);
+            //     const int maxSize = std::min(top8, ms2Ions.size());
+            //
+            //     for (int i = 0; i < maxSize; i++) {
+            //         mzSearchedVals[i] = ms2Ions.at(i).mz;
+            //     }
+            //
+            //     row.mzSearchedVec = mzSearchedVals;
+            //     row.mzFoundMeanVec = cs->featuresArray.mid(MzFoundMean1, top8);
+            //     row.mzFoundStDevVec = cs->featuresArray.mid(MzFoundStDev1, top8);
+            //     row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top8);
+            // }
+            // else {
+            //     row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
+            //     row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
+            //     row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
+            //     row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};
+            // }
 
             return row;
         };

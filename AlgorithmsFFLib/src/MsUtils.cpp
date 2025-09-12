@@ -99,7 +99,7 @@ ExtractPoints MsUtils::extractPointsFromPointsBST(
 
 	const int pointsSize = points.size();
 	size_t left = 0;
-	for (int i = 0; i <= _pointsToExtract.size(); i++) {
+	for (int i = 0; i < _pointsToExtract.size(); i++) {
 
 		const QPointF &point = pointsToExtract[i];
 		extractPointsOutput.mzFoundVsSearched[i].ry() = point.x();

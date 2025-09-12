@@ -83,7 +83,7 @@ namespace PythiaParameterReaderConstants {
 struct PythiaParameters{
 
     //[General]
-    int threadCount = 8;
+    int threadCount = 32;
     int verbosity = 0;
     bool writePythiaDIA = true;
     bool reannotate = false;

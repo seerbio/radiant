@@ -16,56 +16,13 @@ using namespace Error;
 
 
 struct ALGORITHMSFFLIB_EXPORTS PeakIntegratomaticParameters {
+    float stopThresholdFraction = 0.5;
+	float hysteresis = 0.1;
 
-    int filterLength = 2;
-    int smoothCount = 1;
-    double sigma = 1.0;
-    double signalToNoiseRatio = 3.0;
-    double stopThresholdFraction = 0.1;
-
-    /**
-    * @brief Checks the validity of filter parameters.
-    *
-    * This member function checks the validity of filter parameters. It ensures that filterLength is greater than or equal to 2,
-    * smoothCount is greater than or equal to 0, sigma is greater than 0, and signalToNoiseRatio is greater than 0.
-    *
-    * @return A boolean indicating the validity of filter parameters.
-    */
-    [[nodiscard]] bool isValid() const {
-        return filterLength >= 2
-            && smoothCount >= 0
-            && sigma > 0
-            && signalToNoiseRatio > 0;
-    }
-
-    void printParams() const {
-        qDebug() << "filterLength" << filterLength;
-        qDebug() << "smoothCount" << smoothCount;
-        qDebug() << "sigma" << sigma;
-        qDebug() << "signalToNoiseRatio" << signalToNoiseRatio;
-        qDebug() << "stopThresholdFraction" << stopThresholdFraction;
-    }
-
-    /**
-    * @brief Builds PeakIntegratomaticParameters from PythiaParameters.
-    *
-    * This static function constructs PeakIntegratomaticParameters by copying relevant parameters from the provided PythiaParameters.
-    *
-    * @param pythiaParameters The PythiaParameters instance from which to extract parameters.
-    * @return The constructed PeakIntegratomaticParameters.
-    */
-    static PeakIntegratomaticParameters buildPeakIntegratomaticParams(const PythiaParameters  &pythiaParameters) {
-
-        PeakIntegratomaticParameters params;
-        params.smoothCount = pythiaParameters.smoothCount;
-        params.filterLength = pythiaParameters.filterLength;
-        params.sigma = pythiaParameters.sigma;
-        params.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
-        params.stopThresholdFraction = pythiaParameters.stopThresholdFraction;
-
-        return params;
-    }
-
+	[[nodiscard]] bool isValid() const {
+		return (stopThresholdFraction >= 0.0 && stopThresholdFraction <= 1.0)
+				&& (hysteresis >= 0.0 && hysteresis <= 1.0);
+	}
 };
 
 
@@ -98,17 +55,15 @@ public:
     * @return An error code indicating the success or failure of the integration.
     */
     Err simpleIntegrator(
-            const QVector<float> &vec,
-            int topNApexes,
-            int maxPeakIntegrations,
-            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
-            );
+	    const QVector<int> &apexes,
+        const float* vec,
+        int vecSize,
+        QVector<std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>> *peakIntegrationIndexesVsIntensity
+        ) const;
 
 private:
 
-    Q_DISABLE_COPY(PeakIntegratomatic) class Private;
-    const QScopedPointer<Private> d_ptr;
-
+	PeakIntegratomaticParameters m_params;
 
 };
 

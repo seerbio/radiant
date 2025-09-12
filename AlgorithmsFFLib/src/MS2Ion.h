@@ -88,5 +88,8 @@ public:
     static ScanPoints ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions);
 };
 
+using MS2IonsTarget = QVector<MS2Ion>;
+using MS2IonsDecoy = QVector<MS2Ion>;
+
 
 #endif //PYTHIADIACPP_MS2ION_H

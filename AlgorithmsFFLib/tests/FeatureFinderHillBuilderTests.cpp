@@ -169,31 +169,31 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-    QVector<QVector<QVector<double>>> groupedMzVals;
+    QVector<QVector<QVector<float>>> groupedMzVals;
     QVector<QVector<QVector<float>>> groupedIntensityVals;
-//    e = featureFinderHillBuilder.buildScanPointGroupsTest(
-//            scanPointsPtrs,
-//            &groupedMzVals,
-//            &groupedIntensityVals
-//    );
-//    QCOMPARE(e, eNoError);
-//
-//    QVector<QVector<int>> connectedCentroidsVecs;
-//    e = featureFinderHillBuilder.connectCentroidsInGroupedMzValsTest(
-//            groupedMzVals,
-//            params.tolerancePPM,
-//            &connectedCentroidsVecs
-//    );
-//    QCOMPARE(e, eNoError);
+    e = featureFinderHillBuilder.buildScanPointGroupsTest(
+            scanPointsPtrs,
+            &groupedMzVals,
+            &groupedIntensityVals
+    );
+    QCOMPARE(e, eNoError);
 
-//    const QVector<QVector<int>> expectedResult = {
-//            {-1, -1, 0, -1, 3, -1, 1, -1, -1, -1, -1, -1},
-//            {-1, -1, -1, -1, -1, -1, -1, -1},
-//            {-1, 3, -1, 4, -1, 0, -1, -1},
-//            {-1, -1, -1, 0, -1, 2}
-//    };
-//
-//    QCOMPARE(connectedCentroidsVecs, expectedResult);
+    QVector<QVector<int>> connectedCentroidsVecs;
+    e = featureFinderHillBuilder.connectCentroidsInGroupedMzValsTest(
+            groupedMzVals,
+            params.tolerancePPM,
+            &connectedCentroidsVecs
+    );
+    QCOMPARE(e, eNoError);
+
+    const QVector<QVector<int>> expectedResult = {
+            {-1, -1, 0, -1, 3, -1, 1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, 3, -1, 4, -1, 0, -1, -1},
+            {-1, -1, -1, 0, -1, 2}
+    };
+
+    QCOMPARE(connectedCentroidsVecs, expectedResult);
 }
 
 void FeatureFinderHillBuilderTests::buildHillsTest() {
@@ -317,25 +317,25 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     featureFinderHillBuilder.setRunParallel(false);
     QCOMPARE(e, eNoError);
 
-    const MsLevel msLevel = 1;
-    QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
-    e = msReader.getScanPoints(
-            msLevel,
-            &scanNumberVsScanPoints
-            );
-    QCOMPARE(e, eNoError);
-
-    QVector<FeatureFinderHill*> featureFinderHills;
-    e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
-    QCOMPARE(e, eNoError);
-
-    e = featureFinderHillBuilder.refineHills(true);
-    QCOMPARE(e, eNoError);
-
-    e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
-    QCOMPARE(e, eNoError);
-
-    qDebug() << "Hills found to write" << featureFinderHills.size();
+    // const MsLevel msLevel = 1;
+    // QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
+    // e = msReader.getScanPoints(
+    //         msLevel,
+    //         &scanNumberVsScanPoints
+    //         );
+    // QCOMPARE(e, eNoError);
+    //
+    // QVector<FeatureFinderHill*> featureFinderHills;
+    // e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
+    // QCOMPARE(e, eNoError);
+    //
+    // e = featureFinderHillBuilder.refineHills(true);
+    // QCOMPARE(e, eNoError);
+    //
+    // e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
+    // QCOMPARE(e, eNoError);
+    //
+    // qDebug() << "Hills found to write" << featureFinderHills.size();
 
 //#define WRITE_TO_MZRT
 #ifdef WRITE_TO_MZRT

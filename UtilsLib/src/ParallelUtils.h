@@ -23,6 +23,52 @@ class UTILSLIB_EXPORTS ParallelUtils {
 
 public:
 
+	static double getCpuLoad() {
+		static long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle;
+		QFile file("/proc/stat");
+
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			qWarning() << "Failed to open /proc/stat";
+			return -1;
+		}
+
+		QTextStream in(&file);
+
+		while (!in.atEnd()) {
+			QString line = in.readLine();
+			if (line.startsWith("cpu ")) {
+				QStringList values = line.split(" ", Qt::SkipEmptyParts);
+				if (values.size() < 5) {
+					qWarning() << "Unexpected format in /proc/stat";
+					return -1;
+				}
+
+				long long totalUser = values[1].toLongLong();
+				long long totalUserLow = values[2].toLongLong();
+				long long totalSys = values[3].toLongLong();
+				long long totalIdle = values[4].toLongLong();
+
+				long long total = (totalUser - lastTotalUser) +
+								  (totalUserLow - lastTotalUserLow) +
+								  (totalSys - lastTotalSys);
+				long long totalTime = total + (totalIdle - lastTotalIdle);
+
+				lastTotalUser = totalUser;
+				lastTotalUserLow = totalUserLow;
+				lastTotalSys = totalSys;
+				lastTotalIdle = totalIdle;
+
+				if (totalTime == 0) {
+					return 0;
+				}
+
+				return (double)total / totalTime * 100.0; // CPU usage in percentage
+			}
+		}
+
+		return -1;
+	}
+
     static long getCurrentRSS() {
         std::ifstream procStatus("/proc/self/status");
         std::string line;
@@ -148,15 +194,15 @@ public:
 
         ERR_INIT
 
-        output->clear();
-        output->reserve(desiredTrancheSegments);
-
         e = ErrorUtils::isNotEmpty(input); ree;
         e = ErrorUtils::isNotEqual(desiredTrancheSegments, 0); ree;
 
         if (desiredTrancheSegments == -1) {
             desiredTrancheSegments = numberOfAvailableSystemProcessors();
         }
+
+    	output->clear();
+    	output->reserve(desiredTrancheSegments);
 
         const int minTrancheSize = 1;
         const int trancheSize = std::max(
@@ -189,68 +235,73 @@ public:
         }
 
         if(!currentTranchVec.isEmpty()) {
-            output->push_back(currentTranchVec);
+        	if (output->size() == desiredTrancheSegments) {
+        		output->back().append(currentTranchVec);
+        	}
+        	else {
+        		output->push_back(currentTranchVec);
+        	}
         }
 
         ERR_RETURN;
     }
 
-    template <typename T>
-    static Err trancheVectorForParallelizationInOrder(
-            const std::vector<T> &input,
-            int desiredTrancheSegments,
-            int trancheBuffer,
-            QVector<std::vector<T>> *output
-    ) {
-
-        ERR_INIT
-
-        output->clear();
-        output->reserve(desiredTrancheSegments);
-
-        e = ErrorUtils::isNotEmpty(input); ree;
-        e = ErrorUtils::isNotEqual(desiredTrancheSegments, 0); ree;
-
-        if (desiredTrancheSegments == -1) {
-            desiredTrancheSegments = numberOfAvailableSystemProcessors();
-        }
-
-        const int minTrancheSize = 1;
-        const int trancheSize = std::max(
-                    static_cast<int>(std::round(input.size() / static_cast<double>(desiredTrancheSegments))),
-                    minTrancheSize
-        );
-
-        std::vector<T> currentTranchVec;
-        for (int i = 0; i < input.size(); i++) {
-
-            const T &inp = input.at(i);
-
-            if (i % trancheSize == 0 && i > 0) {
-
-                for (int j = i; j < i + trancheBuffer; j++) {
-
-                    if (j >= input.size()) {
-                        break;
-                    }
-
-                    const T &inpBuffer = input.at(j);
-                    currentTranchVec.push_back(inpBuffer);
-                }
-
-                output->push_back(currentTranchVec);
-                currentTranchVec.clear();
-            }
-
-            currentTranchVec.push_back(inp);
-        }
-
-        if(!currentTranchVec.empty()) {
-            output->push_back(currentTranchVec);
-        }
-
-        ERR_RETURN;
-    }
+    // template <typename T>
+    // static Err trancheVectorForParallelizationInOrder(
+    //         const std::vector<T> &input,
+    //         int desiredTrancheSegments,
+    //         int trancheBuffer,
+    //         QVector<std::vector<T>> *output
+    // ) {
+    //
+    //     ERR_INIT
+    //
+    //     output->clear();
+    //     output->reserve(desiredTrancheSegments);
+    //
+    //     e = ErrorUtils::isNotEmpty(input); ree;
+    //     e = ErrorUtils::isNotEqual(desiredTrancheSegments, 0); ree;
+    //
+    //     if (desiredTrancheSegments == -1) {
+    //         desiredTrancheSegments = numberOfAvailableSystemProcessors();
+    //     }
+    //
+    //     const int minTrancheSize = 1;
+    //     const int trancheSize = std::max(
+    //                 static_cast<int>(std::round(input.size() / static_cast<double>(desiredTrancheSegments))),
+    //                 minTrancheSize
+    //     );
+    //
+    //     std::vector<T> currentTranchVec;
+    //     for (int i = 0; i < input.size(); i++) {
+    //
+    //         const T &inp = input.at(i);
+    //
+    //         if (i % trancheSize == 0 && i > 0) {
+    //
+    //             for (int j = i; j < i + trancheBuffer; j++) {
+    //
+    //                 if (j >= input.size()) {
+    //                     break;
+    //                 }
+    //
+    //                 const T &inpBuffer = input.at(j);
+    //                 currentTranchVec.push_back(inpBuffer);
+    //             }
+    //
+    //             output->push_back(currentTranchVec);
+    //             currentTranchVec.clear();
+    //         }
+    //
+    //         currentTranchVec.push_back(inp);
+    //     }
+    //
+    //     if(!currentTranchVec.empty()) {
+    //         output->push_back(currentTranchVec);
+    //     }
+    //
+    //     ERR_RETURN;
+    // }
 
     /*!
     * @brief  Converts a QMap to a QVector.

@@ -38,11 +38,22 @@ void PythiaDDAWorkflowTests::processFileTest() {
 
 	ERR_INIT
 
-	const QString ddaMsDataFilePath = "/home/andrewnichols/Downloads/EXP21126_2021ms0425XRC6_C.raw.mzML";
+	QString ddaMsDataFilePath = "/home/ubuntu/Data/EXP21126_2021ms0425XRC6_C.raw.mzML";
+	ddaMsDataFilePath = "/home/ubuntu/Data/EXP23111_2023ms0979bX45_A.raw.mzML";
+	// ddaMsDataFilePath = "/home/ubuntu/Data/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
+	const QString fragLibUri  = "/home/ubuntu/Data/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF";
+
+	const PythiaParameters parameters = PythiaParameterReader::genericPythiaParametersForTests();
 
 	PythiaDDAWorkflow ddaMsWorkflow;
-	e = ddaMsWorkflow.processFile(ddaMsDataFilePath);
+	e = ddaMsWorkflow.init(
+		parameters,
+		fragLibUri
+		);
 	QCOMPARE(e, eNoError);
+
+	e = ddaMsWorkflow.processFile(ddaMsDataFilePath);
+	// QCOMPARE(e, eNoError);
 
 }
 

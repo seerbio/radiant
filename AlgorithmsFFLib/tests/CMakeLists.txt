@@ -21,24 +21,25 @@ SET(TEST_CLASSES
 #        DeMultiplexScaneratorTests
 #        DiscriminantScoretronTests
 #        FDRCLassifierNeuralNetTests
-#        FeatureFinderHillBuilderTests
+        FeatureFinderHillBuilderTests
 #        FeatureFinderHillTests
 #        IsotopicDistributionBuilderTests
 #        MS2IonTests
-#        MsCalibratomaticTests
+        MsCalibratomaticTests
 #        MsFrameTests
         MsUtilsTests
-#        PeakIntegratomaticTests
+        PeakIntegratomaticTests
+        PrecursorMzArrangetronTests
 #        QuanTransitionRefinertronTests
 #        QValueSettertronTests
 #        SequenceSubstringSearchomaticTests
 #        TargetDecoyCandidatePairManagerTests
-#        TargetDecoyCandidatePairScoretronTests
+        TargetDecoyCandidatePairScoretronV2Tests
 #        TargetDecoyCandidatePairTests
         TurboXICTests
 #        TurboXIC2DTests
 #        XICPeakManagerTests
-#        XYMappermaticTests
+        XYMappermaticTests
 )
 
 foreach(class ${TEST_CLASSES})

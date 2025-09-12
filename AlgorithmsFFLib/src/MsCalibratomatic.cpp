@@ -75,7 +75,7 @@ namespace {
         const QPair<QVector<double>, QVector<double>> actualVsPredictedUnzipped
                                             = ParallelUtils::unZip(actualVsPredicted);
 
-        const float pearsonsCorr = MathUtils::calculatePearsonCoefficient(
+        const double pearsonsCorr = MathUtils::calculatePearsonCoefficient(
             actualVsPredictedUnzipped.first,
             actualVsPredictedUnzipped.second
             );

@@ -15,11 +15,13 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 
 #Add classes to test here.
 SET(TEST_CLASSES
-        ConvertMzMLToParquetWorkFlowTests
+        MsCalibratomaticSettertronV2Tests
+#        ConvertMzMLToParquetWorkFlowTests
         PythiaDDAWorkflowTests
-        PythiaDIAFFWorkflowTests
-
-        PlayGroundTests
+        PythiaDIAFFWorkflowV2Tests
+#        PythiaDIAFFWorkflowTests
+#
+#        PlayGroundTests
         )
 
 foreach(class ${TEST_CLASSES})

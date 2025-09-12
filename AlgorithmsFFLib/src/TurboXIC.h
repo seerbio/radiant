@@ -19,15 +19,17 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
     float mz = -1.0;
     float intensity = -1.0;
     ScanNumber scanNumber = -1;
+	FrameIndex frameIndex = -1;
     IonMobilityIndex ionMobilityIndex = -1;
 
     friend QDebug operator<<(QDebug dbg, const XICPoint& obj) {
-        dbg.nospace() << "XICPoint(" << obj.scanNumber << " " << obj.mz << ", " << obj.intensity << ") ";
+        dbg.nospace() << "XICPoint(" << obj.frameIndex << " " << obj.scanNumber << " " << obj.mz << ", " << obj.intensity << ") ";
         return dbg;
     }
 
     friend QDataStream &operator <<(QDataStream &stream, const XICPoint &obj) {
         stream << obj.scanNumber;
+        stream << obj.frameIndex;
         stream << obj.mz;
         stream << obj.intensity;
     	stream << obj.ionMobilityIndex;
@@ -37,6 +39,7 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
 
     friend QDataStream &operator >>(QDataStream &stream, XICPoint &obj) {
         stream >> obj.scanNumber;
+        stream >> obj.frameIndex;
         stream >> obj.mz;
         stream >> obj.intensity;
         stream >> obj.ionMobilityIndex;
@@ -81,9 +84,10 @@ public:
     * @param mzMax The maximum m/z value for the extraction.
     * @return XICPoints containing the extracted XIC points.
     */
-    [[nodiscard]] XICPointsPntrs extractPointsXIC(
+    [[nodiscard]] Err extractPointsXIC(
             float mzMin,
-            float mzMax
+            float mzMax,
+            XICPointsPntrs *xicPointsPntrs
             );
 
     /**

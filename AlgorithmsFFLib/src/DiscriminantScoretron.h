@@ -7,6 +7,7 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 #include "CandidateScores.h"
+#include "CandidateScoresDDA.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 
@@ -18,6 +19,8 @@ class ALGORITHMSFFLIB_EXPORTS DiscriminantScoretron {
 public:
 
     static QVector<Features> featuresCalibration();
+
+    static QVector<FeaturesDDA> featuresCalibrationDDA();
 
     static QVector<Features> featuresOptimization();
 
@@ -37,6 +40,7 @@ public:
     );
 
     static QVector<float> defaultWeights(const QVector<Features> &features);
+    static QVector<float> defaultWeights(const QVector<FeaturesDDA> &features);
 
     static Err convertScoreCandidatesToFeaturesArrays(
         const QVector<Features> &features,

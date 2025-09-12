@@ -115,8 +115,9 @@ void TurboXICTests::extractPointsTest() {
     e = turboXIC.init(msScans);
     QCOMPARE(e, eNoError);
 
-    const XICPointsPntrs xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
-
+    XICPointsPntrs xicPoints;
+	e = turboXIC.extractPointsXIC(100.0, 100.13, &xicPoints);
+	QCOMPARE(e, eNoError);
     QCOMPARE(xicPoints.size(), 3);
     QCOMPARE(xicPoints.front()->scanNumber, 1);
     QVERIFY(MathUtils::tSame(xicPoints.front()->intensity, 100.1f));
@@ -193,8 +194,9 @@ void TurboXICTests::readWriteTest() {
 	e = turboXIC.init(msScans);
 	QCOMPARE(e, eNoError);
 
-	const XICPointsPntrs xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
-
+	XICPointsPntrs xicPoints;
+	e = turboXIC.extractPointsXIC(100.0, 100.13, &xicPoints);
+	QCOMPARE(e, eNoError);
 	QCOMPARE(xicPoints.size(), 3);
 	QCOMPARE(xicPoints.front()->scanNumber, 1);
 	QVERIFY(MathUtils::tSame(xicPoints.front()->intensity, 100.1f));
@@ -207,8 +209,9 @@ void TurboXICTests::readWriteTest() {
 	e = turboXICRead.init("TurboXICReadWriteTest.xic");
 	QCOMPARE(e, eNoError);
 
-	const XICPointsPntrs xicPointsRead = turboXICRead.extractPointsXIC(100.0, 100.13);
-
+	XICPointsPntrs xicPointsRead;
+	e = turboXICRead.extractPointsXIC(100.0, 100.13, &xicPointsRead);
+	QCOMPARE(e, eNoError);
 	QCOMPARE(xicPointsRead.size(), 3);
 	QCOMPARE(xicPointsRead.front()->scanNumber, 1);
 	QVERIFY(MathUtils::tSame(xicPointsRead.front()->intensity, 100.1f));
@@ -276,7 +279,7 @@ void TurboXICTests::troubleShootTest() {
 
 	ERR_INIT
 
-	// QSKIP("Troubleshooting");
+	QSKIP("Troubleshooting");
 
 	const QString filename  = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
 
@@ -284,7 +287,7 @@ void TurboXICTests::troubleShootTest() {
 	e = msReaderMzMLLazyLoad.openFile(filename);
 	QCOMPARE(e, eNoError);
 
-	const QVector<MsScanInfo> scanInfos = msReaderMzMLLazyLoad.getUniqueTandemMsScanInfos();
+	const QVector<MsScanInfo*> scanInfos = msReaderMzMLLazyLoad.getUniqueTandemMsScanInfos();
 
 	QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetVsScanInfosPntrs = msReaderMzMLLazyLoad.m_mzTargetVsScanInfosPntrs;
 

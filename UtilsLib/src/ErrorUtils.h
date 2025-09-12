@@ -325,6 +325,20 @@ public:
         return eNoError;
     }
 
+	template <typename T>
+	static Err isGreaterThanZero(
+		const T &value,
+		Err e = eError
+		) {
+
+    	if (value < 0) {
+    		qCritical() << value << "is less than zero";
+    		rrr(e);
+    	}
+
+    	return eNoError;
+    }
+
     /*!
     * @brief  Checks if a given value is below a specified threshold.
     * @tparam T: The datatype of the value and the threshold. The datatype should be suitable for comparison operations and should support the MathUtils::tSame() function if 'includeThreshold' is set to 'IncludeThreshold'.
