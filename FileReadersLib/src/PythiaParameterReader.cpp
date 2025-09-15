@@ -179,5 +179,14 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 
+	if (pythiaParameters->baggingSize < 2) {
+		qDebug()
+		<< qPrintable(S_GLOBAL_TIMER.elapsed())
+		<< "Bagging size must be at least 2.  Bagging size has been adjusted from"
+		<< pythiaParameters->baggingSize
+		<< "to 2.";
+		pythiaParameters->baggingSize = 2;
+	}
+
     ERR_RETURN
 }
