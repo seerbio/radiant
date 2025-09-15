@@ -894,9 +894,10 @@ namespace {
     }
 
     Err processPredictions(
-            const QVector<float> &predictions,
-            QVector<KarnnNNTarget> *karnnNNTargetsNorm
-            ) {
+        const QVector<float> &predictions,
+        QVector<KarnnNNTarget> *karnnNNTargetsNorm,
+        int foldIndex
+    ) {
 
         ERR_INIT
 
@@ -904,6 +905,7 @@ namespace {
 
         for (int i = 0; i < predictions.size(); i++) {
             (*karnnNNTargetsNorm)[i].candidateScores->classifierScore = predictions.at(i);
+            (*karnnNNTargetsNorm)[i].candidateScores->classifierFold = foldIndex;
         }
 
         ERR_RETURN
@@ -1063,17 +1065,9 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference end";
 
-	QVector<float> predictionsCollated;
-	QVector<KarnnNNTarget> karnnNnTargetsCollated;
 	for (int i = 0; i < predictions.size(); i++) {
-		predictionsCollated.append(predictions[i]);
-		karnnNnTargetsCollated.append(inferenceKarnnVecs[i]);
+	    processPredictions(predictions[i], &inferenceKarnnVecs[i], i); ree;
 	}
-
-    e = processPredictions(
-            predictionsCollated,
-            &karnnNnTargetsCollated
-            ); ree;
 
     *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
 
