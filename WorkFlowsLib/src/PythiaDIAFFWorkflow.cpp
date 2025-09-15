@@ -735,6 +735,8 @@ namespace {
 
         ERR_INIT
 
+    	e = ErrorUtils::isTrue(karnnNNTargetsNormTranched.size() > 1); ree;
+
     	const int trainingSize = std::accumulate(
     		karnnNNTargetsNormTranched.begin(),
     		karnnNNTargetsNormTranched.end(),

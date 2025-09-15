@@ -188,6 +188,12 @@ struct PythiaParameters{
             return false;
         }
 
+    	if (baggingSize <= 1) {
+    		print();
+    		qDebug() << baggingSize << PythiaParameterReaderConstants::kBaggingSize;
+    		return false;
+    	}
+
         return true;
     }
 
