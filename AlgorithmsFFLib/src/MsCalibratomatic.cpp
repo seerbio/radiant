@@ -15,6 +15,7 @@
 MsCalibratomatic::MsCalibratomatic()
 : m_mzStDevMS1(-1.0)
 , m_mzStDevMS2(-1.0)
+, m_scanTimeMean(-1.0)
 , m_scanTimeStd(-1.0)
 , m_ionMobilityStd(-1.0)
 , m_params()
@@ -39,6 +40,7 @@ namespace {
             int verbosity,
             int rtBinning,
             MetricType metricType,
+            double *meanMetricDiff,
             double *stDevMetricDiff
             ) {
 
@@ -84,7 +86,7 @@ namespace {
         const double mean = MathUtils::mean(diffs);
         const double stDev = MathUtils::stDev(diffs);
 
-        if (verbosity > 0) {
+        if (verbosity > -1) {
             if (metricType == MetricType::IRT) {
                 qDebug()
                 << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -108,6 +110,7 @@ namespace {
         }
 
         *stDevMetricDiff = stDev;
+    	*meanMetricDiff = mean;
 
         ERR_RETURN
     }
@@ -137,6 +140,7 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
         m_params.verbosity,
         m_params.rtBinning,
         MetricType::IRT,
+        &m_scanTimeMean,
         &m_scanTimeStd
         ); ree;
 
@@ -185,6 +189,7 @@ Err MsCalibratomatic::buildIMMapper(const QVector<MsCalibarationReaderRow> &msCa
         m_params.verbosity,
         m_params.rtBinning,
         MetricType::IIM,
+        &m_ionMobilityMean,
         &m_ionMobilityStd
         ); ree;
 
@@ -591,6 +596,10 @@ float MsCalibratomatic::mzStDevMS1() const {
 
 float MsCalibratomatic::mzStDevMS2() const {
     return m_mzStDevMS2;
+}
+
+float MsCalibratomatic::scanTimeMean(float nStdDevs) const {
+	return m_scanTimeMean;
 }
 
 float MsCalibratomatic::scanTimeStDev(float nStdDevs /* = 1.0 */) const {

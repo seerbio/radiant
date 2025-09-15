@@ -9,6 +9,9 @@
 
 
 #include <iomanip>
+
+#include "MsCalibratomatic.h"
+
 namespace {
 	constexpr int MAX_LIBRARY_ION_COUNT = 12;
 }
@@ -20,7 +23,8 @@ MsFraggertron::MsFraggertron()
 
 Err MsFraggertron::init(
 	const PythiaParameters & params,
-	MsReaderPointerAcc *msReaderPtr
+	MsReaderPointerAcc *msReaderPtr,
+	MsCalibratomatic *msCalibratomatic
 	) {
 
 	ERR_INIT
@@ -30,6 +34,7 @@ Err MsFraggertron::init(
 
 	m_msReaderPtr = msReaderPtr;
 	m_parameters = params;
+	m_msCalibratomatic = msCalibratomatic;
 
 	e = m_precursorMzArrangetron.init(m_msReaderPtr); ree;
 
@@ -366,6 +371,7 @@ namespace {
 
 		Tally tNew;
 		tNew.scanNumber = t->scanNumber;
+		tNew.scanTime = t->scanTime;
 
 		for (const QPair<int, float> &pr : bestIons) {
 
@@ -391,6 +397,7 @@ namespace {
 
 		Tally tNew;
 		tNew.scanNumber = t->scanNumber;
+		tNew.scanTime = t->scanTime;
 
 		for (int i = 0; i < t->mzEmperical.size(); ++i) {
 
@@ -410,7 +417,8 @@ namespace {
 	}
 
 	QPair<Err, QVector<CandidateScoresDDATuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> &input
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> &input,
+		MsCalibratomatic *msCalibratomatic
 		) {
 
 		ERR_INIT
@@ -437,6 +445,7 @@ namespace {
 				});
 
 			int currentScanNumber = -1;
+			float currentScanTime = -1;
 
 			Tally tallyTarget;
 			Tally tallyDecoy;
@@ -446,12 +455,14 @@ namespace {
 			for (const IonSearchResult2 &isr : isrs) {
 
 				const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
+				const ScanTime scanTime = isr.msScanPointPntr->scanInfoPntr->scanTime;
 
 				if (currentScanNumber != scanNumber) {
 					if (currentScanNumber > 0) {
 						if (tallyTarget.occurrence > occurenceCountMin) {
 
 							tallyTarget.scanNumber = currentScanNumber;
+							tallyTarget.scanTime = currentScanTime;
 
 							filterByPPM(&tallyTarget);
 
@@ -461,7 +472,6 @@ namespace {
 									&tallyTarget
 									);
 							}
-
 
 							if (tallyTarget.occurrence <= occurenceCountMin) {
 								continue;
@@ -473,6 +483,7 @@ namespace {
 						if (tallyDecoy.occurrence > occurenceCountMin) {
 
 							tallyDecoy.scanNumber = currentScanNumber;
+							tallyDecoy.scanTime = currentScanTime;
 
 							filterByPPM(&tallyDecoy);
 
@@ -495,6 +506,7 @@ namespace {
 					tallyTarget = Tally();
 					tallyDecoy = Tally();
 					currentScanNumber = scanNumber;
+					currentScanTime = scanTime;
 				}
 
 				if (isr.ms2IonLibraryPntr->isDecoy) {
@@ -528,14 +540,15 @@ namespace {
 			for (int i = 0; i < tallyResultsTarget.size(); ++i) {
 
 				const Tally &tally = tallyResultsTarget[i];
+				e = ErrorUtils::isTrue(tally.occurrence == tally.intensitiesEmperical.size()); rree;
 
 				CandidateScoresDDA cs;
 				cs.isDecoy = false;
 				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
+				cs.scanTime = tally.scanTime;
 				cs.initFeaturesArray();
 
-				e = ErrorUtils::isTrue(tally.occurrence == tally.intensitiesEmperical.size()); rree;
 				if (tally.occurrence <= occurenceCountMin) {
 					tallyResultsFinalTarget.push_back(cs);
 					continue;
@@ -547,14 +560,11 @@ namespace {
 					empIntensityRelative,
 					theoIntensityRelative,
 					&cs.featuresArray[CosineSimilaritySpectrum]
-					);
+					); rree
 
 				empIntensityRelative /= empIntensityRelative.maxCoeff();
 				Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
 				cs.featuresArray[RelativeIntensityDifferenceAverage] = diffAbs.sum() / tally.occurrence;
-
-				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
-				cs.scanNumber = tally.scanNumber;
 				cs.featuresArray[Occurrences] = static_cast<float>(tally.occurrence);
 				cs.foundInWindowsCount = tallyResultsTarget.size();
 				cs.featuresArray[IntensitiesSum] = std::accumulate(tally.intensitiesEmperical.begin(), tally.intensitiesEmperical.end(), 0.0f);
@@ -595,6 +605,7 @@ namespace {
 				cs.isDecoy = true;
 				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
+				cs.scanTime = tally.scanTime;
 				cs.initFeaturesArray();
 
 				if (tally.occurrence < occurenceCountMin) {
@@ -825,7 +836,8 @@ namespace {
 	QPair<Err, QVector<CandidateScoresDDATuple>> performFraggingLogic(
 		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
 		const PythiaParameters &parameters,
-		QVector<MS2IonLibrary> *ms2IonLibraries
+		QVector<MS2IonLibrary> *ms2IonLibraries,
+		MsCalibratomatic *msCalibratomatic
 		) {
 
 		ERR_INIT
@@ -990,7 +1002,10 @@ namespace {
 #endif
 
 		QPair<Err, QVector<CandidateScoresDDATuple>> result
-				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(ionSearchResults); rree;
+				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
+					ionSearchResults,
+					msCalibratomatic
+					); rree;
 
 		return result;
 	}
@@ -999,6 +1014,7 @@ namespace {
 QPair<Err, QVector<CandidateScoresDDATuple>> MsFraggertron::processTargetDecoyCandidatePairsPntrsTranch(
 	const QVector<TargetDecoyCandidatePair *> &tdcps
 	) {
+
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(tdcps); rree;
@@ -1029,7 +1045,8 @@ QPair<Err, QVector<CandidateScoresDDATuple>> MsFraggertron::processTargetDecoyCa
 		performFraggingLogic,
 		std::placeholders::_1,
 		m_parameters,
-		&ms2IonLibraries
+		&ms2IonLibraries,
+		m_msCalibratomatic
 		);
 
 	QFuture<QPair<Err, QVector<CandidateScoresDDATuple>>> future = QtConcurrent::mapped(

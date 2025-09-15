@@ -41,6 +41,13 @@ public:
 private:
 
 
+	Err honeIRTAndMassCalibration(
+		QVector<CandidateScoresDDA*> *candidateScoresVecScoredPntrs,
+		int topNCandidates,
+		int topCandidatesMass
+	);
+
+
 
 private:
 

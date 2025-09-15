@@ -6,6 +6,7 @@
 
 #include "BiophysicalCalcs.h"
 #include "CandidateScores.h"
+#include "CandidateScoresDDA.h"
 #include "EigenUtils.h"
 #include "GlobalSettings.h"
 #include "ParallelUtils.h"
@@ -292,6 +293,28 @@ Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
     ERR_RETURN
 }
 
+Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+	QVector<CandidateScoresDDA*> &candidateScores,
+	double qValueThreshold,
+	int *targetCountBelowFDRThreshold
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(candidateScores); ree;
+	e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+	const auto countLogic = [qValueThreshold](const CandidateScoresDDA *cs){
+		return cs->qValue < qValueThreshold;
+	};
+
+	*targetCountBelowFDRThreshold
+			= static_cast<int>(std::count_if(candidateScores.begin(), candidateScores.end(), countLogic));
+
+	ERR_RETURN
+
+}
+
 Err FDRCLassifierNeuralNet::outputFDRResults(
         const QVector<CandidateScores> &candidateScores,
         bool verbose,
@@ -357,6 +380,35 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
     }
 
     ERR_RETURN
+}
+
+Err FDRCLassifierNeuralNet::outputFDRResults(
+	QVector<CandidateScoresDDA*> &candidateScores, int verbose,
+	QMap<int, int> *fdrVsCount
+	) {
+
+	ERR_INIT
+
+   const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01};
+	for (double fdrThresh : fdrFractions) {
+		int foundAtThreshold;
+		e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+				candidateScores,
+				fdrThresh,
+				&foundAtThreshold
+		); ree;
+		const int fdrPercent = static_cast<int>(fdrThresh * 100);
+		fdrVsCount->insert(fdrPercent, foundAtThreshold);
+	}
+
+	QString outputString;
+	e = outPutFDRCounts(*fdrVsCount, &outputString); ree;
+
+	if (verbose > 0) {
+		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs found:" << qPrintable(outputString);
+	}
+
+	ERR_RETURN
 }
 
 Err FDRCLassifierNeuralNet::outPutFDRCounts(

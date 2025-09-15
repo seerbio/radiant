@@ -507,7 +507,32 @@ namespace {
 
         *candidateScores = keyVsCandidatesFoundBest.values().toVector();
     }
-}
+
+	void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScoresDDA*> *candidateScores) {
+
+    	std::sort(
+			candidateScores->rbegin(),
+			candidateScores->rend(),
+			[](const CandidateScoresDDA *l, const CandidateScoresDDA *r){return l->discriminantScore < r->discriminantScore;}
+			);
+
+    	QMap<QString, CandidateScoresDDA*> keyVsCandidatesFoundBest;
+
+    	for (CandidateScoresDDA *cs : *candidateScores) {
+
+    		const QString key
+				= cs->targetDecoyCandidatePair->peptideStringWithMods() + QString::number(cs->targetDecoyCandidatePair->charge());
+    		if (keyVsCandidatesFoundBest.contains(key)) {
+    			continue;
+    		}
+
+    		keyVsCandidatesFoundBest.insert(key, cs);
+    	}
+
+    	*candidateScores = keyVsCandidatesFoundBest.values().toVector();
+    }
+
+}//namsspace
 Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             const MSLevelEnum &msLevel,
             const QVector<CandidateScoresV2*> &_candidateScores,
@@ -576,6 +601,75 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
 
         ERR_RETURN
     }
+
+Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
+	const MSLevelEnum &msLevel,
+	const QVector<CandidateScoresDDA *> &_candidateScores,
+	int verbosity,
+	QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
+	) {
+
+	    ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(_candidateScores); ree;
+
+        QVector<CandidateScoresDDA*> candidateScoresFiltered = _candidateScores;
+
+        filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
+
+        if(verbosity > 0) {
+            qDebug() << _candidateScores.size() << "Found for recalibartion";
+            qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
+        }
+
+		constexpr int top8 = 8;
+        const auto msCalibrationReaderRowsInsertLogic = [msLevel, top8](CandidateScoresDDA *cs){
+
+            MsCalibarationReaderRow row;
+            row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
+            row.iRTPredicted = cs->targetDecoyCandidatePair->iRt();
+            row.scanTime = cs->scanTime;
+            row.scanNumber = cs->scanNumber;
+            // row.driftTime = cs->imDriftTime;
+            row.iMPredicted = cs->targetDecoyCandidatePair->iIM();
+
+            // if (msLevel == MSLevelEnum::MS2) {
+            //
+            //     const QVector<MS2Ion> ms2Ions = cs->isDecoy
+            //                   ? cs->targetDecoyCandidatePair->ms2IonsDecoy(ms2MzMin, ms2MzMax)
+            //                   : cs->targetDecoyCandidatePair->ms2IonsTarget(ms2MzMin, ms2MzMax);
+            //
+            //     QVector<float> mzSearchedVals(top8, -1.0f);
+            //     const int maxSize = std::min(top8, ms2Ions.size());
+            //
+            //     for (int i = 0; i < maxSize; i++) {
+            //         mzSearchedVals[i] = ms2Ions.at(i).mz;
+            //     }
+            //
+            //     row.mzSearchedVec = mzSearchedVals;
+            //     row.mzFoundMeanVec = cs->featuresArray.mid(MzFoundMean1, top8);
+            //     row.mzFoundStDevVec = cs->featuresArray.mid(MzFoundStDev1, top8);
+            //     row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top8);
+            // }
+            // else {
+            //     row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
+            //     row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
+            //     row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
+            //     row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};
+            // }
+
+            return row;
+        };
+
+        std::transform(
+                candidateScoresFiltered.begin(),
+                candidateScoresFiltered.end(),
+                std::back_inserter(*msCalibrationReaderRows),
+                msCalibrationReaderRowsInsertLogic
+        );
+
+        ERR_RETURN
+}
 
 namespace {
 

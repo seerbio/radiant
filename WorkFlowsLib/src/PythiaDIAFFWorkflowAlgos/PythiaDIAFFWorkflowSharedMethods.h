@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "CandidateScores.h"
+#include "CandidateScoresDDA.h"
 #include "CandidateScoresV2.h"
 #include "Error.h"
 #include "GlobalSettings.h"
@@ -82,6 +83,13 @@ public:
         int verbosity,
         QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
         );
+
+	static Err buildMsCalibrationReaderRows(
+		const MSLevelEnum &msLevel,
+		const QVector<CandidateScoresDDA*> &_candidateScores,
+		int verbosity,
+		QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
+		);
 
     static Err buildDiaTargetFrames(
         const QVector<MsScanInfo> &uniqueMsScanInfos,

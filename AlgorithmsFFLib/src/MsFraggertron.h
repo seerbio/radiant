@@ -34,6 +34,7 @@
 
 struct Tally {
 	ScanNumber scanNumber = -1;
+	ScanTime scanTime = -1;
 	Occurrence occurrence = 0;
 	// float cosineSimilarity = 0.0;
 	// float relativeIntensityDifferenceAverage = 1.0;
@@ -68,7 +69,8 @@ public:
 
 	Err init(
 		const PythiaParameters & params,
-		MsReaderPointerAcc *msReaderPtr
+		MsReaderPointerAcc *msReaderPtr,
+		MsCalibratomatic *msCalibratomatic
 		);
 
 	[[nodiscard]] bool isInit() const;

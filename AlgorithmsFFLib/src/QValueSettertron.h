@@ -12,6 +12,7 @@
 using namespace Error;
 
 class CandidateScores;
+class CandidateScoresDDA;
 using CandidateScoresTarget = CandidateScores;
 using CandidateScoresDecoy = CandidateScores;
 
@@ -43,6 +44,11 @@ public:
         const QValueScoreType &qValueScoreType,
         QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
     );
+
+	static Err setQValueForCandidates(
+		const QValueScoreType &qValueScoreType,
+		QVector<QPair<CandidateScoresDDA*, CandidateScoresDDA*>> *targetDecoyCandidateScorePairsPntrs
+	);
 
 };
 

@@ -51,7 +51,8 @@ QVector<FeaturesDDA> DiscriminantScoretron::featuresCalibrationDDA() {
 		Occurrences,
 		CosineSimilaritySpectrum,
 		RelativeIntensityDifferenceAverage,
-		Top6RelativePercent
+		Top6RelativePercent,
+		ScanTimeDeltaDDAFromMeanAbs
 	};
 
 	return baseFeatures;

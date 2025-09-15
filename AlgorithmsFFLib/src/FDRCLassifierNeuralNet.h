@@ -18,6 +18,7 @@
 using namespace Error;
 
 class CandidateScores;
+class CandidateScoresDDA;
 class TargetDecoyCandidatePair;
 
 
@@ -178,6 +179,12 @@ public:
             int *targetCountBelowFDRThreshold
     );
 
+	static Err countScoreCandidatesByFDR(
+		QVector<CandidateScoresDDA*> &targetDecoyCandidatePair,
+		double qValueThreshold,
+		int *targetCountBelowFDRThreshold
+	);
+
     /**
     * @brief Outputs FDR results based on specified FDR thresholds.
     *
@@ -199,6 +206,12 @@ public:
             int verbose,
             QMap<int, int> *fdrVsCount
     );
+
+	static Err outputFDRResults(
+		QVector<CandidateScoresDDA*> &candidateScores,
+		int verbose,
+		QMap<int, int> *fdrVsCount
+	);
 
     static Err outPutFDRCounts(
         const QMap<int, int> &fdrVsCount,

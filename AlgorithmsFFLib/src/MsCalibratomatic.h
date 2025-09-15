@@ -56,6 +56,7 @@ public:
 
     [[nodiscard]] float mzStDevMS2() const;
 
+    [[nodiscard]] float scanTimeMean(float nStdDevs = 1.0f) const;
     [[nodiscard]] float scanTimeStDev(float nStdDevs = 1.0f) const;
     [[nodiscard]] float ionMobilityStDev(float nStdDevs = 1.0f) const;
 
@@ -81,7 +82,9 @@ private:
     PythiaParameters m_params;
     double m_mzStDevMS1;
     double m_mzStDevMS2;
+    double m_scanTimeMean;
     double m_scanTimeStd;
+    double m_ionMobilityMean;
     double m_ionMobilityStd;
 
     XYMappermatic m_iRTtoScanTimeMapper;
