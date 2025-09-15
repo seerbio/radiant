@@ -314,6 +314,7 @@ public:
     float imDriftTime = -1.0;
 
     double classifierScore = -1.0;
+    int classifierFold = -1;
     double discriminantScore = -1.0;
     double qValue = 1.0;
     double decoyRatio = -1.0;
@@ -483,6 +484,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString SCAN_TIME_START = QStringLiteral("ScanTimeStart");
     const QString SCAN_TIME_END = QStringLiteral("ScanTimeEnd");
     const QString CLASS_SCR = QStringLiteral("ClassifierScore");
+    const QString CLASS_FOLD = QStringLiteral("ClassifierFold");
     const QString DISC_SCR = QStringLiteral("DiscriminantScore");
     const QString Q_VAL = QStringLiteral("QValue");
     const QString DECOY_RATIO = QStringLiteral("DecoyRatio");
@@ -697,6 +699,7 @@ namespace CandidateScoresReaderRowNamespace {
             SCAN_TIME_START,
             SCAN_TIME_END,
             CLASS_SCR,
+            CLASS_FOLD,
             DISC_SCR,
             Q_VAL,
             DECOY_RATIO,
@@ -902,6 +905,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     ScanTime scanTimeStart = -1.0;
     ScanTime scanTimeEnd = -1.0;
     double classifierScore = -1.0;
+    int classifierFold = -1;
     double discriminantScore = -1.0;
     double qValue = 1.0;
     double decoyRatio = -1.0;
@@ -1134,6 +1138,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
         scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
         classifierScore = dataMap.value(CLASS_SCR).toDouble();
+        classifierFold = dataMap.value(CLASS_FOLD).toInt();
         discriminantScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
         decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
@@ -1330,6 +1335,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {SCAN_TIME_START, QVariant(scanTimeStart)},
                 {SCAN_TIME_END, QVariant(scanTimeEnd)},
                 {CLASS_SCR, QVariant(classifierScore)},
+                {CLASS_FOLD, QVariant(classifierFold)},
                 {DISC_SCR, QVariant(discriminantScore)},
                 {Q_VAL, QVariant(qValue)},
                 {DECOY_RATIO, QVariant(decoyRatio)},
@@ -1554,6 +1560,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.scanTimeStart = candidateScores->scanTimeStart;
         row.scanTimeEnd = candidateScores->scanTimeEnd;
         row.classifierScore = candidateScores->classifierScore;
+        row.classifierFold = candidateScores->classifierFold;
         row.discriminantScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
         row.decoyRatio = candidateScores->decoyRatio;
@@ -1944,6 +1951,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
         scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
         classifierScore = dataMap.value(CLASS_SCR).toDouble();
+        // classifier fold not included in truncated row
         discScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
         totalIntensityRaw = dataMap.value(TOT_INTENSITY_RAW).toFloat();
@@ -1982,6 +1990,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 {SCAN_TIME_START, QVariant(scanTimeStart)},
                 {SCAN_TIME_END, QVariant(scanTimeEnd)},
                 {CLASS_SCR, QVariant(classifierScore)},
+                // classifier fold not included in truncated row
                 {DISC_SCR, QVariant(discScore)},
                 {Q_VAL, QVariant(qValue)},
 
