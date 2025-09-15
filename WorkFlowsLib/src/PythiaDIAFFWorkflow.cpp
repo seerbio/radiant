@@ -1063,18 +1063,9 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference end";
 
-	// QVector<float> predictionsCollated;
-	// QVector<KarnnNNTarget> karnnNnTargetsCollated;
 	for (int i = 0; i < predictions.size(); i++) {
-		// predictionsCollated.append(predictions[i]);
-		// karnnNnTargetsCollated.append(inferenceKarnnVecs[i]);
-	    processPredictions(predictions[i], &inferenceKarnnVecs[i], i);
+	    processPredictions(predictions[i], &inferenceKarnnVecs[i], i); ree;
 	}
-
-    // e = processPredictions(
-    //         predictionsCollated,
-    //         &karnnNnTargetsCollated
-    //         ); ree;
 
     *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
 
