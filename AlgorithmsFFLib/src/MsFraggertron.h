@@ -75,6 +75,8 @@ public:
 
 	[[nodiscard]] bool isInit() const;
 
+	void setPythiaParameters(const PythiaParameters &params);
+
 	QPair<Err, QVector<CandidateScoresDDATuple>> performFragging(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs);
 
 private:

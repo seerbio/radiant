@@ -51,6 +51,10 @@ bool MsFraggertron::isInit() const {
 	return !m_scanNumberMzIntensityTranched.isEmpty();
 }
 
+void MsFraggertron::setPythiaParameters(const PythiaParameters &params) {
+	m_parameters = params;
+}
+
 namespace {
 
 	constexpr int precursorMzKeyHashingPrecision = 3;
@@ -417,8 +421,7 @@ namespace {
 	}
 
 	QPair<Err, QVector<CandidateScoresDDATuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> &input,
-		MsCalibratomatic *msCalibratomatic
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> &input
 		) {
 
 		ERR_INIT
@@ -1003,8 +1006,7 @@ namespace {
 
 		QPair<Err, QVector<CandidateScoresDDATuple>> result
 				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
-					ionSearchResults,
-					msCalibratomatic
+					ionSearchResults
 					); rree;
 
 		return result;

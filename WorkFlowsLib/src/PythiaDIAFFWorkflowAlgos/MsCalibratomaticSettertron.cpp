@@ -443,8 +443,12 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     }
 
     if (m_pythiaParameters->verbosity > 0) {
-        qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters->scanTimeWindowStDevs
-                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs);
+        qDebug()
+    	<< qPrintable(S_GLOBAL_TIMER.elapsed())
+    	<< " scanTimeWindowStDev x"
+    	<< m_pythiaParameters->scanTimeWindowStDevs
+    	<<":"
+    	<< m_msCalibratomatic.scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs);
     }
 
     constexpr int ms2MassRecalCountMin = 200;

@@ -37,6 +37,10 @@ public:
 
 	Err buildMsCalibratomatic();
 
+	Err optimizeExtractionPPM();
+
+	Err processAll();
+
 
 private:
 
@@ -57,7 +61,7 @@ private:
 	QVector<FragLibReaderRow> m_fragLibReaderRows;
 	TargetDecoyCandidatePairManager m_tdcpManager;
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
-
+	QVector<float> m_weights;
 };
 
 #endif //PYTHIADDAWORKFLOW_H
