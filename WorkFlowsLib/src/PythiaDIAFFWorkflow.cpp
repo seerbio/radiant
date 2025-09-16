@@ -860,13 +860,13 @@ namespace {
             tempCandidateScores.push_back(tempCs);
         }
 
-    	QVector<CandidateScores*> tempCandidateScoresPntrs;
-    	std::transform(
-    		tempCandidateScores.begin(),
-    		tempCandidateScores.end(),
-    		std::back_inserter(tempCandidateScoresPntrs),
-    		[](CandidateScores &cs){return &cs;}
-    		);
+        QVector<CandidateScores*> tempCandidateScoresPntrs;
+        std::transform(
+            tempCandidateScores.begin(),
+            tempCandidateScores.end(),
+            std::back_inserter(tempCandidateScoresPntrs),
+            [](CandidateScores &cs){return &cs;}
+        );
 
         e = QValueSettertron::setQValueForCandidates(
             QValueSettertron::QValueScoreType::NNClassifierScore,
@@ -888,8 +888,8 @@ namespace {
         }
 
         const int decoyCount = std::count_if(
-        	tempCandidateScoresPntrs.begin(),
-        	tempCandidateScoresPntrs.end(),
+            tempCandidateScoresPntrs.begin(),
+            tempCandidateScoresPntrs.end(),
             [](CandidateScores *cs) { return cs->isDecoy;}
             );
 
@@ -906,13 +906,13 @@ namespace {
         e = ErrorUtils::isEqual(decoyScores.size(), decoyCount); rree;
 
         const double decoyMedian = MathUtils::median(decoyScores);
-    	e = ErrorUtils::isTrue(decoyMedian > 0.0); rree;
+        e = ErrorUtils::isTrue(decoyMedian > 0.0); rree;
 
         const double logCutoff = std::log(fdrCutoff);
         const double logDecoyMedian = std::log(decoyMedian);
         const double denominator = logDecoyMedian - logCutoff;
 
-    	e = ErrorUtils::isFalse(MathUtils::tZero(denominator)); rree;
+        e = ErrorUtils::isFalse(MathUtils::tZero(denominator)); rree;
 
         const double m = 1.0 / denominator;
         const double b = -logCutoff / denominator;
