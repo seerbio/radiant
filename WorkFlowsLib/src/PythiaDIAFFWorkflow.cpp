@@ -905,7 +905,7 @@ namespace {
 
         e = ErrorUtils::isEqual(decoyScores.size(), decoyCount); rree;
 
-        const double decoyMedian = static_cast<float>(MathUtils::median(decoyScores));
+        const double decoyMedian = MathUtils::median(decoyScores);
     	e = ErrorUtils::isTrue(decoyMedian > 0.0); rree;
 
         const double logCutoff = std::log(fdrCutoff);
@@ -914,7 +914,7 @@ namespace {
 
     	e = ErrorUtils::isFalse(MathUtils::tZero(denominator)); rree;
 
-        const double m = 1.0f / denominator;
+        const double m = 1.0 / denominator;
         const double b = -logCutoff / denominator;
 
         // 4. Apply linear transformation to predictions:
