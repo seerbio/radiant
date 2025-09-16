@@ -844,7 +844,82 @@ namespace {
             &predictions
             ); rree;
 
-        return {e, predictions};
+        // Normalize predictions to a standard range, using a linear transformation
+        // that fixes a 1% FDR cutoff and the median of decoy scores (in log space).
+
+        // 1. Compute 1% FDR cutoff
+
+        // Create temporary candidate scores for FDR calculation using QValueSettertron
+        QVector<CandidateScores*> tempCandidateScores;
+        tempCandidateScores.reserve(karnnNNTargetsNorm.size());
+
+        for (int i = 0; i < karnnNNTargetsNorm.size(); ++i) {
+            // Create a temporary copy of the candidate with updated classifier score
+            CandidateScores *tempCs = new CandidateScores(*karnnNNTargetsNorm[i].candidateScores);
+            tempCs->classifierScore = predictions[i];
+            tempCandidateScores.push_back(tempCs);
+        }
+
+        // Use QValueSettertron to calculate q-values based on classifier scores
+        e = QValueSettertron::setQValueForCandidates(
+            QValueSettertron::QValueScoreType::NNClassifierScore,
+            &tempCandidateScores
+        ); rree;
+
+        // Find the highest score where q-value <= 1% FDR
+        constexpr double targetFDR = 0.01;
+        float fdrCutoff = 0.0f;
+
+        for (const CandidateScores *cs : tempCandidateScores) {
+            if (!cs->isDecoy && cs->qValue <= targetFDR) {
+                fdrCutoff = std::max(fdrCutoff, static_cast<float>(cs->classifierScore));
+            }
+        }
+
+        // Clean up temporary candidates
+        for (CandidateScores *cs : tempCandidateScores) {
+            delete cs;
+        }
+        tempCandidateScores.clear();
+
+        // 2. Compute median of decoys
+
+        const int decoyCount = std::accumulate(yData.begin(), yData.end(), 0,
+            [](int sum, float val) { return sum + static_cast<int>(val); });
+        QVector<float> decoyScores;
+        decoyScores.reserve(decoyCount);
+        for (int i = 0; i < predictions.size(); ++i) {
+            if (yData[i] == 1.0f) {
+                decoyScores.push_back(predictions[i]);
+            }
+        }
+        const double decoyMedian = static_cast<float>(MathUtils::median(decoyScores));
+
+        // 3. Compute slope and intercept of linear transformation (in log space)
+        const double logCutoff = std::log(fdrCutoff);
+        const double m = 1.0f / (std::log(decoyMedian) - logCutoff);
+        const double b = -m * logCutoff;
+
+        // 4. Apply linear transformation to predictions:
+        //
+        //    For each score:
+        // a. Convert to log space
+        // b. Apply linear transformation
+        // c. Convert back from log space
+        //
+        // Future enhancement: use Eigen to vectorize this operation
+        // and employ fused-multiply-add (FMA) intrinsic.
+
+        QVector<float> normPredictions;
+        normPredictions.reserve(predictions.size());
+
+        for (int i = 0; i < predictions.size(); ++i) {
+            double logScore = std::log(predictions[i]);
+            double transformedLogScore = m * logScore + b;
+            normPredictions[i] = std::exp(transformedLogScore);
+        }
+
+        return {e, normPredictions};
     }
 
     Err predictClassifierScores(
