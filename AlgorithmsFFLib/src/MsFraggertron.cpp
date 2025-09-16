@@ -583,6 +583,7 @@ namespace {
 					const int rank = tally.ranks[j];
 					const float relIntensity = tally.intensitiesEmperical[j] / maxIntensity;
 					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
+					cs.featuresArray[IntensityRank0 + rank] = tally.intensitiesEmperical[j];
 				}
 
 				for (int j = 0; j < top6; j++) {
@@ -642,6 +643,7 @@ namespace {
 					const int rank = tally.ranks[j];
 					const float relIntensity = tally.intensitiesEmperical[j] / maxIntensity;
 					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
+					cs.featuresArray[IntensityRank0 + rank] = tally.intensitiesEmperical[j];
 				}
 
 				for (int j = 0; j < top6; j++) {

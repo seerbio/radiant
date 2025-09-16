@@ -257,6 +257,30 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
     return nnFeatures;
 }
 
+QVector<FeaturesDDA> DiscriminantScoretron::featuresNeuralNetworkDDA() {
+	const QVector<FeaturesDDA> baseFeatures = {
+		Occurrences,
+		CosineSimilaritySpectrum,
+		RelativeIntensityDifferenceAverage,
+		Top6RelativePercent,
+		ScanTimeDeltaDDAFromMean,
+		RelativeIntensityRank0,
+		RelativeIntensityRank1,
+		RelativeIntensityRank2,
+		RelativeIntensityRank3,
+		RelativeIntensityRank4,
+		RelativeIntensityRank5,
+		RelativeIntensityRank6,
+		RelativeIntensityRank7,
+		RelativeIntensityRank8,
+		RelativeIntensityRank9,
+		RelativeIntensityRank10,
+		RelativeIntensityRank11,
+	};
+
+	return baseFeatures;
+}
+
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &_targetDecoyCandidateScoresPair,
         int verbosity,

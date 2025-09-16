@@ -26,6 +26,8 @@ public:
 
     static QVector<Features> featuresNeuralNetwork();
 
+    static QVector<FeaturesDDA> featuresNeuralNetworkDDA();
+
     static Err trainLDAClassifier(
             const QVector<QPair<FeaturesArrayDecoys*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
             int verbosity,

@@ -21,6 +21,11 @@ using namespace Error;
 
 class MsReaderPointerAcc;
 
+struct KarnnNNTargetDDA {
+	CandidateScoresDDA *candidateScoresDDA;
+	QVector<float> scoreVecNormalized;
+};
+
 class WORKFLOWSLIB_EXPORTS PythiaDDAWorkflow {
 
 public:
@@ -39,7 +44,13 @@ public:
 
 	Err optimizeExtractionPPM();
 
-	Err processAll();
+	Err processAll(QVector<CandidateScoresDDA*> *candidateScoresesPntrs);
+
+	Err applyNeuralNetClassifier(
+		const QVector<CandidateScoresDDA*> &candidateScoresTargetsAndDecoys,
+		int seed,
+		QVector<CandidateScoresDDA*> *candidateScoreClassifier
+		);
 
 
 private:
@@ -61,7 +72,9 @@ private:
 	QVector<FragLibReaderRow> m_fragLibReaderRows;
 	TargetDecoyCandidatePairManager m_tdcpManager;
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
+	QVector<QPair<CandidateScoresDDA*, CandidateScoresDDA*>> m_targetDecoyPairCandidateScorePntrs;
 	QVector<float> m_weights;
+	QVector<CandidateScoresDDATuple> m_tallyResultsProcessAll;
 };
 
 #endif //PYTHIADDAWORKFLOW_H
