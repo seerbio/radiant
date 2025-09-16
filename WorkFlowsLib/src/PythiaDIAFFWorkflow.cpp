@@ -882,10 +882,20 @@ namespace {
         }
         tempCandidateScores.clear();
 
+        // Validate FDR cutoff for point 3
+        if (fdrCutoff <= 0.0f) {
+            qWarning() << "No targets found at 1% FDR threshold, using minimum value";
+            fdrCutoff = std::numeric_limits<float>::min();
+        }
+
         // 2. Compute median of decoys
 
         const int decoyCount = std::accumulate(yData.begin(), yData.end(), 0,
             [](int sum, float val) { return sum + static_cast<int>(val); });
+
+        // Validate decoy count
+        e = ErrorUtils::isTrue(decoyCount > 0); rree;
+
         QVector<float> decoyScores;
         decoyScores.reserve(decoyCount);
         for (int i = 0; i < predictions.size(); ++i) {
@@ -893,12 +903,29 @@ namespace {
                 decoyScores.push_back(predictions[i]);
             }
         }
+
+        e = ErrorUtils::isEqual(decoyScores.size(), decoyCount); rree;
+
         const double decoyMedian = static_cast<float>(MathUtils::median(decoyScores));
 
         // 3. Compute slope and intercept of linear transformation (in log space)
+
+        // Validate decoy median
+        if (decoyMedian <= 0.0) {
+            e = eValueError; rree;
+        }
+
         const double logCutoff = std::log(fdrCutoff);
-        const double m = 1.0f / (std::log(decoyMedian) - logCutoff);
-        const double b = -m * logCutoff;
+        const double logDecoyMedian = std::log(decoyMedian);
+        const double denominator = logDecoyMedian - logCutoff;
+
+        // Validate denominator to prevent division by zero
+        if (std::abs(denominator) < std::numeric_limits<double>::epsilon()) {
+            e = eValueError; rree;
+        }
+
+        const double m = 1.0f / denominator;
+        const double b = -logCutoff / denominator;
 
         // 4. Apply linear transformation to predictions:
         //
@@ -910,13 +937,18 @@ namespace {
         // Future enhancement: use Eigen to vectorize this operation
         // and employ fused-multiply-add (FMA) intrinsic.
 
-        QVector<float> normPredictions;
-        normPredictions.reserve(predictions.size());
+        QVector<float> normPredictions(predictions.size());
 
         for (int i = 0; i < predictions.size(); ++i) {
-            double logScore = std::log(predictions[i]);
-            double transformedLogScore = m * logScore + b;
-            normPredictions[i] = std::exp(transformedLogScore);
+            // Validate prediction value before log transformation
+            float prediction = predictions[i];
+            if (prediction <= 0.0f) {
+                normPredictions[i] = 0.0f;
+            } else {
+                double logScore = std::log(prediction);
+                double transformedLogScore = m * logScore + b;
+                normPredictions[i] = std::exp(transformedLogScore);
+            }
         }
 
         return {e, normPredictions};
