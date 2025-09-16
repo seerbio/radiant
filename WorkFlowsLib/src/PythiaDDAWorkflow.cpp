@@ -240,7 +240,7 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 		&candidateScoresReaderRows
 		); ree;
 
-	QString resultsFilePath = msReaderPtr.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+	QString resultsFilePath = msReaderPtr.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DDA_FILE_EXTENSION;
 	e = ParquetReader::write(candidateScoresReaderRows, resultsFilePath); ree;
 
 	ERR_RETURN
