@@ -850,50 +850,49 @@ namespace {
         // 1. Compute 1% FDR cutoff
 
         // Create temporary candidate scores for FDR calculation using QValueSettertron
-        QVector<CandidateScores*> tempCandidateScores;
+        QVector<CandidateScores> tempCandidateScores;
         tempCandidateScores.reserve(karnnNNTargetsNorm.size());
 
         for (int i = 0; i < karnnNNTargetsNorm.size(); ++i) {
             // Create a temporary copy of the candidate with updated classifier score
-            CandidateScores *tempCs = new CandidateScores(*karnnNNTargetsNorm[i].candidateScores);
-            tempCs->classifierScore = predictions[i];
+            CandidateScores tempCs = *karnnNNTargetsNorm[i].candidateScores;
+            tempCs.classifierScore = predictions[i];
             tempCandidateScores.push_back(tempCs);
         }
 
-        // Use QValueSettertron to calculate q-values based on classifier scores
+    	QVector<CandidateScores*> tempCandidateScoresPntrs;
+    	std::transform(
+    		tempCandidateScores.begin(),
+    		tempCandidateScores.end(),
+    		std::back_inserter(tempCandidateScoresPntrs),
+    		[](CandidateScores &cs){return &cs;}
+    		);
+
         e = QValueSettertron::setQValueForCandidates(
             QValueSettertron::QValueScoreType::NNClassifierScore,
-            &tempCandidateScores
+            &tempCandidateScoresPntrs
         ); rree;
 
-        // Find the highest score where q-value <= 1% FDR
         constexpr double targetFDR = 0.01;
         float fdrCutoff = 0.0f;
 
-        for (const CandidateScores *cs : tempCandidateScores) {
+        for (const CandidateScores *cs : tempCandidateScoresPntrs) {
             if (!cs->isDecoy && cs->qValue <= targetFDR) {
                 fdrCutoff = std::max(fdrCutoff, static_cast<float>(cs->classifierScore));
             }
         }
 
-        // Clean up temporary candidates
-        for (CandidateScores *cs : tempCandidateScores) {
-            delete cs;
-        }
-        tempCandidateScores.clear();
-
-        // Validate FDR cutoff for point 3
         if (fdrCutoff <= 0.0f) {
             qWarning() << "No targets found at 1% FDR threshold, using minimum value";
             fdrCutoff = std::numeric_limits<float>::min();
         }
 
-        // 2. Compute median of decoys
+        const int decoyCount = std::count_if(
+        	tempCandidateScoresPntrs.begin(),
+        	tempCandidateScoresPntrs.end(),
+            [](CandidateScores *cs) { return cs->isDecoy;}
+            );
 
-        const int decoyCount = std::accumulate(yData.begin(), yData.end(), 0,
-            [](int sum, float val) { return sum + static_cast<int>(val); });
-
-        // Validate decoy count
         e = ErrorUtils::isTrue(decoyCount > 0); rree;
 
         QVector<float> decoyScores;
@@ -907,22 +906,13 @@ namespace {
         e = ErrorUtils::isEqual(decoyScores.size(), decoyCount); rree;
 
         const double decoyMedian = static_cast<float>(MathUtils::median(decoyScores));
-
-        // 3. Compute slope and intercept of linear transformation (in log space)
-
-        // Validate decoy median
-        if (decoyMedian <= 0.0) {
-            e = eValueError; rree;
-        }
+    	e = ErrorUtils::isTrue(decoyMedian > 0.0); rree;
 
         const double logCutoff = std::log(fdrCutoff);
         const double logDecoyMedian = std::log(decoyMedian);
         const double denominator = logDecoyMedian - logCutoff;
 
-        // Validate denominator to prevent division by zero
-        if (std::abs(denominator) < std::numeric_limits<double>::epsilon()) {
-            e = eValueError; rree;
-        }
+    	e = ErrorUtils::isFalse(MathUtils::tZero(denominator)); rree;
 
         const double m = 1.0f / denominator;
         const double b = -logCutoff / denominator;
@@ -937,18 +927,18 @@ namespace {
         // Future enhancement: use Eigen to vectorize this operation
         // and employ fused-multiply-add (FMA) intrinsic.
 
-        QVector<float> normPredictions(predictions.size());
+        QVector<float> normPredictions(predictions.size(), 0.0f);
 
         for (int i = 0; i < predictions.size(); ++i) {
             // Validate prediction value before log transformation
             float prediction = predictions[i];
             if (prediction <= 0.0f) {
-                normPredictions[i] = 0.0f;
-            } else {
-                double logScore = std::log(prediction);
-                double transformedLogScore = m * logScore + b;
-                normPredictions[i] = std::exp(transformedLogScore);
+                continue;
             }
+
+            double logScore = std::log(prediction);
+            double transformedLogScore = m * logScore + b;
+            normPredictions[i] = std::exp(transformedLogScore);
         }
 
         return {e, normPredictions};
