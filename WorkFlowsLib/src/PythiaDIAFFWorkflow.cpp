@@ -844,7 +844,104 @@ namespace {
             &predictions
             ); rree;
 
-        return {e, predictions};
+        // Normalize predictions to a standard range, using a linear transformation
+        // that fixes a 1% FDR cutoff and the median of decoy scores (in log space).
+
+        // 1. Compute 1% FDR cutoff
+
+        // Create temporary candidate scores for FDR calculation using QValueSettertron
+        QVector<CandidateScores> tempCandidateScores;
+        tempCandidateScores.reserve(karnnNNTargetsNorm.size());
+
+        for (int i = 0; i < karnnNNTargetsNorm.size(); ++i) {
+            // Create a temporary copy of the candidate with updated classifier score
+            CandidateScores tempCs = *karnnNNTargetsNorm[i].candidateScores;
+            tempCs.classifierScore = predictions[i];
+            tempCandidateScores.push_back(tempCs);
+        }
+
+        QVector<CandidateScores*> tempCandidateScoresPntrs;
+        std::transform(
+            tempCandidateScores.begin(),
+            tempCandidateScores.end(),
+            std::back_inserter(tempCandidateScoresPntrs),
+            [](CandidateScores &cs){return &cs;}
+        );
+
+        e = QValueSettertron::setQValueForCandidates(
+            QValueSettertron::QValueScoreType::NNClassifierScore,
+            &tempCandidateScoresPntrs
+        ); rree;
+
+        constexpr double targetFDR = 0.01;
+        float fdrCutoff = 0.0f;
+
+        for (const CandidateScores *cs : tempCandidateScoresPntrs) {
+            if (!cs->isDecoy && cs->qValue <= targetFDR) {
+                fdrCutoff = std::max(fdrCutoff, static_cast<float>(cs->classifierScore));
+            }
+        }
+
+        if (fdrCutoff <= 0.0f) {
+            qWarning() << "No targets found at 1% FDR threshold, using minimum value";
+            fdrCutoff = std::numeric_limits<float>::min();
+        }
+
+        const int decoyCount = std::count_if(
+            tempCandidateScoresPntrs.begin(),
+            tempCandidateScoresPntrs.end(),
+            [](CandidateScores *cs) { return cs->isDecoy;}
+            );
+
+        e = ErrorUtils::isTrue(decoyCount > 0); rree;
+
+        QVector<float> decoyScores;
+        decoyScores.reserve(decoyCount);
+        for (int i = 0; i < predictions.size(); ++i) {
+            if (yData[i] == 1.0f) {
+                decoyScores.push_back(predictions[i]);
+            }
+        }
+
+        e = ErrorUtils::isEqual(decoyScores.size(), decoyCount); rree;
+
+        const double decoyMedian = MathUtils::median(decoyScores);
+        e = ErrorUtils::isTrue(decoyMedian > 0.0); rree;
+
+        const double logCutoff = std::log(fdrCutoff);
+        const double logDecoyMedian = std::log(decoyMedian);
+        const double denominator = logDecoyMedian - logCutoff;
+
+        e = ErrorUtils::isFalse(MathUtils::tZero(denominator)); rree;
+
+        const double m = 1.0 / denominator;
+        const double b = -logCutoff / denominator;
+
+        // 4. Apply linear transformation to predictions:
+        //
+        //    For each score:
+        // a. Convert to log space
+        // b. Apply linear transformation
+        // c. Convert back from log space
+        //
+        // Future enhancement: use Eigen to vectorize this operation
+        // and employ fused-multiply-add (FMA) intrinsic.
+
+        QVector<float> normPredictions(predictions.size(), 0.0f);
+
+        for (int i = 0; i < predictions.size(); ++i) {
+            // Validate prediction value before log transformation
+            float prediction = predictions[i];
+            if (prediction <= 0.0f) {
+                continue;
+            }
+
+            double logScore = std::log(prediction);
+            double transformedLogScore = m * logScore + b;
+            normPredictions[i] = std::exp(transformedLogScore);
+        }
+
+        return {e, normPredictions};
     }
 
     Err predictClassifierScores(
