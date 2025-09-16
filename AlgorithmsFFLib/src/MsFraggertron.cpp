@@ -68,7 +68,7 @@ namespace {
 			e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); ree;
 			targetDecoyCandidatePairsPntrsTranched->clear();
 
-			constexpr int batchSize = 2e5; //TODO make this settable in params
+			constexpr int batchSize = 5e4; //TODO make this settable in params
 			const int libTrancheSize = std::max(targetDecoyCandidatePairsPntrs.size() / batchSize, 1);
 			qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Processing library in" << libTrancheSize << "tranches";
 
@@ -836,17 +836,18 @@ namespace {
 	}
 
 
-	QPair<Err, QVector<CandidateScoresDDATuple>> performFraggingLogic(
+	Err performFraggingLogic(
 		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
 		const PythiaParameters &parameters,
 		QVector<MS2IonLibrary> *ms2IonLibraries,
-		MsCalibratomatic *msCalibratomatic
+		QMutex *mutex,
+		QVector<CandidateScoresDDATuple> *tallyResultsFinal
 		) {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); rree;
-		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); rree;
+		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); ree;
+		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); ree;
 
 		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> ionSearchResults;
 		constexpr int batchSize = 2e5; //TODO make this settable in params
@@ -858,13 +859,13 @@ namespace {
 			ms2IonLibraries
 			);
 
-		e = std::get<0>(startStopResult); rree;
+		e = std::get<0>(startStopResult); ree;
 		const int libraryPrecursorMzMinLowerBoundIndex = std::get<1>(startStopResult);
 		const int libraryPrecursorMzMaxUpperBoundIndex = std::get<2>(startStopResult);
 
 		const int size = libraryPrecursorMzMaxUpperBoundIndex - libraryPrecursorMzMinLowerBoundIndex;
 		if (size < 1) {
-			return {e, {}};
+			return e;
 		}
 
 		QHash<MS2IonLibrary*, QVector<MS2IonLibrary*>> ms2IonLibrariesIndexed;
@@ -873,10 +874,10 @@ namespace {
 			libraryPrecursorMzMaxUpperBoundIndex,
 			ms2IonLibraries,
 			&ms2IonLibrariesIndexed
-			); rree;
+			); ree;
 
 		QVector<QPair<ScanNumberMzIntensity*, QPair<Index, Index>>> snmiVsIndexes;
-		e = indexScanNumberMzIntensities(scanNumberMzIntensities, &snmiVsIndexes); rree;
+		e = indexScanNumberMzIntensities(scanNumberMzIntensities, &snmiVsIndexes); ree;
 
 		QVector<MS2IonLibrary*> ms2IonLibrariesPntrs;
 		for (MS2IonLibrary &mil : *ms2IonLibraries) {
@@ -884,7 +885,7 @@ namespace {
 			}
 
 		Ms2IonFraggertronManager fragger;
-		e = fragger.init(ms2IonLibrariesPntrs.mid(libraryPrecursorMzMinLowerBoundIndex, size + 1)); rree;
+		e = fragger.init(ms2IonLibrariesPntrs.mid(libraryPrecursorMzMinLowerBoundIndex, size + 1)); ree;
 
 		QVector<QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>>> snmiVsIndexesLibrary;
 		for (const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr : snmiVsIndexes) {
@@ -921,16 +922,16 @@ namespace {
 				mzMs2ScanMin,
 				mzMs2ScanMax,
 				&tdPeptideFrags
-				); rree;
+				); ree;
 
 			if (!tdPeptideFrags.isEmpty()) {
 				snmiVsIndexesLibrary.push_back({snmi, tdPeptideFrags});
 			}
 		}
 
-		QHash<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>> scanNumberMzIntensityPtrVsMS2IonLibraryPntrs;
-		for (const QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>> &pr : snmiVsIndexesLibrary) {
-			scanNumberMzIntensityPtrVsMS2IonLibraryPntrs.insert(pr.first, pr.second);
+		QHash<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>*> scanNumberMzIntensityPtrVsMS2IonLibraryPntrs;
+		for (QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>> &pr : snmiVsIndexesLibrary) {
+			scanNumberMzIntensityPtrVsMS2IonLibraryPntrs.insert(pr.first, &pr.second);
 		}
 
 		for (const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr : snmiVsIndexes) {
@@ -942,7 +943,7 @@ namespace {
 				continue;
 			}
 
-			const QVector<MS2IonLibrary*> &ms2IonLibrariesSmni = scanNumberMzIntensityPtrVsMS2IonLibraryPntrs[snmi];
+			const QVector<MS2IonLibrary*> *ms2IonLibrariesSmni = scanNumberMzIntensityPtrVsMS2IonLibraryPntrs[snmi];
 
 			ScanNumberMzIntensity *snmipMin = scanNumberMzIntensities[snmiVsIndexesRanges.first];
 			ScanNumberMzIntensity *snmipMax = scanNumberMzIntensities[snmiVsIndexesRanges.second];
@@ -951,19 +952,19 @@ namespace {
 				snmipMin->scanInfoPntr->precursorTargetMz,
 				snmipMax->scanInfoPntr->precursorTargetMz,
 				precursorMzKeyHashingPrecision
-				)); rree;
+				)); ree;
 
 			e = ErrorUtils::isTrue(MathUtils::tSame(
 				snmipMin->mzVal,
 				snmipMax->mzVal,
 				precursorMzKeyHashingPrecision
-				)); rree;
+				)); ree;
 
 			for (int i = snmiVsIndexesRanges.first; i  <= snmiVsIndexesRanges.second; i++) {
 
 				ScanNumberMzIntensity *snmip = scanNumberMzIntensities[i];
 
-				for (MS2IonLibrary *mil : ms2IonLibrariesSmni) {
+				for (MS2IonLibrary *mil : *ms2IonLibrariesSmni) {
 					TargetDecoyCandidatePair *tdcp = mil->targeDecoyCandidatePairPntr;
 
 					IonSearchResult2 isr2;
@@ -1007,9 +1008,13 @@ namespace {
 		QPair<Err, QVector<CandidateScoresDDATuple>> result
 				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
 					ionSearchResults
-					); rree;
+					); ree;
 
-		return result;
+		QMutexLocker locker(mutex);
+		tallyResultsFinal->append(result.second);
+		locker.unlock();
+
+		return e;
 	}
 
 }//namespace
@@ -1043,24 +1048,26 @@ QPair<Err, QVector<CandidateScoresDDATuple>> MsFraggertron::processTargetDecoyCa
 
 #define FRAG_PARALLEL
 #ifdef FRAG_PARALLEL
+
+	QMutex mutex;
+
 	const auto binderLogic = std::bind(
 		performFraggingLogic,
 		std::placeholders::_1,
 		m_parameters,
 		&ms2IonLibraries,
-		m_msCalibratomatic
+		&mutex,
+		&tallyResultsFinal
 		);
 
-	QFuture<QPair<Err, QVector<CandidateScoresDDATuple>>> future = QtConcurrent::mapped(
+	QFuture<Err> future = QtConcurrent::mapped(
 		m_scanNumberMzIntensityTranched,
 		binderLogic
 		);
 	future.waitForFinished();
 
-	for (const QPair<Err, QVector<CandidateScoresDDATuple>> &result : future) {
-		e = result.first; rree;
-		const QVector<CandidateScoresDDATuple> &tallyResultTuples = result.second;
-		tallyResultsFinal.append(tallyResultTuples);
+	for (const Err &result : future) {
+		e = result; rree;
 	}
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
 #else
