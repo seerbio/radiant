@@ -19,6 +19,8 @@
 
 #include "ParallelUtils.h"
 
+// If defined, uses focal loss instead of BCE loss
+#define FOCAL_LOSS
 
 struct TransformerModel : torch::nn::Module {
 
@@ -156,6 +158,48 @@ namespace {
         return {vec.begin(), vec.end()};
     }
 
+#ifdef FOCAL_LOSS
+    /*!
+     * @brief Computes focal loss for binary classification
+     * @param predictions: Model predictions (sigmoid output) in range [0,1]
+     * @param targets: Ground truth labels (0 or 1)
+     * @param alpha: Class balancing parameter (default 1.0)
+     * @param gamma: Focusing parameter that reduces loss for well-classified examples (default 2.0)
+     * @return Focal loss tensor
+     *
+     * Focal Loss: FL(p_t) = -α(1-p_t)^γ log(p_t)
+     * where p_t = p if y=1, else 1-p
+     *
+     * Future enhancement: Expose alpha and gamma as configurable parameters
+     */
+    class FocalLoss {
+    private:
+        float m_alpha;
+        float m_gamma;
+
+    public:
+        FocalLoss(float alpha = 1.0f, float gamma = 2.0f) : m_alpha(alpha), m_gamma(gamma) {}
+
+        torch::Tensor operator()(const torch::Tensor& predictions, const torch::Tensor& targets) const {
+            // Clamp predictions to avoid log(0) and ensure numerical stability
+            constexpr float epsilon = 1e-8f;
+            torch::Tensor pred_clamped = torch::clamp(predictions, epsilon, 1.0f - epsilon);
+
+            // Compute p_t: prediction for correct class
+            torch::Tensor p_t = torch::where(targets == 1, pred_clamped, 1 - pred_clamped);
+
+            // Compute focal weight: α(1-p_t)^γ
+            torch::Tensor focal_weight = m_alpha * torch::pow((1 - p_t), m_gamma);
+
+            // Compute cross-entropy loss: -log(p_t)
+            torch::Tensor ce_loss = -torch::log(p_t);
+
+            // Combine focal weight with cross-entropy loss
+            return torch::mean(focal_weight * ce_loss);
+        }
+    };
+#endif
+
 } //namespace
 bool CandidateClassifier::Private::trainCandidateClassifier(
         const QVector<QVector<float>> &xData,
@@ -208,7 +252,15 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     std::vector<float> yStdVec(yData.begin(), yData.end());
     torch::Tensor y = torch::from_blob(yStdVec.data(), {static_cast<long>(yStdVec.size()), 1}, torch::kFloat);
 
+#ifdef FOCAL_LOSS
+    // Focal loss with standard parameters
+    // Future enhancement: Make focal loss parameters (alpha=1.0, gamma=2.0) configurable
+    FocalLoss loss_function(1.0f, 2.0f);
+#else
+    // BCE loss
     torch::nn::BCELoss loss_function;
+#endif
+
     torch::optim::Adam optimizer(m_net->parameters(), torch::optim::AdamOptions(learningRate));
 
     std::ostringstream oss;
