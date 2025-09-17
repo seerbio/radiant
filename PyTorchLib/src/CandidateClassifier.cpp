@@ -181,20 +181,15 @@ namespace {
         FocalLoss(float alpha = 1.0f, float gamma = 2.0f) : m_alpha(alpha), m_gamma(gamma) {}
 
         torch::Tensor operator()(const torch::Tensor& predictions, const torch::Tensor& targets) const {
-            // Clamp predictions to avoid log(0) and ensure numerical stability
             constexpr float epsilon = 1e-8f;
             torch::Tensor pred_clamped = torch::clamp(predictions, epsilon, 1.0f - epsilon);
 
-            // Compute p_t: prediction for correct class
             torch::Tensor p_t = torch::where(targets == 1, pred_clamped, 1 - pred_clamped);
 
-            // Compute focal weight: α(1-p_t)^γ
             torch::Tensor focal_weight = m_alpha * torch::pow((1 - p_t), m_gamma);
 
-            // Compute cross-entropy loss: -log(p_t)
             torch::Tensor ce_loss = -torch::log(p_t);
 
-            // Combine focal weight with cross-entropy loss
             return torch::mean(focal_weight * ce_loss);
         }
     };
