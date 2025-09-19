@@ -76,6 +76,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kBaggingSize;
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
+    extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
 
 
