@@ -22,6 +22,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 , m_threadCount(8)
 , m_baggingSize(6)
 , m_nodesFraction(0.5)
+, m_focalLossGamma(0.0)
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
@@ -37,6 +38,7 @@ Err FDRCLassifierNeuralNet::init(
         int batchSize,
         double learningRate,
         double nodesFraction,
+        float focalLossGamma,
         int threadCount
         ) {
 
@@ -54,6 +56,7 @@ Err FDRCLassifierNeuralNet::init(
     m_learningRate = learningRate;
     m_threadCount = threadCount;
     m_nodesFraction = nodesFraction;
+    m_focalLossGamma = focalLossGamma;
 
     m_isInit = true;
 
@@ -117,6 +120,7 @@ namespace {
         int batchSize = -1;
         double learningRate = -1.0;
         double nodesFraction = -1.0;
+        float focalLossGamma = 0.0;
         int bag = -1;
     };
 
@@ -141,6 +145,7 @@ namespace {
                 input.learningRate,
                 input.bag,
                 input.nodesFraction,
+                input.focalLossGamma,
                 verbosity
         );
         e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
@@ -180,6 +185,7 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         ccpi.batchSize = m_batchSize;
         ccpi.learningRate = m_learningRate;
         ccpi.nodesFraction = m_nodesFraction;
+        ccpi.focalLossGamma = m_focalLossGamma;
         ccpi.bag = bag + S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + seed;
 
         parallelInputs.push_back(ccpi);

@@ -76,6 +76,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kBaggingSize;
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
+    extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
 
 
@@ -145,6 +146,7 @@ struct PythiaParameters{
     int baggingSize = 12;
     float learningRate = 0.003;
     double nodesFraction = 0.5;
+    float focalLossGamma = 0.0;
 	bool parallelNeuralNets = false;
 
     [[nodiscard]] bool isValid() const {
@@ -260,6 +262,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kBaggingSize) << baggingSize;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kParallelNeuralNets) << parallelNeuralNets;
 
         qDebug() << QStringLiteral("**********************************************");
