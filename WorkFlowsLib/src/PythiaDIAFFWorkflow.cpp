@@ -712,6 +712,7 @@ namespace {
 				batchSize,
 				pythiaParameters.learningRate,
 				pythiaParameters.nodesFraction,
+				pythiaParameters.focalLossGamma,
 				pythiaParameters.threadCount
 		); rree;
 

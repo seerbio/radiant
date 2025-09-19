@@ -110,6 +110,7 @@ public:
     * @param batchSize An integer representing the batch size for training.
     * @param learningRate A double representing the learning rate for training.
     * @param nodesFraction nodefraction
+    * @param focalLossGamma If positive and finite, use focal loss with this gamma value. For all other values, use standard binary cross-entropy loss.
     * @param threadCount threadCount,
     * @return An Err enum indicating the success or failure of the operation.
     */
@@ -119,6 +120,7 @@ public:
             int batchSize,
             double learningRate,
             double nodesFraction,
+            float focalLossGamma,
             int threadCount
             );
 
@@ -224,6 +226,7 @@ private:
     int m_batchSize;
     double m_learningRate;
     double m_nodesFraction;
+    float m_focalLossGamma;
     int m_threadCount;
 
     bool m_isInit;

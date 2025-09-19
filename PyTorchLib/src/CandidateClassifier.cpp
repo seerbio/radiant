@@ -19,9 +19,6 @@
 
 #include "ParallelUtils.h"
 
-// If defined, uses focal loss instead of BCE loss
-#define FOCAL_LOSS
-
 struct TransformerModel : torch::nn::Module {
 
     TransformerModel(
@@ -104,6 +101,7 @@ public:
             int epochsMax,
             int batchSize,
             double learningRate,
+            float focalLossGamma,
             int seed,
             double nodeFraction,
             int verbosity
@@ -158,7 +156,6 @@ namespace {
         return {vec.begin(), vec.end()};
     }
 
-#ifdef FOCAL_LOSS
     /*!
      * @brief Computes focal loss for binary classification
      * @param predictions: Model predictions (sigmoid output) in range [0,1]
@@ -193,7 +190,6 @@ namespace {
             return torch::mean(focal_weight * ce_loss);
         }
     };
-#endif
 
 } //namespace
 bool CandidateClassifier::Private::trainCandidateClassifier(
@@ -202,6 +198,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         int epochsMax,
         int batchSize,
         double learningRate,
+        float focalLossGamma,
         int seed,
         double nodeFraction,
         int verbosity
@@ -247,14 +244,12 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     std::vector<float> yStdVec(yData.begin(), yData.end());
     torch::Tensor y = torch::from_blob(yStdVec.data(), {static_cast<long>(yStdVec.size()), 1}, torch::kFloat);
 
-#ifdef FOCAL_LOSS
-    // Focal loss with standard parameters
-    // Future enhancement: Make focal loss parameters (alpha=1.0, gamma=2.0) configurable
-    FocalLoss loss_function(1.0f, 2.0f);
-#else
-    // BCE loss
-    torch::nn::BCELoss loss_function;
-#endif
+    std::function<torch::Tensor(const torch::Tensor&, const torch::Tensor&)> loss_function;
+    if (focalLossGamma > 0 && std::isfinite(focalLossGamma)) {
+        loss_function = FocalLoss(1.0f, focalLossGamma);
+    } else {
+        loss_function = torch::nn::BCELoss();
+    }
 
     torch::optim::Adam optimizer(m_net->parameters(), torch::optim::AdamOptions(learningRate));
 
@@ -375,6 +370,7 @@ bool CandidateClassifier::trainCandidateClassifier(
         double learningRate,
         int seed,
         double nodeFraction,
+        float focalLossGamma,
         int verbosity
         ) const {
 
@@ -393,6 +389,7 @@ bool CandidateClassifier::trainCandidateClassifier(
             epochsMax,
             batchSize,
             learningRate,
+            focalLossGamma,
             seed,
             nodeFraction,
             verbosity
