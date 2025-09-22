@@ -273,6 +273,9 @@ enum Features {
     ApexDistanceFromAnchor11,
     ApexDistanceFromAnchor12,
 
+	MzFoundOverCount650,
+	MzFoundUnderCount650,
+
     FeaturesSize
     };
 
