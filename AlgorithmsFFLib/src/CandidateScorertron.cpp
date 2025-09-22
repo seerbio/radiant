@@ -1895,6 +1895,14 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexEnd);
 
     candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
+
+	if (m_msCalibratomatic.isInitRT()) {
+		e = m_msCalibratomatic.predictIRT(
+				candidateScores->scanTime,
+				&candidateScores->empiricalIRT
+				); ree;
+	}
+
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
     candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);
 

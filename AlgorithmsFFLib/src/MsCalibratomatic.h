@@ -68,6 +68,11 @@ public:
         float *predictedScanTime
         ) const;
 
+	Err predictIRT(
+		float scanTime,
+		float *predictedIRT
+		) const;
+
     [[nodiscard]] bool isInitRT() const;
 
     [[nodiscard]] bool isInitCalMS1() const;
@@ -85,6 +90,7 @@ private:
     double m_ionMobilityStd;
 
     XYMappermatic m_iRTtoScanTimeMapper;
+    XYMappermatic m_scanTimeToIRTMapper;
     XYMappermatic m_iIMtoScanTimeMapper;
     QVector<double> m_calibrationCurveCoeffsMS1;
     QVector<double> m_calibrationCurveCoeffsMS2;

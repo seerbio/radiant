@@ -17,9 +17,6 @@ MsCalibratomatic::MsCalibratomatic()
 , m_mzStDevMS2(-1.0)
 , m_scanTimeStd(-1.0)
 , m_ionMobilityStd(-1.0)
-, m_params()
-, m_iRTtoScanTimeMapper()
-, m_iIMtoScanTimeMapper()
 , m_isInitRT(false)
 , m_isInitMS1(false)
 , m_isInitMS2(false)
@@ -122,7 +119,6 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
     const auto insertLogicIRT = [](const MsCalibarationReaderRow &r){
         return QPair(r.iRTPredicted, r.scanTime);
     };
-
     QVector<QPair<XVal, YVal>> dataIRT;
     dataIRT.reserve(msCalibarationReaderRows.size());
     std::transform(
@@ -130,6 +126,18 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
             msCalibarationReaderRows.end(),
             std::back_inserter(dataIRT),
             insertLogicIRT
+            );
+
+	const auto insertLogicScanTime = [](const MsCalibarationReaderRow &r){
+		return QPair(r.scanTime, r.iRTPredicted);
+	};
+    QVector<QPair<XVal, YVal>> dataScanTime;
+    dataScanTime.reserve(msCalibarationReaderRows.size());
+    std::transform(
+            msCalibarationReaderRows.begin(),
+            msCalibarationReaderRows.end(),
+            std::back_inserter(dataScanTime),
+            insertLogicScanTime
             );
 
     e = generateMetricsXYMapperMetrics(
@@ -141,6 +149,7 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
         ); ree;
 
     e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
+	e = m_scanTimeToIRTMapper.init(dataScanTime); ree;
     e = m_iRTtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
@@ -609,6 +618,16 @@ Err MsCalibratomatic::predictScanTime(float iRT, float *predictedScanTime) const
     *predictedScanTime = static_cast<float>(predictedScanTimeDouble);
 
     ERR_RETURN
+}
+
+Err MsCalibratomatic::predictIRT(float scanTime, float *predictedIRT) const {
+	ERR_INIT
+
+	double predictedIRTDouble;
+	e = m_scanTimeToIRTMapper.predictY(static_cast<double>(scanTime), &predictedIRTDouble); ree;
+	*predictedIRT = static_cast<float>(predictedIRTDouble);
+
+	ERR_RETURN
 }
 
 bool MsCalibratomatic::isInitRT() const {

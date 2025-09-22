@@ -310,6 +310,7 @@ public:
     ScanTime scanTimeStart = -1.0;
     ScanTime scanTimeEnd = -1.0;
     ScanTime scanTimePredicted = -1.0;
+	float empiricalIRT = -1.0;
 
     IonMobilityIndex ionMobilityIndex = -1;
     IonMobilityIndex ionMobilityIndexStart = -1;
@@ -379,6 +380,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString PEAK_RATIO_3 = QStringLiteral("PeakShapeRatio3");
     const QString SHADOW_COSINE_SIM_SUM = QStringLiteral("ShadowsCosineSimSum");
     const QString IRT_PRED = QStringLiteral("IRTPredicted");
+    const QString IRT_EMP = QStringLiteral("IRTEmpirical");
     const QString COS_SIM_ANCH_1 = QStringLiteral("CosineSimToAnchor1");
     const QString COS_SIM_ANCH_2 = QStringLiteral("CosineSimToAnchor2");
     const QString COS_SIM_ANCH_3 = QStringLiteral("CosineSimToAnchor3");
@@ -594,6 +596,7 @@ namespace CandidateScoresReaderRowNamespace {
             PEAK_RATIO_3,
             SHADOW_COSINE_SIM_SUM,
             IRT_PRED,
+            IRT_EMP,
             COS_SIM_ANCH_1,
             COS_SIM_ANCH_2,
             COS_SIM_ANCH_3,
@@ -799,6 +802,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float peakShapeRatio3 = -1.0;
     float shadowsCosineSimSum = -1.0;
     float iRtPredicted = -1.0;
+    float iRtEmpirical = -1.0;
     float cosineSimToAnchor1 = -1.0;
     float cosineSimToAnchor2 = -1.0;
     float cosineSimToAnchor3 = -1.0;
@@ -1032,6 +1036,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         peakShapeRatio3 = dataMap.value(PEAK_RATIO_3).toFloat();
         shadowsCosineSimSum = dataMap.value(SHADOW_COSINE_SIM_SUM).toFloat();
         iRtPredicted = dataMap.value(IRT_PRED).toFloat();
+        iRtEmpirical = dataMap.value(IRT_EMP).toFloat();
         cosineSimToAnchor1 = dataMap.value(COS_SIM_ANCH_1).toFloat();
         cosineSimToAnchor2 = dataMap.value(COS_SIM_ANCH_2).toFloat();
         cosineSimToAnchor3 = dataMap.value(COS_SIM_ANCH_3).toFloat();
@@ -1230,6 +1235,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {PEAK_RATIO_3, QVariant(peakShapeRatio3)},
                 {SHADOW_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {IRT_PRED, QVariant(iRtPredicted)},
+                {IRT_EMP, QVariant(iRtEmpirical)},
                 {COS_SIM_ANCH_1, QVariant(cosineSimToAnchor1)},
                 {COS_SIM_ANCH_2, QVariant(cosineSimToAnchor2)},
                 {COS_SIM_ANCH_3, QVariant(cosineSimToAnchor3)},
@@ -1419,7 +1425,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     static CandidateScoresReaderRow buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {
 
         CandidateScoresReaderRow row;
-
+    	row.iRtEmpirical = candidateScores->empiricalIRT;
         row.cosineSimSum100 = candidateScores->featuresArray[Features::CosineSimSum100];
         row.cosineSimSum100Greater80 = candidateScores->featuresArray[Features::CosineSimSum100GreaterThan80];
         row.allignedMaxIndexesCount = candidateScores->featuresArray[Features::AllignedMaxIndexesCount];
@@ -1893,6 +1899,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
     PeptideStringWithMods peptideStringWithModsDecoyOrigin;
     QString proteinGroup;
     bool isDecoy = false;
+	float iRtEmpirical = -1.0;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     ScanTime scanTimeStart = -1.0;
@@ -1950,6 +1957,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         proteinGroup = dataMap.value(PROT_GRP).toString();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumber = dataMap.value(SCAN_NUM).toInt();
+    	iRtEmpirical = dataMap.value(IRT_EMP).toFloat();
         scanTime = dataMap.value(SCAN_TIME).toFloat();
         scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
         scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
@@ -1996,6 +2004,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 // classifier fold not included in truncated row
                 {DISC_SCR, QVariant(discScore)},
                 {Q_VAL, QVariant(qValue)},
+                {IRT_EMP, QVariant(iRtEmpirical)},
 
                 {MZ_SEARCHED_1, QVariant(mzSearched1)},
                 {MZ_SEARCHED_2, QVariant(mzSearched2)},
@@ -2044,6 +2053,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.isDecoy = candidateScores->targetDecoyCandidatePair->isDecoy() ? true : candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
+    	row.iRtEmpirical = candidateScores->empiricalIRT;
         row.scanTimeStart = candidateScores->scanTimeStart;
         row.scanTimeEnd = candidateScores->scanTimeEnd;
         row.classifierScore = candidateScores->classifierScore;
