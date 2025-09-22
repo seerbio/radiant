@@ -40,6 +40,8 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
         DiscScoresStDev,
         DiscScore1stRunnerUp,
         DiscScore2ndRunnerUp,
+    	MzFoundOverCount650,
+		MzFoundUnderCount650,
     };
 
     return baseFeatures;
@@ -240,7 +242,10 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 MzPeakLengthsNorm11,
                 MzPeakLengthsNorm12,
 
-                MzPPMStd
+                MzPPMStd,
+
+    			MzFoundOverCount650,
+				MzFoundUnderCount650,
             };
 
     return nnFeatures;

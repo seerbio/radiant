@@ -71,12 +71,13 @@ Err PythiaDIAFFWorkflow::init(
 // #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
-    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 100;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 10;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
-		// m_pythiaParameters.baggingSize = 12;
-		// m_pythiaParameters.epochs = 12;
+	m_pythiaParameters.baggingSize = 10;
+	m_pythiaParameters.epochs = 12;
+	// m_pythiaParameters.parallelNeuralNets = true;
 		// m_pythiaParameters.nodesFraction = 0.5;
     // m_pythiaParameters.baggingSize = 4;
     // m_pythiaParameters.threadCount = 8;
