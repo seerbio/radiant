@@ -1045,7 +1045,7 @@ namespace {
         e = ErrorUtils::isTrue(matBlockTrimmed.size() > 0); ree;
         e = ErrorUtils::isEqual(integrationVecSeg.size(), matBlockTrimmed.rows()); ree;
 
-        const int colCount = std::min(static_cast<int>(matBlockTrimmed.cols()), maxAnchorColumnIndex);
+        const int colCount = matBlockTrimmed.cols();
 
     	peakCorrelations->resize(colCount);
     	float bestCorrelation = 0;
