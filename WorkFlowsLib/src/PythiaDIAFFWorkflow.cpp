@@ -87,7 +87,7 @@ Err PythiaDIAFFWorkflow::init(
     // m_pythiaParameters.filterLengthIntegration = 7;
     // m_pythiaParameters.maxAnchorColumnIndex = 6;
     // m_pythiaParameters.minMs2FragCount = 2;
-    // m_pythiaParameters.stopThresholdFractionMS2 = 0.75;
+    // m_pythiaParameters.stopThresholdFractionMS2 = 0.65;
     // m_pythiaParameters.calibrationTrainingVolume = 1000;
 
     qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
@@ -158,8 +158,8 @@ namespace {
 			); ree;
 
     	constexpr int fdrTrainingThresholdInt = 50;
-
-        candidateScoresTargetsAndDecoys->resize(fdrVsCount.value(fdrTrainingThresholdInt));
+    	constexpr int minTrainingVol = 5e4;
+        candidateScoresTargetsAndDecoys->resize(std::max(fdrVsCount.value(fdrTrainingThresholdInt), minTrainingVol));
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 

@@ -1873,7 +1873,7 @@ namespace {
         e = ErrorUtils::isFalse(anchorPeakLength <= 0); ree;
 
         for (int i = 0; i < peakLengths.size(); i++) {
-            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = peakLengths[i] / anchorPeakLength;
+            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = peakLengths[i] / static_cast<float>(anchorPeakLength);
         }
 
         candidateScores->featuresArray[MzPeakLengthsMean] = MathUtils::mean(peakLengths);
