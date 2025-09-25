@@ -144,8 +144,8 @@ namespace {
                 DiscriminantScore,
                 MatrixZeroPercentage,
 
-                DiscScore1stRunnerUp,
-                DiscScore2ndRunnerUp,
+                DiscScore1stRunnerUpDiff,
+                DiscScore2ndRunnerUpDiff,
                 DiscScoresCount,
                 DiscScoresMean,
                 DiscScoresStDev,
