@@ -199,6 +199,7 @@ public:
     Eigen::MatrixX<float> matBlockTrimmedIntensity45;
     Eigen::MatrixX<float> matBlockTrimmedIntensityShadows;
     Eigen::MatrixX<float> matBlockTrimmedMz;
+    Eigen::VectorX<float> integrationVector;
     int bestAnchorColumnIndex = -1;
     int bestAnchorRowIndex = -1;
     QVector<int> apexStarts;
@@ -408,12 +409,12 @@ Err CandidateScorertron::calculateScores(
 
     *candidateScores = candidateScoresPairs.front().second;
     if (candidateScoresPairs.size() > 1) {
-        candidateScores->featuresArray[DiscScore1stRunnerUp]
-            = candidateScoresPairs.front().first - candidateScoresPairs.at(1).first;
+        candidateScores->featuresArray[DiscScore1stRunnerUpDiff]
+            = topDiscScore - candidateScoresPairs.at(1).first;
     }
     if (candidateScoresPairs.size() > 2) {
-        candidateScores->featuresArray[DiscScore2ndRunnerUp]
-            = candidateScoresPairs.front().first - candidateScoresPairs.at(2).first;
+        candidateScores->featuresArray[DiscScore2ndRunnerUpDiff]
+            = topDiscScore - candidateScoresPairs.at(2).first;
     }
 
     QVector<float> discScoresSubbed;
@@ -1177,6 +1178,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         bestCorrelationResultPii.bestAnchorRowIndex = bestAnchorRowIndex;
         bestCorrelationResultPii.apexStarts = apexStarts;
         bestCorrelationResultPii.peakIntegrationIndexes = piiWorking.first;
+    	bestCorrelationResultPii.integrationVector = integrationVecSegment;
 
         constexpr float windowMultiplier1p5X = 0.5;
         const auto frameIndex1p5XMin
@@ -1305,6 +1307,7 @@ namespace {
     Err setCosineSimilarityMetrics(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const BestCorrelationResult& bestCorrelationResult,
+        int topNMS2Ions,
         CandidateScores *candidateScores
         ) {
 
@@ -1316,7 +1319,8 @@ namespace {
         QVector<MS2Ion> ms2IonsTheo = candidateScores->isDecoy
                                     ? targetDecoyCandidatePair->ms2IonsDecoy()
                                     : targetDecoyCandidatePair->ms2IonsTarget();
-        ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
+
+    	ms2IonsTheo.resize(std::min(ms2IonsTheo.size(), topNMS2Ions));
 
         QVector<float> intensitiesTheo;
         std::transform(
@@ -1330,16 +1334,28 @@ namespace {
 
         Eigen::MatrixX<float> intensitiesTheoMat(
             bestCorrelationResult.matBlockTrimmedIntensity.rows(),
-            bestCorrelationResult.matBlockTrimmedIntensity.cols()
+            intensitiesTheoVec.size()
         );
-
         for (int row = 0; row < intensitiesTheoMat.rows(); row++) {
             intensitiesTheoMat.row(row) = intensitiesTheoVec;
         }
 
+    	Eigen::MatrixX<float> matBlockTrimmedIntensityResized(
+			bestCorrelationResult.matBlockTrimmedIntensity.rows(),
+			intensitiesTheoVec.size()
+		);
+		for (int col = 0; col < bestCorrelationResult.matBlockTrimmedIntensity.cols(); col++) {
+			matBlockTrimmedIntensityResized.col(col) = bestCorrelationResult.matBlockTrimmedIntensity.col(col);
+		}
+
+    	e = ErrorUtils::isEqual(
+    		intensitiesTheoMat.cols(),
+    		bestCorrelationResult.matBlockTrimmedIntensity.cols()
+    		); ree;
+
         Eigen::VectorX<float> cosineSimsByRow;
          e = EigenUtils::rowWiseCosineSimilarOfMatrices(
-             bestCorrelationResult.matBlockTrimmedIntensity,
+             matBlockTrimmedIntensityResized,
              intensitiesTheoMat,
              &cosineSimsByRow
              ); ree;
@@ -1605,8 +1621,7 @@ namespace {
         constexpr double chunkDivision = 3.0;
 
         const int bestColumnIndex = bestCorrelationResult.bestAnchorColumnIndex;
-        const Eigen::VectorX<float> &bestAnchorColumn
-                                        = bestCorrelationResult.matBlockTrimmedIntensity.col(bestColumnIndex);
+        const Eigen::VectorX<float> &bestAnchorColumn = bestCorrelationResult.integrationVector;
 
         QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
 
@@ -2000,6 +2015,7 @@ Err CandidateScorertron::setCandidateScores(
     e = setCosineSimilarityMetrics(
         targetDecoyCandidatePair,
         bestCorrelationResult,
+        m_topNMS2Ions,
         candidateScores
         );ree
 
