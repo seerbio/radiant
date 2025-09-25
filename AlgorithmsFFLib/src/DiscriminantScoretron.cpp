@@ -38,10 +38,12 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
         DiscScoresCount,
         DiscScoresMean,
         DiscScoresStDev,
-        DiscScore1stRunnerUp,
-        DiscScore2ndRunnerUp,
+        DiscScore1stRunnerUpDiff,
+        DiscScore2ndRunnerUpDiff,
     	MzFoundOverCount650,
 		MzFoundUnderCount650,
+    	MzPeakLengthsMean,
+    	MzPeakLengthsStd
     };
 
     return baseFeatures;
@@ -69,6 +71,7 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         PeakShapeRatio3,
         MatrixZeroPercentage,
         MzPPMMeanAbs,
+    	MzPPMStd,
         FoundY,
         FoundPercent,
         CosineSimSum100Top12,
@@ -79,7 +82,6 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         CosineSimSum100Window1p5X,
         CosineSimSum100Window2X,
         TargetWindowLocationAbs,
-
     	MzPeakLengthsStd
         };
 
@@ -197,8 +199,8 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 TargetWindowLocation,
                 DiscriminantScore,
                 MatrixZeroPercentage,
-                DiscScore1stRunnerUp,
-                DiscScore2ndRunnerUp,
+                DiscScore1stRunnerUpDiff,
+                DiscScore2ndRunnerUpDiff,
                 DiscScoresCount,
                 DiscScoresMean,
                 DiscScoresStDev,
