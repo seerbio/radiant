@@ -158,7 +158,7 @@ namespace {
 			); ree;
 
     	constexpr int fdrTrainingThresholdInt = 50;
-    	constexpr int minTrainingVol = 5e4;
+    	const int minTrainingVol = std::min(static_cast<int>(5e4), candidateScoresTargetsAndDecoys->size());
         candidateScoresTargetsAndDecoys->resize(std::max(fdrVsCount.value(fdrTrainingThresholdInt), minTrainingVol));
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
