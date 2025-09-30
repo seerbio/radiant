@@ -301,7 +301,7 @@ Err CandidateScorertron::calculateScores(
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
-        targetDecoyCandidatePair->iRt(),
+        targetDecoyCandidatePair->iRt(candidateScores->isDecoy),
         candidateScores,
         &frameIndexPredictedMin,
         &frameIndexPredictedMax
@@ -1984,7 +1984,7 @@ Err CandidateScorertron::setCandidateScores(
 
     const auto mz = candidateScores->targetDecoyCandidatePair->mz(false);
     candidateScores->featuresArray[MzNorm] = (mz - 600.0f) * 0.002f;
-    candidateScores->featuresArray[IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
+    candidateScores->featuresArray[IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt(candidateScores->isDecoy);
     candidateScores->featuresArray[Mass] = candidateScores->targetDecoyCandidatePair->mass();
 
     const float mzTargetKey = MathUtils::unHashDecimal<float>(m_mzTargetKey.toInt(), S_GLOBAL_SETTINGS.HASHING_PRECISION);

@@ -14,6 +14,31 @@ QString GlobalSettings::VERSION() {
 
 namespace UniModNamespace {
 
+	const QHash<QChar, float> iRtAdjustments = {
+		{'G', 0.5},
+		{'A', 0.5},
+		{'V', 0.25},
+		{'L', -0.25},
+		{'X', 0.5},
+		{'I', -0.25},
+		{'F', 0.25},
+		{'M', 0.25},
+		{'P', 0.5},
+		{'W', 0.25},
+		{'S', 0.25},
+		{'C', -0.25},
+		{'U', -0.5},
+		{'T', -0.25},
+		{'Y', -0.5},
+		{'H', -0.5},
+		{'K', 0.5},
+		{'R', 0.5},
+		{'Q', -0.25},
+		{'E', -0.25},
+		{'N', 0.25},
+		{'D', 0.25}
+	};
+
     const QMap<QString, double> uniModNameVsModificationMass = {
             {QStringLiteral("UniMod:4"), static_cast<double>(57.021464)},
             {QStringLiteral("Carbamidomethyl (C)"), static_cast<double>(57.021464)},
