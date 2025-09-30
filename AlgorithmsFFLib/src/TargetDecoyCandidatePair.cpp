@@ -205,8 +205,20 @@ float TargetDecoyCandidatePair::mass() const {
     return static_cast<float>(m_fragLibReaderRowPntr->mass);
 }
 
-float TargetDecoyCandidatePair::iRt() const {
-    return static_cast<float>(m_fragLibReaderRowPntr->iRT);
+float TargetDecoyCandidatePair::iRt(bool isDecoy) const {
+
+	float decoyAdjustment = 0;
+	if (isDecoy) {
+		const PeptideString ps = peptideString();
+		const QChar secondAA = ps[1];
+		const QChar penultimateAA = ps[ps.size() - 2];
+
+		decoyAdjustment += UniModNamespace::iRtAdjustments.value(secondAA)
+						+ UniModNamespace::iRtAdjustments.value(penultimateAA);
+	}
+
+    return static_cast<float>(m_fragLibReaderRowPntr->iRT) + decoyAdjustment;
+
 }
 
 float TargetDecoyCandidatePair::iIM() const {

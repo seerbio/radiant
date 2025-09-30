@@ -78,6 +78,7 @@ using YVal = double;
 
 namespace UniModNamespace {
 
+    const extern QHash<QChar, float> iRtAdjustments;
     const extern QMap<QString, double> uniModNameVsModificationMass;
 }
 

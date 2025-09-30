@@ -95,7 +95,7 @@ public:
     *
     * @return float representing the iRT value.
     */
-    [[nodiscard]] float iRt() const;
+    [[nodiscard]] float iRt(bool isDecoy) const;
     [[nodiscard]] float iIM() const;
 
 
