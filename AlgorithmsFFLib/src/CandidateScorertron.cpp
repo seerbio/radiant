@@ -1111,12 +1111,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
     const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
-    // if (m_useTopNIntegrationsParam) {
-    //     peakIntegrationsVsIntensityResized.resize(std::min(
-    //         m_pythiaParameters.topNIntegrations,
-    //         peakIntegrationsVsIntensityResized.size()
-    //         ));
-    // }
+    if (true) {
+        peakIntegrationsVsIntensityResized.resize(std::min(
+            50,
+            peakIntegrationsVsIntensityResized.size()
+            ));
+    }
 
     for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensityResized) {
 
