@@ -116,3 +116,61 @@ QVector<QPointF> MsUtils::extractPointsFromPoints(
 
     return extractedPoints;
 }
+
+ExtractPoints MsUtils::extractPointsFromPointsBST(
+	const QVector<QPointF> &_points,
+	const QVector<QPointF> &_pointsToExtract,
+	double extractionPPM
+	) {
+
+	ExtractPoints extractPointsOutput;
+	extractPointsOutput.mzFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
+	extractPointsOutput.intensityFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
+
+	QVector<QPointF> pointsToExtract = _pointsToExtract;
+	std::sort(pointsToExtract.begin(), pointsToExtract.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
+
+	QVector<QPointF> points = _points;
+	std::sort(points.begin(), points.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
+
+	const int pointsSize = points.size();
+	size_t left = 0;
+	for (int i = 0; i < _pointsToExtract.size(); i++) {
+
+		const QPointF &point = pointsToExtract[i];
+		extractPointsOutput.mzFoundVsSearched[i].ry() = point.x();
+		extractPointsOutput.intensityFoundVsSearched[i].ry() = point.y();
+
+		const float mzTol = MathUtils::calculatePPM(point.x(), extractionPPM);
+		const float mzMin = point.x() - mzTol;
+		const float mzMax = point.x() + mzTol;
+
+		size_t right = pointsSize;
+		while (left < right) {
+			size_t mid = left + (right - left) / 2;
+			if (points[mid].x() < mzMin) {
+				left = mid + 1;
+			}
+			else {
+				right = mid;
+			}
+		}
+
+		while (left < pointsSize) {
+
+			const QPointF &pointFound = points[left++];
+
+			if (pointFound.x() > mzMax) {
+				break;
+			}
+
+			if (pointFound.y() > extractPointsOutput.intensityFoundVsSearched[i].x()) {
+				extractPointsOutput.mzFoundVsSearched[i].rx() = pointFound.x();
+				extractPointsOutput.intensityFoundVsSearched[i].rx() = pointFound.y();
+			}
+		}
+	}
+
+
+	return extractPointsOutput;
+}

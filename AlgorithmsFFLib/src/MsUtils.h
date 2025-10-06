@@ -43,6 +43,12 @@ public:
             double extractionPPM
     );
 
+	static ExtractPoints extractPointsFromPointsBST(
+		const QVector<QPointF> &_points,
+		const QVector<QPointF> &_pointsToExtract,
+		double extractionPPM
+		);
+
     /**
     * @brief Extracts data points from a set of points based on specified extraction points and ppm threshold.
     *
