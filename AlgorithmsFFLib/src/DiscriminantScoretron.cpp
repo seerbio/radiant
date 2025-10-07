@@ -43,7 +43,7 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
     	MzFoundOverCount650,
 		MzFoundUnderCount650,
     	MzPeakLengthsMean,
-    	MzPeakLengthsStd
+    	MzPeakLengthsStd,
     };
 
     return baseFeatures;
@@ -248,6 +248,11 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
 
     			MzFoundOverCount650,
 				MzFoundUnderCount650,
+
+    			MzFullFoundCountCandOpt,
+				ScanPointsMedianIntensity,
+				ScanPointsFoundMedianIntensity,
+				ScanPointsIntensityRatio,
             };
 
     return nnFeatures;
@@ -389,7 +394,8 @@ QVector<float> DiscriminantScoretron::defaultWeights(const QVector<Features> &fe
     // cs.featuresArray[KlDivSpectrumCubeRoot] = -1.0f;
     // cs.featuresArray[CosineSim100MS1] = 1.0f;
     // cs.featuresArray[CosineSimSpectrumStDev] = -1.0f;
-    cs.featuresArray[ScanTimeDeltaAbs] = -0.5f;
+    cs.featuresArray[ScanTimeDeltaAbs] = -.25f;
+    // cs.featuresArray[ScanPointsIntensityRatio] = 0.5f;
     // cs.featuresArray[ShadowsCosineSimSum] = -1.0f;
 
     return CandidateScores::selectFeaturesArrayFeatures(cs.featuresArray, features);

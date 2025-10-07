@@ -276,6 +276,11 @@ enum Features {
 	MzFoundOverCount650,
 	MzFoundUnderCount650,
 
+	MzFullFoundCountCandOpt,
+	ScanPointsMedianIntensity,
+	ScanPointsFoundMedianIntensity,
+	ScanPointsIntensityRatio,
+
     FeaturesSize
     };
 

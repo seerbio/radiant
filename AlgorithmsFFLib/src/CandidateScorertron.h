@@ -77,11 +77,11 @@ private:
         FrameIndex *frameIndexPredictedMax
         ) const;
 
-    Err processIntegrationVectorPeakIntegrations(
+    static Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
         const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
         QVector<BestCorrelationResult> *bestCorrelationResults
-        ) const;
+        ) ;
 
     Err setCandidateScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,

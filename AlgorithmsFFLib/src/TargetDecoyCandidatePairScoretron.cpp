@@ -116,9 +116,24 @@ Err TargetDecoyCandidatePairScoretron2::init(
     ERR_RETURN
 }
 
+namespace {
+	std::tuple<Err, MzTargetKey, MsFrame*> frameInitParallelLogic(
+		const QPair<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &scanNumberVsScanPointsPntrs,
+		const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+		) {
+		ERR_INIT
+		auto msFrame = new MsFrame();
+		e = msFrame->init(scanNumberVsScanPointsPntrs.second, scanNumberVsScanTime); rtee;
+
+		return {e, scanNumberVsScanPointsPntrs.first, msFrame};
+	}
+}//namespace
 Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
 
     ERR_INIT
+
+	QElapsedTimer et;
+	et.start();
 
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
     e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
@@ -128,11 +143,42 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
         m_mzTargetKeyVsMsFramePntr[it.key()] = nullptr;
     }
 
-    for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); ++it) {
-        auto *msFrame = new MsFrame();
-        e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;
-        m_mzTargetKeyVsMsFramePntr.insert(it.key(), msFrame);
+	QVector<QPair<MzTargetKey, QMap<ScanNumber, ScanPoints*>>> mzTargetKeyVsScanPointsPairs;
+	mzTargetKeyVsScanPointsPairs.reserve(m_diaTargetFrames.size());
+	for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); ++it) {
+		mzTargetKeyVsScanPointsPairs.push_back({it.key(), it.value()});
+	}
+
+
+#define BUILD_FRAMES_PARALLEL
+#ifdef BUILD_FRAMES_PARALLEL
+
+	const auto binderLogic = std::bind(
+		frameInitParallelLogic,
+		std::placeholders::_1,
+		m_scanNumberVsScanTime
+		);
+
+	QFuture<std::tuple<Err, MzTargetKey, MsFrame*>> futures = QtConcurrent::mapped(mzTargetKeyVsScanPointsPairs, binderLogic);
+	futures.waitForFinished();
+
+	for (const std::tuple<Err, MzTargetKey, MsFrame*> &res : futures) {
+		e = std::get<0>(res); ree;
+		m_mzTargetKeyVsMsFramePntr.insert(std::get<1>(res), std::get<2>(res));
+	}
+#else
+    for (const QPair<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &pr : mzTargetKeyVsScanPointsPairs) {
+
+    	std::tuple<Err, MzTargetKey, MsFrame*> result = frameInitParallelLogic(
+    		pr,
+    		m_scanNumberVsScanTime
+    		);
+    	e = std::get<0>(result); ree;
+        m_mzTargetKeyVsMsFramePntr.insert(std::get<1>(result), std::get<2>(result));
     }
+#endif
+
+	qDebug() << "MsFrames built in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }

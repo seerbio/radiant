@@ -340,17 +340,6 @@ Err CandidateScorertron::calculateScores(
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
     const QVector<float> ms1Averagine = m_averagineTable.value(nominalMass);
 
-// #define TURBO_SCORE
-#ifdef TURBO_SCORE
-    e = sortBestCorrelationResult(&bestCorrelationResults); ree;
-
-    e = setCandidateScores(
-        targetDecoyCandidatePair,
-        bestCorrelationResults,
-        ms1Averagine,
-        candidateScores
-        ); ree;
-#else
     QVector<FeaturesArray> candidateScoresFeatureArrays;
     QVector<CandidateScores> candidateScoresFeatures;
     for (const BestCorrelationResult &bcr : bestCorrelationResults) {
@@ -430,8 +419,6 @@ Err CandidateScorertron::calculateScores(
 
     e = setFullTheoMs2IonsScores(candidateScores); ree;
 
-
-#endif
 
 // #define TROUBLE_SHOOT_INTEGRATION
 #ifdef TROUBLE_SHOOT_INTEGRATION
@@ -1035,7 +1022,6 @@ namespace {
     Err findBestAnchorColumn(
         const Eigen::VectorX<float> &integrationVecSeg,
         const Eigen::MatrixX<float> &matBlockTrimmed,
-        int maxAnchorColumnIndex,
         QVector<float> *peakCorrelations,
         int *bestAnchorColumnIndex,
         int *bestAnchorRowIndex
@@ -1102,7 +1088,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const MatriciesAndVecs &matriciesAndVecs,
     const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
     QVector<BestCorrelationResult> *bestCorrelationResults
-    ) const {
+    ) {
 
     ERR_INIT
 
@@ -1146,8 +1132,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const QVector<int> apexStarts = findStartApexes(apexIndexesByColumn, apexIndex.first);
         e = ErrorUtils::isEqual(apexStarts.size(), apexIndexesByColumn.size()); ree;
 
-        constexpr float stopThresholdFraction = 0.0;
-        // const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
+        // constexpr float stopThresholdFraction = 0.0;
+        // matBlock = trimMatrixBlock(
         //     matBlock,
         //     apexStarts,
         //     stopThresholdFraction
@@ -1159,7 +1145,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         e = findBestAnchorColumn(
 			integrationVecSegment,
             matBlock,
-            m_pythiaParameters.maxAnchorColumnIndex,
             &peakCorrelations,
             &bestAnchorColumnIndex,
             &bestAnchorRowIndex
@@ -1206,12 +1191,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                       matriciesAndVecs.intensityMatrix100.cols()
                       ).eval();
 
-        // bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
-        //     matBlock1p5X,
-        //     apexStarts,
-        //     stopThresholdFraction
-        //     );
-
     	bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
     	const Eigen::VectorX<float> integrationVecSegment1p5X = matriciesAndVecs.productVec.segment(
 			frameIndex1p5XMin,
@@ -1229,12 +1208,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 			frameIndex2XMin,
 			peakLength2X
 			).eval();
-
-        // bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
-        //             matBlock2X,
-        //             apexStarts,
-        //             stopThresholdFraction
-        //             );
 
         e = calculatePeakCorrelations(
 			integrationVecSegment2X,
@@ -1882,6 +1855,85 @@ namespace {
         ERR_RETURN
     }
 
+	Err setScanRelatedScores(
+		double extractionPPM,
+		const MsFrame *msFrame,
+		CandidateScores *candidateScores
+		) {
+
+	    ERR_INIT
+
+    	e = ErrorUtils::isAboveThreshold(
+    		candidateScores->scanNumber,
+    		0,
+    		ErrorUtilsParam::ExcludeThreshold
+    		); ree;
+
+    	const ScanPoints *scanPointsPntr = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber);
+
+    	QVector<QPointF> scanPoints;
+    	std::transform(
+			scanPointsPntr->begin(),
+			scanPointsPntr->end(),
+			std::back_inserter(scanPoints),
+			[](const ScanPoint &sp){return QPointF(sp.x(), sp.y());}
+			);
+
+    	const QVector<MS2Ion> ms2Ions = candidateScores->isDecoy
+    								  ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
+    								  : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+
+    	QVector<QPointF> pointsToExtract;
+    	std::transform(
+    		ms2Ions.begin(),
+    		ms2Ions.end(),
+    		std::back_inserter(pointsToExtract),
+    		[](const MS2Ion &ms2Ion){return QPointF(ms2Ion.mz, ms2Ion.intensity);}
+    		);
+
+    	const ExtractPoints extractPoints = MsUtils::extractPointsFromPointsBST(
+			scanPoints,
+			pointsToExtract,
+			extractionPPM
+			);
+
+    	QVector<float> mzFound;
+    	mzFound.reserve(pointsToExtract.size());
+    	QVector<float> mzSearched;
+    	mzSearched.reserve(pointsToExtract.size());
+    	for (const QPointF &pnt : extractPoints.mzFoundVsSearched) {
+
+    		if (pnt.x() < 0) {
+    			continue;
+    		}
+
+    		mzFound.push_back(pnt.x());
+    		mzSearched.push_back(pnt.y());
+    	}
+
+    	QVector<float> intensitiesFound;
+    	intensitiesFound.reserve(pointsToExtract.size());
+    	QVector<float> intensitiesSearched;
+    	intensitiesSearched.reserve(pointsToExtract.size());
+    	for (const QPointF &pnt : extractPoints.intensityFoundVsSearched) {
+
+    		if (pnt.x() < 0) {
+    			continue;
+    		}
+
+    		intensitiesFound.push_back(pnt.x());
+    		intensitiesSearched.push_back(pnt.y());
+    	}
+
+    	candidateScores->featuresArray[MzFullFoundCountCandOpt] = intensitiesFound.size();
+    	candidateScores->featuresArray[ScanPointsMedianIntensity] = msFrame->getScanPointsMedianIntensity(candidateScores->scanNumber);
+    	candidateScores->featuresArray[ScanPointsFoundMedianIntensity] = MathUtils::median(intensitiesFound);
+    	candidateScores->featuresArray[ScanPointsIntensityRatio] = candidateScores->featuresArray[ScanPointsFoundMedianIntensity]
+    															 / candidateScores->featuresArray[ScanPointsMedianIntensity];
+
+    	ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
@@ -2048,6 +2100,12 @@ Err CandidateScorertron::setCandidateScores(
         ); ree;
 
     e = setNormPeakLengthScores(bestCorrelationResult, candidateScores); ree;
+
+	e = setScanRelatedScores(
+		m_pythiaParameters.ms2ExtractionWidthPPM,
+		m_msFrameMzTarget,
+		candidateScores
+		); ree;
 
     ERR_RETURN
 }
@@ -2361,24 +2419,27 @@ namespace {
             [](const ScanPoint& scanPoint){return QPointF(static_cast<double>(scanPoint.x()), static_cast<double>(scanPoint.y()));}
             );
 
-        QVector<double> mzVals;
+        QVector<QPointF> mzVals;
         std::transform(
             ms2IonsTheoritical.begin(),
             ms2IonsTheoritical.end(),
             std::back_inserter(mzVals),
-            [](const MS2Ion& ms2Ion){return static_cast<double>(ms2Ion.mz);}
+            [](const MS2Ion& ms2Ion){return QPointF(ms2Ion.mz, -1);}
             );
 
-        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromPoints(
+        const ExtractPoints foundPoints = MsUtils::extractPointsFromPointsBST(
             scanPointsQF,
             mzVals,
-            ms2ExtractionWidthPPM,
-            true
+            ms2ExtractionWidthPPM
             );
 
+        foundPointVsMS2Ions->reserve(foundPoints.mzFoundVsSearched.size());
+        for (const QPointF &fp : foundPoints.mzFoundVsSearched) {
 
-        foundPointVsMS2Ions->reserve(foundPoints.size());
-        for (const QPointF &fp : foundPoints) {
+        	if (fp.x() < 0) {
+        		continue;
+        	}
+
             MS2Ion ms2Ion;
             e = closest(
                 ms2IonsTheoritical,
