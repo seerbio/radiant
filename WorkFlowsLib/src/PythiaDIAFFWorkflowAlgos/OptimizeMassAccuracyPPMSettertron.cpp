@@ -300,7 +300,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             continue;
         }
 
-        constexpr int maxCountsSinceLastHigh = 3;
+        constexpr int maxCountsSinceLastHigh = 4;
         if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
             break;
         }
