@@ -281,6 +281,11 @@ enum Features {
 	ScanPointsFoundMedianIntensity,
 	ScanPointsIntensityRatio,
 
+	AnchorMean,
+	AnchorStDev,
+	AnchorSkewness,
+	AnchorKurtosis,
+
     FeaturesSize
     };
 

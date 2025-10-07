@@ -44,6 +44,9 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
 		MzFoundUnderCount650,
     	MzPeakLengthsMean,
     	MzPeakLengthsStd,
+
+    	// AnchorSkewness,
+		// AnchorKurtosis,
     };
 
     return baseFeatures;
@@ -82,7 +85,7 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         CosineSimSum100Window1p5X,
         CosineSimSum100Window2X,
         TargetWindowLocationAbs,
-    	MzPeakLengthsStd
+    	MzPeakLengthsStd,
         };
 
     return vec;
@@ -253,6 +256,11 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
 				ScanPointsMedianIntensity,
 				ScanPointsFoundMedianIntensity,
 				ScanPointsIntensityRatio,
+
+				// AnchorMean,
+				// AnchorStDev,
+				AnchorSkewness,
+				AnchorKurtosis,
             };
 
     return nnFeatures;

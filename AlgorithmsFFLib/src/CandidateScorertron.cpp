@@ -1593,9 +1593,7 @@ namespace {
 
         constexpr double chunkDivision = 3.0;
 
-        const int bestColumnIndex = bestCorrelationResult.bestAnchorColumnIndex;
         const Eigen::VectorX<float> &bestAnchorColumn = bestCorrelationResult.integrationVector;
-
         QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
 
         const auto terminatorLogic = [](double d){return d < 1.0;};
@@ -1609,28 +1607,43 @@ namespace {
             candidateScores->featuresArray[PeakShapeRatio1] = std::numeric_limits<float>::min();
             candidateScores->featuresArray[PeakShapeRatio2] = 1.0;
             candidateScores->featuresArray[PeakShapeRatio3] = std::numeric_limits<float>::min();
+
+        	candidateScores->featuresArray[AnchorMean] = bestAnchorColumn.mean();
+        	candidateScores->featuresArray[AnchorStDev] = 0;
+        	candidateScores->featuresArray[AnchorSkewness] = 0;
+        	candidateScores->featuresArray[AnchorKurtosis] = 3;
+        	ERR_RETURN
         }
-        else {
 
-            candidateScores->featuresArray[PeakShapeRatio1] = std::accumulate(
-                    bestAnchorColumnVec.begin(),
-                    bestAnchorColumnVec.begin() + chunkSize,
-                    std::numeric_limits<float>::min()
-            ) / bestAnchorColumnVecSum;
+        candidateScores->featuresArray[PeakShapeRatio1] = std::accumulate(
+                bestAnchorColumnVec.begin(),
+                bestAnchorColumnVec.begin() + chunkSize,
+                std::numeric_limits<float>::min()
+        ) / bestAnchorColumnVecSum;
 
-            candidateScores->featuresArray[PeakShapeRatio2] = std::accumulate(
-                    bestAnchorColumnVec.begin() + chunkSize,
-                    bestAnchorColumnVec.begin() + (chunkSize * 2),
-                    std::numeric_limits<float>::min()
-            ) / bestAnchorColumnVecSum;
+        candidateScores->featuresArray[PeakShapeRatio2] = std::accumulate(
+                bestAnchorColumnVec.begin() + chunkSize,
+                bestAnchorColumnVec.begin() + (chunkSize * 2),
+                std::numeric_limits<float>::min()
+        ) / bestAnchorColumnVecSum;
 
-            candidateScores->featuresArray[PeakShapeRatio3] = std::accumulate(
-                    bestAnchorColumnVec.begin() + (chunkSize * 2),
-                    bestAnchorColumnVec.end(),
-                    std::numeric_limits<float>::min()
-            ) / bestAnchorColumnVecSum;
+        candidateScores->featuresArray[PeakShapeRatio3] = std::accumulate(
+                bestAnchorColumnVec.begin() + (chunkSize * 2),
+                bestAnchorColumnVec.end(),
+                std::numeric_limits<float>::min()
+        ) / bestAnchorColumnVecSum;
 
-        }
+    	candidateScores->featuresArray[AnchorMean] = bestAnchorColumn.mean();
+    	candidateScores->featuresArray[AnchorStDev] = std::sqrt((bestAnchorColumn.array() - candidateScores->featuresArray[AnchorMean]).square().sum()
+    											    / bestAnchorColumn.size());
+    	candidateScores->featuresArray[AnchorSkewness] = ((bestAnchorColumn.array()
+    												   - candidateScores->featuresArray[AnchorMean]).pow(3).sum()
+    												   / bestAnchorColumn.size())
+    													/ std::pow(candidateScores->featuresArray[AnchorStDev], 3);
+    	candidateScores->featuresArray[AnchorKurtosis] = ((bestAnchorColumn.array()
+    													- candidateScores->featuresArray[AnchorMean]).pow(4).sum()
+    												   / bestAnchorColumn.size())
+    													/ std::pow(candidateScores->featuresArray[AnchorStDev], 4) - 3;
 
         ERR_RETURN
     }
