@@ -446,19 +446,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
     // }
 
-// #define WRITE_DISC_RESULTS
-#ifdef WRITE_DISC_RESULTS
-    const QString resultsFilePath = "disc_score_results_" + QString::number(m_pythiaParameters.threadCount) +".prq";
-    QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
-    std::transform(
-            candidateScoresTargetsAndDecoys.begin(),
-            candidateScoresTargetsAndDecoys.end(),
-            std::back_inserter(candidateScoreReaderRows),
-            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
-            );
-    e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
-#endif
-
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys,
@@ -683,26 +670,21 @@ namespace {
         QVector<KarnnNNTarget> karnnNNTargets;
         karnnNNTargets.reserve(candidateScoresTargetsAndDecoysFDRFiltered.size());
         for (int i = 0; i < candidateScoresTargetsAndDecoysFDRFiltered.size(); i++) {
-            CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
+
+        	CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
             karnnNnTarget.candidateScores = cs;
 
-// #define WRITE_KARNNN_NORM_TO_FILE
-#ifdef WRITE_KARNNN_NORM_TO_FILE
-            karnnNnTarget.scoreVecNormalized = = CandidateScores::selectFeaturesArrayFeatures(
-                    cs->featuresArray,
-                    DiscriminantScoretron::featuresNeuralNetwork()
-                    );
-#else
-        karnnNnTarget.scoreVecNormalized = CandidateScores::selectFeaturesArrayFeatures(
-            cs->featuresArray,
-            neuralNetFeatures
-            );
-#endif
+	        karnnNnTarget.scoreVecNormalized = CandidateScores::selectFeaturesArrayFeatures(
+	            cs->featuresArray,
+	            neuralNetFeatures
+	            );
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
+    	QElapsedTimer et;
+    	et.start();
         e = minMaxScaleScores(karnnNNTargets, karnnNNTargetsNorm); ree;
 
         ERR_RETURN
@@ -1108,35 +1090,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         &candidateScoresTargetsAndDecoysNeuralNet
         ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
-
-// #define WRITENN
-#ifdef WRITENN
-    QFile file("/home/anichols/Desktop/scores.csv");
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-
-    }
-
-    QTextStream out(&file);
-
-    for (const CandidateScores &cs : m_candidateScores) {
-        for (float value : cs.featuresArray) {
-            out << value << ",";
-        }
-        out << "\n";
-    }
-    file.close();
-#endif
-
-// #define WRITE_CANDIDATES_TO_FILE
-#ifdef WRITE_CANDIDATES_TO_FILE
-    QVector<CandidateScoresReaderRow> candidateScoresReaderRows;
-    for (const CandidateScores *cs : candidateScoresTargetsAndDecoysNeuralNet) {
-        CandidateScoresReaderRow csrr = CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);
-        candidateScoresReaderRows.push_back(csrr);
-    }
-    const QString filename = "candidates_" + QString::number(m_pythiaParameters.threadCount) + ".prq";
-    e = ParquetReader::write(candidateScoresReaderRows, filename); ree;
-#endif
 
     candidateScoreClassifier->clear();
 
