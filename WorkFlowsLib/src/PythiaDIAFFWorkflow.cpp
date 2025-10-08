@@ -72,7 +72,7 @@ Err PythiaDIAFFWorkflow::init(
 #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
-    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 10;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 15;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
