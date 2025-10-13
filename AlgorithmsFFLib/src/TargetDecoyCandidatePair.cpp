@@ -188,9 +188,7 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
 }
 
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {
-    return isDecoy
-        ? BiophysicalCalcs::calculateThomsonFromMass(mass() + m_decoyMassDelta, charge())
-        : BiophysicalCalcs::calculateThomsonFromMass(mass(), charge());
+    return BiophysicalCalcs::calculateThomsonFromMass(mass(isDecoy) , charge());
 }
 
 bool TargetDecoyCandidatePair::isDecoy() const {
@@ -201,8 +199,9 @@ int TargetDecoyCandidatePair::charge() const {
     return m_fragLibReaderRowPntr->precursorCharge;
 }
 
-float TargetDecoyCandidatePair::mass() const {
-    return static_cast<float>(m_fragLibReaderRowPntr->mass);
+float TargetDecoyCandidatePair::mass(bool isDecoy) const {
+    return isDecoy ? static_cast<float>(m_fragLibReaderRowPntr->mass + m_decoyMassDelta)
+					: static_cast<float>(m_fragLibReaderRowPntr->mass);
 }
 
 float TargetDecoyCandidatePair::iRt(bool isDecoy) const {

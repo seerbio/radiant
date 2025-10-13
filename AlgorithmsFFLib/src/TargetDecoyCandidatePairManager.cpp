@@ -69,7 +69,6 @@ namespace {
             || peptideLength > pythiaParameters.peptideLengthMax
             || charge < pythiaParameters.chargeStateMin
             || charge > pythiaParameters.chargeStateMax
-            // || flrr.isDecoy == 1
             ) {
             return {e, {}};
         }
@@ -195,7 +194,7 @@ namespace {
         for (TargetDecoyCandidatePair *tdcp : targetDecoyCandidatePairsPntrs) {
 
             const PeptideString peptideStringWithModsMutated
-                = AminoAcids::mutatePenultimatePeptideResidues(tdcp->peptideStringWithMods()).replace('I', 'L');
+                = AminoAcids::mutatePeptideResidues(tdcp->peptideStringWithMods(), 1).replace('I', 'L');
 
             if (peptideStringIsoleucineReplaceVsIsAlsoDecoy.contains(peptideStringWithModsMutated)) {
                 tdcp->decoySharesSequenceWithOtherTarget(true);

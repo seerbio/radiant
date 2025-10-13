@@ -336,7 +336,7 @@ Err CandidateScorertron::calculateScores(
 
     constexpr int multiplierForKeySettingByTen = 10;
     const int nominalMass
-        = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
+        = static_cast<int>((std::round(targetDecoyCandidatePair->mass(candidateScores->isDecoy) / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
     const QVector<float> ms1Averagine = m_averagineTable.value(nominalMass);
 
@@ -2050,7 +2050,7 @@ Err CandidateScorertron::setCandidateScores(
     const auto mz = candidateScores->targetDecoyCandidatePair->mz(false);
     candidateScores->featuresArray[MzNorm] = (mz - 600.0f) * 0.002f;
     candidateScores->featuresArray[IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt(candidateScores->isDecoy);
-    candidateScores->featuresArray[Mass] = candidateScores->targetDecoyCandidatePair->mass();
+    candidateScores->featuresArray[Mass] = candidateScores->targetDecoyCandidatePair->mass(candidateScores->isDecoy);
 
     const float mzTargetKey = MathUtils::unHashDecimal<float>(m_mzTargetKey.toInt(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
     candidateScores->featuresArray[TargetWindowLocation] = mzTargetKey - mz;

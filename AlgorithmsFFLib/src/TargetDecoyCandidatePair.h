@@ -88,7 +88,7 @@ public:
     *
     * @return float representing the mass of the candidate pair.
     */
-    [[nodiscard]] float mass() const;
+    [[nodiscard]] float mass(bool isDecoy) const;
 
     /**
     * @brief Gets the iRT (indexed retention time) value of the target-decoy candidate pair.

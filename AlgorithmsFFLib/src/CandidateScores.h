@@ -1568,7 +1568,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         // row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                ? AminoAcids::mutatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods(), 1)
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
@@ -2055,7 +2055,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
 
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                ? AminoAcids::mutatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods(), 1)
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
