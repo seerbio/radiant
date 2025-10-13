@@ -138,7 +138,10 @@ QMap<QChar, QChar> AminoAcids::diannMutateAminoAcidToResidue() {
     return diannMutateAminoAcidToMass;
 }
 
-PeptideStringWithMods AminoAcids::mutatePenultimatePeptideResidues(const PeptideStringWithMods &peptideStringWithMods) {
+PeptideStringWithMods AminoAcids::mutatePeptideResidues(
+	const PeptideStringWithMods &peptideStringWithMods,
+	int numberOfResiduesIn
+	) {
 
     const QMap<QChar, QChar> diannMutateAminoAcidToResidues = AminoAcids::diannMutateAminoAcidToResidue();
 
@@ -166,7 +169,7 @@ PeptideStringWithMods AminoAcids::mutatePenultimatePeptideResidues(const Peptide
             continue;
         }
 
-        if (residueCounter == 1 || residueCounter == peptideLength - 2) {
+        if (residueCounter == numberOfResiduesIn || residueCounter == peptideLength - numberOfResiduesIn - 1) {
             moddedPeptide += diannMutateAminoAcidToResidues.value(c);
             residueCounter++;
             continue;

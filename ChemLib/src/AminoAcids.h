@@ -99,7 +99,10 @@ public:
     */
     static QMap<QChar, QChar> diannMutateAminoAcidToResidue();
 
-    static PeptideStringWithMods mutatePenultimatePeptideResidues(const PeptideStringWithMods &peptideString);
+    static PeptideStringWithMods mutatePeptideResidues(
+    	const PeptideStringWithMods &peptideString,
+    	int numberOfResiduesIn
+    	);
 
 private:
 

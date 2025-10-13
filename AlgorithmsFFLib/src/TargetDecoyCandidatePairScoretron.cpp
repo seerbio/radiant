@@ -178,7 +178,7 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
     }
 #endif
 
-	qDebug() << "MsFrames built in" << et.elapsed() << "mSec";
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsFrames built in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }
