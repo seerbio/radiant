@@ -1278,7 +1278,7 @@ namespace {
     }
 
     Err setCosineSimilarityMetrics(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const BestCorrelationResult& bestCorrelationResult,
         int topNMS2Ions,
         CandidateScores *candidateScores
@@ -1949,7 +1949,7 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::setCandidateScores(
-    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair,
     const QVector<BestCorrelationResult> &bestCorrelationResults,
     const QVector<float> &ms1Averagine,
     CandidateScores *candidateScores
@@ -2119,6 +2119,9 @@ Err CandidateScorertron::setCandidateScores(
 		m_msFrameMzTarget,
 		candidateScores
 		); ree;
+
+	candidateScores->featuresArray[CombinedScore] = candidateScores->featuresArray[CosineSimSum100]
+												  + candidateScores->featuresArray[CosineSim100MS1];
 
     ERR_RETURN
 }

@@ -16,6 +16,17 @@
 
 using namespace Error;
 
+struct ResidueMutation {
+	int index = -1;
+	QChar residueMutatedTo;
+	float residueDeltaMass = 0;
+
+	friend QDebug operator<<(QDebug dbg, const ResidueMutation& obj) {
+		dbg.nospace() << "ResidueMutation(" << obj.index << ", " << obj.residueMutatedTo << ", " << obj.residueDeltaMass << ") ";
+		return dbg;
+	}
+};
+
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePair {
 
@@ -27,12 +38,9 @@ public:
 
     TargetDecoyCandidatePair();
 
-    TargetDecoyCandidatePair(
-            const PeptideStringWithMods &peptideStringWithMods,
-            float decoyMassDelta
-            );
-
     ~TargetDecoyCandidatePair() = default;
+
+	Err init();
 
     void setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr);
 
@@ -45,6 +53,7 @@ public:
     * @return PeptideString representing the peptide string without modifications.
     */
     [[nodiscard]] PeptideString peptideString() const;
+	[[nodiscard]] PeptideString peptideStringDecoy() const;
 
     /**
     * @brief Gets the peptide string with modifications for the target-decoy candidate pair.
@@ -52,20 +61,22 @@ public:
     * @return PeptideStringWithMods representing the peptide string with modifications.
     */
     [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
+    [[nodiscard]] PeptideStringWithMods peptideStringWithModsDecoy() const;
 
     /**
     * @brief Gets the MS2 ions for the target-decoy candidate pair.
     *
     * @return QVector<MS2Ion> representing the MS2 ions for the target.
     */
-    [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
-
+    [[nodiscard]] QVector<MS2Ion> ms2IonsTarget();
     /**
     * @brief Gets the MS2 ions for the decoy of the target-decoy candidate pair.
     *
     * @return QVector<MS2Ion> representing the MS2 ions for the decoy.
     */
-    [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
+    [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy();
+
+	QVector<MS2Ion> mutateCandidatePeptideTarget();
 
     /**
     * @brief Calculates and gets the m/z (mass-to-charge ratio) for the target-decoy candidate pair.
@@ -97,7 +108,7 @@ public:
     */
     [[nodiscard]] float iRt(bool isDecoy) const;
     [[nodiscard]] float iIM() const;
-
+    [[nodiscard]] bool isInit() const;
 
     /**
     * @brief Gets the total fragment count of the target-decoy candidate pair.
@@ -112,7 +123,9 @@ public:
 
 private:
 
-    void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);
+	Err buildResidueMutations();
+
+	[[nodiscard]] float calculateDecoyMass() const;
 
 	static void mutateCandidatePeptideTargetTestAccess(
 		const PeptideStringWithMods &peptideStringWithMods,
@@ -121,11 +134,16 @@ private:
 
 private:
 
+    PeptideString m_peptideString;
     PeptideStringWithMods m_peptideStringWithMods;
     float m_decoyMassDelta;
 
     FragLibReaderRow *m_fragLibReaderRowPntr;
     bool m_decoySharesSequenceWithOtherTarget;
+
+	QVector<MS2Ion> m_ms2Targets;
+	QVector<ResidueMutation> m_residueMutations;
+
 };
 
 

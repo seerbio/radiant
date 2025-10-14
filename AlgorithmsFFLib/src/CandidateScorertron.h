@@ -84,7 +84,7 @@ private:
         ) ;
 
     Err setCandidateScores(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<BestCorrelationResult> &bestCorrelationResults,
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores

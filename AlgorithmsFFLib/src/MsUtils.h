@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
+#include "PeptideStringWithMods.h"
 
 #include <QFile>
 #include <QPointF>
@@ -26,6 +27,20 @@ class ALGORITHMSFFLIB_EXPORTS MsUtils {
 
 
 public:
+
+	/**
+	* @brief Extracts peptide string with modifications and charge from a peptide sequence charge key.
+	*
+	* @param peptideSequenceChargeKey The peptide sequence charge key to extract information from.
+	* @param peptideStringWithMods Pointer to store the extracted peptide string with modifications.
+	* @param charge Pointer to store the extracted charge.
+	* @return Error code indicating success or failure.
+	*/
+	static Err peptideStringWithModsFromPeptideSequenceChargeKey(
+			const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+			PeptideStringWithMods *peptideStringWithMods,
+			int *charge
+			);
 
     /**
     * @brief Extract data points from a set of points based on specified points and ppm threshold.

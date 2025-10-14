@@ -9,6 +9,36 @@
 #include "ParallelUtils.h"
 
 
+Err MsUtils::peptideStringWithModsFromPeptideSequenceChargeKey(
+		const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+		PeptideStringWithMods *peptideStringWithMods,
+		int *charge
+		){
+
+	ERR_INIT
+
+	const int expectedSplitSize = 2;
+
+	const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+			S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+			Qt::SkipEmptyParts
+	);
+
+	e = ErrorUtils::isEqual(
+			peptideSequenceChargeKeySplit.size(),
+			expectedSplitSize
+			); ree;
+
+	*peptideStringWithMods = PeptideStringWithMods(peptideSequenceChargeKeySplit.front());
+
+	e = ErrorUtils::toInt(
+			peptideSequenceChargeKeySplit.back(),
+			charge
+	); ree
+
+	ERR_RETURN
+}
+
 ExtractPoints MsUtils::extractPointsFromPoints(
         const QVector<QPointF> &_points,
         const QVector<QPointF> &_pointsToExtract,

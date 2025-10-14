@@ -21,44 +21,71 @@ private Q_SLOTS:
 
 void TargetDecoyCandidatePairTests::gettersTest() {
 
-    QSKIP("fix test");
+    FragLibReaderRow flrr;
 
 
-    MS2Ion ms2Ion1;
-    ms2Ion1.mz = 666.6;
 
-    MS2Ion ms2Ion2;
-    ms2Ion2.mz = 777.7;
 
-    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("CHAUNCYANDFLOPS");
-    const QVector<MS2Ion> ms2IonsTarget = {ms2Ion1};
-    const QVector<MS2Ion> ms2IonsDecoy = {ms2Ion2};
-    const int charge = 2;
-    const double mass = 666.6;
-    const double iRt = 66.6;
-    const int totalFramentCount = 12;
+	flrr.peptideSequenceChargeKey = "P[Unimod:4]EPTIDE|2";
+	flrr.mzVals = {98.06009,227.10268,324.15544,425.20312,538.28718,653.31413,782.35672,49.53370,114.05500,162.58138,213.10522,269.64725,327.16072,391.68202,800.36728,703.31452,574.27193,477.21916,376.17149,263.08742,148.06048,400.68730,352.16092,287.63962,239.11324,188.58940,132.04737,74.53390};
+	for (int i = 0; i < flrr.mzVals.size(); i++) {
+		flrr.intensityVals.push_back(1.0f/i);
+	}
 
-    // TargetDecoyCandidatePair targetDecoyCandidatePair(
-    //         peptideStringWithMods,
-    //         ms2IonsTarget,
-    //         ms2IonsDecoy,
-    //         charge,
-    //         mass,
-    //         iRt,
-    //         iRt,
-    //         totalFramentCount,
-    //         0.0
-    //         );
-    //
-    // QCOMPARE(targetDecoyCandidatePair.peptideStringWithMods(), peptideStringWithMods);
-    // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsTarget().first().mz, 666.6f));
-    // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsDecoy().first().mz, 777.7f));
-    // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mz(false), 334.3072f));
-    // QCOMPARE(targetDecoyCandidatePair.charge(), charge);
-    // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6f));
-    // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6f));
-    // QCOMPARE(targetDecoyCandidatePair.totalFragmentCount(), 12);
+	flrr.ionLabels = {"b1;b2;b3;b4;b5;b6;b7;b1^2;b2^2;b3^2;b4^2;b5^2;b6^2;b7^2;y7;y6;y5;y4;y3;y2;y1;y7^2;y6^2;y5^2;y4^2;y3^2;y2^2;y1^2"};
+	flrr.mass = 799.36001	;
+	flrr.isDecoy = 0;
+	flrr.iRT = 777.0;
+	flrr.iM = 666.0;
+	flrr.precursorCharge = 2;
 
+	TargetDecoyCandidatePair tdcp;
+	tdcp.setFragLibReaderRowPntr(&flrr);
+	Err e = tdcp.init();
+	QCOMPARE(e, eNoError);
+
+    QCOMPARE(tdcp.peptideStringWithMods(), "P[Unimod:4]EPTIDE");
+    QCOMPARE(tdcp.peptideString(), "PEPTIDE");
+    QVERIFY(MathUtils::tSame(tdcp.ms2IonsTarget().first().mz, 227.10268f));
+    QCOMPARE(tdcp.charge(), 2);
+	QVERIFY(MathUtils::tSame(tdcp.mz(false), 400.6873f));
+    QVERIFY(MathUtils::tSame(tdcp.mass(false), 799.36001f));
+    QVERIFY(MathUtils::tSame(tdcp.iRt(false), 777.0f));
+    QCOMPARE(tdcp.totalFragmentCount(), 28);
+	QCOMPARE(static_cast<int>(std::abs(tdcp.mass(false) - tdcp.mass(true))), 16);
+
+	QVector<float> ms2IonsExpected = {
+		213.087,
+		326.171,
+		427.219,
+		540.303,
+		669.345,
+		798.388,
+		221.121,
+		277.663,
+		335.176,
+		399.698,
+		816.399,
+		719.346,
+		604.319,
+		491.235,
+		390.187,
+		277.103,
+		408.703,
+		360.177,
+		302.663,
+		246.121
+	};
+
+	const QVector<MS2Ion> ions = tdcp.ms2IonsDecoy();
+	QCOMPARE(ions.size(), ms2IonsExpected.size());
+	for (int i = 0; i < ions.size(); i++) {
+		QCOMPARE(static_cast<int>(ions[i].mz), static_cast<int>(ms2IonsExpected[i]));
+	}
+	QCOMPARE(tdcp.peptideStringDecoy(), "PDLTIEE");
+	QCOMPARE(tdcp.peptideStringWithModsDecoy(), "P[Unimod:4]DLTIEE");
+	QVERIFY(MathUtils::tSame(tdcp.mz(true), 408.7029f));
+	QVERIFY(MathUtils::tSame(tdcp.mass(true), 815.39131f));
 }
 
 void TargetDecoyCandidatePairTests::mutateCandidatePeptideTargetTestAccessTest() {

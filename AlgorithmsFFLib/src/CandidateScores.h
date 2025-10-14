@@ -17,6 +17,7 @@
 enum Features {
     CosineSimSum100 = 0,
     CosineSimSum100Top12,
+	CombinedScore,
     CosineSimSum100GreaterThan80,
     AllignedMaxIndexesCount,
     CosineSim100MS1, //5
