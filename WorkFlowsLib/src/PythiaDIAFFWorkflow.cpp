@@ -435,23 +435,28 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
 
-    // if (msReaderPointerAcc.ptr->isTIMS()) {
-    //
-    //     e = IonMobilitron::assignIonMobilityValues(
-    //         m_pythiaParameters,
-    //         candidateScoresTargetsAndDecoys,
-    //         &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-    //         ); ree;
-    //
-    //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
-    // }
+    // // if (msReaderPointerAcc.ptr->isTIMS()) {
+    // //
+    // //     e = IonMobilitron::assignIonMobilityValues(
+    // //         m_pythiaParameters,
+    // //         candidateScoresTargetsAndDecoys,
+    // //         &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+    // //         ); ree;
+    // //
+    // //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
+    // // }
 
+// #define LDA_METRICS_ONLY
+#ifdef LDA_METRICS_ONLY
+	QVector<CandidateScores*> candidateScoreClassifierPntrs = candidateScoresTargetsAndDecoys;
+#else
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
             &candidateScoreClassifierPntrs
             ); ree;
+#endif
 
     int targetCountBelowFDRThresholdOnePercent;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(

@@ -55,42 +55,61 @@ Err TargetDecoyCandidatePair::buildResidueMutations() {
 	resMutPen.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(penultimateResidue));
 	resMutPen.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(penultimateResidue));
 
-	m_residueMutations.clear();
-	m_residueMutations = {
-		resMutFirst,
-		resMutPen
-	};
+	// m_residueMutations.clear();
+	// m_residueMutations = {
+	// 	resMutFirst,
+	// 	resMutPen
+	// };
 
 	constexpr float minAbsoluteDeltaMass = 15.0;
 
 	m_decoyMassDelta = calculateDecoyMass();
 
-	if (m_decoyMassDelta < minAbsoluteDeltaMass) {
+	// if (m_decoyMassDelta < minAbsoluteDeltaMass) {
+		constexpr int firstMutationResidue2 = 2;
+		ResidueMutation resMutFirst2;
+		resMutFirst2.index = firstMutationResidue2;
+		resMutFirst2.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(firstMutationResidue2));
+		resMutFirst2.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(firstMutationResidue2));
 
-		float deltaMassBest  = m_decoyMassDelta;
-		int bestResidueIndex = -1;
-		for (int i = firstMutationResidue; i < penultimateResidue; ++i) {
-			const double residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(i));
-			const float deltaMass = std::abs(m_decoyMassDelta + residueDeltaMass);
-
-			if (deltaMass > deltaMassBest) {
-				deltaMassBest = deltaMass;
-				bestResidueIndex = i;
-			}
-
-			if (deltaMassBest > minAbsoluteDeltaMass) {
-				break;
-			}
-		}
-
-		ResidueMutation resMut;
-		resMut.index = bestResidueIndex;
-		resMut.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(bestResidueIndex));
-		resMut.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(bestResidueIndex));
-		m_residueMutations.push_back(resMut);
-
+		const int penultimateResidue2 =  m_peptideString.size() - 3;
+		ResidueMutation resMutPen2;
+		resMutPen2.index = penultimateResidue2;
+		resMutPen2.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(penultimateResidue2));
+		resMutPen2.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(penultimateResidue2));
+		m_residueMutations.clear();
+		m_residueMutations.append({
+			resMutFirst,
+			// resMutPen,
+			// resMutFirst2,
+			resMutPen2
+		});
 		m_decoyMassDelta = calculateDecoyMass();
-	}
+	//
+	// 	float deltaMassBest  = m_decoyMassDelta;
+	// 	int bestResidueIndex = -1;
+	// 	for (int i = firstMutationResidue; i < penultimateResidue; ++i) {
+	// 		const double residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(i));
+	// 		const float deltaMass = std::abs(m_decoyMassDelta + residueDeltaMass);
+	//
+	// 		if (deltaMass > deltaMassBest) {
+	// 			deltaMassBest = deltaMass;
+	// 			bestResidueIndex = i;
+	// 		}
+	//
+	// 		if (deltaMassBest > minAbsoluteDeltaMass) {
+	// 			break;
+	// 		}
+	// 	}
+	//
+	// 	ResidueMutation resMut;
+	// 	resMut.index = bestResidueIndex;
+	// 	resMut.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(bestResidueIndex));
+	// 	resMut.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(bestResidueIndex));
+	// 	m_residueMutations.push_back(resMut);
+	//
+	// 	m_decoyMassDelta = calculateDecoyMass();
+	// }
 
 	ERR_RETURN
 }

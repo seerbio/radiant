@@ -136,7 +136,6 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     }
 #endif
 
-    filterNullSequences(&m_targetDecoyCandidatePairs);
     filterLeucineIsoleucineIsomers(&m_targetDecoyCandidatePairs);
 
     e = filterDecoySequencesThatAreAlsoTargetSequences(); ree;
