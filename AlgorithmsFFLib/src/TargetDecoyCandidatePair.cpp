@@ -40,8 +40,8 @@ Err TargetDecoyCandidatePair::buildResidueMutations() {
 
 	e = ErrorUtils::isNotEmpty(m_peptideString); ree;
 
-	const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass();
-	const QMap<QChar, QChar> diannMutateAminoAcidToAminoAcid = AminoAcids::diannMutateAminoAcidToResidue();
+	const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass(false);
+	const QMap<QChar, QChar> diannMutateAminoAcidToAminoAcid = AminoAcids::diannMutateAminoAcidToResidue(false);
 
 	constexpr int firstMutationResidue = 1;
 	ResidueMutation resMutFirst;
@@ -55,59 +55,26 @@ Err TargetDecoyCandidatePair::buildResidueMutations() {
 	resMutPen.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(penultimateResidue));
 	resMutPen.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(penultimateResidue));
 
-	// m_residueMutations.clear();
-	// m_residueMutations = {
-	// 	resMutFirst,
-	// 	resMutPen
-	// };
-
-	constexpr float minAbsoluteDeltaMass = 15.0;
+	m_residueMutations.clear();
+	m_residueMutations = {
+		resMutFirst,
+		resMutPen
+	};
 
 	m_decoyMassDelta = calculateDecoyMass();
 
-	// if (m_decoyMassDelta < minAbsoluteDeltaMass) {
-		constexpr int firstMutationResidue2 = 2;
-		ResidueMutation resMutFirst2;
-		resMutFirst2.index = firstMutationResidue2;
-		resMutFirst2.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(firstMutationResidue2));
-		resMutFirst2.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(firstMutationResidue2));
-
-		const int penultimateResidue2 =  m_peptideString.size() - 3;
-		ResidueMutation resMutPen2;
-		resMutPen2.index = penultimateResidue2;
-		resMutPen2.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(penultimateResidue2));
-		resMutPen2.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(penultimateResidue2));
-		m_residueMutations.clear();
-		m_residueMutations.append({
-			resMutFirst,
-			// resMutPen,
-			// resMutFirst2,
-			resMutPen2
-		});
-		m_decoyMassDelta = calculateDecoyMass();
+	// if (constexpr float minAbsoluteDeltaMass = 15.0; std::abs(m_decoyMassDelta) < minAbsoluteDeltaMass) {
 	//
-	// 	float deltaMassBest  = m_decoyMassDelta;
-	// 	int bestResidueIndex = -1;
-	// 	for (int i = firstMutationResidue; i < penultimateResidue; ++i) {
-	// 		const double residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(i));
-	// 		const float deltaMass = std::abs(m_decoyMassDelta + residueDeltaMass);
+	// 	const QMap<QChar, double> diannMutateAminoAcidToMassAlt = AminoAcids::diannMutateAminoAcidToMass(true);
+	// 	const QMap<QChar, QChar> diannMutateAminoAcidToAminoAcidAlt = AminoAcids::diannMutateAminoAcidToResidue(true);
 	//
-	// 		if (deltaMass > deltaMassBest) {
-	// 			deltaMassBest = deltaMass;
-	// 			bestResidueIndex = i;
-	// 		}
+	// 	ResidueMutation resMutPenAlt;
+	// 	resMutPenAlt.index = penultimateResidue;
+	// 	resMutPenAlt.residueMutatedTo = diannMutateAminoAcidToAminoAcidAlt.value(m_peptideString.at(penultimateResidue));
+	// 	resMutPenAlt.residueDeltaMass = diannMutateAminoAcidToMassAlt.value(m_peptideString.at(penultimateResidue));
 	//
-	// 		if (deltaMassBest > minAbsoluteDeltaMass) {
-	// 			break;
-	// 		}
-	// 	}
-	//
-	// 	ResidueMutation resMut;
-	// 	resMut.index = bestResidueIndex;
-	// 	resMut.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(bestResidueIndex));
-	// 	resMut.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(bestResidueIndex));
-	// 	m_residueMutations.push_back(resMut);
-	//
+	// 	m_residueMutations.pop_back();
+	// 	m_residueMutations.push_back(resMutPenAlt);
 	// 	m_decoyMassDelta = calculateDecoyMass();
 	// }
 
@@ -251,7 +218,9 @@ QVector<MS2Ion> TargetDecoyCandidatePair::mutateCandidatePeptideTarget() {
 
     ERR_INIT
 
-	e = ErrorUtils::isNotEmpty(m_residueMutations); rree;
+	if (m_residueMutations.size() != 2) {
+		throw std::runtime_error("ResidueMutations must have two elements");
+	}
 
     QVector<MS2Ion> ms2IonDecoys = ms2IonsTarget();
 	const int pepLength = m_peptideString.size();
@@ -330,12 +299,9 @@ float TargetDecoyCandidatePair::iRt(bool isDecoy) const {
 
 	float decoyAdjustment = 0;
 	if (isDecoy) {
-		const PeptideString ps = peptideString();
-		const QChar secondAA = ps[1];
-		const QChar penultimateAA = ps[ps.size() - 2];
-
-		decoyAdjustment += UniModNamespace::iRtAdjustments.value(secondAA)
-						+ UniModNamespace::iRtAdjustments.value(penultimateAA);
+		for (const ResidueMutation &rm : m_residueMutations) {
+			decoyAdjustment += UniModNamespace::iRtAdjustments.value(rm.residueMutatedTo);
+		}
 	}
 
     return static_cast<float>(m_fragLibReaderRowPntr->iRT) + decoyAdjustment;
