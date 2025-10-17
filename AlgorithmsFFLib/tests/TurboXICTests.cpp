@@ -98,6 +98,8 @@ void TurboXICTests::extractPointsTest() {
 
 void TurboXICTests::turboXICUtility() {
 
+	QSKIP("For troubleshooting");
+
     ERR_INIT
 
 	const QString filePath = "/home/andrewnichols/Desktop/Data/MsData/EXP24078_2024EU0002rX1_A.raw.mzML";
