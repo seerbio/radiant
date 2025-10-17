@@ -55,7 +55,7 @@ public:
     *
     * @return True if the manager is initialized; false otherwise.
     */
-    bool isInit() const;
+    [[nodiscard]] bool isInit() const;
 
     /**
     * @brief Gets the total count of target-decoy candidate pairs managed by the TargetDecoyCandidatePairManager.
@@ -65,20 +65,6 @@ public:
     int targetsCount() const;
 
     Err getTargetDecoyCandidatePairPointers(QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsPntrs);
-
-    /**
-    * @brief Extracts peptide string with modifications and charge from a peptide sequence charge key.
-    *
-    * @param peptideSequenceChargeKey The peptide sequence charge key to extract information from.
-    * @param peptideStringWithMods Pointer to store the extracted peptide string with modifications.
-    * @param charge Pointer to store the extracted charge.
-    * @return Error code indicating success or failure.
-    */
-    static Err peptideStringWithModsFromPeptideSequenceChargeKey(
-            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
-            PeptideStringWithMods *peptideStringWithMods,
-            int *charge
-            );
 
 private:
 

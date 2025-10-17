@@ -103,6 +103,7 @@ struct PythiaParameters{
     int trancheSizeMax = 2e4;
 
     //[MS1Params]
+	float minDecoyMzAbsoluteMassShift = 15.0;
     double ms1ExtractionWidthPPM = 20.0;
     double ms1ExtractionWidthPPMOverride = -1.0;
     double precursorExtractionWindowThomsons = 0.0;

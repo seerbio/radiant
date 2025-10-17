@@ -17,6 +17,7 @@
 enum Features {
     CosineSimSum100 = 0,
     CosineSimSum100Top12,
+	CombinedScore,
     CosineSimSum100GreaterThan80,
     AllignedMaxIndexesCount,
     CosineSim100MS1, //5
@@ -275,6 +276,16 @@ enum Features {
 
 	MzFoundOverCount650,
 	MzFoundUnderCount650,
+
+	MzFullFoundCountCandOpt,
+	ScanPointsMedianIntensity,
+	ScanPointsFoundMedianIntensity,
+	ScanPointsIntensityRatio,
+
+	AnchorMean,
+	AnchorStDev,
+	AnchorSkewness,
+	AnchorKurtosis,
 
     FeaturesSize
     };
@@ -1558,7 +1569,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         // row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                ? candidateScores->targetDecoyCandidatePair->peptideStringWithModsDecoy()
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
@@ -2045,7 +2056,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
 
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                ? candidateScores->targetDecoyCandidatePair->peptideStringWithModsDecoy()
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 

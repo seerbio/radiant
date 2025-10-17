@@ -5,23 +5,89 @@
 #include "TargetDecoyCandidatePair.h"
 
 #include "BiophysicalCalcs.h"
+#include "MsUtils.h"
 
 TargetDecoyCandidatePair::TargetDecoyCandidatePair()
-: m_peptideStringWithMods("")
+: m_peptideString("")
 , m_decoyMassDelta(-1.0)
 , m_fragLibReaderRowPntr(nullptr)
 , m_decoySharesSequenceWithOtherTarget(false)
 {}
 
-TargetDecoyCandidatePair::TargetDecoyCandidatePair(
-        const PeptideStringWithMods &peptideStringWithMods,
-        float decoyMassDelta
-)
-: m_peptideStringWithMods(peptideStringWithMods)
-, m_decoyMassDelta(decoyMassDelta)
-, m_fragLibReaderRowPntr(nullptr)
-, m_decoySharesSequenceWithOtherTarget(false)
-{}
+Err TargetDecoyCandidatePair::init() {
+
+	ERR_INIT
+
+	e = ErrorUtils::isFalse(m_fragLibReaderRowPntr == nullptr); ree;
+
+	int chargeNotUsed;
+	e = MsUtils::peptideStringWithModsFromPeptideSequenceChargeKey(
+		m_fragLibReaderRowPntr->peptideSequenceChargeKey,
+		&m_peptideStringWithMods,
+		&chargeNotUsed
+		); ree;
+
+	m_peptideString = m_peptideStringWithMods.removeUniModChars();
+
+	e = buildResidueMutations(); ree;
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePair::buildResidueMutations() {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(m_peptideString); ree;
+
+	const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass(false);
+	const QMap<QChar, QChar> diannMutateAminoAcidToAminoAcid = AminoAcids::diannMutateAminoAcidToResidue(false);
+
+	constexpr int firstMutationResidue = 1;
+	ResidueMutation resMutFirst;
+	resMutFirst.index = firstMutationResidue;
+	resMutFirst.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(firstMutationResidue));
+	resMutFirst.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(firstMutationResidue));
+
+	const int penultimateResidue =  m_peptideString.size() - 2;
+	ResidueMutation resMutPen;
+	resMutPen.index = penultimateResidue;
+	resMutPen.residueMutatedTo = diannMutateAminoAcidToAminoAcid.value(m_peptideString.at(penultimateResidue));
+	resMutPen.residueDeltaMass = diannMutateAminoAcidToMass.value(m_peptideString.at(penultimateResidue));
+
+	m_residueMutations.clear();
+	m_residueMutations = {
+		resMutFirst,
+		resMutPen
+	};
+
+	m_decoyMassDelta = calculateDecoyMass();
+
+	// if (constexpr float minAbsoluteDeltaMass = 15.0; std::abs(m_decoyMassDelta) < minAbsoluteDeltaMass) {
+	//
+	// 	const QMap<QChar, double> diannMutateAminoAcidToMassAlt = AminoAcids::diannMutateAminoAcidToMass(true);
+	// 	const QMap<QChar, QChar> diannMutateAminoAcidToAminoAcidAlt = AminoAcids::diannMutateAminoAcidToResidue(true);
+	//
+	// 	ResidueMutation resMutPenAlt;
+	// 	resMutPenAlt.index = penultimateResidue;
+	// 	resMutPenAlt.residueMutatedTo = diannMutateAminoAcidToAminoAcidAlt.value(m_peptideString.at(penultimateResidue));
+	// 	resMutPenAlt.residueDeltaMass = diannMutateAminoAcidToMassAlt.value(m_peptideString.at(penultimateResidue));
+	//
+	// 	m_residueMutations.pop_back();
+	// 	m_residueMutations.push_back(resMutPenAlt);
+	// 	m_decoyMassDelta = calculateDecoyMass();
+	// }
+
+	ERR_RETURN
+}
+
+float TargetDecoyCandidatePair::calculateDecoyMass() const {
+	return std::accumulate(
+		m_residueMutations.begin(),
+		m_residueMutations.end(),
+		0.0f,
+		[](float sum, const ResidueMutation &rm){return sum + rm.residueDeltaMass;});
+}
 
 void TargetDecoyCandidatePair::setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr) {
     m_fragLibReaderRowPntr = fragLibReaderRowPntr;
@@ -32,11 +98,58 @@ QString TargetDecoyCandidatePair::proteinGroups() const {
 }
 
 PeptideString TargetDecoyCandidatePair::peptideString() const {
-    return m_peptideStringWithMods.removeUniModChars();
+    return m_peptideString;
+}
+
+PeptideString TargetDecoyCandidatePair::peptideStringDecoy() const {
+	PeptideString peptideStringDecoy = m_peptideString;
+	for (const ResidueMutation &rm : m_residueMutations) {
+		peptideStringDecoy[rm.index] = rm.residueMutatedTo;
+	}
+
+	return peptideStringDecoy;
 }
 
 PeptideStringWithMods TargetDecoyCandidatePair::peptideStringWithMods() const {
     return m_peptideStringWithMods;
+}
+
+PeptideStringWithMods TargetDecoyCandidatePair::peptideStringWithModsDecoy() const {
+	PeptideStringWithMods peptideStringWithMods = m_peptideStringWithMods;
+
+
+	for (const ResidueMutation &rm : m_residueMutations) {
+
+		bool isUiModOn = false;
+		int currentResidueIndex = 0;
+
+		for (int currentResidueWithModsIndex = 0; currentResidueWithModsIndex < peptideStringWithMods.size(); ++currentResidueWithModsIndex) {
+
+			const QChar &ch = peptideStringWithMods[currentResidueWithModsIndex];
+
+			if (ch == '[' || ch == '(') {
+				isUiModOn = true;
+			}
+			if (ch == ']' || ch == ')') {
+				isUiModOn = false;
+				continue;
+			}
+
+			if (isUiModOn) {
+				continue;
+			}
+
+			if (currentResidueIndex == rm.index) {
+				peptideStringWithMods[currentResidueWithModsIndex] = rm.residueMutatedTo;
+				break;
+			}
+
+			currentResidueIndex++;
+
+		}
+	}
+
+	return peptideStringWithMods;
 }
 
 namespace {
@@ -85,112 +198,88 @@ namespace {
     }
 
 }//namespace
-QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
-    return buildMS2Ions(m_fragLibReaderRowPntr);
+QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() {
+
+	if (m_ms2Targets.isEmpty()) {
+		m_ms2Targets = buildMS2Ions(m_fragLibReaderRowPntr);
+	}
+
+    return m_ms2Targets;
 }
 
-namespace {
+QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() {
 
-    QVector<MS2Ion> mutateCandidatePeptideTarget(
-        const PeptideStringWithMods &peptideStringWithMods,
-        const QVector<MS2Ion> &ms2IonTarget
-        ) {
+    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget();
 
-        ERR_INIT
-
-        const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass();
-
-        const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
-
-        constexpr int firstIndexToMutate = 1;
-        const int secondIndexToMutate = peptideString.size() - 2;
-
-        const double nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
-        const double cTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(secondIndexToMutate));
-        const double nTermDeltaMassCharge2 = nTermDeltaMass / 2.0;
-        const double cTermDeltaMassCharge2 = cTermDeltaMass / 2.0;
-
-        QVector<MS2Ion> ms2IonDecoys;
-
-        for (const MS2Ion &ms2Ion : ms2IonTarget) {
-
-            MS2Ion ms2IonDecoy = ms2Ion;
-
-            QPair<IonIndex, IonType> ionLableInfo;
-            e = ms2IonDecoy.getIonLabelInfo(&ionLableInfo);
-
-            if (ionLableInfo.second.contains('b') || ionLableInfo.second.contains('a')) {
-
-                if (ionLableInfo.second.contains("^2")) {
-
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
-                    }
-
-                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
-                    }
-                }
-                else {
-
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass;
-                    }
-
-                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass;
-                    }
-                }
-            }
-
-            else if (ionLableInfo.second.contains('y')) {
-
-                if (ionLableInfo.second.contains("^2")) {
-
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2; //NOTE: do not static cast to float
-                    }
-
-                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2; //NOTE: do not static cast to float
-                    }
-                }
-                else {
-
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass; //NOTE: do not static cast to float
-                    }
-
-                    if (ionLableInfo.first - 1 >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass; //NOTE: do not static cast to float
-                    }
-                }
-            }
-
-            else {
-                qDebug() << "Non b/y/a ion" << ionLableInfo;
-            }
-
-            ms2IonDecoys.push_back(ms2IonDecoy);
-        }
-
-        return ms2IonDecoys;
-    }
-
-}//namespace
-QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
-
-    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(peptideStringWithMods(), ms2IonsTarget());
-    if (m_decoySharesSequenceWithOtherTarget) {
-        mangleMs2IonsDecoy(&ms2IonsDec);
-    }
     return ms2IonsDec;
 }
 
+QVector<MS2Ion> TargetDecoyCandidatePair::mutateCandidatePeptideTarget() {
+
+    ERR_INIT
+
+	if (m_residueMutations.size() != 2) {
+		throw std::runtime_error("ResidueMutations must have two elements");
+	}
+
+    QVector<MS2Ion> ms2IonDecoys = ms2IonsTarget();
+	const int pepLength = m_peptideString.size();
+
+	for (const ResidueMutation &rm : m_residueMutations) {
+
+		for (MS2Ion &ms2Ion : ms2IonDecoys) {
+
+			QPair<IonIndex, IonType> ionLableInfo;
+			e = ms2Ion.getIonLabelInfo(&ionLableInfo);
+
+			if (ionLableInfo.second.contains('b') || ionLableInfo.second.contains('a')) {
+
+				if (ionLableInfo.second.contains("^2")) {
+
+					if (ionLableInfo.first - 1  >= ionLableInfo.second.size()) {
+						ms2Ion.mz += rm.residueDeltaMass / 2.0f;
+
+					}
+				}
+				else {
+
+					if (ionLableInfo.first - 1  >= rm.index) {
+						ms2Ion.mz += rm.residueDeltaMass;
+					}
+				}
+			}
+
+			else if (ionLableInfo.second.contains('y')) {
+
+				const int bToYIndex = pepLength - rm.index - 1;
+
+				if (ionLableInfo.second.contains("^2")) {
+
+					if (ionLableInfo.first - 1 >= bToYIndex) {
+						ms2Ion.mz += rm.residueDeltaMass / 2.0f; //NOTE: do not static cast to float
+					}
+
+				}
+				else {
+					if (ionLableInfo.first - 1 >= bToYIndex) {
+						ms2Ion.mz += rm.residueDeltaMass; //NOTE: do not static cast to float
+					}
+
+				}
+			}
+
+			else {
+				qDebug() << "Non b/y/a ion" << ionLableInfo;
+			}
+
+		}
+	}
+
+    return ms2IonDecoys;
+}
+
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {
-    return isDecoy
-        ? BiophysicalCalcs::calculateThomsonFromMass(mass() + m_decoyMassDelta, charge())
-        : BiophysicalCalcs::calculateThomsonFromMass(mass(), charge());
+    return BiophysicalCalcs::calculateThomsonFromMass(mass(isDecoy) , charge());
 }
 
 bool TargetDecoyCandidatePair::isDecoy() const {
@@ -201,20 +290,18 @@ int TargetDecoyCandidatePair::charge() const {
     return m_fragLibReaderRowPntr->precursorCharge;
 }
 
-float TargetDecoyCandidatePair::mass() const {
-    return static_cast<float>(m_fragLibReaderRowPntr->mass);
+float TargetDecoyCandidatePair::mass(bool isDecoy) const {
+    return isDecoy ? static_cast<float>(m_fragLibReaderRowPntr->mass + m_decoyMassDelta)
+					: static_cast<float>(m_fragLibReaderRowPntr->mass);
 }
 
 float TargetDecoyCandidatePair::iRt(bool isDecoy) const {
 
 	float decoyAdjustment = 0;
 	if (isDecoy) {
-		const PeptideString ps = peptideString();
-		const QChar secondAA = ps[1];
-		const QChar penultimateAA = ps[ps.size() - 2];
-
-		decoyAdjustment += UniModNamespace::iRtAdjustments.value(secondAA)
-						+ UniModNamespace::iRtAdjustments.value(penultimateAA);
+		for (const ResidueMutation &rm : m_residueMutations) {
+			decoyAdjustment += UniModNamespace::iRtAdjustments.value(rm.residueMutatedTo);
+		}
 	}
 
     return static_cast<float>(m_fragLibReaderRowPntr->iRT) + decoyAdjustment;
@@ -225,25 +312,25 @@ float TargetDecoyCandidatePair::iIM() const {
     return static_cast<float>(m_fragLibReaderRowPntr->iM);
 }
 
-int TargetDecoyCandidatePair::totalFragmentCount() const {
-    return m_fragLibReaderRowPntr->mzVals.size();
+bool TargetDecoyCandidatePair::isInit() const {
+	return m_fragLibReaderRowPntr != nullptr && !m_peptideString.isEmpty();
 }
 
-void TargetDecoyCandidatePair::setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods) {
-    m_peptideStringWithMods = peptideStringWithMods;
+int TargetDecoyCandidatePair::totalFragmentCount() const {
+    return m_fragLibReaderRowPntr->mzVals.size();
 }
 
 void TargetDecoyCandidatePair::mutateCandidatePeptideTargetTestAccess(
 	const PeptideStringWithMods &peptideStringWithMods,
 	const QVector<MS2Ion> &ms2IonTarget
 	) {
-
-	qDebug() << peptideStringWithMods.bSeries(1, AminoAcids());
-	qDebug() << peptideStringWithMods.ySeries(1, AminoAcids());
-
-	const QVector<MS2Ion> decoys = mutateCandidatePeptideTarget(peptideStringWithMods, ms2IonTarget);
-	qDebug() << ms2IonTarget;
-	qDebug() << decoys;
+	//
+	// qDebug() << peptideStringWithMods.bSeries(1, AminoAcids());
+	// qDebug() << peptideStringWithMods.ySeries(1, AminoAcids());
+	//
+	// const QVector<MS2Ion> decoys = mutateCandidatePeptideTarget();
+	// qDebug() << ms2IonTarget;
+	// qDebug() << decoys;
 }
 
 void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
@@ -255,5 +342,3 @@ void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
 void TargetDecoyCandidatePair::decoySharesSequenceWithOtherTarget(bool val) {
     m_decoySharesSequenceWithOtherTarget = val;
 }
-
-
