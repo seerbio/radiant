@@ -4,12 +4,15 @@
 
 #include "ErrorUtils.h"
 #include "MsFrame.h"
-#include "MsReaderMzML.h"
+#include "MsReaderPointerAcc.h"
 #include "MsUtils.h"
 #include "ParallelUtils.h"
 #include "TurboXIC.h"
 
 #include <QtTest/QtTest>
+
+#include "MS2Ion.h"
+#include "ObjectCSVWriters.h"
 
 class TurboXICTests : public QObject
 {
@@ -97,59 +100,69 @@ void TurboXICTests::turboXICUtility() {
 
     ERR_INIT
 
-    QSKIP("uncomment for troubleshooting");
+	const QString filePath = "/home/andrewnichols/Desktop/Data/MsData/EXP24078_2024EU0002rX1_A.raw.mzML";
+	MsReaderPointerAcc msReaderPointerAcc;
+	e = msReaderPointerAcc.openFile(filePath);
+	QCOMPARE(e, eNoError);
 
-//    const QString msDataFilePath
-//            = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
-//
-//    const MzTargetKey uniqueMsInfoScanKey = "454957";
-//    double target = 454.957;
-//    double window = 5.5;
-//
-//    MsFrame msFrame;
-//    e = MsFrame::buildMsFrame(
-//            msDataFilePath,
-//            uniqueMsInfoScanKey,
-//            {target - window, target + window},
-//            &msFrame
-//    );
-//    QCOMPARE(e, eNoError);
-//
-//    e = msFrame.smoothFrame(
-//            3,
-//            1.0,
-//            2,
-//            1500.0
-//            );
-//    QCOMPARE(e, eNoError);
-//
-//    const QMap<int, QVector<PointFF>> &points = msFrame.scanNumberVsScanPoints();
-//
-//    TurboXIC turboXIC;
-//    e = turboXIC.init(points);
-//    QCOMPARE(e, eNoError);
-//
-//    const double mzCenter = 523.26232347;
-//    const double ppmTol = 50;
-//    const double massTol = MathUtils::calculatePPM(mzCenter, ppmTol);
-//
-//    const XICPoints xicPoints = turboXIC.extractPointsXIC(
-//            mzCenter - massTol,
-//            mzCenter + massTol,
-//            0,
-//            26000
-//            );
-//
-//    qDebug() << xicPoints.scanNumbersVsIntensityVals.size();
-//    const QVector<PointFF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
-//
-//    for (const PointFF &p : vec) {
-//        qDebug() << p;
-//    }
-//
-//    e = MsUtils::writePointsToCSV(vec, "xic.csv");
-//    QCOMPARE(e, eNoError);
+	QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+	e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrames);
+	QCOMPARE(e, eNoError);
 
+	// "480969" "KLVPFATELHER" false 3 -1 0 0 0 0 0 0 0 0 0 0 0 0 SDLFJDSL
+
+	MzTargetKey targetKey = "480969";
+	const QMap<ScanNumber, ScanPoints*> &scanPoints = diaTargetFrames.value(targetKey);
+
+
+	MsFrame msFrame;
+	e = msFrame.init(scanPoints, msReaderPointerAcc.ptr->getScanNumberVsScanTime());
+	QCOMPARE(e, eNoError);
+
+	TurboXIC turboXIC;
+	e = turboXIC.init(msFrame.frameIndexVsScanPoints());
+	QCOMPARE(e, eNoError);
+
+	const QVector<float> mzVals = {
+		550.28,
+		599.814,
+		441.22,
+		341.255,
+		554.305,
+		784.395,
+		855.432,
+		683.347,
+		277.656,
+		392.701,
+		656.356,
+		1099.55
+	};
+
+	for (int i = 0; i < mzVals.size(); i++) {
+
+		const float mzVal = mzVals.at(i);
+
+		const float ppmTol = 11;
+		const float mzTol = MathUtils::calculatePPM(mzVal, ppmTol);
+		const XICPoints xic = turboXIC.extractPointsXIC(
+			mzVal - mzTol,
+			mzVal + mzTol
+			);
+
+		QVector<float> vec(1000, 0.0);
+		for (const XICPoint &pt : xic) {
+			vec[pt.scanNumber] += pt.intensity;
+		}
+
+		const QString outputPath = QStringLiteral("vec%1").arg(i);
+		e = ObjectCSVWriters::writeVectorToFile(vec, outputPath);
+		QCOMPARE(e, eNoError);
+	}
+
+	qDebug()
+	<< msFrame.scanTimeFromFrameIndex(425)
+	<< msFrame.scanTimeFromFrameIndex(433)
+	;
 }
 
 

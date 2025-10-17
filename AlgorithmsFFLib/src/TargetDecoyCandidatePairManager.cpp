@@ -34,33 +34,9 @@ Err TargetDecoyCandidatePairManager::init(
 
 namespace {
 
-    float calculateDecoyMassDelta(const PeptideStringWithMods &peptideStringWithMods) {
-
-        const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass();
-
-        const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
-
-        const int firstIndexToMutate = 1;
-        const int secondIndexToMutate = peptideString.size() - 2;
-
-        const double nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
-        const double cTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(secondIndexToMutate));
-
-        return nTermDeltaMass + cTermDeltaMass;
-    }
 
     void targetDecoyCandidatePairsLoadLogic(TargetDecoyCandidatePair &tdcp) {
-
-
-
 		tdcp.init();
-
-    }
-
-    void filterNullSequences(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
-        const auto terminatorLogic = [](const TargetDecoyCandidatePair &tdcp){return tdcp.peptideStringWithMods().isEmpty();};
-        const auto terminator = std::remove_if(targetDecoyCandidatePairs->begin(), targetDecoyCandidatePairs->end(), terminatorLogic);
-        targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
     }
 
     void filterLeucineIsoleucineIsomers(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
@@ -115,6 +91,7 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
             targetDecoyCandidatePairsLoadLogic
             );
     futures.waitForFinished();
+
 
 
 #else

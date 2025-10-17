@@ -69,7 +69,7 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-#define DEV_OVERRIDES
+// #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 15;
@@ -78,6 +78,8 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters.reannotate = true;
 	m_pythiaParameters.baggingSize = 10;
 	m_pythiaParameters.epochs = 12;
+	m_pythiaParameters.scanTimeWindowStDevs = 4;
+	// m_pythiaParameters.subtractShadows = false;
 	// m_pythiaParameters.parallelNeuralNets = true;
 		// m_pythiaParameters.nodesFraction = 0.5;
     // m_pythiaParameters.baggingSize = 4;

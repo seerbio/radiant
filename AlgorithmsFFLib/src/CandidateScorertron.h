@@ -67,7 +67,8 @@ private:
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
-        MatriciesAndVecs *matriciesAndVecs
+        MatriciesAndVecs *matriciesAndVecs,
+        bool troubleshoot = false
         ) const;
 
     Err setPredictedFrameIndexes(
