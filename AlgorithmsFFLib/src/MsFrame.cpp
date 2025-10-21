@@ -140,7 +140,6 @@ Err MsFrame::init(
     m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     e = buildFrameIndexVsScanNumber(); ree
-	e = buildScanNumberVsMedianIntensity(); ree;
     e = initFrameIndexVsScanTimeKDTree(); ree;
 
     ERR_RETURN
@@ -157,33 +156,6 @@ Err MsFrame::buildFrameIndexVsScanNumber() {
     }
 
     ERR_RETURN
-}
-
-Err MsFrame::buildScanNumberVsMedianIntensity() {
-
-	ERR_INIT
-	e = ErrorUtils::isFalse(m_framePntrs.isEmpty()); ree;
-
-	for (auto it = m_framePntrs.begin(); it != m_framePntrs.end(); it++) {
-		const ScanNumber &scanNumber = it.key();
-		const ScanPoints *scanPointsPntrs = it.value();
-
-		QVector<float> intensities;
-		std::transform(
-			scanPointsPntrs->begin(),
-			scanPointsPntrs->end(),
-			std::back_inserter(intensities),
-			[](const ScanPoint &sp){return sp.y();}
-			);
-
-		m_scanNumberVsMedianIntensity.insert(
-			scanNumber,
-			static_cast<float>(MathUtils::median(intensities))
-			);
-	}
-
-
-	ERR_RETURN
 }
 
 int MsFrame::scanCount() const {
@@ -276,17 +248,13 @@ ScanPoints* MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
     return m_framePntrs.value(scanNumber);
 }
 
-float MsFrame::getScanPointsMedianIntensity(ScanNumber scanNumber) const {
-	return m_scanNumberVsMedianIntensity.value(scanNumber);
-}
-
 QMap<ScanNumber, ScanPoints*> MsFrame::scanNumberVsScanPoints() const {
     return m_framePntrs;
 }
 
 bool MsFrame::isValid() const {
     const int minScanCount = 1;
-    return scanCount() > minScanCount && !m_scanNumberVsMedianIntensity.isEmpty();
+    return scanCount() > minScanCount;
 }
 
 ScanNumber MsFrame::scanNumberFromScanTime(ScanTime scanTime) const {

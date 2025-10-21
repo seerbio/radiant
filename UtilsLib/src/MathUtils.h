@@ -45,41 +45,37 @@ public:
     * If the number of elements in the vector is more than 3, the function will either return the value of the middle element (if the count of elements in vector is even)
     * or average of two middle elements (if the count of elements in vector is odd).
     */
-	template <typename Vector>
-	static double median(const Vector &vecOriginal) {
-		Vector vec = vecOriginal;
-		const auto vecSize = static_cast<size_t>(vec.size());
+    template <typename Vector>
+    static double median(const Vector &vecOriginal) {
+        Vector vec = vecOriginal;
+        const auto vecSize = static_cast<size_t>(vec.size());
 
-		switch (vecSize) {
-		case 0:
-			return double();
-		case 1:
-			return vec[0];
-		case 2:
-			return (vec[0] + vec[1]) * 0.5;
-		case 3:
-			std::sort(vec.begin(), vec.end());
-			return vec[1];
-		default:;
-		}
+        switch (vecSize) {
+            case 0:
+                return double();
+            case 1:
+                return vec[0];
+            case 2:
+                return (vec[0] + vec[1]) * 0.5;
+            case 3:
+                std::sort(vec.begin(), vec.end());
+                return vec[1];
+            default:;
+        }
 
-		const int buffer = 1;
-		const size_t midPoint = vecSize / 2;
+        const int buffer = 1;
+        const size_t midPoint = vecSize / 2;
 
-		// Step 1: Use std::nth_element to ensure the midPoint and buffer are correctly partitioned
-		const auto partitionPoint = vec.begin() + midPoint + buffer;
-		std::nth_element(vec.begin(), partitionPoint, vec.end());
+        std::partial_sort(vec.begin(),
+                          vec.begin() + midPoint + buffer,
+                          vec.end());
 
-		// Step 2: Sort the relevant portion to mimic partial_sort behavior
-		std::sort(vec.begin(), partitionPoint);
+        if (vecSize % 2 != 0) {
+            return vec[midPoint];
+        }
 
-		// Step 3: Calculate the median
-		if (vecSize % 2 != 0) {
-			return vec[midPoint];
-		}
-
-		return (vec[midPoint] + vec[midPoint - 1]) * 0.5;
-	}
+        return (vec[midPoint] + vec[midPoint - 1]) * 0.5;
+    }
 
     /*!
     * @brief  Calculates the mean (average) of a given numeric container.

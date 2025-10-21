@@ -96,7 +96,7 @@ void AminoAcidsTests::checkMassesTest()
 void AminoAcidsTests::mutatePenultimatePeptideResiduesTest() {
     PeptideStringWithMods pep("SD(123)BC(Mod)D");
 
-    PeptideStringWithMods modded = AminoAcids::mutatePeptideResidues(pep, 1);
+    PeptideStringWithMods modded = AminoAcids::mutatePenultimatePeptideResidues(pep);
     QCOMPARE(modded.at(1), "E");
     QCOMPARE(modded.at(8), "S");
 }

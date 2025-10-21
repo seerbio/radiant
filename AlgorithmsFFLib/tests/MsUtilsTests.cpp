@@ -24,7 +24,6 @@ public:
 private Q_SLOTS:
 
     void extractPointsFromPointsTest();
-    void extractPointsFromPointsTestBST();
     static void extractPointsFromPointsSimpleTest();
 
 private:
@@ -189,40 +188,12 @@ void MsUtilsTests::extractPointsFromPointsTest() {
     e = ParallelUtils::zip(m_byIonsForPeptide_PFDAFTDLK, expectedYVals, &extractPoints);
     QCOMPARE(e, eNoError);
 
-	QElapsedTimer et;
-	et.start();
     const ExtractPoints extractPointsVector
         = MsUtils::extractPointsFromPoints(m_points, extractPoints, 6.0);
-	qDebug() << "Walking Extract elapsed time: " << et.nsecsElapsed() << "nSec";
 
     for (const QPointF &p : extractPointsVector.intensityFoundVsSearched) {
         QCOMPARE(p.x(), p.y());
     }
-
-}
-
-void MsUtilsTests::extractPointsFromPointsTestBST() {
-
-	ERR_INIT
-
-	const QVector<double> expectedYVals
-			= {461319, 182115, 217524, 256857, 62657.9, 193157, 12558.8, 331685, 132471, 839768, 5638.05, 813249, -1};
-
-	std::sort(m_byIonsForPeptide_PFDAFTDLK.begin(), m_byIonsForPeptide_PFDAFTDLK.end());
-
-	QVector<QPointF> extractPoints;
-	e = ParallelUtils::zip(m_byIonsForPeptide_PFDAFTDLK, expectedYVals, &extractPoints);
-	QCOMPARE(e, eNoError);
-
-	QElapsedTimer et;
-	et.start();
-	const ExtractPoints extractPointsVector
-		= MsUtils::extractPointsFromPointsBST(m_points, extractPoints, 6.0);
-	qDebug() << "BST Extract elapsed time: " << et.nsecsElapsed() << "nSec";
-
-	for (const QPointF &p : extractPointsVector.intensityFoundVsSearched) {
-		QCOMPARE(p.x(), p.y());
-	}
 
 }
 

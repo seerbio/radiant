@@ -78,39 +78,9 @@ const QMap<QChar, MolecularFormula> &AminoAcids::fixedModifications() const {
     return m_fixedModifications;
 }
 
-QMap<QChar, double> AminoAcids::diannMutateAminoAcidToMass(bool useAlternateShuffle) {
+QMap<QChar, double> AminoAcids::diannMutateAminoAcidToMass() {
 
-	if (useAlternateShuffle) {
-		const QMap<QChar, double> diannMutateAminoAcidToMassAlt = {
-            {'G', Molecule(valineFormula).monoisotopicMass() - Molecule(glycineFormula).monoisotopicMass()},
-            {'A', Molecule(valineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
-            {'V', Molecule(alanineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
-            {'L', Molecule(alanineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
-            {'X', Molecule(leucineFormula).monoisotopicMass() - Molecule(leucineFormula + prolineFormula).monoisotopicMass()},
-            {'I', Molecule(alanineFormula).monoisotopicMass() - Molecule(isoleucineFormula).monoisotopicMass()},
-            {'F', Molecule(valineFormula).monoisotopicMass() - Molecule(phenylalanineFormula).monoisotopicMass()},
-            {'M', Molecule(valineFormula).monoisotopicMass() - Molecule(methionineFormula).monoisotopicMass()},
-            {'P', Molecule(valineFormula).monoisotopicMass() - Molecule(prolineFormula).monoisotopicMass()},
-            {'W', Molecule(valineFormula).monoisotopicMass() - Molecule(tryptophanFormula).monoisotopicMass()},
-            {'S', Molecule(asparticAcidFormula).monoisotopicMass() - Molecule(serineFormula).monoisotopicMass()},
-            {'C', Molecule(threonineFormula).monoisotopicMass() - Molecule(cysteineFormula).monoisotopicMass()},
-            {'U', Molecule(threonineFormula).monoisotopicMass() - Molecule(cysteineFormula + cysteicAcidFormula).monoisotopicMass()},
-            {'T', Molecule(glutamicAcidFormula).monoisotopicMass() - Molecule(threonineFormula).monoisotopicMass()},
-            {'Y', Molecule(threonineFormula).monoisotopicMass() - Molecule(tyrosineFormula).monoisotopicMass()},
-            {'H', Molecule(threonineFormula).monoisotopicMass() - Molecule(histidineFormula).monoisotopicMass()},
-            {'K', Molecule(valineFormula).monoisotopicMass() - Molecule(lysineFormula).monoisotopicMass()},
-            {'R', Molecule(valineFormula).monoisotopicMass() - Molecule(arginineFormula).monoisotopicMass()},
-            {'Q', Molecule(threonineFormula).monoisotopicMass() - Molecule(glutamineFormula).monoisotopicMass()},
-            {'E', Molecule(threonineFormula).monoisotopicMass() - Molecule(glutamicAcidFormula).monoisotopicMass()},
-            {'N', Molecule(serineFormula).monoisotopicMass() - Molecule(asparagineFormula).monoisotopicMass()},
-            {'D', Molecule(serineFormula).monoisotopicMass() - Molecule(asparticAcidFormula).monoisotopicMass()}
-		};
-
-		return diannMutateAminoAcidToMassAlt;
-	}
-
-
-    const QMap<QChar, double> diannMutateAminoAcidToMass = {
+    QMap<QChar, double> diannMutateAminoAcidToMass = {
             {'G', Molecule(leucineFormula).monoisotopicMass() - Molecule(glycineFormula).monoisotopicMass()},
             {'A', Molecule(leucineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
             {'V', Molecule(leucineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
@@ -138,38 +108,9 @@ QMap<QChar, double> AminoAcids::diannMutateAminoAcidToMass(bool useAlternateShuf
     return diannMutateAminoAcidToMass;
 }
 
-QMap<QChar, QChar> AminoAcids::diannMutateAminoAcidToResidue(bool useAlternateShuffle) {
+QMap<QChar, QChar> AminoAcids::diannMutateAminoAcidToResidue() {
 
-	if (useAlternateShuffle) {
-		const QMap<QChar, QChar> diannMutateAminoAcidToMassAlt = {
-			{'G', 'V'},
-			{'A', 'V'},
-			{'V', 'A'},
-			{'L', 'A'},
-			{'X', 'L'},
-			{'I', 'A'},
-			{'F', 'V'},
-			{'M', 'V'},
-			{'P', 'V'},
-			{'W', 'V'},
-			{'S', 'D'},
-			{'C', 'T'},
-			{'U', 'T'},
-			{'T', 'E'},
-			{'Y', 'T'},
-			{'H', 'T'},
-			{'K', 'V'},
-			{'R', 'V'},
-			{'Q', 'T'},
-			{'E', 'T'},
-			{'N', 'S'},
-			{'D', 'S'}
-		};
-
-		return diannMutateAminoAcidToMassAlt;
-	}
-
-    const QMap<QChar, QChar> diannMutateAminoAcidToMass = {
+    QMap<QChar, QChar> diannMutateAminoAcidToMass = {
             {'G', 'L'},
             {'A', 'L'},
             {'V', 'L'},
@@ -197,10 +138,7 @@ QMap<QChar, QChar> AminoAcids::diannMutateAminoAcidToResidue(bool useAlternateSh
     return diannMutateAminoAcidToMass;
 }
 
-PeptideStringWithMods AminoAcids::mutatePeptideResidues(
-	const PeptideStringWithMods &peptideStringWithMods,
-	int numberOfResiduesIn
-	) {
+PeptideStringWithMods AminoAcids::mutatePenultimatePeptideResidues(const PeptideStringWithMods &peptideStringWithMods) {
 
     const QMap<QChar, QChar> diannMutateAminoAcidToResidues = AminoAcids::diannMutateAminoAcidToResidue();
 
@@ -228,7 +166,7 @@ PeptideStringWithMods AminoAcids::mutatePeptideResidues(
             continue;
         }
 
-        if (residueCounter == numberOfResiduesIn || residueCounter == peptideLength - numberOfResiduesIn - 1) {
+        if (residueCounter == 1 || residueCounter == peptideLength - 2) {
             moddedPeptide += diannMutateAminoAcidToResidues.value(c);
             residueCounter++;
             continue;

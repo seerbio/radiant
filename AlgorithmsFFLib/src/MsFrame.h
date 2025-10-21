@@ -225,21 +225,16 @@ public:
     */
     [[nodiscard]] ScanPoints* getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
-	[[nodiscard]] float getScanPointsMedianIntensity(ScanNumber scanNumber) const;
-
 
 private:
 
     Err buildFrameIndexVsScanNumber();
-
-	Err buildScanNumberVsMedianIntensity();
 
     Err initFrameIndexVsScanTimeKDTree();
 
 private:
 
     QMap<ScanNumber, ScanPoints*> m_framePntrs;
-	QMap<ScanNumber, float> m_scanNumberVsMedianIntensity;
     MzTargetKey m_uniqueMsInfoScanKey;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;

@@ -67,8 +67,7 @@ private:
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
-        MatriciesAndVecs *matriciesAndVecs,
-        bool troubleshoot = false
+        MatriciesAndVecs *matriciesAndVecs
         ) const;
 
     Err setPredictedFrameIndexes(
@@ -78,14 +77,14 @@ private:
         FrameIndex *frameIndexPredictedMax
         ) const;
 
-    static Err processIntegrationVectorPeakIntegrations(
+    Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
         const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
         QVector<BestCorrelationResult> *bestCorrelationResults
-        ) ;
+        ) const;
 
     Err setCandidateScores(
-        TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<BestCorrelationResult> &bestCorrelationResults,
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores
