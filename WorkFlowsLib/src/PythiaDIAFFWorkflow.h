@@ -124,11 +124,11 @@ private:
 
     void filterDecoysOrNot(QVector<CandidateScores*> *candidateScoreClassifierPntrs) const;
 
-    Err spectrumCentricSearch(
-        const QVector<CandidateScores*> &candidateScoresPntrs,
-        const MsCalibratomatic &msCalibratomatic,
-        const MsReaderPointerAcc *msReaderPointerAcc
-        ) const;
+    // Err spectrumCentricSearch(
+    //     const QVector<CandidateScores*> &candidateScoresPntrs,
+    //     const MsCalibratomatic &msCalibratomatic,
+    //     const MsReaderPointerAcc *msReaderPointerAcc
+    //     ) const;
 
 
 private:

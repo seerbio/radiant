@@ -5,8 +5,6 @@
 
 #include <QtTest/QtTest>
 
-#include "MsUtils.h"
-
 
 class TargetDecoyCandidatePairManagerTests : public QObject
 {
@@ -60,7 +58,7 @@ void TargetDecoyCandidatePairManagerTests::peptideStringWithModsFromPeptideSeque
     PeptideStringWithMods peptideStringWithMods;
     int charge;
 
-    e = MsUtils::peptideStringWithModsFromPeptideSequenceChargeKey(
+    e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
             "BELLAFLOPSANDCHAUNCY|2",
             &peptideStringWithMods,
             &charge
@@ -69,21 +67,21 @@ void TargetDecoyCandidatePairManagerTests::peptideStringWithModsFromPeptideSeque
     QCOMPARE(peptideStringWithMods, "BELLAFLOPSANDCHAUNCY");
     QCOMPARE(charge, 2);
 
-    e = MsUtils::peptideStringWithModsFromPeptideSequenceChargeKey(
+    e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
             "BELLAFLOPSANDCHAUNCY",
             &peptideStringWithMods,
             &charge
     );
     QCOMPARE(e, eError);
 
-    e = MsUtils::peptideStringWithModsFromPeptideSequenceChargeKey(
+    e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
             "BELLAFLOPSANDCHAUNCY||2",
             &peptideStringWithMods,
             &charge
     );
     QCOMPARE(e, eNoError);
 
-    e = MsUtils::peptideStringWithModsFromPeptideSequenceChargeKey(
+    e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
             "BELLAFLOPSANDCHAUNCY|R",
             &peptideStringWithMods,
             &charge

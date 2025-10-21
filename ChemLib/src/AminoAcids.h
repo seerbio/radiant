@@ -87,7 +87,7 @@ public:
     *
     * @return The map of DIANN mutations (amino acid -> mass difference).
     */
-    static QMap<QChar, double> diannMutateAminoAcidToMass(bool useAlternateShuffle = false);
+    static QMap<QChar, double> diannMutateAminoAcidToMass();
 
     /**
     * @brief Returns the map of residues for DIANN amino acid mutations.
@@ -97,12 +97,9 @@ public:
     *
     * @return The map of DIANN mutations (amino acid -> mass difference).
     */
-    static QMap<QChar, QChar> diannMutateAminoAcidToResidue(bool useAlternateShuffle = false);
+    static QMap<QChar, QChar> diannMutateAminoAcidToResidue();
 
-    static PeptideStringWithMods mutatePeptideResidues(
-    	const PeptideStringWithMods &peptideString,
-    	int numberOfResiduesIn
-    	);
+    static PeptideStringWithMods mutatePenultimatePeptideResidues(const PeptideStringWithMods &peptideString);
 
 private:
 

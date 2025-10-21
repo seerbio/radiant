@@ -34,9 +34,58 @@ Err TargetDecoyCandidatePairManager::init(
 
 namespace {
 
+    float calculateDecoyMassDelta(const PeptideStringWithMods &peptideStringWithMods) {
 
-    void targetDecoyCandidatePairsLoadLogic(TargetDecoyCandidatePair &tdcp) {
-		tdcp.init();
+        const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass();
+
+        const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
+
+        const int firstIndexToMutate = 1;
+        const int secondIndexToMutate = peptideString.size() - 2;
+
+        const double nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
+        const double cTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(secondIndexToMutate));
+
+        return nTermDeltaMass + cTermDeltaMass;
+    }
+
+    QPair<Err, TargetDecoyCandidatePair> targetDecoyCandidatePairsLoadLogic(
+            const FragLibReaderRow &flrr,
+            const PythiaParameters &pythiaParameters
+            ) {
+
+        ERR_INIT
+
+        PeptideStringWithMods peptideStringWithMods;
+        int charge;
+        e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
+                flrr.peptideSequenceChargeKey,
+                &peptideStringWithMods,
+                &charge
+        ); rree;
+
+        const int peptideLength = peptideStringWithMods.sizeNoMods();
+        if (peptideLength < pythiaParameters.peptideLengthMin
+            || peptideLength > pythiaParameters.peptideLengthMax
+            || charge < pythiaParameters.chargeStateMin
+            || charge > pythiaParameters.chargeStateMax
+            // || flrr.isDecoy == 1
+            ) {
+            return {e, {}};
+        }
+
+        TargetDecoyCandidatePair targetDecoyCandidatePair(
+                peptideStringWithMods,
+                calculateDecoyMassDelta(peptideStringWithMods)
+                );
+
+        return {e, targetDecoyCandidatePair};
+    }
+
+    void filterNullSequences(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
+        const auto terminatorLogic = [](const TargetDecoyCandidatePair &tdcp){return tdcp.peptideStringWithMods().isEmpty();};
+        const auto terminator = std::remove_if(targetDecoyCandidatePairs->begin(), targetDecoyCandidatePairs->end(), terminatorLogic);
+        targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
     }
 
     void filterLeucineIsoleucineIsomers(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
@@ -77,23 +126,30 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     QElapsedTimer et;
     et.start();
 
-    m_targetDecoyCandidatePairs.resize(fragLibReaderRows->size()); ree;
-	e = ErrorUtils::isEqual(fragLibReaderRows->size(), m_targetDecoyCandidatePairs.size()); ree;
-	for (int i = 0; i < m_targetDecoyCandidatePairs.size(); i++) {
-		m_targetDecoyCandidatePairs[i].setFragLibReaderRowPntr(&(*fragLibReaderRows)[i]);
-	}
+    m_targetDecoyCandidatePairs.reserve(fragLibReaderRows->size()); ree;
 
 #define PARALLEL_FRAGLIB_LOAD
 #ifdef PARALLEL_FRAGLIB_LOAD
+    const auto loadLogicBinder = std::bind(
+            targetDecoyCandidatePairsLoadLogic,
+            std::placeholders::_1,
+            m_pythiaParameters
+    );
 
-    QFuture<void> futures = QtConcurrent::map(
-            m_targetDecoyCandidatePairs,
-            targetDecoyCandidatePairsLoadLogic
+    QFuture<QPair<Err, TargetDecoyCandidatePair>> futures = QtConcurrent::mapped(
+            *fragLibReaderRows,
+            loadLogicBinder
             );
     futures.waitForFinished();
 
-
-
+    for (const QPair<Err, TargetDecoyCandidatePair> &result : futures) {
+        if (result.first == eValueError) {
+            continue;
+        }
+        e = result.first; ree;
+        const TargetDecoyCandidatePair &tdcp = result.second;
+        m_targetDecoyCandidatePairs.push_back(tdcp);
+    }
 #else
     for (const FragLibReaderRow &flrr : fragLibReaderRows) {
 
@@ -113,9 +169,15 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     }
 #endif
 
+    e = ErrorUtils::isEqual(fragLibReaderRows->size(), m_targetDecoyCandidatePairs.size()); ree;
+    for (int i = 0; i < m_targetDecoyCandidatePairs.size(); i++) {
+        m_targetDecoyCandidatePairs[i].setFragLibReaderRowPntr(&(*fragLibReaderRows)[i]);
+    }
+
+    filterNullSequences(&m_targetDecoyCandidatePairs);
     filterLeucineIsoleucineIsomers(&m_targetDecoyCandidatePairs);
 
-    e = filterDecoySequencesThatAreAlsoTargetSequences(); ree;
+    e = filterDecoySequencesThatAreAlsoTargetSequences();
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
 
@@ -133,7 +195,7 @@ namespace {
         for (TargetDecoyCandidatePair *tdcp : targetDecoyCandidatePairsPntrs) {
 
             const PeptideString peptideStringWithModsMutated
-                = AminoAcids::mutatePeptideResidues(tdcp->peptideStringWithMods(), 1).replace('I', 'L');
+                = AminoAcids::mutatePenultimatePeptideResidues(tdcp->peptideStringWithMods()).replace('I', 'L');
 
             if (peptideStringIsoleucineReplaceVsIsAlsoDecoy.contains(peptideStringWithModsMutated)) {
                 tdcp->decoySharesSequenceWithOtherTarget(true);
@@ -237,6 +299,36 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(QVector
         binder
         );
     futures.waitForFinished();
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+        PeptideStringWithMods *peptideStringWithMods,
+        int *charge
+        ){
+
+    ERR_INIT
+
+    const int expectedSplitSize = 2;
+
+    const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+            S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+            Qt::SkipEmptyParts
+    );
+
+    e = ErrorUtils::isEqual(
+            peptideSequenceChargeKeySplit.size(),
+            expectedSplitSize
+            ); ree;
+
+    *peptideStringWithMods = PeptideStringWithMods(peptideSequenceChargeKeySplit.front());
+
+    e = ErrorUtils::toInt(
+            peptideSequenceChargeKeySplit.back(),
+            charge
+    ); ree
 
     ERR_RETURN
 }
