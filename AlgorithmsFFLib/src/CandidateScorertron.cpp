@@ -2451,10 +2451,10 @@ namespace {
     }
 
     Err buildTheoIonSeriesSets(
-    const QVector<MS2Ion> &ms2IonsTheo,
-    QSet<int> *yIonsSeriesTheo,
-    QSet<int> *bIonsSeriesTheo
-    ) {
+	    const QVector<MS2Ion> &ms2IonsTheo,
+	    QSet<int> *yIonsSeriesTheo,
+	    QSet<int> *bIonsSeriesTheo
+	    ) {
 
         ERR_INIT
 
@@ -2486,6 +2486,13 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
                                      ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
                                      : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+
+	constexpr int ionLabelsSize = 12;
+	candidateScores->ionLabels.resize(ionLabelsSize);
+	for (const MS2Ion &msi : ms2IonsTheoritical) {
+		e = ErrorUtils::isIndexInRange(candidateScores->ionLabels, msi.rank); ree;
+		candidateScores->ionLabels[msi.rank] = msi.ionLabel;
+	}
 
     QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
     e = extractFullTheoreticalPointsFromScan(

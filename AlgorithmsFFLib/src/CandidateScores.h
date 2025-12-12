@@ -325,6 +325,7 @@ public:
 
     QVector<float> featuresArray;
     QVector<float> integrations;
+	QVector<QString> ionLabels;
 
     PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey;
 
@@ -393,6 +394,18 @@ namespace CandidateScoresReaderRowNamespace {
     const QString COS_SIM_ANCH_10 = QStringLiteral("CosineSimToAnchor10");
     const QString COS_SIM_ANCH_11 = QStringLiteral("CosineSimToAnchor11");
     const QString COS_SIM_ANCH_12 = QStringLiteral("CosineSimToAnchor12");
+	const QString ION_LABEL_1 = QStringLiteral("IonLabel1");
+	const QString ION_LABEL_2 = QStringLiteral("IonLabel2");
+	const QString ION_LABEL_3 = QStringLiteral("IonLabel3");
+	const QString ION_LABEL_4 = QStringLiteral("IonLabel4");
+	const QString ION_LABEL_5 = QStringLiteral("IonLabel5");
+	const QString ION_LABEL_6 = QStringLiteral("IonLabel6");
+	const QString ION_LABEL_7 = QStringLiteral("IonLabel7");
+	const QString ION_LABEL_8 = QStringLiteral("IonLabel8");
+	const QString ION_LABEL_9 = QStringLiteral("IonLabel9");
+	const QString ION_LABEL_10 = QStringLiteral("IonLabel10");
+	const QString ION_LABEL_11 = QStringLiteral("IonLabel11");
+	const QString ION_LABEL_12 = QStringLiteral("IonLabel12");
     // const QString COS_SIM_ANCH_SHADOW_1 = QStringLiteral("CosineSimShadowsToAnchor1");
     // const QString COS_SIM_ANCH_SHADOW_2 = QStringLiteral("CosineSimShadowsToAnchor2");
     // const QString COS_SIM_ANCH_SHADOW_3 = QStringLiteral("CosineSimShadowsToAnchor3");
@@ -763,7 +776,19 @@ namespace CandidateScoresReaderRowNamespace {
             MZ_SEARCHED_9,
             MZ_SEARCHED_10,
             MZ_SEARCHED_11,
-            MZ_SEARCHED_12
+            MZ_SEARCHED_12,
+    		ION_LABEL_1,
+    		ION_LABEL_2,
+    		ION_LABEL_3,
+    		ION_LABEL_4,
+    		ION_LABEL_5,
+    		ION_LABEL_6,
+    		ION_LABEL_7,
+    		ION_LABEL_8,
+    		ION_LABEL_9,
+    		ION_LABEL_10,
+    		ION_LABEL_11,
+    		ION_LABEL_12
     };
 
 }//namespace
@@ -989,6 +1014,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float mzSearched10 = -1.0;
     float mzSearched11 = -1.0;
     float mzSearched12 = -1.0;
+
+	QString ionLabels1;
+	QString ionLabels2;
+	QString ionLabels3;
+	QString ionLabels4;
+	QString ionLabels5;
+	QString ionLabels6;
+	QString ionLabels7;
+	QString ionLabels8;
+	QString ionLabels9;
+	QString ionLabels10;
+	QString ionLabels11;
+	QString ionLabels12;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -1419,6 +1457,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MZ_SEARCHED_10, QVariant(mzSearched10)},
                 {MZ_SEARCHED_11, QVariant(mzSearched11)},
                 {MZ_SEARCHED_12, QVariant(mzSearched12)},
+
+				{ION_LABEL_1, QVariant(ionLabels1)},
+				{ION_LABEL_2, QVariant(ionLabels2)},
+				{ION_LABEL_3, QVariant(ionLabels3)},
+				{ION_LABEL_4, QVariant(ionLabels4)},
+				{ION_LABEL_5, QVariant(ionLabels5)},
+				{ION_LABEL_6, QVariant(ionLabels6)},
+				{ION_LABEL_7, QVariant(ionLabels7)},
+				{ION_LABEL_8, QVariant(ionLabels8)},
+				{ION_LABEL_9, QVariant(ionLabels9)},
+				{ION_LABEL_10, QVariant(ionLabels10)},
+				{ION_LABEL_11, QVariant(ionLabels11)},
+				{ION_LABEL_12, QVariant(ionLabels12)},
         };
     }
 
@@ -1629,6 +1680,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
                                        ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
                                        : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+
+    	row.ionLabels1 = candidateScores->ionLabels.at(0);
+    	row.ionLabels2 = candidateScores->ionLabels.at(1);
+    	row.ionLabels3 = candidateScores->ionLabels.at(2);
+    	row.ionLabels4 = candidateScores->ionLabels.at(3);
+    	row.ionLabels5 = candidateScores->ionLabels.at(4);
+    	row.ionLabels6 = candidateScores->ionLabels.at(5);
+    	row.ionLabels7 = candidateScores->ionLabels.at(6);
+    	row.ionLabels8 = candidateScores->ionLabels.at(7);
+    	row.ionLabels9 = candidateScores->ionLabels.at(8);
+    	row.ionLabels10 = candidateScores->ionLabels.at(9);
+    	row.ionLabels11 = candidateScores->ionLabels.at(10);
+    	row.ionLabels12 = candidateScores->ionLabels.at(11);
 
         for (int i = 0; i < ms2Ions.size(); ++i) {
 
