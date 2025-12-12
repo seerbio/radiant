@@ -119,7 +119,7 @@ struct PythiaParameters{
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
-    float peakDifferenceFractionThreshold = 0.1;
+    float peakDifferenceFractionThreshold = 0.05;
 
     int topNIntegrations = 10;
     int maxAnchorColumnIndex = 6;

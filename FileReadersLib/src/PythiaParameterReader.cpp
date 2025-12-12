@@ -115,7 +115,6 @@ Err PythiaParameterReader::buildPythiaParameters(
     e = ErrorUtils::fileExists(pythiaParametersFilePath); ree;
     auto parser = toml::parse_file(pythiaParametersFilePath.toStdString());
 
-    constexpr int defaultThreadCount = ParallelUtils::numberOfAvailableSystemProcessors();
     const auto generalNode = parser[kGeneral.toStdString()];
     pythiaParameters->threadCount = pythiaParameters->threadCount == 0
                                   ? ParallelUtils::numberOfAvailableSystemProcessors()
