@@ -115,11 +115,10 @@ Err PythiaParameterReader::buildPythiaParameters(
     e = ErrorUtils::fileExists(pythiaParametersFilePath); ree;
     auto parser = toml::parse_file(pythiaParametersFilePath.toStdString());
 
-    constexpr int defaultThreadCount = 8;
     const auto generalNode = parser[kGeneral.toStdString()];
     pythiaParameters->threadCount = pythiaParameters->threadCount == 0
                                   ? ParallelUtils::numberOfAvailableSystemProcessors()
-                                  : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
+                                  : generalNode[kThreadCount.toStdString()].value_or(ParallelUtils::numberOfAvailableSystemProcessors());
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
     pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
     pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(true);

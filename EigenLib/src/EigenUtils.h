@@ -1040,7 +1040,7 @@ public:
             int leftStopIndex = apexIndex;
 
             int leftCurrentIndex = apexIndex;
-            while (leftCurrentIndex < eVec.size()) {
+            while (leftCurrentIndex > 0) {
 
                 const T currentValue = eVec(leftCurrentIndex);
                 if (currentValue < stopThreshold) {
