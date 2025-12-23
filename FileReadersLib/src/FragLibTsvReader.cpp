@@ -362,7 +362,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 else if (colName == ION_MOBILITY){
                     e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); eee_absorb;
                 }
-                else if (colName == MOD_PEP){
+                else if (colName == MOD_PEP || colName == MOD_PEP_SEQ){
                     fragLibTsvReaderRow.modifiedPeptide = valString;
                 }
                 else if (colName == PRECURSOR_CHARGE){
