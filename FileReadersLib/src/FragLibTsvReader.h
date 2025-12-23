@@ -54,6 +54,7 @@ namespace FragLibTsvReaderRowNamespace {
     const QString LIB_INTENSITY = "LibraryIntensity";
     const QString DECOY = "decoy";
     const QString MOD_PEP = "ModifiedPeptide";
+    const QString MOD_PEP_SEQ = "ModifiedPeptideSequence";
     const QString PRECURSOR_CHARGE = "PrecursorCharge";
     const QString FRAG_TYPE = "FragmentType";
     const QString FRAG_CHARGE = "FragmentCharge";
@@ -65,6 +66,7 @@ namespace FragLibTsvReaderRowNamespace {
             TR_RECALIB,
             ION_MOBILITY,
             MOD_PEP,
+            MOD_PEP_SEQ,
             PRECURSOR_CHARGE,
             LIB_INTENSITY,
             DECOY,
