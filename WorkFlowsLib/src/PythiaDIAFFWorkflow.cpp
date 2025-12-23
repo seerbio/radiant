@@ -18,7 +18,6 @@
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
-#include "QuanFileBuilder.h"
 #include "QuanTransitionRefinertron.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
@@ -505,17 +504,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &msReaderPointerAcc
             ); ree;
     }
-
-    QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
-    if (!m_outputFolderPath.isEmpty()) {
-        const QFileInfo fileInfo(quanFilePath);
-        const QString msDataFileName = fileInfo.fileName();
-        quanFilePath = m_outputFolderPath + msDataFileName;
-    }
-    e = QuanFileBuilder::buildQuanFile(
-        candidateScoreClassifierPntrs,
-        quanFilePath
-        ); ree;
 
     ERR_RETURN
 }
