@@ -63,10 +63,13 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.fastaFilePath = args[2];
     const bool fragLibBackgroundFilePathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.fastaFilePath,
-            {S_GLOBAL_SETTINGS.DOT_FASTA.mid(1, 7)}
+            {
+                S_GLOBAL_SETTINGS.DOT_FASTA.mid(1, -1),
+                S_GLOBAL_SETTINGS.DOT_FAS.mid(1, -1)
+            }
     );
     if (!fragLibBackgroundFilePathIsValid) {
-        qCritical() << QStringLiteral("Second command line argument *.fragLib, argument invalid");
+        qCritical() << QStringLiteral("Second command line argument: expected a FASTA file with .fasta or .fas extension");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
