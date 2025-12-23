@@ -2490,6 +2490,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
 	constexpr int ionLabelsSize = 12;
 	candidateScores->ionLabels.resize(ionLabelsSize);
 	for (const MS2Ion &msi : ms2IonsTheoritical) {
+		if (msi.rank >= ionLabelsSize) continue;
 		e = ErrorUtils::isIndexInRange(candidateScores->ionLabels, msi.rank); ree;
 		candidateScores->ionLabels[msi.rank] = msi.ionLabel;
 	}
