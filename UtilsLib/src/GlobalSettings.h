@@ -95,6 +95,7 @@ public:
     const QString DOT_CAL = QStringLiteral(".cal");
     const QString DOT_CSV = QStringLiteral(".csv");
     const QString DOT_FASTA = QStringLiteral(".fasta");
+    const QString DOT_FAS = QStringLiteral(".fas");
     const QString DOT_FRAGLIB_DF = QStringLiteral(".fragLibDF");
     const QString DOT_FRAGLIB_FF = QStringLiteral(".fragLibFF");
     const QString DOT_LIB = QStringLiteral(".lib");
