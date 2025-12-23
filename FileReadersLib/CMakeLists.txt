@@ -41,7 +41,6 @@ SET(SOURCE_FILES
         src/MsReaderPointerAcc.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
-        src/QuanReader.cpp
         src/SpecLibReader.cpp
         ${TIMS_CPPSQL_SOURCE}
         )
@@ -69,7 +68,6 @@ SET(HEADER_FILES
         src/MsReaderPointerAcc.h
         src/ParquetReader.h
         src/PythiaParameterReader.h
-        src/QuanReader.h
         src/SpecLibReader.h
         src/toml.hpp
 #        ${TIMS_CPPSQL_HEADER}

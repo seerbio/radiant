@@ -40,7 +40,6 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
-        src/QuanFileBuilder.cpp
         src/QuanTransitionRefinertron.cpp
         src/QValueSettertron.cpp
         src/SequenceSubstringSearchomatic.cpp
@@ -75,7 +74,6 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
-        src/QuanFileBuilder.h
         src/QuanTransitionRefinertron.h
         src/QValueSettertron.h
         src/SequenceSubstringSearchomatic.h
