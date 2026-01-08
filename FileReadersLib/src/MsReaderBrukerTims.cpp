@@ -64,7 +64,7 @@ namespace {
 
             TimsFrameInfo frameInfo;
             frameInfo.frameId = query.getIntField("Id");
-            frameInfo.scanTime = query.getFloatField("Time") / 60.0f;
+            frameInfo.scanTime = query.getFloatField("Time"); // Should be in seconds
             frameInfo.msmsType = query.getIntField("MsMsType");
             frameInfo.numScans = query.getIntField("NumScans");
 

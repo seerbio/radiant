@@ -448,11 +448,23 @@ namespace {
                 const QStringRef currentAccession = attributesCurrentTag.value(ACCESSION);
 
                 if (stringMatch(currentAccession, SCAN_START_TIME)) {
-
                     bool ok = true;
-                    msScanInfo->scanTime = attributesCurrentTag.value(VALUE).toDouble(&ok);
+                    double scanTime = attributesCurrentTag.value(VALUE).toDouble(&ok);
                     e = ErrorUtils::isTrue(ok); ree;
 
+                    const QStringRef currentUnitAccession = attributesCurrentTag.value(UNIT_ACCESSION);
+
+                    double unitConversionFactor = 0.0;
+                    if (stringMatch(currentUnitAccession, SECOND)) {
+                        unitConversionFactor = 1.0;
+                    } else if (stringMatch(currentUnitAccession, MILLISECOND)) {
+                        unitConversionFactor = 0.001;
+                    } else if (stringMatch(currentUnitAccession, MINUTE)) {
+                        unitConversionFactor = 60.0;
+                    }
+                    e = ErrorUtils::isNotEqual(unitConversionFactor, 0.0); ree;
+
+                    msScanInfo->scanTime = scanTime * unitConversionFactor;
                 }
 
                 continue;
