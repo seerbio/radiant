@@ -48,7 +48,7 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(msScanInfo.scanNumber, 372);
     QCOMPARE(msScanInfo.msLevel, 1);
     QCOMPARE(msScanInfo.collisionEnergy, -1);
-    QCOMPARE(msScanInfo.scanTime, 60 * 10.0411);  // parsed value should be converted to seconds
+    QVERIFY(std::abs(msScanInfo.scanTime - 60.0 * 10.041118 < 0.0001));  // parsed value should be converted to seconds; compare with tolerance
     QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "-1");
     QCOMPARE(msScanInfo.isoWindowLower, -1);
     QCOMPARE(msScanInfo.isoWindowUpper, -1);
