@@ -30,7 +30,7 @@ private Q_SLOTS:
 
 void MsReaderMZMLTests::openFileTest() {
 
-    const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
+    const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1mn.mzML");
 
     ERR_INIT
 
@@ -48,7 +48,7 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(msScanInfo.scanNumber, 372);
     QCOMPARE(msScanInfo.msLevel, 1);
     QCOMPARE(msScanInfo.collisionEnergy, -1);
-    QCOMPARE(QString::number(msScanInfo.scanTime), "10.0411");
+    QCOMPARE(msScanInfo.scanTime, 60 * 10.0411);  // parsed value should be converted to seconds
     QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "-1");
     QCOMPARE(msScanInfo.isoWindowLower, -1);
     QCOMPARE(msScanInfo.isoWindowUpper, -1);
