@@ -30,7 +30,7 @@ private Q_SLOTS:
 
 void MsReaderMZMLTests::openFileTest() {
 
-    const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1mn.mzML");
+    const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
     ERR_INIT
 
