@@ -242,7 +242,7 @@ namespace {
 
     }
 
-    Err addIonLabelInformation(QVector<FragLibReaderRow> *fragLibReaderRows) {
+    Err addIonLabelInformation(QList<FragLibReaderRow> *fragLibReaderRows) {
 
         ERR_INIT
 
@@ -283,7 +283,7 @@ namespace {
 }//namespace
 Err FragLibTsvReader::getFragLibReaderRows(
         const QString &tsvFilePath,
-        QVector<FragLibReaderRow> *fragLibReaderRows
+        QList<FragLibReaderRow> *fragLibReaderRows
         ) {
 
     ERR_INIT

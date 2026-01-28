@@ -32,7 +32,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
 
     FragLibTsvReader fragLibTsvReader;
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
+    QList<FragLibReaderRow> fragLibReaderRows;
     e = fragLibTsvReader.getFragLibReaderRows(
             testFile,
             &fragLibReaderRows
@@ -75,7 +75,7 @@ void FragLibTsvReaderTests::compareTest() {
     testFile = "/home/andrewnichols/Downloads/lib-mbr-2025-02-06.tsv";
 
     FragLibTsvReader fragLibTsvReader;
-    QVector<FragLibReaderRow> fragLibReaderTSVRows;
+    QList<FragLibReaderRow> fragLibReaderTSVRows;
     e = fragLibTsvReader.getFragLibReaderRows(
             testFile,
             &fragLibReaderTSVRows

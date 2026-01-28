@@ -141,6 +141,19 @@ public:
     */
     template<typename T>
     static QVector<QSharedPointer<ParquetReaderInputBase>> convertInputStructToSharedPointers(
+            const QList<T> &paraquetReaderInputBaseDerivedStruct
+            ) {
+        QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
+        for (const T &tr : paraquetReaderInputBaseDerivedStruct) {
+            QSharedPointer<ParquetReaderInputBase> ptr(new T(tr));
+            ptrs.push_back(ptr);
+        }
+
+        return ptrs;
+    }
+
+    template<typename T>
+    static QVector<QSharedPointer<ParquetReaderInputBase>> convertInputStructToSharedPointers(
             const QVector<T> &paraquetReaderInputBaseDerivedStruct
             ) {
         QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
@@ -166,6 +179,23 @@ public:
     * successfully. An Err object initialized with a success state means the operation is successful.
     * If any error occurs during the conversion process, the function will return an Err object initialized with a failure state.
     */
+    template<typename T>
+    static Err convertSharedPointersToInputStruct(
+            const QList<ParquetReaderInputBase> &parquetReaderInputBases,
+            QList<T> *outputStructs
+    ) {
+
+        ERR_INIT
+
+        for (const ParquetReaderInputBase &prib : parquetReaderInputBases) {
+            T strct;
+            e = strct.initFromRead(prib); ree;
+            outputStructs->push_back(strct);
+        }
+
+        ERR_RETURN
+    }
+
     template<typename T>
     static Err convertSharedPointersToInputStruct(
             const QVector<ParquetReaderInputBase> &parquetReaderInputBases,
@@ -241,6 +271,34 @@ public:
     template<typename T>
     static Err read(
             const QString &fileURI,
+            QList<T> *readerRows
+    ) {
+
+        ERR_INIT
+
+        readerRows->clear();
+
+        e = ErrorUtils::fileExists(fileURI); ree;
+
+        ParquetReader reader;
+
+        QList<ParquetReaderInputBase> ptrsRead;
+        e = reader.readDataFromParquet(
+                fileURI,
+                &ptrsRead
+        ); ree;
+
+        e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+                ptrsRead,
+                readerRows
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    template<typename T>
+    static Err read(
+            const QString &fileURI,
             QVector<T> *readerRows
     ) {
 
@@ -252,14 +310,19 @@ public:
 
         ParquetReader reader;
 
-        QVector<ParquetReaderInputBase> ptrsRead;
+        QList<ParquetReaderInputBase> ptrsRead;
         e = reader.readDataFromParquet(
                 fileURI,
                 &ptrsRead
         ); ree;
 
+        QVector<ParquetReaderInputBase> ptrsReadVec;
+        for (const auto &p : ptrsRead) {
+            ptrsReadVec.push_back(p);
+        }
+
         e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
-                ptrsRead,
+                ptrsReadVec,
                 readerRows
         ); ree;
 
@@ -337,7 +400,7 @@ public:
     static Err read(
             const QString &fileURI,
             const QString &column,
-            QVector<T> *readerRows
+            QList<T> *readerRows
     ) {
 
         ERR_INIT
@@ -346,7 +409,7 @@ public:
 
         ParquetReader reader;
 
-        QVector<ParquetReaderInputBase> ptrsRead;
+        QList<ParquetReaderInputBase> ptrsRead;
         e = reader.readDataFromParquetUniqueByColumn(
                 fileURI,
                 column,
@@ -361,21 +424,74 @@ public:
         ERR_RETURN
     }
 
+    template<typename T>
+    static Err read(
+            const QString &fileURI,
+            const QString &column,
+            QVector<T> *readerRows
+    ) {
+
+        ERR_INIT
+
+        readerRows->clear();
+
+        ParquetReader reader;
+
+        QList<ParquetReaderInputBase> ptrsRead;
+        e = reader.readDataFromParquetUniqueByColumn(
+                fileURI,
+                column,
+                &ptrsRead
+        ); ree;
+
+        QVector<ParquetReaderInputBase> ptrsReadVec;
+        for (const auto &p : ptrsRead) {
+            ptrsReadVec.push_back(p);
+        }
+
+        e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+                ptrsReadVec,
+                readerRows
+        ); ree;
+
+        ERR_RETURN
+    }
+
     /**
     * @brief Writes data of a specified type to a Parquet file.
     *
-    * This template static function writes data from a QVector of the specified type (`T`)
+    * This template static function writes data from a QList of the specified type (`T`)
     * specified by the `readerRows` parameter to a Parquet file with the given `outputFilePath`.
     * It converts the input structures to shared pointers, initializes a ParquetReader, and writes
     * the data to the specified output file. Any encountered errors during the process are indicated
     * by the returned Err code.
     *
     * @tparam T The type of data to be written to the Parquet file.
-    * @param readerRows The QVector containing the data to be written.
+    * @param readerRows The QList containing the data to be written.
     * @param outputFilePath The file path where the Parquet file will be written.
     * @return Err The error code indicating success or failure of the operation.
     *
     */
+    template<typename T>
+    static Err write(
+            const QList<T> &readerRows,
+            const QString &outputFilePath
+    ) {
+
+        ERR_INIT
+
+        const QVector<QSharedPointer<ParquetReaderInputBase>> ptrs
+                = ParquetReaderInputBase::convertInputStructToSharedPointers(readerRows);
+
+        ParquetReader reader;
+        e = reader.writeDataToParquet(
+                outputFilePath,
+                ptrs
+        ); ree;
+
+        ERR_RETURN
+    }
+
     template<typename T>
     static Err write(
             const QVector<T> &readerRows,
@@ -401,13 +517,13 @@ public:
     *
     * This function reads unique data from a Parquet file specified by the `parquetFilePath`
     * parameter. The unique data is determined based on the specified `uniqueColumn`. The
-    * results are stored in a QVector of ParquetReaderInputBase objects (`rowsRead`). The
+    * results are stored in a QList of ParquetReaderInputBase objects (`rowsRead`). The
     * function uses Arrow to read and process the Parquet file, extracting columns and converting
     * them to rows. Any encountered errors during the process are indicated by the returned Arrow::Status.
     *
     * @param parquetFilePath The file path of the Parquet file to be read.
     * @param uniqueColumn The column based on which unique data is determined.
-    * @param rowsRead A pointer to a QVector<ParquetReaderInputBase> that will be populated
+    * @param rowsRead A pointer to a QList<ParquetReaderInputBase> that will be populated
     *                 with the read unique data.
     * @return arrow::Status The Arrow::Status indicating success or failure of the operation.
     *
@@ -415,7 +531,7 @@ public:
     Err readDataFromParquetUniqueByColumn(
             const QString &parquetFilePath,
             const QString &uniqueColumn,
-            QVector<ParquetReaderInputBase> *rowsRead
+            QList<ParquetReaderInputBase> *rowsRead
             );
 
     /**
@@ -443,20 +559,20 @@ public:
     * @brief Reads data from a Parquet file.
     *
     * This function reads data from a Parquet file specified by the `parquetFilePath`
-    * parameter. The results are stored in a QVector of ParquetReaderInputBase objects
+    * parameter. The results are stored in a QList of ParquetReaderInputBase objects
     * (`rowsRead`). It uses Arrow to read and process the Parquet file, extracting columns
     * and converting them to rows. Any encountered errors during the process are indicated
     * by the returned Err code.
     *
     * @param parquetFilePath The file path of the Parquet file to be read.
-    * @param rowsRead A pointer to a QVector<ParquetReaderInputBase> that will be populated
+    * @param rowsRead A pointer to a QList<ParquetReaderInputBase> that will be populated
     *                 with the read data.
     * @return Err The error code indicating success or failure of the operation.
     *
     */
     Err readDataFromParquet(
             const QString &parquetFilePath,
-            QVector<ParquetReaderInputBase> *rowsRead
+            QList<ParquetReaderInputBase> *rowsRead
             );
 
     /**

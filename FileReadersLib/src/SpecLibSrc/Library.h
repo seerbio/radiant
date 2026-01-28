@@ -122,7 +122,7 @@ public:
 	template<class F>
 	Err read(
 		F &input,
-		QVector<FragLibReaderRow> *fragLibReaderRows
+		QList<FragLibReaderRow> *fragLibReaderRows
 		) {
 
 		ERR_INIT
@@ -162,7 +162,7 @@ public:
 			Readers::readVector(input, elution_groups);
 		}
 
-		fragLibReaderRows->reserve(static_cast<int>(entries.size()));
+		// fragLibReaderRows->reserve(static_cast<int>(entries.size()));
 
 		for (int i = 0; i < entries.size(); i++) {
 

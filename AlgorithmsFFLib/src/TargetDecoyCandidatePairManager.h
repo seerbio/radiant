@@ -40,12 +40,12 @@ public:
     * 6. Initializes the manager's private implementation with the generated candidate pairs.
     *
     * @param pythiaParameters The PythiaParameters to use for initialization.
-    * @param fragLibReaderRows A pointer to the QVector<FragLibReaderRow> containing fragment library reader rows.
+    * @param fragLibReaderRows A pointer to the QList<FragLibReaderRow> containing fragment library reader rows.
     * @return An error code indicating the success or failure of the initialization process.
     */
     Err init(
             const PythiaParameters &pythiaParameters,
-            QVector<FragLibReaderRow> *fragLibReaderRows
+            QList<FragLibReaderRow> *fragLibReaderRows
             );
 
     /**
@@ -82,7 +82,7 @@ public:
 
 private:
 
-    Err buildTargetDecoyCandidatePairs(QVector<FragLibReaderRow> *fragLibReaderRows);
+    Err buildTargetDecoyCandidatePairs(QList<FragLibReaderRow> *fragLibReaderRows);
     Err filterDecoySequencesThatAreAlsoTargetSequences();
 
 private:
