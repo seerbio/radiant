@@ -34,7 +34,7 @@ void SpecLibReaderTests::peptideSearchTroubleShoot() {
 
     const QString filePath = "/home/andrewnichols/Downloads/uniprot_homosapiens_isoforms_con_20221209.predicted(1).speclib";
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
+    QList<FragLibReaderRow> fragLibReaderRows;
     e = SpecLibReader::getFragLibReaerRows(
         filePath,
         &fragLibReaderRows
@@ -68,7 +68,7 @@ void SpecLibReaderTests::getFragLibReaerRowsTest() {
     // const QString specLibFile = QStringLiteral("/home/andrewnichols/Desktop/Data/Libraries/lib.predicted.speclib");
     const QString specLibFile
         = QStringLiteral("/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.speclib");
-    QVector<FragLibReaderRow> fragLibReaderRows;
+    QList<FragLibReaderRow> fragLibReaderRows;
     e = SpecLibReader::getFragLibReaerRows(
         specLibFile,
         &fragLibReaderRows
@@ -77,7 +77,7 @@ void SpecLibReaderTests::getFragLibReaerRowsTest() {
 
     const QString fragLibFFFile
     = QStringLiteral("/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF");
-    QVector<FragLibReaderRow> fragLibReaderRowsFF;
+    QList<FragLibReaderRow> fragLibReaderRowsFF;
     e = FragLibReader::getFragLibReaderRows(
         fragLibFFFile,
         &fragLibReaderRowsFF

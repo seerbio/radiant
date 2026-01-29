@@ -28,7 +28,7 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
     const QString &testFilePath
             = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
+    QList<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,
             &fragLibReaderRows

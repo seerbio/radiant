@@ -26,7 +26,7 @@ public:
 
     static Err getFragLibReaderRows(
             const QString &fragLibFilePath,
-            QVector<FragLibReaderRow> *fragLibReaderRows
+            QList<FragLibReaderRow> *fragLibReaderRows
     );
 
 };

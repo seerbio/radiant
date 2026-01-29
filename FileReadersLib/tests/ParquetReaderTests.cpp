@@ -124,7 +124,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
 
     qDebug() << testFilePath;
 
-    QVector<ParquetReaderInputBase> ptrsRead;
+    QList<ParquetReaderInputBase> ptrsRead;
     e = parquetReader.readDataFromParquet(
             testFilePath,
             &ptrsRead

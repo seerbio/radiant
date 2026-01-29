@@ -29,7 +29,10 @@ void FragLibReaderTests::readWrteTestCombined() {
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS|666";
     tpr.intensityVals = {666.6, 66.6, 6.6};
 
-    const QVector<FragLibReaderRow> tprs(10, tpr);
+    QList<FragLibReaderRow> tprs;
+    for (int i = 0; i < 10; i++) {
+        tprs.push_back(tpr);
+    }
 
     ERR_INIT
 
@@ -43,7 +46,7 @@ void FragLibReaderTests::readWrteTestCombined() {
 
     QCOMPARE(e, eNoError);
 
-    QVector<FragLibReaderRow> readRows;
+    QList<FragLibReaderRow> readRows;
     e = ParquetReader::read(
             outputFilePath,
             &readRows
@@ -63,7 +66,7 @@ void FragLibReaderTests::getSM2IonsTest() {
     const QString &testFilePath
             = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
+    QList<FragLibReaderRow> fragLibReaderRows;
 
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,

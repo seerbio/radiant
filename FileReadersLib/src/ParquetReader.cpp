@@ -35,7 +35,7 @@ public:
 
     static Err readDataFromParquet(
             const QString &parquetFilePath,
-            QVector<ParquetReaderInputBase> *rowsRead
+            QList<ParquetReaderInputBase> *rowsRead
     );
 
     arrow::Status readDataFromParquet(
@@ -48,7 +48,7 @@ public:
     static arrow::Status readDataFromParquetUniqueByColumn(
             const QString &parquetFilePath,
             const QString &uniqueColumn,
-            QVector<ParquetReaderInputBase> *rowsRead
+            QList<ParquetReaderInputBase> *rowsRead
     );
 
 };
@@ -530,7 +530,7 @@ namespace {
 
     Err columnsMapToRowsMap(
             const QMap<QString, QVector<QVariant>> &columnsMap,
-            QVector<ParquetReaderInputBase> *rowsRead
+            QList<ParquetReaderInputBase> *rowsRead
             ) {
 
         ERR_INIT
@@ -565,7 +565,7 @@ namespace {
 }//namespace
 Err ParquetReader::Private::readDataFromParquet(
         const QString &parquetFilePath,
-        QVector<ParquetReaderInputBase> *rowsRead
+        QList<ParquetReaderInputBase> *rowsRead
         ) {
 
     ERR_INIT
@@ -783,7 +783,7 @@ namespace {
     Err columnsMapToRowsMap(
             const QMap<QString, QVector<QVariant>> &columnsMap,
             const QString &columnToFilterBy,
-            QVector<ParquetReaderInputBase> *rowsRead
+            QList<ParquetReaderInputBase> *rowsRead
     ) {
 
         ERR_INIT
@@ -828,7 +828,7 @@ namespace {
 arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
         const QString &parquetFilePath,
         const QString &uniqueColumn,
-        QVector<ParquetReaderInputBase> *rowsRead
+        QList<ParquetReaderInputBase> *rowsRead
         ) {
 
     ERR_INIT
@@ -860,7 +860,7 @@ arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
         QMap<QString, QVector<QVariant>> columnsMap;
         extractColumns(batch, &columnsMap);
 
-        QVector<ParquetReaderInputBase> rowsReadBatch;
+        QList<ParquetReaderInputBase> rowsReadBatch;
 
         e = columnsMapToRowsMap(
                 columnsMap,
@@ -904,7 +904,7 @@ Err ParquetReader::writeDataToParquet(
 
 Err ParquetReader::readDataFromParquet(
         const QString &parquetFilePath,
-        QVector<ParquetReaderInputBase> *rowsRead
+        QList<ParquetReaderInputBase> *rowsRead
         ) {
 
     ERR_INIT
@@ -941,7 +941,7 @@ Err ParquetReader::readDataFromParquet(
 Err ParquetReader::readDataFromParquetUniqueByColumn(
         const QString &parquetFilePath,
         const QString &uniqueColumn,
-        QVector<ParquetReaderInputBase> *rowsRead
+        QList<ParquetReaderInputBase> *rowsRead
         ) {
 
     ERR_INIT

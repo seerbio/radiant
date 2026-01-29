@@ -107,7 +107,7 @@ public:
 
     Err getFragLibReaderRows(
             const QString &fragLibFilePath,
-            QVector<FragLibReaderRow> *fragLibReaderRows
+            QList<FragLibReaderRow> *fragLibReaderRows
     );
 
 private:
@@ -116,7 +116,7 @@ private:
 
 private:
 
-    QVector<FragLibReaderRow> m_fragLibReaderRows;
+    QList<FragLibReaderRow> m_fragLibReaderRows;
     QString m_tsvFilePath;
 
     QStringList m_labelsCurrent;

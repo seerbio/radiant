@@ -568,7 +568,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
+    QList<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
         fragLibPath,
         &fragLibReaderRows

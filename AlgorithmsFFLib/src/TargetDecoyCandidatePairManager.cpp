@@ -17,7 +17,7 @@
 
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
-        QVector<FragLibReaderRow> *fragLibReaderRows
+        QList<FragLibReaderRow> *fragLibReaderRows
         ) {
 
     ERR_INIT
@@ -115,7 +115,7 @@ namespace {
 
 }//namespace
 Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
-        QVector<FragLibReaderRow> *fragLibReaderRows
+        QList<FragLibReaderRow> *fragLibReaderRows
         ) {
 
     ERR_INIT

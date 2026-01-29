@@ -11,7 +11,7 @@
 
 Err FragLibReader::getFragLibReaderRows(
         const QString &fragLibFilePath,
-        QVector<FragLibReaderRow> *fragLibReaderRows
+        QList<FragLibReaderRow> *fragLibReaderRows
         ) {
 
     ERR_INIT

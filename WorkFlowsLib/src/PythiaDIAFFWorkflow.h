@@ -156,7 +156,7 @@ private:
 
     QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
-    QVector<FragLibReaderRow> m_fragLibReaderRows;
+    QList<FragLibReaderRow> m_fragLibReaderRows;
 
     QVector<Features> m_calibratomaticFeatures;
     QVector<Features> m_ppmOptimizationFeatures;
