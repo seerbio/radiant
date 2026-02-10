@@ -1,8 +1,8 @@
-# PythiaDIA Development
+# Radiant DIA Development
 
 ## Setting up a development environment
 
-The scripts used to buuild Pythia also support creating and working within
+The scripts used to buuild Radiant also support creating and working within
 a local development environment, with support for incremental CMake/Make builds.
 Currently this is only tested to work within a Ubuntu environment.
 

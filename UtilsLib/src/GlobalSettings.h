@@ -130,9 +130,10 @@ public:
     const QString PRQ_FILE_EXTENSION = QStringLiteral("prqFF");
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
-    const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythiaConfig");
-    const QString PYTHIA_CAL_FILE_EXTENSION = QStringLiteral("pythiaCAL");
-    const QString PYTHIA_DIA_FILE_EXTENSION = QStringLiteral("pythiaDIA");
+    const QString CONFIG_FILE_EXTENSION = QStringLiteral("radiantConfig");
+    // const QString PYTHIA_CAL_FILE_EXTENSION = QStringLiteral("pythiaCAL");
+    const QString RADIANT_DIA_FILE_EXTENSION = QStringLiteral("radiantDIA");
+    const QString TOML_FILE_EXTENSION = QStringLiteral("toml");
 
     const QString DOT_CACHED_FILE_EXTENSION = QStringLiteral(".cached");
     const QString DOT_CSV_FILE_EXTENSION = QStringLiteral(".csv");
@@ -142,9 +143,10 @@ public:
     const QString DOT_PRQ_FILE_EXTENSION = QStringLiteral(".prq");
     const QString DOT_PSM_FILE_EXTENSION = QStringLiteral(".psm");
     const QString DOT_PSM_SCORED_FILE_EXTENSION = QStringLiteral(".scored");
-    const QString DOT_PYTHIA_FILE_EXTENSION = QStringLiteral(".pythia");
-    const QString DOT_PYTHIA_CAL_FILE_EXTENSION = QStringLiteral(".pythiaCAL");
-    const QString DOT_PYTHIA_DIA_FILE_EXTENSION = QStringLiteral(".pythiaDIA");
+    // const QString DOT_PYTHIA_FILE_EXTENSION = QStringLiteral(".pythia");
+    // const QString DOT_PYTHIA_CAL_FILE_EXTENSION = QStringLiteral(".pythiaCAL");
+    const QString DOT_RADIANT_DIA_FILE_EXTENSION = QStringLiteral(".radiantDIA");
+    const QString DOT_TOML_FILE_EXTENSION = QStringLiteral(".toml");
 
     const QString Y_IONS = QStringLiteral("yIons");
     const QString B_IONS = QStringLiteral("bIons");

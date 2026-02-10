@@ -17,7 +17,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kGeneral;
     extern const QString FILEREADERSLIB_EXPORTS kThreadCount;
     extern const QString FILEREADERSLIB_EXPORTS kVerbosity;
-    extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
+    extern const QString FILEREADERSLIB_EXPORTS kWriteRadiantDIA;
     extern const QString FILEREADERSLIB_EXPORTS kUseLazyLoading;
     extern const QString FILEREADERSLIB_EXPORTS kReannotate;
     extern const QString FILEREADERSLIB_EXPORTS kShortReport;
@@ -87,7 +87,7 @@ struct PythiaParameters{
     //[General]
     int threadCount = 8;
     int verbosity = 0;
-    bool writePythiaDIA = true;
+    bool writeRadiantDIA = true;
     bool reannotate = false;
     bool useLazyLoading = false;
     bool optimizeMode = false;
@@ -205,7 +205,7 @@ struct PythiaParameters{
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kGeneral << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kThreadCount) << threadCount;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kVerbosity) << verbosity;
-        qDebug() << qPrintable(PythiaParameterReaderConstants:: kWritePythiaDIA) << writePythiaDIA;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kWriteRadiantDIA) << writeRadiantDIA;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kUseLazyLoading) << useLazyLoading;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kReannotate) << reannotate;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kShortReport) << shortReport;

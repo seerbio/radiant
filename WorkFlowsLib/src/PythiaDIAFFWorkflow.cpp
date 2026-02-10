@@ -307,7 +307,7 @@ namespace {
                     [](const CandidateScores *cs){return CandidateScoresReaderRowTrunc::buildCandidateScoresReaderRow(cs);}
                     );
 
-            QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+            QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_RADIANT_DIA_FILE_EXTENSION;
 
             if (!outputFolderPath.isEmpty()) {
                 const QFileInfo fileInfo(resultsFilePath);
@@ -327,7 +327,7 @@ namespace {
                 [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
                 );
 
-        QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+        QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_RADIANT_DIA_FILE_EXTENSION;
 
         if (!outputFolderPath.isEmpty()) {
             const QFileInfo fileInfo(resultsFilePath);
@@ -496,7 +496,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 ); ree;
     }
 
-    if (m_pythiaParameters.writePythiaDIA) {
+    if (m_pythiaParameters.writeRadiantDIA) {
         e = writePythiaDIA(
             candidateScoreClassifierPntrs,
             m_pythiaParameters.shortReport,

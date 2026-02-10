@@ -68,7 +68,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.pythiaParametersFilePath = args[3];
     const bool pythiaPathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.pythiaParametersFilePath,
-            {S_GLOBAL_SETTINGS.PYTHIA_FILE_EXTENSION}
+            {S_GLOBAL_SETTINGS.CONFIG_FILE_EXTENSION}
             );
     if (!pythiaPathIsValid) {
         qCritical() << QStringLiteral("Third command line argument *.pythiaConfig argument invalid");
