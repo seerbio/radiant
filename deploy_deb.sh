@@ -3,17 +3,17 @@
 # "Strict mode"
 set -eu -o pipefail
 
-CONTAINER=${CONTAINER:-seer/pythia-dia}
+CONTAINER=${CONTAINER:-seer/radiant}
 
 GIT_TAG_VERSION=$(git tag --points-at | grep -Po "^($CONTAINER/)?v?\K\d+\.\d+\.\d+.*$" | sort -Vr | head -n 1 || true)
 
-export pythiadia_version=${pythiadia_version:-${GIT_TAG_VERSION}}
+export radiantdia_version=${radiantdia_version:-${GIT_TAG_VERSION}}
 
-echo "Found pythiadia version '${pythiadia_version}'"
+echo "Found radiantdia version '${radiantdia_version}'"
 
 echo "Building deploy container…"
 DEPLOY_IMG="${CONTAINER}-deb-build:${GIT_TAG_VERSION}"
-docker build --target build-deb --build-arg pythiadia_version -t "${DEPLOY_IMG}" .
+docker build --target build-deb --build-arg radiantdia_version -t "${DEPLOY_IMG}" .
 
 # Run the default command from the `deploy` stage.
 # This builds the DEB and pushes it to S3.

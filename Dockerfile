@@ -126,8 +126,8 @@ RUN cp \
 
 WORKDIR /app/
 
-ARG pythiadia_version=0.0-dev
-ENV package_dir=pythiadia_${pythiadia_version}
+ARG radiantdia_version=0.0-dev
+ENV package_dir=radiantdia_${radiantdia_version}
 ENV PACKAGE_NAME=${package_dir}
 
 # Build the package into this stage's container
@@ -148,7 +148,7 @@ FROM build AS app
 
 # Set labels
 LABEL author="Seer, Inc."
-LABEL description="PythiaDIACpp"
+LABEL description="Radiant DIA search engine"
 
 COPY --from=build-deb /app/*.deb /app/
 RUN apt-get update \
@@ -165,4 +165,4 @@ WORKDIR /work/
 # Using this entrypoint means the "command" passed to `docker run` will be arguments to
 # this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
 # overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
-ENTRYPOINT ["PythiaDIA"]
+ENTRYPOINT ["RadiantDIA"]

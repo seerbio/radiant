@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(PythiaDIA)
+PROJECT(RadiantDIA)
 
 FIND_PACKAGE(Qt5 COMPONENTS
         Core

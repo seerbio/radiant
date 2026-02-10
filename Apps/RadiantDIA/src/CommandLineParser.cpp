@@ -12,7 +12,7 @@
 namespace {
     const QString ARG_FRAGLIB_PATH = QStringLiteral("fraglibff-path");
     const QString ARG_FASTA_PATH = QStringLiteral("fasta-path");
-    const QString ARG_PYTHIA_PARAMS = QStringLiteral("pythia-path");
+    const QString ARG_PYTHIA_PARAMS = QStringLiteral("config-path");
     const QString ARG_DATAFILE_PATH = QStringLiteral("data-file-path");
     const QString ARG_OUTPUT_FOLDER = QStringLiteral("output-folder");
 } // END NAMESPACE
@@ -21,7 +21,7 @@ CommandLineParser::CommandLineParser() {
     addHelpOption();
     addPositionalArgument(ARG_FRAGLIB_PATH, QObject::tr("*.fragLibFF file"));
     addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
-    addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.pythia file"));
+    addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.radiantConfig file"));
     addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data directory path"));
 
     addOption(QCommandLineOption(
@@ -78,10 +78,13 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.pythiaParametersFilePath = args[3];
     const bool pythiaPathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.pythiaParametersFilePath,
-            {S_GLOBAL_SETTINGS.PYTHIA_FILE_EXTENSION}
+            {
+                S_GLOBAL_SETTINGS.CONFIG_FILE_EXTENSION,
+                S_GLOBAL_SETTINGS.TOML_FILE_EXTENSION,
+            }
             );
     if (!pythiaPathIsValid) {
-        qCritical() << QStringLiteral("Third command line argument *.pythiaConfig argument invalid");
+        qCritical() << QStringLiteral("Third command line argument *.radiantConfig argument invalid");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
