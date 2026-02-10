@@ -80,6 +80,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             m_cliParams.pythiaParametersFilePath,
             {
                 S_GLOBAL_SETTINGS.CONFIG_FILE_EXTENSION,
+                S_GLOBAL_SETTINGS.LEGACY_CONFIG_FILE_EXTENSION,
                 S_GLOBAL_SETTINGS.TOML_FILE_EXTENSION,
             }
             );

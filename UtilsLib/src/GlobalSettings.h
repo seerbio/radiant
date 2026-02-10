@@ -131,6 +131,7 @@ public:
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
     const QString CONFIG_FILE_EXTENSION = QStringLiteral("radiantConfig");
+    const QString LEGACY_CONFIG_FILE_EXTENSION = QStringLiteral("pythiaConfig");
     // const QString PYTHIA_CAL_FILE_EXTENSION = QStringLiteral("pythiaCAL");
     const QString RADIANT_DIA_FILE_EXTENSION = QStringLiteral("radiantDIA");
     const QString TOML_FILE_EXTENSION = QStringLiteral("toml");
