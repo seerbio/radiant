@@ -803,7 +803,6 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
-        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
         // matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
         //     matriciesAndVecs->intensityVec,
         //     d_ptr->m_kernelIntegration
@@ -828,6 +827,8 @@ Err CandidateScorertron::initMatricesdAndVecs(
                           ? matriciesAndVecs->intensityMatrix100 - matriciesAndVecs->intensityMatrix100Shadow
                           : matriciesAndVecs->intensityMatrix100;
         EigenUtils::thresholdMatrix(0.0f, &matriciesAndVecs->intensityMatrix100);
+
+        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
         e = buildIntegrationVector(
             *matriciesAndVecs,
