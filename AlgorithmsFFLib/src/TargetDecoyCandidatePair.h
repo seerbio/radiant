@@ -17,6 +17,30 @@
 using namespace Error;
 
 
+/*
+ * Decoy fragment m/z shifts can be interpreted in two modes.
+ * Both use the same decoy-sequence mutation pattern (mutating the penultimate residues at both termini),
+ * but they differ in how far the corresponding residue-level mass deltas are propagated.
+ */
+enum class DecoyFragmentShiftMode {
+	/*
+	 * Chemistry-aligned mode (current default): shifts are propagated only to fragments that
+	 * physically contain the mutated residues, preserving sequence-derived fragment chemistry.
+	 */
+	ShiftPenultimate,
+
+	/*
+	 * Terminus-shift mode: in addition to chemistry-aligned propagation, terminal fragments inherit
+	 * the penultimate-residue mutation mass shift.
+	 * Example (VATVSLPR): based on the A->L mutation (from our mutation table), the mass delta (+42.0469 Da)
+	 * is applied to short V-derived fragments (e.g., 100.0757 -> 142.1226 m/z). The shifted mass remains
+	 * chemically valid by atom-count arithmetic (delta C3H6; C5H10NO+ + C3H6 = C8H16NO+), but it is not a
+	 * canonical sequence-derived peptide fragment. Entrapment analyses indicated no material degradation
+	 * of decoy-based FDR calibration under this mode.
+	 */
+	ShiftTerminalByPenultimate,
+};
+
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePair {
 
 public:
@@ -114,9 +138,10 @@ private:
 
     void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);
 
-	static void mutateCandidatePeptideTargetTestAccess(
+	static QVector<MS2Ion> mutateCandidatePeptideTargetTestAccess(
 		const PeptideStringWithMods &peptideStringWithMods,
-		const QVector<MS2Ion> &ms2IonTarget
+		const QVector<MS2Ion> &ms2IonTarget,
+		const DecoyFragmentShiftMode shiftMode
 		);
 
 private:
