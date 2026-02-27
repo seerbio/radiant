@@ -24,6 +24,8 @@ public:
 
     ~PeptideStringWithMods() = default;
 
+    [[nodiscard]] bool isValidSequence() const;
+
     [[nodiscard]] PeptideString removeUniModChars() const;
 
     [[nodiscard]] QMap<Index, double> modificationsMap() const;

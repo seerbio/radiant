@@ -29,8 +29,22 @@ QMap<QChar, Molecule> AminoAcids::aminoAcids()
        {'V', Molecule(valineFormula)},
        {'W', Molecule(tryptophanFormula)},
        {'Y', Molecule(tyrosineFormula)},
-       {'U', Molecule(cysteicAcidFormula + cysteineFormula)}, //FROM DIANN
-       {'X', Molecule(methionineFormula + cysteineFormula)} //FROM DIANN
+
+        // J is ambiguous but has a single mass / formula:
+        {'J', Molecule(leucineFormula)},
+
+        // O is non-standard but has a single mass / formula:
+        {'O', Molecule(pyrrolysineFormula)},
+
+        // U is non-standard, has a single mass / formula, but contains non-CHONPS elements, so it is unsupported:
+        // {'U', Molecule(selenocysteineFormula)},
+        // {'U', Molecule(cysteicAcidFormula + cysteineFormula)}, //FROM DIANN
+
+        // These are ambiguous and have two or more masses / formulae; they are not supported:
+        // B (D/N)
+        // Z (E/Q)
+        // X
+        // {'X', Molecule(methionineFormula + cysteineFormula)} //FROM DIANN
     };
 
     return aa;

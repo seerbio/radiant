@@ -24,6 +24,7 @@ private slots:
     static void ySeriesTest();
     static void bSeriesIonLabelsTest();
     static void ySeriesIonLabelsTest();
+    static void isValidSequenceTest();
 
 };
 
@@ -126,6 +127,20 @@ void PeptideStringWithModsTests::ySeriesIonLabelsTest() {
     const QStringList expected2 = {"y1^2", "y2^2", "y3^2", "y4^2"};
     QCOMPARE(peptideStringWithMods.ySeriesIonLabels("^2"), expected2);
 
+}
+
+void PeptideStringWithModsTests::isValidSequenceTest() {
+    const PeptideStringWithMods valid = PeptideStringWithMods("JOA[+15.99]CDEFGHIKLM(Oxidation)NPQRSTVWY");
+    QCOMPARE(valid.isValidSequence(), true);
+
+    PeptideStringWithMods invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)XK");
+    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)UK");
+    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)BK");
+    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)ZK");
+    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
 }
 
 

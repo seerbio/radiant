@@ -118,6 +118,7 @@ namespace MolecularFormulas
     extern const MolecularFormula CHEMLIB_EXPORTS tryptophanFormula;
     extern const MolecularFormula CHEMLIB_EXPORTS tyrosineFormula;
     extern const MolecularFormula CHEMLIB_EXPORTS cysteicAcidFormula;
+    extern const MolecularFormula CHEMLIB_EXPORTS pyrrolysineFormula;
 
     //Small Groups CHEMLIB_EXPORTS
     extern const MolecularFormula CHEMLIB_EXPORTS ammoniaFormula;
