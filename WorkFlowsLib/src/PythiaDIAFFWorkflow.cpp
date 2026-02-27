@@ -106,6 +106,7 @@ Err PythiaDIAFFWorkflow::init(
 
     e = FragLibReader::getFragLibReaderRows(
             m_fragLibUri,
+            m_pythiaParameters.useAlternativeDecoys,
             &m_fragLibReaderRows
             ); ree;
 

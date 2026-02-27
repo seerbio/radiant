@@ -90,8 +90,6 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
 }
 
 namespace {
-    constexpr DecoyFragmentShiftMode kDecoyFragmentShiftMode = DecoyFragmentShiftMode::ShiftPenultimate;
-
     bool ionCrossesResidueMutationBoundary(
             const IonIndex ionIndex,
             const ResidueIndex residueIndexToMutate,
@@ -197,7 +195,7 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
     QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(
             peptideStringWithMods(),
             ms2IonsTarget(),
-            kDecoyFragmentShiftMode
+            m_decoyFragmentShiftMode
             );
     if (m_decoySharesSequenceWithOtherTarget) {
         mangleMs2IonsDecoy(&ms2IonsDec);
@@ -278,4 +276,8 @@ void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
 
 void TargetDecoyCandidatePair::decoySharesSequenceWithOtherTarget(bool val) {
     m_decoySharesSequenceWithOtherTarget = val;
+}
+
+void TargetDecoyCandidatePair::setDecoyFragmentShiftMode(DecoyFragmentShiftMode mode) {
+    m_decoyFragmentShiftMode = mode;
 }

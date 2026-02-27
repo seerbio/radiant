@@ -132,6 +132,7 @@ public:
 
     static void mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions); //TODO document
     void decoySharesSequenceWithOtherTarget(bool val);
+    void setDecoyFragmentShiftMode(DecoyFragmentShiftMode mode);
 
 
 private:
@@ -151,6 +152,7 @@ private:
 
     FragLibReaderRow *m_fragLibReaderRowPntr;
     bool m_decoySharesSequenceWithOtherTarget;
+    DecoyFragmentShiftMode m_decoyFragmentShiftMode = DecoyFragmentShiftMode::ShiftPenultimate;
 };
 
 

@@ -26,6 +26,7 @@ public:
 
     static Err getFragLibReaderRows(
             const QString &fragLibFilePath,
+            bool useAlternativeDecoys,
             QList<FragLibReaderRow> *fragLibReaderRows
     );
 

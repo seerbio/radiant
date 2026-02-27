@@ -80,6 +80,7 @@ void SpecLibReaderTests::getFragLibReaerRowsTest() {
     QList<FragLibReaderRow> fragLibReaderRowsFF;
     e = FragLibReader::getFragLibReaderRows(
         fragLibFFFile,
+        false,
         &fragLibReaderRowsFF
         );
     QCOMPARE(e, eNoError);

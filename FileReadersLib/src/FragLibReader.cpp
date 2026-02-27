@@ -11,6 +11,7 @@
 
 Err FragLibReader::getFragLibReaderRows(
         const QString &fragLibFilePath,
+        bool useAlternativeDecoys,
         QList<FragLibReaderRow> *fragLibReaderRows
         ) {
 
@@ -53,6 +54,7 @@ Err FragLibReader::getFragLibReaderRows(
     }
     else if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_TSV)){
             FragLibTsvReader fragLibTsvReader;
+            fragLibTsvReader.setEnableTerminalByPenultimateDecoyAnnotationShift(useAlternativeDecoys);
             e = fragLibTsvReader.getFragLibReaderRows(
                     fragLibFilePath,
                     fragLibReaderRows

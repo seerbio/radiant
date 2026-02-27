@@ -30,6 +30,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMin;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMax;
     extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
+    extern const QString FILEREADERSLIB_EXPORTS kUseAlternativeDecoys;
 
     extern const QString FILEREADERSLIB_EXPORTS kMS1Params;
     extern const QString FILEREADERSLIB_EXPORTS kPrecursorExtractionWindowThomsons;
@@ -101,6 +102,7 @@ struct PythiaParameters{
     int peptideLengthMin = 7;
     int peptideLengthMax = 30;
     int trancheSizeMax = 2e4;
+    bool useAlternativeDecoys = false;
 
     //[MS1Params]
     double ms1ExtractionWidthPPM = 20.0;
@@ -218,6 +220,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeptideLengthMin) << peptideLengthMin;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeptideLengthMax) << peptideLengthMax;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTrancheSizeMax) << trancheSizeMax;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kUseAlternativeDecoys) << useAlternativeDecoys;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS1Params << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons) << precursorExtractionWindowThomsons;
