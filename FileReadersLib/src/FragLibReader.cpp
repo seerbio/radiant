@@ -3,11 +3,44 @@
 //
 
 #include "FragLibReader.h"
+#include "AminoAcids.h"
 #include "FragLibTsvReader.h"
+#include "PeptideStringWithMods.h"
 #include "SpecLibReader.h"
 
 #include <QElapsedTimer>
 #include <QFileInfo>
+
+#include <algorithm>
+
+namespace {
+
+    bool hasValidSequence(const FragLibReaderRow &fragLibReaderRow) {
+        const QStringList keySplit = fragLibReaderRow.peptideSequenceChargeKey.split(
+            S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+            Qt::SkipEmptyParts
+            );
+
+        if (keySplit.size() != 2) {
+            return false;
+        }
+
+        const PeptideString sequenceNoMods = PeptideStringWithMods(keySplit.front()).removeUniModChars();
+        return AminoAcids::validPeptideSequence(sequenceNoMods);
+    }
+
+    void filterInvalidSequenceEntries(QList<FragLibReaderRow> *fragLibReaderRows) {
+        const auto terminator = std::remove_if(
+            fragLibReaderRows->begin(),
+            fragLibReaderRows->end(),
+            [](const FragLibReaderRow &fragLibReaderRow) {
+                return !hasValidSequence(fragLibReaderRow);
+            }
+            );
+        fragLibReaderRows->erase(terminator, fragLibReaderRows->end());
+    }
+
+}
 
 Err FragLibReader::getFragLibReaderRows(
         const QString &fragLibFilePath,
@@ -57,6 +90,16 @@ Err FragLibReader::getFragLibReaderRows(
                     fragLibFilePath,
                     fragLibReaderRows
                     ); ree;
+    }
+
+    const int countBeforeFilter = fragLibReaderRows->size();
+    filterInvalidSequenceEntries(fragLibReaderRows);
+    const int invalidSequenceCount = countBeforeFilter - fragLibReaderRows->size();
+    if (invalidSequenceCount > 0) {
+        qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                   << "Dropped"
+                   << invalidSequenceCount
+                   << "library entries with invalid peptide sequences";
     }
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Predictions count:" << fragLibReaderRows->size() << "retrieved in" << et.elapsed() << "mSec";
