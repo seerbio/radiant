@@ -7,6 +7,7 @@
 
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
+#include "PeptideStringWithMods.h"
 
 
 using namespace Error;
@@ -110,6 +111,17 @@ public:
             QList<FragLibReaderRow> *fragLibReaderRows
     );
 
+    void setEnableTerminalByPenultimateDecoyAnnotationShift(bool enable);
+
+    static Err inferIonLabelsForTest(
+            const QVector<float> &mzValsToPair,
+            const PeptideStringWithMods &peptideStringWithMods,
+            bool isDecoy,
+            int charge,
+            bool enableTerminalByPenultimateDecoyAnnotationShift,
+            QString *ionLabels
+            );
+
 private:
 
     Err convertFragLibTsvReaderRowsToFragLibReaderRow(const FragLibTsvReaderRow &tsvRow);
@@ -127,6 +139,7 @@ private:
     float m_irtCurrent = 1.0;
     int m_precursorChargeCurrent = -1;
     float m_precursorMzCurrent = -1.0;
+    bool m_enableTerminalByPenultimateDecoyAnnotationShift = false;
 
 };
 

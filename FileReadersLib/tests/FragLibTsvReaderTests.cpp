@@ -22,6 +22,8 @@ private Q_SLOTS:
     static void getFragLibReaderRowsTest();
 
     static void compareTest();
+
+    static void inferIonLabelsModeSwitchTest();
 };
 
 void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
@@ -93,6 +95,51 @@ void FragLibTsvReaderTests::compareTest() {
     //     << tsv.ionLabels;
     //
     // }
+}
+
+void FragLibTsvReaderTests::inferIonLabelsModeSwitchTest() {
+
+    const PeptideStringWithMods peptideStringWithMods("VTWLSPTNK");
+    const bool isDecoy = true;
+    const int charge = 1;
+
+    QString ionLabels;
+
+    // Default annotation mode (no decoy shift applied).
+    {
+        const QVector<float> mzVals = {
+                546.28800f, // y5
+                587.31900f  // b5
+        };
+        Err e = FragLibTsvReader::inferIonLabelsForTest(
+                mzVals,
+                peptideStringWithMods,
+                isDecoy,
+                charge,
+                false,
+                &ionLabels
+                );
+        QCOMPARE(e, eNoError);
+        QCOMPARE(ionLabels, QString("y5;b5"));
+    }
+
+    // Terminal-by-penultimate mode: y7 and b7 retain terminal-series masses.
+    {
+        const QVector<float> mzVals = {
+                560.30400f, // y5
+                573.30300f  // b5
+        };
+        Err e = FragLibTsvReader::inferIonLabelsForTest(
+                mzVals,
+                peptideStringWithMods,
+                isDecoy,
+                charge,
+                true,
+                &ionLabels
+                );
+        QCOMPARE(e, eNoError);
+        QCOMPARE(ionLabels, QString("y5;b5"));
+    }
 }
 
 
