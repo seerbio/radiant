@@ -90,10 +90,49 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
 }
 
 namespace {
+    /*
+     * Decoy fragment m/z shifts can be interpreted in two modes.
+     * Both use the same decoy-sequence mutation pattern (mutating the penultimate residues at both termini),
+     * but they differ in how far the corresponding residue-level mass deltas are propagated.
+     */
+    enum class DecoyFragmentShiftMode {
+        /*
+         * Chemistry-aligned mode (current default): shifts are propagated only to fragments that
+         * physically contain the mutated residues, preserving sequence-derived fragment chemistry.
+         */
+        ShiftPenultimate,
+
+        /*
+         * Terminus-shift mode: in addition to chemistry-aligned propagation, terminal fragments inherit
+         * the penultimate-residue mutation mass shift.
+         * Example (VATVSLPR): based on the A->L mutation (from our mutation table), the mass delta (+42.0469 Da)
+         * is applied to short V-derived fragments (e.g., 100.0757 -> 142.1226 m/z). The shifted mass remains
+         * chemically valid by atom-count arithmetic (delta C3H6; C5H10NO+ + C3H6 = C8H16NO+), but it is not a
+         * canonical sequence-derived peptide fragment. Entrapment analyses indicated no material degradation
+         * of decoy-based FDR calibration under this mode.
+         */
+        ShiftTerminalByPenultimate,
+    };
+
+    constexpr DecoyFragmentShiftMode kDecoyFragmentShiftMode = DecoyFragmentShiftMode::ShiftPenultimate;
+
+    bool ionCrossesResidueMutationBoundary(
+            const IonIndex ionIndex,
+            const ResidueIndex residueIndexToMutate,
+            const DecoyFragmentShiftMode shiftMode
+            ) {
+
+        const int residueIndexCoveredByFragment = shiftMode == DecoyFragmentShiftMode::ShiftTerminalByPenultimate
+            ? ionIndex
+            : ionIndex - 1;
+
+        return residueIndexCoveredByFragment >= residueIndexToMutate;
+    }
 
     QVector<MS2Ion> mutateCandidatePeptideTarget(
         const PeptideStringWithMods &peptideStringWithMods,
-        const QVector<MS2Ion> &ms2IonTarget
+        const QVector<MS2Ion> &ms2IonTarget,
+        const DecoyFragmentShiftMode shiftMode
         ) {
 
         ERR_INIT
@@ -103,7 +142,7 @@ namespace {
         const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
 
         constexpr int firstIndexToMutate = 1;
-        const int secondIndexToMutate = peptideString.size() - 2;
+        const int secondIndexToMutate = peptideString.size() - 1 - firstIndexToMutate;
 
         const double nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
         const double cTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(secondIndexToMutate));
@@ -123,21 +162,21 @@ namespace {
 
                 if (ionLableInfo.second.contains("^2")) {
 
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, firstIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += nTermDeltaMassCharge2;
                     }
 
-                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, secondIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += cTermDeltaMassCharge2;
                     }
                 }
                 else {
 
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, firstIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += nTermDeltaMass;
                     }
 
-                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, secondIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += cTermDeltaMass;
                     }
                 }
@@ -147,21 +186,21 @@ namespace {
 
                 if (ionLableInfo.second.contains("^2")) {
 
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, firstIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += cTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
 
-                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, secondIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += nTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
                 }
                 else {
 
-                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, firstIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += cTermDeltaMass; //NOTE: do not static cast to float
                     }
 
-                    if (ionLableInfo.first - 1 >= secondIndexToMutate) {
+                    if (ionCrossesResidueMutationBoundary(ionLableInfo.first, secondIndexToMutate, shiftMode)) {
                         ms2IonDecoy.mz += nTermDeltaMass; //NOTE: do not static cast to float
                     }
                 }
@@ -179,8 +218,11 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
-
-    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(peptideStringWithMods(), ms2IonsTarget());
+    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(
+            peptideStringWithMods(),
+            ms2IonsTarget(),
+            kDecoyFragmentShiftMode
+            );
     if (m_decoySharesSequenceWithOtherTarget) {
         mangleMs2IonsDecoy(&ms2IonsDec);
     }
@@ -241,7 +283,11 @@ void TargetDecoyCandidatePair::mutateCandidatePeptideTargetTestAccess(
 	qDebug() << peptideStringWithMods.bSeries(1, AminoAcids());
 	qDebug() << peptideStringWithMods.ySeries(1, AminoAcids());
 
-	const QVector<MS2Ion> decoys = mutateCandidatePeptideTarget(peptideStringWithMods, ms2IonTarget);
+	const QVector<MS2Ion> decoys = mutateCandidatePeptideTarget(
+            peptideStringWithMods,
+            ms2IonTarget,
+            kDecoyFragmentShiftMode
+            );
 	qDebug() << ms2IonTarget;
 	qDebug() << decoys;
 }
@@ -255,5 +301,3 @@ void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
 void TargetDecoyCandidatePair::decoySharesSequenceWithOtherTarget(bool val) {
     m_decoySharesSequenceWithOtherTarget = val;
 }
-
-
