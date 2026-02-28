@@ -5,6 +5,8 @@
 #include "ErrorUtils.h"
 #include "FragLibReader.h"
 #include "FragLibTsvReader.h"
+#include "AminoAcids.h"
+#include "TargetDecoyCandidatePair.h"
 
 
 #include <QtTest/QtTest>
@@ -23,7 +25,8 @@ private Q_SLOTS:
 
     static void compareTest();
 
-    static void inferIonLabelsModeSwitchTest();
+    static void inferIonLabelsStandardModeRoundTripTest();
+    static void inferIonLabelsAlternativeModeRoundTripTest();
 };
 
 void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
@@ -97,49 +100,152 @@ void FragLibTsvReaderTests::compareTest() {
     // }
 }
 
-void FragLibTsvReaderTests::inferIonLabelsModeSwitchTest() {
+namespace {
+    constexpr int kCharge = 1;
+    // first/second/middle/penultimate/last fragment indices (1,2,4,6,7) across b/y.
+    const QStringList kRepresentativeIonLabels = {"y1", "b2", "y2", "b4", "y4", "b6", "y6", "b7", "y7"};
+    const QString kExpectedLabels = kRepresentativeIonLabels.join(S_GLOBAL_SETTINGS.SEPARATOR);
+    const PeptideStringWithMods kTargetPeptide = PeptideStringWithMods("WWTVSLPW");
 
-    const PeptideStringWithMods peptideStringWithMods("VTWLSPTNK");
-    const bool isDecoy = true;
-    const int charge = 1;
+    QVector<float> mzValsForIonLabels(
+            const PeptideStringWithMods &peptideStringWithMods,
+            const QStringList &ionLabels
+            ) {
+        AminoAcids aminoAcids;
+        const QVector<double> bSeries = peptideStringWithMods.bSeries(kCharge, aminoAcids);
+        const QVector<double> ySeries = peptideStringWithMods.ySeries(kCharge, aminoAcids);
+
+        QVector<float> mzVals;
+        mzVals.reserve(ionLabels.size());
+        for (const QString &ionLabel : ionLabels) {
+            const bool isB = ionLabel.startsWith('b');
+            const int ionIndex = ionLabel.mid(1).toInt();
+            const double mz = isB ? bSeries.at(ionIndex - 1) : ySeries.at(ionIndex - 1);
+            mzVals.push_back(static_cast<float>(mz));
+        }
+        return mzVals;
+    }
+
+    FragLibReaderRow buildFragLibRowForIons(
+            const PeptideStringWithMods &peptideStringWithMods,
+            const QVector<float> &mzVals,
+            const QStringList &ionLabels
+            ) {
+        FragLibReaderRow fragLibReaderRow;
+        fragLibReaderRow.peptideSequenceChargeKey = peptideStringWithMods + "|" + QString::number(kCharge);
+        fragLibReaderRow.precursorCharge = kCharge;
+        fragLibReaderRow.isDecoy = false;
+        fragLibReaderRow.ionLabels = ionLabels.join(S_GLOBAL_SETTINGS.SEPARATOR);
+        fragLibReaderRow.mzVals = mzVals;
+        fragLibReaderRow.intensityVals = QVector<float>(mzVals.size(), 1.0f);
+        return fragLibReaderRow;
+    }
+
+    QVector<float> mzValsFromIonsByLabel(
+            const QVector<MS2Ion> &ions,
+            const QStringList &ionLabels
+            ) {
+        QMap<QString, float> ionLabelToMz;
+        for (const MS2Ion &ion : ions) {
+            ionLabelToMz.insert(ion.ionLabel, ion.mz);
+        }
+
+        QVector<float> mzVals;
+        mzVals.reserve(ionLabels.size());
+        for (const QString &ionLabel : ionLabels) {
+            if (!ionLabelToMz.contains(ionLabel)) {
+                return {};
+            }
+            mzVals.push_back(ionLabelToMz.value(ionLabel));
+        }
+        return mzVals;
+    }
+
+    QVector<float> decoyMzValsForMode(
+            const PeptideStringWithMods &targetPeptideStringWithMods,
+            const QStringList &ionLabels,
+            const DecoyFragmentShiftMode shiftMode
+            ) {
+        const QVector<float> targetMzVals = mzValsForIonLabels(targetPeptideStringWithMods, ionLabels);
+        FragLibReaderRow fragLibReaderRow = buildFragLibRowForIons(
+                targetPeptideStringWithMods,
+                targetMzVals,
+                ionLabels
+                );
+
+        TargetDecoyCandidatePair tdcp(targetPeptideStringWithMods, 0.0f);
+        tdcp.setFragLibReaderRowPntr(&fragLibReaderRow);
+        tdcp.setDecoyFragmentShiftMode(shiftMode);
+        return mzValsFromIonsByLabel(tdcp.ms2IonsDecoy(), ionLabels);
+    }
+
+    void compareMzVectorsNear(
+            const QVector<float> &lhs,
+            const QVector<float> &rhs,
+            const float tolerance = 0.001f
+            ) {
+        QCOMPARE(lhs.size(), rhs.size());
+        for (int i = 0; i < lhs.size(); ++i) {
+            QVERIFY2(
+                    std::abs(lhs.at(i) - rhs.at(i)) <= tolerance,
+                    qPrintable(QString("m/z mismatch at index %1: %2 vs %3").arg(i).arg(lhs.at(i)).arg(rhs.at(i)))
+                    );
+        }
+    }
+}
+
+void FragLibTsvReaderTests::inferIonLabelsStandardModeRoundTripTest() {
+    const PeptideStringWithMods targetPeptideStringWithMods = kTargetPeptide;
+    const PeptideStringWithMods mutatedPeptideStringWithMods
+            = AminoAcids::mutatePenultimatePeptideResidues(targetPeptideStringWithMods);
+
+    // In standard mode, emitted decoy m/z from output logic should match mutated-sequence b/y masses.
+    const QVector<float> mzValsFromMutatedSeries
+            = mzValsForIonLabels(mutatedPeptideStringWithMods, kRepresentativeIonLabels);
+    const QVector<float> mzValsFromDecoyOutput = decoyMzValsForMode(
+            targetPeptideStringWithMods,
+            kRepresentativeIonLabels,
+            DecoyFragmentShiftMode::ShiftPenultimate
+            );
+    QVERIFY2(!mzValsFromDecoyOutput.isEmpty(), "Did not find all representative ion labels in decoy ions.");
+    compareMzVectorsNear(mzValsFromMutatedSeries, mzValsFromDecoyOutput);
 
     QString ionLabels;
+    const Err e = FragLibTsvReader::inferIonLabelsForTest(
+            mzValsFromDecoyOutput,
+            mutatedPeptideStringWithMods,
+            true,
+            kCharge,
+            false,
+            &ionLabels
+            );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(ionLabels, kExpectedLabels);
+}
 
-    // Default annotation mode (no decoy shift applied).
-    {
-        const QVector<float> mzVals = {
-                546.28800f, // y5
-                587.31900f  // b5
-        };
-        Err e = FragLibTsvReader::inferIonLabelsForTest(
-                mzVals,
-                peptideStringWithMods,
-                isDecoy,
-                charge,
-                false,
-                &ionLabels
-                );
-        QCOMPARE(e, eNoError);
-        QCOMPARE(ionLabels, QString("y5;b5"));
-    }
+void FragLibTsvReaderTests::inferIonLabelsAlternativeModeRoundTripTest() {
+    const PeptideStringWithMods targetPeptideStringWithMods = kTargetPeptide; // unmutated source written to decoy generator
+    const PeptideStringWithMods mutatedPeptideStringWithMods
+            = AminoAcids::mutatePenultimatePeptideResidues(targetPeptideStringWithMods);
 
-    // Terminal-by-penultimate mode: y7 and b7 retain terminal-series masses.
-    {
-        const QVector<float> mzVals = {
-                560.30400f, // y5
-                573.30300f  // b5
-        };
-        Err e = FragLibTsvReader::inferIonLabelsForTest(
-                mzVals,
-                peptideStringWithMods,
-                isDecoy,
-                charge,
-                true,
-                &ionLabels
-                );
-        QCOMPARE(e, eNoError);
-        QCOMPARE(ionLabels, QString("y5;b5"));
-    }
+    const QVector<float> mzVals = decoyMzValsForMode(
+            targetPeptideStringWithMods,
+            kRepresentativeIonLabels,
+            DecoyFragmentShiftMode::ShiftTerminalByPenultimate
+            );
+    QVERIFY2(!mzVals.isEmpty(), "Did not find all representative ion labels in decoy ions.");
+
+    QString ionLabels;
+    Err e = FragLibTsvReader::inferIonLabelsForTest(
+            mzVals,
+            mutatedPeptideStringWithMods,
+            true,
+            kCharge,
+            true,
+            &ionLabels
+            );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(ionLabels, kExpectedLabels);
 }
 
 

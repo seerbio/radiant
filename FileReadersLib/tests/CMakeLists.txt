@@ -44,6 +44,7 @@ foreach(class ${TEST_CLASSES})
 
 endforeach()
 
+target_link_libraries(FragLibTsvReaderTests AlgorithmsFFLib)
 
 set(FASTA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta")
 configure_file(${FASTA_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta COPYONLY)
