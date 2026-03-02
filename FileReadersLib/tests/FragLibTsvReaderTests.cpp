@@ -27,6 +27,7 @@ private Q_SLOTS:
 
     static void inferIonLabelsStandardModeRoundTripTest();
     static void inferIonLabelsAlternativeModeRoundTripTest();
+    static void inferIonLabelsAlternativeModeMultiplePreimageResidualSelectionTest();
 };
 
 void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
@@ -179,6 +180,37 @@ namespace {
         return mzValsFromIonsByLabel(tdcp.ms2IonsDecoy(), ionLabels);
     }
 
+    QVector<MS2Ion> decoyIonsForMode(
+            const PeptideStringWithMods &targetPeptideStringWithMods,
+            const DecoyFragmentShiftMode shiftMode
+            ) {
+        AminoAcids aminoAcids;
+        QStringList allIonLabels = targetPeptideStringWithMods.bSeriesIonLabels({});
+        allIonLabels.append(targetPeptideStringWithMods.ySeriesIonLabels({}));
+
+        const QVector<double> targetBSeries = targetPeptideStringWithMods.bSeries(kCharge, aminoAcids);
+        const QVector<double> targetYSeries = targetPeptideStringWithMods.ySeries(kCharge, aminoAcids);
+        QVector<float> targetMzVals;
+        targetMzVals.reserve(allIonLabels.size());
+        for (int i = 0; i < targetBSeries.size(); ++i) {
+            targetMzVals.push_back(static_cast<float>(targetBSeries.at(i)));
+        }
+        for (int i = 0; i < targetYSeries.size(); ++i) {
+            targetMzVals.push_back(static_cast<float>(targetYSeries.at(i)));
+        }
+
+        FragLibReaderRow fragLibReaderRow = buildFragLibRowForIons(
+                targetPeptideStringWithMods,
+                targetMzVals,
+                allIonLabels
+                );
+
+        TargetDecoyCandidatePair tdcp(targetPeptideStringWithMods, 0.0f);
+        tdcp.setFragLibReaderRowPntr(&fragLibReaderRow);
+        tdcp.setDecoyFragmentShiftMode(shiftMode);
+        return tdcp.ms2IonsDecoy();
+    }
+
     void compareMzVectorsNear(
             const QVector<float> &lhs,
             const QVector<float> &rhs,
@@ -246,6 +278,115 @@ void FragLibTsvReaderTests::inferIonLabelsAlternativeModeRoundTripTest() {
             );
     QCOMPARE(e, eNoError);
     QCOMPARE(ionLabels, kExpectedLabels);
+}
+
+void FragLibTsvReaderTests::inferIonLabelsAlternativeModeMultiplePreimageResidualSelectionTest() {
+    const PeptideStringWithMods sourceA("WWTVSLPW");
+    const PeptideStringWithMods sourceB("WGTVSLKW");
+    const PeptideStringWithMods mutatedPeptideStringWithMods
+            = AminoAcids::mutatePenultimatePeptideResidues(sourceA);
+    QCOMPARE(mutatedPeptideStringWithMods, AminoAcids::mutatePenultimatePeptideResidues(sourceB));
+
+    const QVector<MS2Ion> decoyIonsA = decoyIonsForMode(sourceA, DecoyFragmentShiftMode::ShiftTerminalByPenultimate);
+    const QVector<MS2Ion> decoyIonsB = decoyIonsForMode(sourceB, DecoyFragmentShiftMode::ShiftTerminalByPenultimate);
+
+    constexpr double maxDistanceForBothMatches = 0.38;
+    constexpr float residualBiasTowardA = 0.01f;
+    constexpr double residualEqualityTolerance = 1e-6;
+    auto inferAlt = [](const QVector<float> &mzVals, const PeptideStringWithMods &peptide, QString *ionLabels) {
+        return FragLibTsvReader::inferIonLabelsForTest(
+                mzVals,
+                peptide,
+                true,
+                kCharge,
+                true,
+                ionLabels
+                );
+    };
+    auto ionLabelToMzMap = [](const QVector<MS2Ion> &ions) {
+        QMap<QString, float> map;
+        for (const MS2Ion &ion : ions) {
+            map.insert(ion.ionLabel, ion.mz);
+        }
+        return map;
+    };
+    auto totalResidualFromLabels = [](const QVector<float> &mzVals, const QString &ionLabels, const QMap<QString, float> &map) {
+        const QStringList labels = ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
+        if (labels.size() != mzVals.size()) {
+            return std::numeric_limits<double>::max();
+        }
+
+        double residual = 0.0;
+        for (int i = 0; i < labels.size(); ++i) {
+            if (!map.contains(labels.at(i))) {
+                return std::numeric_limits<double>::max();
+            }
+            residual += std::abs(static_cast<double>(mzVals.at(i)) - static_cast<double>(map.value(labels.at(i))));
+        }
+        return residual;
+    };
+    const QMap<QString, float> ionLabelToMzA = ionLabelToMzMap(decoyIonsA);
+    const QMap<QString, float> ionLabelToMzB = ionLabelToMzMap(decoyIonsB);
+
+    QVector<float> ambiguousObservedMzCandidates;
+    ambiguousObservedMzCandidates.reserve(decoyIonsA.size() * decoyIonsB.size());
+    for (const MS2Ion &ionA : decoyIonsA) {
+        for (const MS2Ion &ionB : decoyIonsB) {
+            const double delta = std::abs(static_cast<double>(ionA.mz) - static_cast<double>(ionB.mz));
+            if (delta > maxDistanceForBothMatches) {
+                continue;
+            }
+
+            ambiguousObservedMzCandidates.push_back(static_cast<float>(
+                    (static_cast<double>(ionA.mz) + static_cast<double>(ionB.mz)) / 2.0
+                    + (ionA.mz >= ionB.mz ? residualBiasTowardA : -residualBiasTowardA)
+                    ));
+        }
+    }
+    QVERIFY2(!ambiguousObservedMzCandidates.isEmpty(), "No ambiguous observed m/z candidates were generated.");
+
+    bool foundCase = false;
+    for (int i = 0; i < ambiguousObservedMzCandidates.size(); ++i) {
+        for (int j = i; j < ambiguousObservedMzCandidates.size(); ++j) {
+            const QVector<float> mzVals = {
+                    ambiguousObservedMzCandidates.at(i),
+                    ambiguousObservedMzCandidates.at(j)
+            };
+            QString ionLabelsA;
+            const Err eA = inferAlt(mzVals, sourceA, &ionLabelsA);
+            if (eA != eNoError) {
+                continue;
+            }
+
+            QString ionLabelsB;
+            const Err eB = inferAlt(mzVals, sourceB, &ionLabelsB);
+            if (eB != eNoError) {
+                continue;
+            }
+
+            const double residualA = totalResidualFromLabels(mzVals, ionLabelsA, ionLabelToMzA);
+            const double residualB = totalResidualFromLabels(mzVals, ionLabelsB, ionLabelToMzB);
+            if (std::abs(residualA - residualB) <= residualEqualityTolerance) {
+                continue;
+            }
+
+            QString ionLabelsMutated;
+            const Err eMut = inferAlt(mzVals, mutatedPeptideStringWithMods, &ionLabelsMutated);
+            if (eMut != eNoError) {
+                continue;
+            }
+
+            QCOMPARE(ionLabelsMutated, residualA < residualB ? ionLabelsA : ionLabelsB);
+            foundCase = true;
+            break;
+        }
+
+        if (foundCase) {
+            break;
+        }
+    }
+
+    QVERIFY2(foundCase, "Did not find an ambiguous multi-preimage case with deterministic residual winner.");
 }
 
 
