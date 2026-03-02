@@ -24,21 +24,29 @@
 
 
 namespace {
+    const QMap<QChar, double> &sourceResidueToDeltaMassMap() {
+        static const QMap<QChar, double> map = AminoAcids::diannMutateAminoAcidToMass();
+        return map;
+    }
+
+    const QMap<QChar, QVector<QChar>> &sourceResiduesByMutatedResidueMap() {
+        static const QMap<QChar, QVector<QChar>> map = []() {
+            QMap<QChar, QVector<QChar>> sourceResiduesByMutatedResidue;
+            const QMap<QChar, QChar> sourceToMutated = AminoAcids::diannMutateAminoAcidToResidue();
+            for (auto it = sourceToMutated.constBegin(); it != sourceToMutated.constEnd(); ++it) {
+                QVector<QChar> &sourceResidues = sourceResiduesByMutatedResidue[it.value()];
+                if (!sourceResidues.contains(it.key())) {
+                    sourceResidues.push_back(it.key());
+                }
+            }
+            return sourceResiduesByMutatedResidue;
+        }();
+        return map;
+    }
+
     QVector<QChar> possibleSourceResiduesForMutatedResidue(const QChar mutatedResidue) {
 
-        const QMap<QChar, QChar> sourceToMutated = AminoAcids::diannMutateAminoAcidToResidue();
-
-        QVector<QChar> sourceResidues;
-        sourceResidues.reserve(sourceToMutated.size());
-        for (auto it = sourceToMutated.constBegin(); it != sourceToMutated.constEnd(); ++it) {
-            if (it.value() != mutatedResidue) {
-                continue;
-            }
-
-            if (!sourceResidues.contains(it.key())) {
-                sourceResidues.push_back(it.key());
-            }
-        }
+        QVector<QChar> sourceResidues = sourceResiduesByMutatedResidueMap().value(mutatedResidue);
 
         if (sourceResidues.isEmpty()) {
             sourceResidues.push_back(mutatedResidue);
@@ -363,8 +371,6 @@ namespace {
             std::vector<long> mzIndex(numResults);
             std::vector<double> outDistSqr(numResults);
 
-            std::vector<std::pair<Eigen::Index, double>> matches;
-
             const size_t resultsSize = kdTree.index->knnSearch(
                     queryPt.data(),
                     numResults,
@@ -428,7 +434,8 @@ namespace {
                     = possibleSourceResiduesForMutatedResidue(peptideString.at(firstIndexToMutate));
             const QVector<QChar> cTermSourceResidueCandidates
                     = possibleSourceResiduesForMutatedResidue(peptideString.at(secondIndexToMutate));
-            const QMap<QChar, double> sourceResidueToDeltaMass = AminoAcids::diannMutateAminoAcidToMass();
+            const QMap<QChar, double> &sourceResidueToDeltaMass = sourceResidueToDeltaMassMap();
+            constexpr double earlyExitResidualEpsilon = 1e-3;
 
             bool foundAnyMatch = false;
             double bestResidual = std::numeric_limits<double>::max();
@@ -438,14 +445,16 @@ namespace {
             QStringList firstCandidateIonLabelsList;
             Eigen::MatrixX<double> firstCandidateMat;
             bool firstCandidateBuilt = false;
+            bool shouldStopSearch = false;
 
-            for (const QChar nTermSourceResidue : nTermSourceResidueCandidates) {
-                for (const QChar cTermSourceResidue : cTermSourceResidueCandidates) {
-                    const PeptideStringWithMods sourcePeptideStringWithModsCterm = replaceResidueAtPosition(
-                            peptideStringWithMods,
-                            secondIndexToMutate,
-                            cTermSourceResidue
-                            );
+            for (const QChar cTermSourceResidue : cTermSourceResidueCandidates) {
+                const PeptideStringWithMods sourcePeptideStringWithModsCterm = replaceResidueAtPosition(
+                        peptideStringWithMods,
+                        secondIndexToMutate,
+                        cTermSourceResidue
+                        );
+
+                for (const QChar nTermSourceResidue : nTermSourceResidueCandidates) {
                     const PeptideStringWithMods sourcePeptideStringWithMods = replaceResidueAtPosition(
                             sourcePeptideStringWithModsCterm,
                             firstIndexToMutate,
@@ -499,7 +508,16 @@ namespace {
                         foundAnyMatch = true;
                         bestResidual = residual;
                         bestIonLabels = ionLabelsCandidate;
+
+                        if (bestResidual <= earlyExitResidualEpsilon) {
+                            shouldStopSearch = true;
+                            break;
+                        }
                     }
+                }
+
+                if (shouldStopSearch) {
+                    break;
                 }
             }
 
