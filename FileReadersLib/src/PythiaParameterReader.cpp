@@ -18,7 +18,7 @@ namespace PythiaParameterReaderConstants {
     const QString kGeneral = QStringLiteral("General");
     const QString kThreadCount = QStringLiteral("threadCount");
     const QString kVerbosity = QStringLiteral("verbosity");
-    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
+    const QString kWriteRadiantDIA = QStringLiteral("writeRadiantDIA");
     const QString kUseLazyLoading = QStringLiteral("useLazyLoading");
     const QString kReannotate = QStringLiteral("reannotate");
     const QString kShortReport = QStringLiteral("shortReport");
@@ -120,7 +120,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     if (pythiaParameters->threadCount <= 0) pythiaParameters->threadCount = ParallelUtils::numberOfAvailableSystemProcessors();
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
     pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
-    pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(true);
+    pythiaParameters->writeRadiantDIA = parser[kGeneral.toStdString()][kWriteRadiantDIA.toStdString()].value_or(true);
     pythiaParameters->reannotate = parser[kGeneral.toStdString()][kReannotate.toStdString()].value_or(false);
     pythiaParameters->shortReport = parser[kGeneral.toStdString()][kShortReport.toStdString()].value_or(false);
 

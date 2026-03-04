@@ -19,42 +19,42 @@ set -eu -o pipefail
 # This string will be appended to the package name.
 ARCH=$(dpkg-architecture | grep 'DEB_BUILD_ARCH=' | cut -d = -f 2)
 
-pythiadia_version="${pythiadia_version:-0.0-dev}"
+radiantdia_version="${radiantdia_version:-0.0-dev}"
 
 package_dir="${package_dir}+${ARCH}"
 
-pythia_bin="${pythia_bin:=${package_dir}/usr/local/bin/PythiaDIACpp}"
-pythia_lib="${pythia_lib:=${package_dir}/usr/lib}"
+radiant_bin="${radiant_bin:=${package_dir}/usr/local/bin/radiant}"
+radiant_lib="${radiant_lib:=${package_dir}/usr/lib}"
 
-mkdir -p "${pythia_bin}"
-mkdir -p "${pythia_lib}"
+mkdir -p "${radiant_bin}"
+mkdir -p "${radiant_lib}"
 
 echo "Copying DEB contents to package_dir…"
 
-#cp bin/IstrosLibraryBuilder "$pythia_bin/IstrosLibraryBuilder"
-#cp bin/LycaonMzMLTransmorgitron "$pythia_bin/LycaonMzMLTransmorgitron"
-#cp bin/OrpheusFastaShredder "$pythia_bin/OrpheusFastaShredder"
-cp bin/PythiaDIA "$pythia_bin/PythiaDIA"
-cp bin/FeatureOptimizerPrime "$pythia_bin/FeatureOptimizerPrime"
-cp AlgorithmsFFLib/libAlgorithmsFFLib.so "$pythia_lib/libAlgorithmsFFLib.so"
-cp ChemLib/libChemLib.so "$pythia_lib/libChemLib.so"
-cp EigenLib/libEigenLib.so "$pythia_lib/libEigenLib.so"
-cp FileReadersLib/libFileReadersLib.so "$pythia_lib/libFileReadersLib.so"
-cp UtilsLib/libUtilsLib.so "$pythia_lib/libUtilsLib.so"
-cp WorkFlowsLib/libWorkFlowsLib.so "$pythia_lib/libWorkFlowsLib.so"
-cp PyTorchLib/libPyTorchLib.so "$pythia_lib/libPyTorchLib.so"
-cp /src/PythiaDIACpp/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so "$pythia_lib/libtimsdata.so"
+#cp bin/IstrosLibraryBuilder "$radiant_bin/IstrosLibraryBuilder"
+#cp bin/LycaonMzMLTransmorgitron "$radiant_bin/LycaonMzMLTransmorgitron"
+#cp bin/OrpheusFastaShredder "$radiant_bin/OrpheusFastaShredder"
+cp bin/RadiantDIA "$radiant_bin/RadiantDIA"
+cp bin/FeatureOptimizerPrime "$radiant_bin/FeatureOptimizerPrime"
+cp AlgorithmsFFLib/libAlgorithmsFFLib.so "$radiant_lib/libAlgorithmsFFLib.so"
+cp ChemLib/libChemLib.so "$radiant_lib/libChemLib.so"
+cp EigenLib/libEigenLib.so "$radiant_lib/libEigenLib.so"
+cp FileReadersLib/libFileReadersLib.so "$radiant_lib/libFileReadersLib.so"
+cp UtilsLib/libUtilsLib.so "$radiant_lib/libUtilsLib.so"
+cp WorkFlowsLib/libWorkFlowsLib.so "$radiant_lib/libWorkFlowsLib.so"
+cp PyTorchLib/libPyTorchLib.so "$radiant_lib/libPyTorchLib.so"
+cp /src/PythiaDIACpp/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so "$radiant_lib/libtimsdata.so"
 
-cp /src/pytorch/build/lib/* "$pythia_lib/"
+cp /src/pytorch/build/lib/* "$radiant_lib/"
 
 # Create symlinks
-# Must match ${pythia_bin} above, but relative to the target!
-ln -s ../../../usr/local/bin/PythiaDIACpp/PythiaDIA "${package_dir}/usr/local/bin/PythiaDIA"
+# Must match ${radiant_bin} above, but relative to the target!
+ln -s ../../../usr/local/bin/radiant/RadiantDIA "${package_dir}/usr/local/bin/RadiantDIA"
 
 mkdir -p "${package_dir}/DEBIAN/"
 cp "control.${ARCH}" "${package_dir}/DEBIAN/control"
-echo "Version: ${pythiadia_version}" >> "${package_dir}/DEBIAN/control"
+echo "Version: ${radiantdia_version}" >> "${package_dir}/DEBIAN/control"
 
-echo "Building PythiaDIA DEB…"
+echo "Building RadiantDIA DEB…"
 
 dpkg-deb --build "$package_dir"
