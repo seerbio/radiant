@@ -803,7 +803,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
         fragLibReaderRows->push_back(fragLibReaderRow);
     }
 
-    if (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty()) {
+    if (!fragLibReaderRows->isEmpty() && (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty())) {
         e = addIonLabelInformation(
                 fragLibReaderRows,
                 m_enableTerminalByPenultimateDecoyAnnotationShift

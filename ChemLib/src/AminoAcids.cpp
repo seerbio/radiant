@@ -2,6 +2,8 @@
 
 #include "ErrorUtils.h"
 
+#include <QSet>
+
 
 using namespace MolecularFormulas;
 
@@ -29,8 +31,22 @@ QMap<QChar, Molecule> AminoAcids::aminoAcids()
        {'V', Molecule(valineFormula)},
        {'W', Molecule(tryptophanFormula)},
        {'Y', Molecule(tyrosineFormula)},
-       {'U', Molecule(cysteicAcidFormula + cysteineFormula)}, //FROM DIANN
-       {'X', Molecule(methionineFormula + cysteineFormula)} //FROM DIANN
+
+        // J is ambiguous but has a single mass / formula:
+        {'J', Molecule(leucineFormula)},
+
+        // O is non-standard but has a single mass / formula:
+        {'O', Molecule(pyrrolysineFormula)},
+
+        // U is non-standard, has a single mass / formula, but contains non-CHONPS elements, so it is unsupported:
+        // {'U', Molecule(selenocysteineFormula)},
+        // {'U', Molecule(cysteicAcidFormula + cysteineFormula)}, //FROM DIANN
+
+        // These are ambiguous and have two or more masses / formulae; they are not supported:
+        // B (D/N)
+        // Z (E/Q)
+        // X
+        // {'X', Molecule(methionineFormula + cysteineFormula)} //FROM DIANN
     };
 
     return aa;
@@ -68,8 +84,12 @@ QList<QChar> AminoAcids::allowedAminoAcids() {
 
 bool AminoAcids::validPeptideSequence(const QString &sequence) {
 
-    const QList<QChar> allowedResidues =aminoAcids().keys();
-    const auto anyLogic = [allowedResidues](const QChar &c){return allowedResidues.contains(c);};
+    static const QSet<QChar> allowedResidues = [] {
+        const QList<QChar> residues = aminoAcids().keys();
+        return QSet<QChar>(residues.begin(), residues.end());
+    }();
+
+    const auto anyLogic = [&allowedResidues](const QChar &c){return allowedResidues.contains(c);};
     return std::all_of(sequence.begin(),  sequence.end(), anyLogic);
 }
 

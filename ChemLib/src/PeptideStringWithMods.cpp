@@ -18,6 +18,10 @@ int PeptideStringWithMods::sizeNoMods() const {
     return peptideString.size();
 }
 
+bool PeptideStringWithMods::isValidSequence() const {
+    return AminoAcids::validPeptideSequence(this->removeUniModChars());
+}
+
 PeptideString PeptideStringWithMods::removeUniModChars() const {
 
     PeptideString peptideString;

@@ -15,6 +15,7 @@ public:
 private slots:
     void checkMassesTest();
     void mutatePenultimatePeptideResiduesTest();
+    void validPeptideSequenceTest();
 
 };
 
@@ -99,6 +100,17 @@ void AminoAcidsTests::mutatePenultimatePeptideResiduesTest() {
     PeptideStringWithMods modded = AminoAcids::mutatePenultimatePeptideResidues(pep);
     QCOMPARE(modded.at(1), "E");
     QCOMPARE(modded.at(8), "S");
+}
+
+void AminoAcidsTests::validPeptideSequenceTest() {
+    QCOMPARE(AminoAcids::validPeptideSequence("ACDEFGHIKLMNPQRSTVWYJO"), true);
+    QCOMPARE(AminoAcids::validPeptideSequence(""), true);
+
+    QCOMPARE(AminoAcids::validPeptideSequence("B"), false);
+    QCOMPARE(AminoAcids::validPeptideSequence("U"), false);
+    QCOMPARE(AminoAcids::validPeptideSequence("X"), false);
+    QCOMPARE(AminoAcids::validPeptideSequence("Z"), false);
+    QCOMPARE(AminoAcids::validPeptideSequence("AJOX"), false);
 }
 
 QTEST_MAIN(AminoAcidsTests)

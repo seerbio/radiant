@@ -9,6 +9,8 @@
 #include "TargetDecoyCandidatePair.h"
 
 
+#include <QFile>
+#include <QTextStream>
 #include <QtTest/QtTest>
 
 class FragLibTsvReaderTests : public QObject
@@ -22,6 +24,7 @@ public:
 private Q_SLOTS:
 
     static void getFragLibReaderRowsTest();
+    static void getFragLibReaderRowsFiltersInvalidSequencesTest();
 
     static void compareTest();
 
@@ -66,6 +69,29 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
 
     QCOMPARE(e, eNoError);
 
+}
+
+void FragLibTsvReaderTests::getFragLibReaderRowsFiltersInvalidSequencesTest() {
+    ERR_INIT
+
+    const QString testFile = QDir(qApp->applicationDirPath()).filePath("FragLibTsvReaderTests.invalid_sequences.tsv");
+    QFile file(testFile);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text));
+
+    QTextStream out(&file);
+    out << "PrecursorMz\tProductMz\tTr_recalibrated\tIonMobility\tLibraryIntensity\tdecoy\tModifiedPeptide\tPrecursorCharge\tFragmentType\tFragmentCharge\tFragmentSeriesNumber\n";
+    out << "500.0\t100.0\t10.0\t1.0\t1000.0\t0\tACDE\t2\tb\t1\t1\n";
+    out << "500.0\t200.0\t10.0\t1.0\t500.0\t0\tACDE\t2\ty\t1\t1\n";
+    out << "600.0\t110.0\t20.0\t1.1\t900.0\t0\tACDX\t2\tb\t1\t1\n";
+    out << "600.0\t210.0\t20.0\t1.1\t450.0\t0\tACDX\t2\ty\t1\t1\n";
+    file.close();
+
+    QList<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(testFile, &fragLibReaderRows);
+    QCOMPARE(e, eNoError);
+
+    QCOMPARE(fragLibReaderRows.size(), 1);
+    QCOMPARE(fragLibReaderRows.front().peptideSequenceChargeKey, QString("ACDE|2"));
 }
 
 void FragLibTsvReaderTests::compareTest() {
