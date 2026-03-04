@@ -2,6 +2,8 @@
 
 #include "ErrorUtils.h"
 
+#include <QSet>
+
 
 using namespace MolecularFormulas;
 
@@ -82,8 +84,12 @@ QList<QChar> AminoAcids::allowedAminoAcids() {
 
 bool AminoAcids::validPeptideSequence(const QString &sequence) {
 
-    const QList<QChar> allowedResidues =aminoAcids().keys();
-    const auto anyLogic = [allowedResidues](const QChar &c){return allowedResidues.contains(c);};
+    static const QSet<QChar> allowedResidues = [] {
+        const QList<QChar> residues = aminoAcids().keys();
+        return QSet<QChar>(residues.begin(), residues.end());
+    }();
+
+    const auto anyLogic = [&allowedResidues](const QChar &c){return allowedResidues.contains(c);};
     return std::all_of(sequence.begin(),  sequence.end(), anyLogic);
 }
 
