@@ -20,6 +20,7 @@ private Q_SLOTS:
 
     void readWrteTestCombined();
     void getSM2IonsTest();
+    void filterInvalidSequencesFragLibFFTest();
 
 };
 
@@ -82,6 +83,35 @@ void FragLibReaderTests::getSM2IonsTest() {
     );
     QCOMPARE(e, eFileError);
 
+}
+
+void FragLibReaderTests::filterInvalidSequencesFragLibFFTest() {
+    ERR_INIT
+
+    FragLibReaderRow valid;
+    valid.peptideSequenceChargeKey = "ACDEFGHIK|2";
+    valid.precursorCharge = 2;
+    valid.iRT = 1.0f;
+    valid.intensityVals = {1.0f, 0.5f};
+    valid.mzVals = {100.0f, 200.0f};
+    valid.ionLabels = "b1;y1";
+    valid.mass = 1000.0f;
+
+    FragLibReaderRow invalid = valid;
+    invalid.peptideSequenceChargeKey = "ACDX|2";
+
+    QList<FragLibReaderRow> rowsIn = {valid, invalid};
+
+    const QString filePath = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.invalid_sequences.fragLibFF");
+    e = ParquetReader::write(rowsIn, filePath);
+    QCOMPARE(e, eNoError);
+
+    QList<FragLibReaderRow> rowsOut;
+    e = FragLibReader::getFragLibReaderRows(filePath, &rowsOut);
+    QCOMPARE(e, eNoError);
+
+    QCOMPARE(rowsOut.size(), 1);
+    QCOMPARE(rowsOut.front().peptideSequenceChargeKey, valid.peptideSequenceChargeKey);
 }
 
 QTEST_MAIN(FragLibReaderTests)
