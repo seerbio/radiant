@@ -87,7 +87,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsFiltersInvalidSequencesTest() {
     file.close();
 
     QList<FragLibReaderRow> fragLibReaderRows;
-    e = FragLibReader::getFragLibReaderRows(testFile, &fragLibReaderRows);
+    e = FragLibReader::getFragLibReaderRows(testFile, false, &fragLibReaderRows);
     QCOMPARE(e, eNoError);
 
     QCOMPARE(fragLibReaderRows.size(), 1);

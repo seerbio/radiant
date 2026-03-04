@@ -109,7 +109,7 @@ void FragLibReaderTests::filterInvalidSequencesFragLibFFTest() {
     QCOMPARE(e, eNoError);
 
     QList<FragLibReaderRow> rowsOut;
-    e = FragLibReader::getFragLibReaderRows(filePath, &rowsOut);
+    e = FragLibReader::getFragLibReaderRows(filePath, false, &rowsOut);
     QCOMPARE(e, eNoError);
 
     QCOMPARE(rowsOut.size(), 1);

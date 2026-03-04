@@ -241,6 +241,7 @@ void SpecLibReaderTests::getFragLibReaerRowsFiltersInvalidSequencesTest() {
     QList<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
         specLibFile,
+        false,
         &fragLibReaderRows
         );
     QCOMPARE(e, eNoError);
