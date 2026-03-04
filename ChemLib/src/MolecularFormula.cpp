@@ -31,7 +31,7 @@ const MolecularFormula valineFormula(5, 9, 1, 1, 0, 0); //C5H9NO
 const MolecularFormula tryptophanFormula(11, 10, 2, 1, 0, 0); //C11H10N2O
 const MolecularFormula tyrosineFormula(9, 9, 1, 2, 0, 0); //C9H9NO2
 const MolecularFormula cysteicAcidFormula(0, 0, 0, 3, 0, 0);
-const MolecularFormula pyrrolysineFormula(12, 21, 3, 3, 0, 0); //C12H21N3O3
+const MolecularFormula pyrrolysineFormula(12, 19, 3, 2, 0, 0); //C12H19N3O2
 
 const MolecularFormula ammoniaFormula(0, 3, 1, 0, 0, 0);//H3N
 const MolecularFormula carbonylFormula(1, 0, 0, 1, 0, 0);//CO

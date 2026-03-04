@@ -134,13 +134,13 @@ void PeptideStringWithModsTests::isValidSequenceTest() {
     QCOMPARE(valid.isValidSequence(), true);
 
     PeptideStringWithMods invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)XK");
-    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    QCOMPARE(invalid.isValidSequence(), false);
     invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)UK");
-    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    QCOMPARE(invalid.isValidSequence(), false);
     invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)BK");
-    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    QCOMPARE(invalid.isValidSequence(), false);
     invalid = PeptideStringWithMods("A[+15.99]PEPWITH(Oxidation)ZK");
-    QCOMPARE(AminoAcids::validPeptideSequence(invalid), false);
+    QCOMPARE(invalid.isValidSequence(), false);
 }
 
 
