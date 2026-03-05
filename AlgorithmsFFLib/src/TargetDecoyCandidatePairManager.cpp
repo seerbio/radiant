@@ -78,6 +78,11 @@ namespace {
                 peptideStringWithMods,
                 calculateDecoyMassDelta(peptideStringWithMods)
                 );
+        targetDecoyCandidatePair.setDecoyFragmentShiftMode(
+                pythiaParameters.useAlternativeDecoys
+                    ? DecoyFragmentShiftMode::ShiftTerminalByPenultimate
+                    : DecoyFragmentShiftMode::ShiftPenultimate
+                );
 
         return {e, targetDecoyCandidatePair};
     }

@@ -31,6 +31,7 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
     QList<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,
+            false,
             &fragLibReaderRows
     );
     QCOMPARE(e, eNoError);

@@ -17,12 +17,120 @@
 
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
 
 
 namespace {
+    const QMap<QChar, double> &sourceResidueToDeltaMassMap() {
+        static const QMap<QChar, double> map = AminoAcids::diannMutateAminoAcidToMass();
+        return map;
+    }
+
+    const QMap<QChar, QVector<QChar>> &sourceResiduesByMutatedResidueMap() {
+        static const QMap<QChar, QVector<QChar>> map = []() {
+            QMap<QChar, QVector<QChar>> sourceResiduesByMutatedResidue;
+            const QMap<QChar, QChar> sourceToMutated = AminoAcids::diannMutateAminoAcidToResidue();
+            for (auto it = sourceToMutated.constBegin(); it != sourceToMutated.constEnd(); ++it) {
+                QVector<QChar> &sourceResidues = sourceResiduesByMutatedResidue[it.value()];
+                if (!sourceResidues.contains(it.key())) {
+                    sourceResidues.push_back(it.key());
+                }
+            }
+            return sourceResiduesByMutatedResidue;
+        }();
+        return map;
+    }
+
+    QVector<QChar> possibleSourceResiduesForMutatedResidue(const QChar mutatedResidue) {
+
+        QVector<QChar> sourceResidues = sourceResiduesByMutatedResidueMap().value(mutatedResidue);
+
+        if (sourceResidues.isEmpty()) {
+            sourceResidues.push_back(mutatedResidue);
+        }
+
+        return sourceResidues;
+    }
+
+    PeptideStringWithMods replaceResidueAtPosition(
+            const PeptideStringWithMods &peptideStringWithMods,
+            int residueIndexToReplace,
+            QChar replacementResidue
+            ) {
+
+        QString replaced;
+        replaced.reserve(peptideStringWithMods.size());
+
+        bool uniModOn = false;
+        int residueIndex = 0;
+        for (const QChar &c : peptideStringWithMods) {
+            if (c == '[' || c == '(') {
+                uniModOn = true;
+                replaced += c;
+                continue;
+            }
+            if (c == ']' || c == ')') {
+                uniModOn = false;
+                replaced += c;
+                continue;
+            }
+            if (uniModOn) {
+                replaced += c;
+                continue;
+            }
+
+            replaced += (residueIndex == residueIndexToReplace) ? replacementResidue : c;
+            residueIndex++;
+        }
+
+        return PeptideStringWithMods(replaced);
+    }
+
+    void maybeShiftSeriesForDecoyAnnotation(
+            const bool isDecoy,
+            const bool enableTerminalByPenultimateDecoyAnnotationShift,
+            const bool isYSeries,
+            const int ionCharge,
+            const int firstIndexToMutate,
+            const int secondIndexToMutate,
+            const double nTermDeltaMass,
+            const double cTermDeltaMass,
+            QVector<double> *seriesMzVals
+            ) {
+
+        if (!isDecoy || !enableTerminalByPenultimateDecoyAnnotationShift) {
+            return;
+        }
+
+        const double chargeScale = ionCharge > 1 ? (1.0 / static_cast<double>(ionCharge)) : 1.0;
+        for (int i = 0; i < seriesMzVals->size(); ++i) {
+            const int ionIndex = i + 1;
+            const int residueIndexCoveredByFragment = ionIndex; // terminal-by-penultimate mode
+
+            double mzShift = 0.0;
+            if (isYSeries) {
+                if (residueIndexCoveredByFragment >= firstIndexToMutate) {
+                    mzShift += cTermDeltaMass * chargeScale;
+                }
+                if (residueIndexCoveredByFragment >= secondIndexToMutate) {
+                    mzShift += nTermDeltaMass * chargeScale;
+                }
+            }
+            else {
+                if (residueIndexCoveredByFragment >= firstIndexToMutate) {
+                    mzShift += nTermDeltaMass * chargeScale;
+                }
+                if (residueIndexCoveredByFragment >= secondIndexToMutate) {
+                    mzShift += cTermDeltaMass * chargeScale;
+                }
+            }
+
+            (*seriesMzVals)[i] += mzShift;
+        }
+    }
 
     QVector<QString> splitOnTab(
             const std::string &line,
@@ -84,9 +192,15 @@ namespace {
 
     using KDTree = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd>;
 
-    Err loadKDTreeStructures(
+    Err loadKDTreeStructuresForDeltas(
         const PeptideStringWithMods &peptideStringWithMods,
+        bool isDecoy,
+        bool enableTerminalByPenultimateDecoyAnnotationShift,
         int charge,
+        int firstIndexToMutate,
+        int secondIndexToMutate,
+        double nTermDeltaMass,
+        double cTermDeltaMass,
         QVector<double> *mzValsTree,
         QStringList *ionLabelsList,
         Eigen::MatrixX<double> *mat
@@ -101,10 +215,34 @@ namespace {
 
         AminoAcids aminoAcids;
 
-        mzValsTree->append(peptideStringWithMods.bSeries(1, aminoAcids));
+        QVector<double> bSeriesMz = peptideStringWithMods.bSeries(1, aminoAcids);
+        maybeShiftSeriesForDecoyAnnotation(
+                isDecoy,
+                enableTerminalByPenultimateDecoyAnnotationShift,
+                false,
+                1,
+                firstIndexToMutate,
+                secondIndexToMutate,
+                nTermDeltaMass,
+                cTermDeltaMass,
+                &bSeriesMz
+                );
+        mzValsTree->append(bSeriesMz);
         ionLabelsList->append(peptideStringWithMods.bSeriesIonLabels({}));
 
-        mzValsTree->append(peptideStringWithMods.ySeries(1, aminoAcids));
+        QVector<double> ySeriesMz = peptideStringWithMods.ySeries(1, aminoAcids);
+        maybeShiftSeriesForDecoyAnnotation(
+                isDecoy,
+                enableTerminalByPenultimateDecoyAnnotationShift,
+                true,
+                1,
+                firstIndexToMutate,
+                secondIndexToMutate,
+                nTermDeltaMass,
+                cTermDeltaMass,
+                &ySeriesMz
+                );
+        mzValsTree->append(ySeriesMz);
         ionLabelsList->append(peptideStringWithMods.ySeriesIonLabels({}));
 
         if (charge > 1) {
@@ -113,10 +251,34 @@ namespace {
 
                 const QString chargeChar = QString::number(i+1);
 
-                mzValsTree->append(peptideStringWithMods.bSeries(i+1, aminoAcids));
+                QVector<double> bSeriesMzN = peptideStringWithMods.bSeries(i + 1, aminoAcids);
+                maybeShiftSeriesForDecoyAnnotation(
+                        isDecoy,
+                        enableTerminalByPenultimateDecoyAnnotationShift,
+                        false,
+                        i + 1,
+                        firstIndexToMutate,
+                        secondIndexToMutate,
+                        nTermDeltaMass,
+                        cTermDeltaMass,
+                        &bSeriesMzN
+                        );
+                mzValsTree->append(bSeriesMzN);
                 ionLabelsList->append(peptideStringWithMods.bSeriesIonLabels("^" + chargeChar));
 
-                mzValsTree->append(peptideStringWithMods.ySeries(i+1, aminoAcids));
+                QVector<double> ySeriesMzN = peptideStringWithMods.ySeries(i + 1, aminoAcids);
+                maybeShiftSeriesForDecoyAnnotation(
+                        isDecoy,
+                        enableTerminalByPenultimateDecoyAnnotationShift,
+                        true,
+                        i + 1,
+                        firstIndexToMutate,
+                        secondIndexToMutate,
+                        nTermDeltaMass,
+                        cTermDeltaMass,
+                        &ySeriesMzN
+                        );
+                mzValsTree->append(ySeriesMzN);
                 ionLabelsList->append(peptideStringWithMods.ySeriesIonLabels("^" + chargeChar));
             }
         }
@@ -133,33 +295,70 @@ namespace {
         ERR_RETURN
     }
 
-    Err matchMzValsToIonType(
-            const QVector<float> &mzValsToPair,
+    Err loadKDTreeStructures(
             const PeptideStringWithMods &peptideStringWithMods,
             bool isDecoy,
+            bool enableTerminalByPenultimateDecoyAnnotationShift,
             int charge,
-            QString *ionLabels
-        ) {
+            QVector<double> *mzValsTree,
+            QStringList *ionLabelsList,
+            Eigen::MatrixX<double> *mat
+            ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(mzValsToPair); ree;
         e = ErrorUtils::isNotEmpty(peptideStringWithMods); ree;
 
-        QVector<double> mzValsTree;
-        QStringList ionLabelsList;
-        Eigen::MatrixX<double> mat;
-        e = loadKDTreeStructures(
-            peptideStringWithMods,
-            charge,
-            &mzValsTree,
-            &ionLabelsList,
-            &mat
-            ); ree;
+        constexpr int firstIndexToMutate = 1;
+        int secondIndexToMutate = std::numeric_limits<int>::max();
+        double nTermDeltaMass = 0.0;
+        double cTermDeltaMass = 0.0;
+
+        const PeptideString peptideString = peptideStringWithMods.removeUniModChars();
+        if (peptideString.size() >= 3) {
+            secondIndexToMutate = peptideString.size() - 2;
+            const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass();
+            nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
+            cTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(secondIndexToMutate));
+        }
+
+        e = loadKDTreeStructuresForDeltas(
+                peptideStringWithMods,
+                isDecoy,
+                enableTerminalByPenultimateDecoyAnnotationShift,
+                charge,
+                firstIndexToMutate,
+                secondIndexToMutate,
+                nTermDeltaMass,
+                cTermDeltaMass,
+                mzValsTree,
+                ionLabelsList,
+                mat
+                ); ree;
+
+        ERR_RETURN
+    }
+
+    bool matchMzValsToIonTypeAgainstKDTree(
+            const QVector<float> &mzValsToPair,
+            const QVector<double> &mzValsTree,
+            const QStringList &ionLabelsList,
+            const Eigen::MatrixX<double> &mat,
+            const PeptideStringWithMods &peptideStringWithModsForDebug,
+            bool isDecoyForDebug,
+            QString *ionLabels,
+            double *totalResidualError,
+            bool printDebugOnFailure
+        ) {
+
+        if (mzValsToPair.isEmpty() || mzValsTree.isEmpty() || ionLabelsList.isEmpty()) {
+            return false;
+        }
 
         const int treeLeafSize = 5;
         KDTree kdTree(static_cast<int>(mat.cols()), mat, treeLeafSize);
 
+        double totalResidual = 0.0;
         QStringList ionLabelsFoundList;
         for (float mzVal : mzValsToPair) {
 
@@ -172,40 +371,213 @@ namespace {
             std::vector<long> mzIndex(numResults);
             std::vector<double> outDistSqr(numResults);
 
-            std::vector<std::pair<Eigen::Index, double>> matches;
-
             const size_t resultsSize = kdTree.index->knnSearch(
                     queryPt.data(),
                     numResults,
                     mzIndex.data(),
                     outDistSqr.data()
             );
-            e = ErrorUtils::isTrue(resultsSize > 0); ree;
+            if (!(resultsSize > 0)) {
+                return false;
+            }
 
             const double mzValClosestFound = mzValsTree.at(static_cast<int>(mzIndex.front()));
             const double distanceFromFound = std::abs(mzValClosestFound - mzVal);
 
             if (distanceFromFound > 0.2) {
-                qDebug() << peptideStringWithMods;
-                qDebug() << "Decoy:" << isDecoy;
-                qDebug() << "Searched mzVal:" << mzVal;
-                qDebug() << "Closest val found:" << mzValClosestFound;
-                qDebug() << "Distance from closest val found:" << distanceFromFound;
-                qDebug() << "Theo Frag" << mzValsTree;
-                qDebug() << "Emp Frag" << mzValsToPair;
-                rrr(eValueError);
+                if (printDebugOnFailure) {
+                    qDebug() << peptideStringWithModsForDebug;
+                    qDebug() << "Decoy:" << isDecoyForDebug;
+                    qDebug() << "Searched mzVal:" << mzVal;
+                    qDebug() << "Closest val found:" << mzValClosestFound;
+                    qDebug() << "Distance from closest val found:" << distanceFromFound;
+                    qDebug() << "Theo Frag" << mzValsTree;
+                    qDebug() << "Emp Frag" << mzValsToPair;
+                }
+                return false;
             }
 
+            totalResidual += distanceFromFound;
             ionLabelsFoundList.push_back(ionLabelsList.value(static_cast<int>(mzIndex.front())));
         }
 
+        if (totalResidualError) {
+            *totalResidualError = totalResidual;
+        }
         *ionLabels = ionLabelsFoundList.join(S_GLOBAL_SETTINGS.SEPARATOR);
+        return true;
+    }
+
+    Err matchMzValsToIonType(
+            const QVector<float> &mzValsToPair,
+            const PeptideStringWithMods &peptideStringWithMods,
+            bool isDecoy,
+            int charge,
+            bool enableTerminalByPenultimateDecoyAnnotationShift,
+            QString *ionLabels
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzValsToPair); ree;
+        e = ErrorUtils::isNotEmpty(peptideStringWithMods); ree;
+
+        const bool shouldEnumeratePreimages
+                = isDecoy && enableTerminalByPenultimateDecoyAnnotationShift && peptideStringWithMods.sizeNoMods() >= 3;
+
+        if (shouldEnumeratePreimages) {
+            const PeptideString peptideString = peptideStringWithMods.removeUniModChars();
+            constexpr int firstIndexToMutate = 1;
+            const int secondIndexToMutate = peptideString.size() - 2;
+
+            const QVector<QChar> nTermSourceResidueCandidates
+                    = possibleSourceResiduesForMutatedResidue(peptideString.at(firstIndexToMutate));
+            const QVector<QChar> cTermSourceResidueCandidates
+                    = possibleSourceResiduesForMutatedResidue(peptideString.at(secondIndexToMutate));
+            const QMap<QChar, double> &sourceResidueToDeltaMass = sourceResidueToDeltaMassMap();
+            constexpr double earlyExitResidualEpsilon = 1e-3;
+
+            bool foundAnyMatch = false;
+            double bestResidual = std::numeric_limits<double>::max();
+            QString bestIonLabels;
+
+            QVector<double> firstCandidateMzValsTree;
+            QStringList firstCandidateIonLabelsList;
+            Eigen::MatrixX<double> firstCandidateMat;
+            bool firstCandidateBuilt = false;
+            bool shouldStopSearch = false;
+
+            for (const QChar cTermSourceResidue : cTermSourceResidueCandidates) {
+                const PeptideStringWithMods sourcePeptideStringWithModsCterm = replaceResidueAtPosition(
+                        peptideStringWithMods,
+                        secondIndexToMutate,
+                        cTermSourceResidue
+                        );
+
+                for (const QChar nTermSourceResidue : nTermSourceResidueCandidates) {
+                    const PeptideStringWithMods sourcePeptideStringWithMods = replaceResidueAtPosition(
+                            sourcePeptideStringWithModsCterm,
+                            firstIndexToMutate,
+                            nTermSourceResidue
+                            );
+
+                    const double nTermDeltaMass = sourceResidueToDeltaMass.value(nTermSourceResidue);
+                    const double cTermDeltaMass = sourceResidueToDeltaMass.value(cTermSourceResidue);
+                    QVector<double> mzValsTree;
+                    QStringList ionLabelsList;
+                    Eigen::MatrixX<double> mat;
+                    e = loadKDTreeStructuresForDeltas(
+                            sourcePeptideStringWithMods,
+                            isDecoy,
+                            enableTerminalByPenultimateDecoyAnnotationShift,
+                            charge,
+                            firstIndexToMutate,
+                            secondIndexToMutate,
+                            nTermDeltaMass,
+                            cTermDeltaMass,
+                            &mzValsTree,
+                            &ionLabelsList,
+                            &mat
+                            ); ree;
+
+                    if (!firstCandidateBuilt) {
+                        firstCandidateMzValsTree = mzValsTree;
+                        firstCandidateIonLabelsList = ionLabelsList;
+                        firstCandidateMat = mat;
+                        firstCandidateBuilt = true;
+                    }
+
+                    QString ionLabelsCandidate;
+                    double residual = 0.0;
+                    const bool candidateMatched = matchMzValsToIonTypeAgainstKDTree(
+                            mzValsToPair,
+                            mzValsTree,
+                            ionLabelsList,
+                            mat,
+                            peptideStringWithMods,
+                            isDecoy,
+                            &ionLabelsCandidate,
+                            &residual,
+                            false
+                            );
+                    if (!candidateMatched) {
+                        continue;
+                    }
+
+                    if (!foundAnyMatch || residual < bestResidual) {
+                        foundAnyMatch = true;
+                        bestResidual = residual;
+                        bestIonLabels = ionLabelsCandidate;
+
+                        if (bestResidual <= earlyExitResidualEpsilon) {
+                            shouldStopSearch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (shouldStopSearch) {
+                    break;
+                }
+            }
+
+            if (!foundAnyMatch) {
+                if (firstCandidateBuilt) {
+                    QString ignoredIonLabels;
+                    double ignoredResidual = 0.0;
+                    const bool ignoredMatch = matchMzValsToIonTypeAgainstKDTree(
+                            mzValsToPair,
+                            firstCandidateMzValsTree,
+                            firstCandidateIonLabelsList,
+                            firstCandidateMat,
+                            peptideStringWithMods,
+                            isDecoy,
+                            &ignoredIonLabels,
+                            &ignoredResidual,
+                            true
+                            );
+                    Q_UNUSED(ignoredMatch)
+                }
+                rrr(eValueError);
+            }
+
+            *ionLabels = bestIonLabels;
+            ERR_RETURN
+        }
+
+        QVector<double> mzValsTree;
+        QStringList ionLabelsList;
+        Eigen::MatrixX<double> mat;
+        e = loadKDTreeStructures(
+                peptideStringWithMods,
+                isDecoy,
+                enableTerminalByPenultimateDecoyAnnotationShift,
+                charge,
+                &mzValsTree,
+                &ionLabelsList,
+                &mat
+                ); ree;
+
+        double ignoredResidual = 0.0;
+        const bool matched = matchMzValsToIonTypeAgainstKDTree(
+                mzValsToPair,
+                mzValsTree,
+                ionLabelsList,
+                mat,
+                peptideStringWithMods,
+                isDecoy,
+                ionLabels,
+                &ignoredResidual,
+                true
+                );
+        e = ErrorUtils::isTrue(matched); ree;
 
         ERR_RETURN
     }
 
     Err buildIonLabels(
             const FragLibReaderRow &fragLibReaderRow,
+            bool enableTerminalByPenultimateDecoyAnnotationShift,
             QString *ionLabels
     ) {
 
@@ -224,17 +596,25 @@ namespace {
                 peptideStringWithMods,
                 fragLibReaderRow.isDecoy,
                 charge,
+                enableTerminalByPenultimateDecoyAnnotationShift,
                 ionLabels
         ); ree;
 
         ERR_RETURN
     }
 
-    void parallelLogic(FragLibReaderRow &fragLibReaderRow) {
+    void parallelLogic(
+            FragLibReaderRow &fragLibReaderRow,
+            bool enableTerminalByPenultimateDecoyAnnotationShift
+            ) {
 
         ERR_INIT
 
-        e = buildIonLabels(fragLibReaderRow, &fragLibReaderRow.ionLabels);
+        e = buildIonLabels(
+                fragLibReaderRow,
+                enableTerminalByPenultimateDecoyAnnotationShift,
+                &fragLibReaderRow.ionLabels
+                );
 
         if (e != eNoError) {
             throw std::runtime_error("Building Ion Labels didn't work out"); einfo;
@@ -242,17 +622,23 @@ namespace {
 
     }
 
-    Err addIonLabelInformation(QList<FragLibReaderRow> *fragLibReaderRows) {
+    Err addIonLabelInformation(
+            QList<FragLibReaderRow> *fragLibReaderRows,
+            bool enableTerminalByPenultimateDecoyAnnotationShift
+            ) {
 
         ERR_INIT
 
 #define PARALLEL_LABELS
 #ifdef PARALLEL_LABELS
-    QFuture<void> futures = QtConcurrent::map(*fragLibReaderRows, parallelLogic);
+    const auto buildLabelsLogic = [enableTerminalByPenultimateDecoyAnnotationShift](FragLibReaderRow &fragLibReaderRow) {
+        parallelLogic(fragLibReaderRow, enableTerminalByPenultimateDecoyAnnotationShift);
+    };
+    QFuture<void> futures = QtConcurrent::map(*fragLibReaderRows, buildLabelsLogic);
     futures.waitForFinished();
 #else
         for (FragLibReaderRow &flrr : *fragLibReaderRows) {
-            parallelLogic(flrr);
+            parallelLogic(flrr, enableTerminalByPenultimateDecoyAnnotationShift);
         }
 #endif
 
@@ -417,12 +803,37 @@ Err FragLibTsvReader::getFragLibReaderRows(
         fragLibReaderRows->push_back(fragLibReaderRow);
     }
 
-    if (!fragLibReaderRows->isEmpty()
-        && (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty())) {
-        e = addIonLabelInformation(fragLibReaderRows); ree;
+    if (!fragLibReaderRows->isEmpty() && (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty())) {
+        e = addIonLabelInformation(
+                fragLibReaderRows,
+                m_enableTerminalByPenultimateDecoyAnnotationShift
+                ); ree;
     }
 
     ERR_RETURN
+}
+
+void FragLibTsvReader::setEnableTerminalByPenultimateDecoyAnnotationShift(bool enable) {
+    m_enableTerminalByPenultimateDecoyAnnotationShift = enable;
+}
+
+Err FragLibTsvReader::inferIonLabelsForTest(
+        const QVector<float> &mzValsToPair,
+        const PeptideStringWithMods &peptideStringWithMods,
+        bool isDecoy,
+        int charge,
+        bool enableTerminalByPenultimateDecoyAnnotationShift,
+        QString *ionLabels
+        ) {
+
+    return matchMzValsToIonType(
+            mzValsToPair,
+            peptideStringWithMods,
+            isDecoy,
+            charge,
+            enableTerminalByPenultimateDecoyAnnotationShift,
+            ionLabels
+            );
 }
 
 Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(

@@ -210,6 +210,7 @@ void SpecLibReaderTests::getFragLibReaerRowsTest() {
     QList<FragLibReaderRow> fragLibReaderRowsFF;
     e = FragLibReader::getFragLibReaderRows(
         fragLibFFFile,
+        false,
         &fragLibReaderRowsFF
         );
     QCOMPARE(e, eNoError);
@@ -240,6 +241,7 @@ void SpecLibReaderTests::getFragLibReaerRowsFiltersInvalidSequencesTest() {
     QList<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
         specLibFile,
+        false,
         &fragLibReaderRows
         );
     QCOMPARE(e, eNoError);

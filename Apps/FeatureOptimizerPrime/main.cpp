@@ -571,6 +571,7 @@ int main(int argc, char *argv[]) {
     QList<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
         fragLibPath,
+        pythiaParameters.useAlternativeDecoys,
         &fragLibReaderRows
         );
     if (e != eNoError) {

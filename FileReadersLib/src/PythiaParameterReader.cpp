@@ -31,6 +31,7 @@ namespace PythiaParameterReaderConstants {
     const QString kPeptideLengthMin = QStringLiteral("peptideLengthMin");
     const QString kPeptideLengthMax  = QStringLiteral("peptideLengthMax");
     const QString kTrancheSizeMax  = QStringLiteral("trancheSizeMax");
+    const QString kUseAlternativeDecoys = QStringLiteral("useAlternativeDecoys");
 
     const QString kMS1Params = QStringLiteral("MS1Params");
     const QString kPrecursorExtractionWindowThomsons = QStringLiteral("precursorExtractionWindowThomsons");
@@ -132,6 +133,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->peptideLengthMin = libraryNode[kPeptideLengthMin.toStdString()].value_or(0);
     pythiaParameters->peptideLengthMax = libraryNode[kPeptideLengthMax.toStdString()].value_or(0);
     pythiaParameters->trancheSizeMax = libraryNode[kTrancheSizeMax.toStdString()].value_or(0);
+    pythiaParameters->useAlternativeDecoys = libraryNode[kUseAlternativeDecoys.toStdString()].value_or(false);
 
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
     pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms1ExtractionWidthPPM);

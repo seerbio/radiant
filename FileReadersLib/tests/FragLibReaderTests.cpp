@@ -71,6 +71,7 @@ void FragLibReaderTests::getSM2IonsTest() {
 
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,
+            false,
             &fragLibReaderRows
             );
 
@@ -79,6 +80,7 @@ void FragLibReaderTests::getSM2IonsTest() {
 
     e = FragLibReader::getFragLibReaderRows(
             testFilePath + "CHAUNCYANDFLOPS",
+            false,
             &fragLibReaderRows
     );
     QCOMPARE(e, eFileError);
@@ -107,7 +109,7 @@ void FragLibReaderTests::filterInvalidSequencesFragLibFFTest() {
     QCOMPARE(e, eNoError);
 
     QList<FragLibReaderRow> rowsOut;
-    e = FragLibReader::getFragLibReaderRows(filePath, &rowsOut);
+    e = FragLibReader::getFragLibReaderRows(filePath, false, &rowsOut);
     QCOMPARE(e, eNoError);
 
     QCOMPARE(rowsOut.size(), 1);
