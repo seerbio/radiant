@@ -144,7 +144,7 @@ CMD ["python", "s3_package_uploader.py"]
 ## Must be the last stage for compatibility with GitHub Actions build.
 ##
 #################################################
-FROM build AS app
+FROM base AS app
 
 # Set labels
 LABEL author="Seer, Inc."
