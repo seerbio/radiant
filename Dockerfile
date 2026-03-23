@@ -33,7 +33,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 FROM base AS build
 
 #
-# Update, upgrade packages. Install build dependencies.
+# Install build dependencies.
 #
 # We use a single RUN statement to reduce the number of image layers
 # created by docker, which reduces overall image size.
@@ -44,7 +44,6 @@ FROM base AS build
 ENV CMAKE_PREFIX="/usr/bin/cmake"
 COPY install-build-deps-ubuntu.sh /tmp/
 RUN apt-get update \
-    && apt-get upgrade -y \
     && chmod u+x /tmp/install-build-deps-ubuntu.sh \
     && APT='apt-get' /tmp/install-build-deps-ubuntu.sh \
     && apt-get autoremove -y \
@@ -107,7 +106,6 @@ FROM build AS build-deb
 
 # Install Python and dependencies
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
     && apt-get autoremove -y \
     && apt-get clean \
