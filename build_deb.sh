@@ -49,6 +49,12 @@ cp /src/pytorch/build/lib/libtorch.so "$radiant_lib/"
 cp /src/pytorch/build/lib/libtorch_cpu.so "$radiant_lib/"
 cp /src/pytorch/build/lib/libc10.so "$radiant_lib/"
 
+# Prebuilt libtorch bundles a libgomp runtime; source builds do not.
+for f in /src/pytorch/build/lib/libgomp-*.so*; do
+    [ -e "$f" ] || break
+    cp "$f" "$radiant_lib/"
+done
+
 # Create symlinks
 # Must match ${radiant_bin} above, but relative to the target!
 ln -s ../../../usr/local/bin/radiant/RadiantDIA "${package_dir}/usr/local/bin/RadiantDIA"
