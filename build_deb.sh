@@ -45,7 +45,6 @@ cp WorkFlowsLib/libWorkFlowsLib.so "$radiant_lib/libWorkFlowsLib.so"
 cp PyTorchLib/libPyTorchLib.so "$radiant_lib/libPyTorchLib.so"
 cp /src/PythiaDIACpp/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so "$radiant_lib/libtimsdata.so"
 
-cp /src/pytorch/build/lib/libgomp-* "$radiant_lib/"
 cp /src/pytorch/build/lib/libtorch.so "$radiant_lib/"
 cp /src/pytorch/build/lib/libtorch_cpu.so "$radiant_lib/"
 cp /src/pytorch/build/lib/libc10.so "$radiant_lib/"

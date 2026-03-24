@@ -2,7 +2,7 @@ Package: radiantdia
 Section: base
 Priority: optional
 Architecture: arm64
-Depends: libbrotli1, libcurl4, libgomp1, libnuma1, libopenmpi3, libqt5concurrent5, libre2-9, libsnappy1v5, libthrift-0.16.0, libutf8proc2, libboost-all-dev, qtbase5-dev, libarrow-dev, libparquet-dev, libseqan2-dev, libsqlite3-dev, libxml2-dev, libqt5opengl5-dev, libqt5svg5-dev
+Depends: libbrotli1, libcurl4, libgomp1, libnuma1, libopenmpi3, libqt5concurrent5, libre2-9, libsnappy1v5, libthrift-0.16.0, libutf8proc2, libsqlite3-dev
 Maintainer: Seth Just sjust@seer.bio
 Description: RadiantDIA
  My precious engine
