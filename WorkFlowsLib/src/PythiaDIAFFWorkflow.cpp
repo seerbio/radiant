@@ -1052,7 +1052,7 @@ namespace {
     	const int decoyCount = static_cast<int>(std::count_if(
 				karnnNNTargetsNorm.begin(),
 				karnnNNTargetsNorm.end(),
-				is_nn_decoy
+				[](const KarnnNNTarget &kt) { return is_nn_decoy(kt); }
 				));
 
     	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
