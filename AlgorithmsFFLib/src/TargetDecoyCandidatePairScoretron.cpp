@@ -315,10 +315,22 @@ namespace {
 
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
 
-                const QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
+                QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
 
                 if (ms2TargetIons.isEmpty()) {
                     continue;
+                }
+
+                QVector<MS2Ion> ms2DecoyIons;
+                if (tdcp->isDecoy()) {
+                    // Important: if the library entry was marked as a decoy, we must be
+                    // careful to handle it correctly in this scoring step. Specifically,
+                    // the "target" ions should be treated as a decoy while the "decoy"
+                    // ions should be treated as a target.
+                    ms2DecoyIons = ms2TargetIons;
+                    ms2TargetIons = tdcp->ms2IonsDecoy();
+                } else {
+                    ms2DecoyIons = tdcp->ms2IonsDecoy();
                 }
 
                 CandidateScores candidateScoresTarget;
@@ -333,7 +345,7 @@ namespace {
                 CandidateScores candidateScoresDecoy;
                 candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
-                        tdcp->ms2IonsDecoy(),
+                        ms2DecoyIons,
                         pi.weights,
                         tdcp,
                         &candidateScoresDecoy

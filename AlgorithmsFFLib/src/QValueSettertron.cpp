@@ -14,6 +14,8 @@
 namespace {
 
     QString buildCandidateKey(const CandidateScores &candidateScores) {
+        // Note: we still use target/decoy keying here even if the candidate pair is originally a decoy!
+        // This is necessary to key the pair elements separately -- target/decoy status decisions ignore this string.
         const QString decoyToString = candidateScores.isDecoy ? "_1" : "_0";
         return candidateScores.targetDecoyCandidatePair->peptideStringWithMods()
                + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
@@ -46,7 +48,7 @@ namespace {
                 classifierScore = cs->discriminantScore;
             }
 
-            if (cs->isDecoy) {
+            if (cs->isDecoy || cs->targetDecoyCandidatePair->isDecoy()) {
                 identifierVsDecoys->insert(peptideSequenceChargeKey, classifierScore);
                 continue;
             }
@@ -65,7 +67,7 @@ namespace {
 
         ERR_INIT
 
-        if (cs->isDecoy) {
+        if (cs->isDecoy || cs->targetDecoyCandidatePair->isDecoy()) {
             ERR_RETURN
         }
 
@@ -162,6 +164,10 @@ namespace {
         e = ErrorUtils::isNotEmpty(decoyScores); ree;
 
         for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : targetDecoyCandidateScorePairsPntrs) {
+            if (pr.first->targetDecoyCandidatePair->isDecoy()) {
+                continue;
+            }
+
             float score = QValueSettertron::QValueScoreType::DiscriminantScore == qValueScoreType
                     ? pr.first->discriminantScore
                     : 1.0 / pr.first->classifierScore;
@@ -203,10 +209,20 @@ Err QValueSettertron::setQValueForCandidates(
 
     e = ErrorUtils::isFalse(targetDecoyCandidateScorePairsPntrs->isEmpty()); ree;
 
-    QVector<double> targetScores;
-    targetScores.reserve(targetDecoyCandidateScorePairsPntrs->size());
-    QVector<double> decoyScores;
-    decoyScores.reserve(targetDecoyCandidateScorePairsPntrs->size());
+    const int n = targetDecoyCandidateScorePairsPntrs->size();
+
+    // Count decoy entries from the library -- both sides of these pairs should be treated as decoys!
+    const int num_original_decoys = std::count_if(
+        targetDecoyCandidateScorePairsPntrs->begin(),
+        targetDecoyCandidateScorePairsPntrs->end(),
+        [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr) {
+            return pr.first->targetDecoyCandidatePair->isDecoy();
+        });
+
+    QVector<double> targetScores, decoyScores;
+    targetScores.reserve(n - num_original_decoys);
+    decoyScores.reserve(n + num_original_decoys);
+
     for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : *targetDecoyCandidateScorePairsPntrs) {
         const float scoreTarget = QValueScoreType::DiscriminantScore == qValueScoreType
                                 ? pr.first->discriminantScore
@@ -214,7 +230,8 @@ Err QValueSettertron::setQValueForCandidates(
         const float scoreDecoy = QValueScoreType::DiscriminantScore == qValueScoreType
                                ? pr.second->discriminantScore
                                : 1.0 / pr.second->classifierScore;;
-        targetScores.push_back(static_cast<double>(scoreTarget));
+        const bool isOriginalDecoy = pr.first->targetDecoyCandidatePair->isDecoy();
+        (isOriginalDecoy ? decoyScores : targetScores).push_back(static_cast<double>(scoreTarget));
         decoyScores.push_back(static_cast<double>(scoreDecoy));
     }
 

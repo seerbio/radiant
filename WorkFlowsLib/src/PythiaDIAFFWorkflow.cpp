@@ -616,6 +616,18 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 }
 
 namespace {
+    bool is_nn_decoy(const CandidateScores *candidate_scores) {
+        return candidate_scores->isDecoy || candidate_scores->targetDecoyCandidatePair->isDecoy();
+    }
+
+    bool is_nn_decoy(const KarnnNNTarget &kt) {
+        return is_nn_decoy(kt.candidateScores);
+    }
+
+    float get_nn_decoy_label(const KarnnNNTarget &kt) {
+        // Note: for decoy-origin candidates, label both elements of the pair as decoys
+        return is_nn_decoy(kt) ? 1.0f : 0.0f;
+    }
 
     Err minMaxScaleScores(
             const QVector<KarnnNNTarget> &karnnNNTargets,
@@ -757,7 +769,7 @@ namespace {
 
     			for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
     				xData.push_back(kt.scoreVecNormalized);
-    				yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+    				yData.push_back(get_nn_decoy_label(kt));
     			}
 
     			trainingVecs[i].first.append(xData);
@@ -827,7 +839,7 @@ namespace {
         yData.reserve(karnnNNTargetsNorm.size());
         for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
             xData.push_back(kt.scoreVecNormalized);
-            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+            yData.push_back(get_nn_decoy_label(kt));
         }
 
         e = fdrcLassifierNeuralNet->predictBaggedClassifiers(
@@ -868,7 +880,7 @@ namespace {
         float fdrCutoff = 0.0f;
 
         for (const CandidateScores *cs : tempCandidateScoresPntrs) {
-            if (!cs->isDecoy && cs->qValue <= targetFDR) {
+            if (!is_nn_decoy(cs) && cs->qValue <= targetFDR) {
                 fdrCutoff = std::max(fdrCutoff, static_cast<float>(cs->classifierScore));
             }
         }
@@ -881,10 +893,21 @@ namespace {
         const int decoyCount = std::count_if(
             tempCandidateScoresPntrs.begin(),
             tempCandidateScoresPntrs.end(),
-            [](CandidateScores *cs) { return cs->isDecoy;}
+            [](CandidateScores *cs){ return is_nn_decoy(cs); }
             );
 
         e = ErrorUtils::isTrue(decoyCount > 0); rree;
+
+        {
+            // Sanity check
+            const int checkDecoyCount = std::count_if(
+                yData.begin(),
+                yData.end(),
+                [](float y){ return y == 1.0f; }
+                );
+
+            e = ErrorUtils::isEqual(decoyCount, checkDecoyCount); rree;
+        }
 
         QVector<float> decoyScores;
         decoyScores.reserve(decoyCount);
@@ -1014,7 +1037,7 @@ namespace {
         for (const CandidateScores *csp : *candidateScoreses) {
 
             counter++;
-            if (csp->qValue >= threshold && !csp->isDecoy) {
+            if (csp->qValue >= threshold && !csp->isDecoy && !csp->targetDecoyCandidatePair->isDecoy()) {
                 break;
             }
         }
@@ -1029,7 +1052,7 @@ namespace {
     	const int decoyCount = static_cast<int>(std::count_if(
 				karnnNNTargetsNorm.begin(),
 				karnnNNTargetsNorm.end(),
-				[](const KarnnNNTarget &kt){return kt.candidateScores->isDecoy;}
+				[](const KarnnNNTarget &kt) { return is_nn_decoy(kt); }
 				));
 
     	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -1055,7 +1078,7 @@ namespace {
     	out << karnnNNTargetsNormTrain.size();
 
     	for (const KarnnNNTarget &kt : karnnNNTargetsNormTrain) {
-    		float label =kt.candidateScores->isDecoy ? 1.0 : 0.0;
+    		float label = is_nn_decoy(kt) ? 1.0 : 0.0;
     		out << kt.scoreVecNormalized;
     		out << label;
     		out << kt.candidateScores->proteinGroup;
@@ -1228,8 +1251,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         ); ree;
 
     for (int i = 0; i < proteinGroupsAll.size(); i++) {
-
-        if (candidateScores->at(i)->isDecoy) {
+        if (is_nn_decoy(candidateScores->at(i))) {
             QStringList proteinGroupSplit = proteinGroupsAll.at(i).split(";");
             for (QString &pg : proteinGroupSplit) {
                 pg = pg.replace('>', ">decoy_");
@@ -1263,7 +1285,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             break;
         }
 
-        if (cs->isDecoy) {
+        if (is_nn_decoy(cs)) {
             decoys++;
             continue;
         }
@@ -1309,7 +1331,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             break;
         }
 
-        if (cs->isDecoy) {
+        if (is_nn_decoy(cs)) {
             decoys++;
             continue;
         }
@@ -1370,7 +1392,7 @@ void PythiaDIAFFWorkflow::filterDecoysOrNot(QVector<CandidateScores*> *candidate
         for (const CandidateScores *candidateScores : *candidateScoreClassifierPntrs) {
 
             counter++;
-            if (candidateScores->isDecoy) {
+            if (is_nn_decoy(candidateScores)) {
                 decoyCounter++;
             }
 
