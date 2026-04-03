@@ -63,6 +63,19 @@ void PeptideStringWithModsTests::modificationsMapTest() {
     QCOMPARE(modsMapUniMod.keys().at(1), 3);
     QCOMPARE(static_cast<int>(modsMapUniMod.values().at(1)), 57);
 
+    const PeptideStringWithMods peptideStringWithModsNTerm = PeptideStringWithMods("(UniMod:1)ACD");
+    const QMap<Index, double> modsMapNTerm = peptideStringWithModsNTerm.modificationsMap();
+
+    QCOMPARE(modsMapNTerm.size(), 1);
+    QCOMPARE(modsMapNTerm.firstKey(), -1);
+    QCOMPARE(MathUtils::pRound(modsMapNTerm.first(), 6), MathUtils::pRound(42.010565, 6));
+
+    const PeptideStringWithMods peptideStringWithModsCTerm = PeptideStringWithMods("ACD(42.010565)");
+    const QMap<Index, double> modsMapCTerm = peptideStringWithModsCTerm.modificationsMap();
+
+    QCOMPARE(modsMapCTerm.size(), 1);
+    QCOMPARE(modsMapCTerm.firstKey(), 2);
+    QCOMPARE(MathUtils::pRound(modsMapCTerm.first(), 6), MathUtils::pRound(42.010565, 6));
 
 }
 
