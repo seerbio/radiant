@@ -31,6 +31,8 @@ private Q_SLOTS:
     static void inferIonLabelsStandardModeRoundTripTest();
     static void inferIonLabelsAlternativeModeRoundTripTest();
     static void inferIonLabelsAlternativeModeMultiplePreimageResidualSelectionTest();
+    static void inferIonLabelsTargetWithNTermModificationTest();
+    static void inferIonLabelsTargetWithCTermModificationTest();
 };
 
 void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
@@ -413,6 +415,64 @@ void FragLibTsvReaderTests::inferIonLabelsAlternativeModeMultiplePreimageResidua
     }
 
     QVERIFY2(foundCase, "Did not find an ambiguous multi-preimage case with deterministic residual winner.");
+}
+
+void FragLibTsvReaderTests::inferIonLabelsTargetWithNTermModificationTest() {
+    constexpr float nTermDeltaMass = 42.010565f;
+
+    const PeptideStringWithMods basePeptideStringWithMods("ACDEF");
+    const PeptideStringWithMods nTermModifiedPeptideStringWithMods("(UniMod:1)ACDEF");
+    const QStringList ionLabelsToMatch = {"b1", "b2", "b4", "y1", "y2", "y4"};
+    const QString expectedIonLabels = ionLabelsToMatch.join(S_GLOBAL_SETTINGS.SEPARATOR);
+
+    // Hand-shift the fragments that physically contain the peptide N-terminus so this
+    // regression does not depend on the production fragment builder handling terminal mods.
+    QVector<float> mzVals = mzValsForIonLabels(basePeptideStringWithMods, ionLabelsToMatch);
+    for (int i = 0; i < ionLabelsToMatch.size(); ++i) {
+        if (ionLabelsToMatch.at(i).startsWith('b')) {
+            mzVals[i] += nTermDeltaMass;
+        }
+    }
+
+    QString inferredIonLabels;
+    const Err e = FragLibTsvReader::inferIonLabelsForTest(
+            mzVals,
+            nTermModifiedPeptideStringWithMods,
+            false,
+            kCharge,
+            false,
+            &inferredIonLabels
+            );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(inferredIonLabels, expectedIonLabels);
+}
+
+void FragLibTsvReaderTests::inferIonLabelsTargetWithCTermModificationTest() {
+    constexpr float cTermDeltaMass = 42.010565f;
+
+    const PeptideStringWithMods basePeptideStringWithMods("ACDEF");
+    const PeptideStringWithMods cTermModifiedPeptideStringWithMods("ACDEF(42.010565)");
+    const QStringList ionLabelsToMatch = {"b1", "b2", "b4", "y1", "y2", "y4"};
+    const QString expectedIonLabels = ionLabelsToMatch.join(S_GLOBAL_SETTINGS.SEPARATOR);
+
+    QVector<float> mzVals = mzValsForIonLabels(basePeptideStringWithMods, ionLabelsToMatch);
+    for (int i = 0; i < ionLabelsToMatch.size(); ++i) {
+        if (ionLabelsToMatch.at(i).startsWith('y')) {
+            mzVals[i] += cTermDeltaMass;
+        }
+    }
+
+    QString inferredIonLabels;
+    const Err e = FragLibTsvReader::inferIonLabelsForTest(
+            mzVals,
+            cTermModifiedPeptideStringWithMods,
+            false,
+            kCharge,
+            false,
+            &inferredIonLabels
+            );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(inferredIonLabels, expectedIonLabels);
 }
 
 

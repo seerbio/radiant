@@ -92,6 +92,13 @@ QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
         aminoAcidsMassValues.coeffRef(i) += modsMap.contains(i)
                 ? aa.aminoAcid(aminoAcid).monoisotopicMass() + modsMap.value(i)
                 : aa.aminoAcid(aminoAcid).monoisotopicMass();
+
+        // Handle n-terminal modifications, which can potentially be encoded
+        // differently than a first-residue modification; for c-terminal mods
+        // the encoding is typically the same as a last-residue mod.
+        if (i == 0 && modsMap.contains(-1)) {
+            aminoAcidsMassValues.coeffRef(i) += modsMap.value(-1);
+        }
     }
 
     Eigen::VectorXd cumSumAminoAcidsMassValues(pepLength);
