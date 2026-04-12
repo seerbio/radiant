@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1460" viewBox="0 0 2000 1460" role="img" aria-labelledby="title desc">
+  <title id="title">Radiant DIA Architecture</title>
+  <desc id="desc">Detailed architecture diagram for the Radiant DIA codebase showing runtime flow and module layering, formatted to keep labels inside their boxes.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #0f172a; stroke-width: 2; rx: 18; ry: 18; }
+      .title { font: 700 30px 'DejaVu Sans', Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 700 21px 'DejaVu Sans', Arial, sans-serif; fill: #0f172a; }
+      .label { font: 700 16px 'DejaVu Sans', Arial, sans-serif; fill: #0f172a; }
+      .text { font: 14px 'DejaVu Sans', Arial, sans-serif; fill: #1e293b; }
+      .text-sm { font: 13px 'DejaVu Sans', Arial, sans-serif; fill: #1e293b; }
+      .small { font: 12px 'DejaVu Sans', Arial, sans-serif; fill: #334155; }
+      .box-app { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 2; rx: 12; ry: 12; }
+      .box-flow { fill: #e0f2fe; stroke: #0284c7; stroke-width: 2; rx: 12; ry: 12; }
+      .box-algo { fill: #ede9fe; stroke: #7c3aed; stroke-width: 2; rx: 12; ry: 12; }
+      .box-io { fill: #dcfce7; stroke: #16a34a; stroke-width: 2; rx: 12; ry: 12; }
+      .box-data { fill: #fef3c7; stroke: #d97706; stroke-width: 2; rx: 12; ry: 12; }
+      .box-found { fill: #fee2e2; stroke: #dc2626; stroke-width: 2; rx: 12; ry: 12; }
+      .box-ext { fill: #f1f5f9; stroke: #475569; stroke-width: 2; rx: 12; ry: 12; }
+      .box-sub { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; rx: 10; ry: 10; }
+      .arrow { stroke: #0f172a; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0f172a"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="1460"/>
+
+  <text class="title" x="1000" y="48" text-anchor="middle">Radiant DIA Architecture</text>
+  <text class="text" x="1000" y="78" text-anchor="middle">Left: runtime execution path. Right: repository layering, dependency flow, and external contracts.</text>
+
+  <rect class="panel" x="30" y="100" width="920" height="1310"/>
+  <text class="subtitle" x="490" y="138" text-anchor="middle">Runtime Flow</text>
+
+  <rect class="box-data" x="60" y="170" width="210" height="155"/>
+  <text class="label" x="165" y="198" text-anchor="middle">Inputs</text>
+  <text class="text">
+    <tspan x="80" y="226">- fragment library</tspan>
+    <tspan x="80" y="248">- FASTA</tspan>
+    <tspan x="80" y="270">- radiantConfig /</tspan>
+    <tspan x="80" y="292">  pythiaConfig / .toml</tspan>
+    <tspan x="80" y="314">- mzML / prqFF / Bruker .d</tspan>
+  </text>
+
+  <rect class="box-app" x="310" y="170" width="360" height="155"/>
+  <text class="label" x="490" y="198" text-anchor="middle">CLI Surface</text>
+  <text class="text">
+    <tspan x="332" y="226">Apps/RadiantDIA/main.cpp</tspan>
+    <tspan x="332" y="248">CommandLineParser validates</tspan>
+    <tspan x="332" y="270">arguments and option state</tspan>
+    <tspan x="332" y="292">PythiaParameterReader builds config</tspan>
+    <tspan x="332" y="314">PythiaDIAFFWorkflow is initialized</tspan>
+  </text>
+
+  <line class="arrow" x1="270" y1="240" x2="310" y2="240"/>
+
+  <rect class="box-flow" x="310" y="370" width="360" height="110"/>
+  <text class="label" x="490" y="398" text-anchor="middle">1. Library Ingestion</text>
+  <text class="text">
+    <tspan x="332" y="426">FragLibReader::getFragLibReaderRows()</tspan>
+    <tspan x="332" y="448">load fragment rows, metadata,</tspan>
+    <tspan x="332" y="470">and precursor/fragment definitions</tspan>
+  </text>
+
+  <rect class="box-algo" x="710" y="370" width="210" height="130"/>
+  <text class="label" x="815" y="398" text-anchor="middle">2. Candidate Space</text>
+  <text class="text-sm">
+    <tspan x="730" y="426">TargetDecoyCandidate</tspan>
+    <tspan x="730" y="448">PairManager</tspan>
+    <tspan x="730" y="470">target/decoy generation,</tspan>
+    <tspan x="730" y="490">filtering, and tranche setup</tspan>
+  </text>
+
+  <line class="arrow" x1="490" y1="325" x2="490" y2="370"/>
+  <line class="arrow" x1="670" y1="435" x2="710" y2="435"/>
+
+  <rect class="box-io" x="310" y="530" width="360" height="130"/>
+  <text class="label" x="490" y="558" text-anchor="middle">3. MS Data Loading</text>
+  <text class="text">
+    <tspan x="332" y="586">MsReaderPointerAcc::openFile()</tspan>
+    <tspan x="332" y="608">dispatch to mzML / prqFF / .d reader</tspan>
+    <tspan x="332" y="630">expose scan-time maps, scan points,</tspan>
+    <tspan x="332" y="652">and frame-level accessors</tspan>
+  </text>
+
+  <rect class="box-algo" x="710" y="530" width="210" height="130"/>
+  <text class="label" x="815" y="558" text-anchor="middle">4. Frame Assembly</text>
+  <text class="text-sm">
+    <tspan x="730" y="586">TargetDecoyCandidate</tspan>
+    <tspan x="730" y="608">PairScoretron2</tspan>
+    <tspan x="730" y="630">MS1 frame, target frames,</tspan>
+    <tspan x="730" y="652">TurboXIC, averagine tables</tspan>
+  </text>
+
+  <line class="arrow" x1="490" y1="480" x2="490" y2="530"/>
+  <line class="arrow" x1="670" y1="595" x2="710" y2="595"/>
+
+  <rect class="box-flow" x="310" y="700" width="360" height="110"/>
+  <text class="label" x="490" y="728" text-anchor="middle">5. Calibration</text>
+  <text class="text">
+    <tspan x="332" y="756">MsCalibratomaticSettertron</tspan>
+    <tspan x="332" y="778">score calibration tranche subset</tspan>
+    <tspan x="332" y="800">learn RT and mass calibration state</tspan>
+  </text>
+
+  <rect class="box-flow" x="310" y="850" width="360" height="120"/>
+  <text class="label" x="490" y="878" text-anchor="middle">6. PPM Optimization</text>
+  <text class="text">
+    <tspan x="332" y="906">OptimizeMassAccuracy</tspan>
+    <tspan x="332" y="928">PPMSettertron</tspan>
+    <tspan x="332" y="950">sweep extraction widths and fit best ppm</tspan>
+  </text>
+
+  <line class="arrow" x1="490" y1="660" x2="490" y2="700"/>
+  <line class="arrow" x1="490" y1="810" x2="490" y2="850"/>
+
+  <rect class="box-algo" x="310" y="1010" width="360" height="150"/>
+  <text class="label" x="490" y="1038" text-anchor="middle">7. Main Candidate Scoring</text>
+  <text class="text">
+    <tspan x="332" y="1066">scoreTargetDecoyPairs()</tspan>
+    <tspan x="332" y="1088">extract chromatographic and MS1/MS2</tspan>
+    <tspan x="332" y="1110">features for target/decoy candidates</tspan>
+    <tspan x="332" y="1132">generate CandidateScores pairs</tspan>
+  </text>
+
+  <rect class="box-algo" x="710" y="1010" width="210" height="150"/>
+  <text class="label" x="815" y="1038" text-anchor="middle">8. First-Pass Ranking</text>
+  <text class="text-sm">
+    <tspan x="730" y="1066">DiscriminantScoretron</tspan>
+    <tspan x="730" y="1088">QValueSettertron</tspan>
+    <tspan x="730" y="1110">FDRCLassifierNeuralNet</tspan>
+    <tspan x="730" y="1132">weights and q-values</tspan>
+    <tspan x="730" y="1150">helper logic</tspan>
+  </text>
+
+  <line class="arrow" x1="490" y1="970" x2="490" y2="1010"/>
+  <line class="arrow" x1="670" y1="1088" x2="710" y2="1088"/>
+
+  <rect class="box-found" x="310" y="1200" width="360" height="140"/>
+  <text class="label" x="490" y="1228" text-anchor="middle">9. Neural Reranking</text>
+  <text class="text">
+    <tspan x="332" y="1256">applyNeuralNetClassifier()</tspan>
+    <tspan x="332" y="1278">FDRCLassifierNeuralNet</tspan>
+    <tspan x="332" y="1300">ensemble training and inference</tspan>
+    <tspan x="332" y="1322">CandidateClassifier / libtorch</tspan>
+  </text>
+
+  <rect class="box-data" x="710" y="1200" width="210" height="140"/>
+  <text class="label" x="815" y="1228" text-anchor="middle">10. Output</text>
+  <text class="text-sm">
+    <tspan x="730" y="1256">protein reannotation</tspan>
+    <tspan x="730" y="1278">ResultsSummary updates</tspan>
+    <tspan x="730" y="1300">Parquet .radiantDIA write</tspan>
+  </text>
+
+  <line class="arrow" x1="490" y1="1160" x2="490" y2="1200"/>
+  <line class="arrow" x1="670" y1="1268" x2="710" y2="1268"/>
+
+  <text class="small">
+    <tspan x="60" y="1372">Legacy implementation names still use Pythia prefixes,</tspan>
+    <tspan x="60" y="1392">but the user-facing product and result format are RadiantDIA / .radiantDIA.</tspan>
+  </text>
+
+  <rect class="panel" x="980" y="100" width="990" height="1310"/>
+  <text class="subtitle" x="1475" y="138" text-anchor="middle">Module Layering and Dependencies</text>
+
+  <rect class="box-app" x="1040" y="170" width="870" height="160"/>
+  <text class="label" x="1475" y="198" text-anchor="middle">Applications</text>
+  <rect class="box-sub" x="1070" y="220" width="220" height="70"/>
+  <rect class="box-sub" x="1330" y="220" width="250" height="70"/>
+  <rect class="box-sub" x="1620" y="220" width="260" height="70"/>
+  <text class="label" x="1180" y="262" text-anchor="middle">RadiantDIA</text>
+  <text class="text-sm" x="1455" y="262" text-anchor="middle">FeatureOptimizerPrime</text>
+  <text class="text-sm" text-anchor="middle">
+    <tspan x="1750" y="252">LycaonMzML</tspan>
+    <tspan x="1750" y="272">Transmorgitron</tspan>
+  </text>
+  <text class="small" x="1070" y="314">CLI binaries link into workflow orchestration and file-reader libraries.</text>
+
+  <rect class="box-flow" x="1155" y="370" width="640" height="150"/>
+  <text class="label" x="1475" y="398" text-anchor="middle">WorkFlowsLib</text>
+  <text class="text">
+    <tspan x="1180" y="426">PythiaDIAFFWorkflow</tspan>
+    <tspan x="1180" y="448">ConvertMzMLToParquetWorkFlow</tspan>
+    <tspan x="1180" y="470">MsCalibratomaticSettertron</tspan>
+    <tspan x="1180" y="492">OptimizeMassAccuracyPPMSettertron</tspan>
+  </text>
+
+  <line class="arrow" x1="1475" y1="330" x2="1475" y2="370"/>
+
+  <rect class="box-algo" x="1020" y="570" width="420" height="240"/>
+  <text class="label" x="1230" y="598" text-anchor="middle">AlgorithmsFFLib</text>
+  <text class="text">
+    <tspan x="1045" y="626">TargetDecoyCandidatePairManager</tspan>
+    <tspan x="1045" y="648">TargetDecoyCandidatePairScoretron2</tspan>
+    <tspan x="1045" y="670">CandidateScorertron</tspan>
+    <tspan x="1045" y="692">DiscriminantScoretron</tspan>
+    <tspan x="1045" y="714">QValueSettertron</tspan>
+    <tspan x="1045" y="736">FDRCLassifierNeuralNet</tspan>
+    <tspan x="1045" y="758">SequenceSubstringSearchomatic</tspan>
+    <tspan x="1045" y="780">and related scoring helpers</tspan>
+  </text>
+
+  <rect class="box-io" x="1510" y="570" width="420" height="240"/>
+  <text class="label" x="1720" y="598" text-anchor="middle">FileReadersLib</text>
+  <text class="text">
+    <tspan x="1535" y="626">MsReaderPointerAcc / MsReaderBase</tspan>
+    <tspan x="1535" y="648">MsReaderMzML / MsReaderParquet</tspan>
+    <tspan x="1535" y="670">FragLibReader / FragLibTsvReader</tspan>
+    <tspan x="1535" y="692">SpecLibReader / PythiaParameterReader</tspan>
+    <tspan x="1535" y="714">FastaReader / ParquetReader</tspan>
+  </text>
+
+  <line class="arrow" x1="1420" y1="520" x2="1270" y2="570"/>
+  <line class="arrow" x1="1530" y1="520" x2="1680" y2="570"/>
+
+  <rect class="box-found" x="1040" y="860" width="190" height="140"/>
+  <text class="label" x="1135" y="888" text-anchor="middle">PyTorchLib</text>
+  <text class="text-sm">
+    <tspan x="1060" y="916">CandidateClassifier</tspan>
+    <tspan x="1060" y="938">bagged NN training</tspan>
+  </text>
+
+  <rect class="box-found" x="1260" y="860" width="190" height="140"/>
+  <text class="label" x="1355" y="888" text-anchor="middle">EigenLib</text>
+  <text class="text-sm">
+    <tspan x="1280" y="916">numerical kernels</tspan>
+    <tspan x="1280" y="938">similarity / fitting</tspan>
+  </text>
+
+  <rect class="box-found" x="1480" y="860" width="190" height="140"/>
+  <text class="label" x="1575" y="888" text-anchor="middle">ChemLib</text>
+  <text class="text-sm">
+    <tspan x="1500" y="916">molecular helpers</tspan>
+    <tspan x="1500" y="938">amino-acid chemistry</tspan>
+  </text>
+
+  <rect class="box-found" x="1700" y="860" width="190" height="140"/>
+  <text class="label" x="1795" y="888" text-anchor="middle">UtilsLib</text>
+  <text class="text-sm">
+    <tspan x="1720" y="916">Err model / globals</tspan>
+    <tspan x="1720" y="938">math / threading / CSV</tspan>
+  </text>
+
+  <line class="arrow" x1="1230" y1="810" x2="1135" y2="860"/>
+  <line class="arrow" x1="1230" y1="810" x2="1355" y2="860"/>
+  <line class="arrow" x1="1230" y1="810" x2="1795" y2="860"/>
+  <line class="arrow" x1="1720" y1="810" x2="1575" y2="860"/>
+  <line class="arrow" x1="1720" y1="810" x2="1795" y2="860"/>
+
+  <rect class="box-ext" x="1040" y="1050" width="870" height="250"/>
+  <text class="label" x="1475" y="1078" text-anchor="middle">External Dependencies and Data Contracts</text>
+  <text class="text-sm">
+    <tspan x="1065" y="1106">External libs: Qt5, Torch/libtorch, Apache Parquet, libxml2,</tspan>
+    <tspan x="1065" y="1128">sqlite3, SeqAn, bundled Eigen/nanoflann/timsdata</tspan>
+    <tspan x="1065" y="1160">Input artifacts: .fragLibFF / .csv / .tsv / .speclib, .fasta / .fas,</tspan>
+    <tspan x="1065" y="1182">.radiantConfig / .pythiaConfig / .toml, .mzML / .prqFF / .d</tspan>
+    <tspan x="1065" y="1214">Output artifacts: .radiantDIA Parquet result, optional short report,</tspan>
+    <tspan x="1065" y="1236">logs, and build/test binaries in build/bin</tspan>
+    <tspan x="1065" y="1268">Linkage path: Apps -&gt; WorkFlowsLib -&gt; AlgorithmsFFLib + FileReadersLib</tspan>
+    <tspan x="1065" y="1290">-&gt; support libs -&gt; external packages</tspan>
+  </text>
+
+  <line class="arrow" x1="1135" y1="1000" x2="1160" y2="1050"/>
+  <line class="arrow" x1="1355" y1="1000" x2="1355" y2="1050"/>
+  <line class="arrow" x1="1575" y1="1000" x2="1575" y2="1050"/>
+  <line class="arrow" x1="1795" y1="1000" x2="1770" y2="1050"/>
+
+  <text class="small">
+    <tspan x="1040" y="1368">Solid arrows indicate the dominant dependency or runtime handoff path.</tspan>
+    <tspan x="1040" y="1388">Legacy Pythia names remain in code, but the deployed CLI and result surface are RadiantDIA.</tspan>
+  </text>
+</svg>
