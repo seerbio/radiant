@@ -174,6 +174,7 @@ public:
     Eigen::VectorX<float> intensityVec;
     Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
+    Eigen::VectorX<float> productVecUnsubbed;
     Eigen::VectorX<float> productVec;
 
     [[nodiscard]] bool intensityMatriciesAreValid() const {
@@ -317,7 +318,7 @@ Err CandidateScorertron::calculateScores(
 
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
-        matriciesAndVecs.productVec,
+        matriciesAndVecs.productVecUnsubbed,  // Use un-subtracted vector for integration
         m_pythiaParameters.stopThresholdFractionMS2,
         m_pythiaParameters.peakDifferenceFractionThreshold,
         &peakIntegrationsVsIntensities
@@ -803,6 +804,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
+        const Eigen::VectorX<float> intensityVecLegacy = matriciesAndVecs->intensityMatrix100.rowwise().sum();
         // matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
         //     matriciesAndVecs->intensityVec,
         //     d_ptr->m_kernelIntegration
@@ -846,11 +848,17 @@ Err CandidateScorertron::initMatricesdAndVecs(
         //     &matriciesAndVecs->integrationVecCosineSim
         //     ); ree;
 
+        matriciesAndVecs->productVecUnsubbed = matriciesAndVecs->ionCountVec.array()
+                                           * intensityVecLegacy.array();
         matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
                                      * matriciesAndVecs->intensityVec.array();
 
 		constexpr int smoothCountOverride = 3;
 		for (int i = 0; i < smoothCountOverride; ++i) {
+			matriciesAndVecs->productVecUnsubbed = EigenKernelUtils::convolveVectorWithKernel(
+				matriciesAndVecs->productVecUnsubbed,
+				d_ptr->m_kernelMs2
+				);
 			matriciesAndVecs->productVec = EigenKernelUtils::convolveVectorWithKernel(
 				matriciesAndVecs->productVec,
 				d_ptr->m_kernelMs2
