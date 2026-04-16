@@ -1,6 +1,4 @@
-# Radiant DIA
-
-<p align="center"><img alt="Radiant DIA logo" src="./static/radiant-logo.png" style="width: 40%;"></p>
+<p align="center"><img alt="Radiant DIA logo" src="./static/radiant-logo-lockup.png" style="width: 40%;"></p>
 
 **Radiant DIA**™ is a search tool for bottom-up DIA-MS proteomics that offers:
 
@@ -8,9 +6,13 @@
 * extensive customizability via a parameters file
 * multi-architecture support (Intel/ARM) for maximum flexibility and efficiency
 
-Radiant DIA is usable as a Docker container or Linux binary.
+To run Radiant DIA in a desktop execution environment most users should run the Fulcrum Pipeline with the [Radiant-Fulcrum GUI](https://github.com/seerbio/radiant-fulcrum-gui/), or the [Radiant-Fulcrum Docker container](https://github.com/seerbio/radiant-fulcrum-container/) (CLI).
 
-## Running
+<p align="center"><img alt="Radiant DIA logo" src="./static/radiant-hero-graphic.png" style="width: 40%; margin-bottom: 0px;"></p>
+
+## Using Radiant DIA
+
+Radiant DIA can be run as a Docker container or installed as a Linux binary.
 
 Docker images are available for both Intel (`x86`) and ARM / Apple Silicon (`aarch64`):
 
