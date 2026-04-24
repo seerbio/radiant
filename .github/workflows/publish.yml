@@ -59,7 +59,20 @@ jobs:
       - name: Upload x86 deb
         env:
           CONTAINER: seer/radiant-dia
+          DEB_OUTPUT_DIR: ${{ runner.temp }}/deb-out
         run: ./deploy_deb.sh
+      - name: Upload Release Artifacts
+        if: ${{ github.event_name == 'release' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/deb-out/*.deb
+      - name: Upload Build Artifacts
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: radiantdia-deb-x86_64
+          path: ${{ runner.temp }}/deb-out/*.deb
+
 
   publish_arm_deb:
     runs-on: [self-hosted, aws-master, ARM64]
@@ -70,4 +83,16 @@ jobs:
       - name: Upload ARM deb
         env:
           CONTAINER: seer/radiant-dia
+          DEB_OUTPUT_DIR: ${{ runner.temp }}/deb-out
         run: ./deploy_deb.sh
+      - name: Upload Release Artifacts
+        if: ${{ github.event_name == 'release' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/deb-out/*.deb
+      - name: Upload Build Artifacts
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: radiantdia-deb-arm64
+          path: ${{ runner.temp }}/deb-out/*.deb
