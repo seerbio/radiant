@@ -10,7 +10,7 @@ jobs:
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Tag x86 container image
         uses: seerbio/action-tag-container@2.1.0
@@ -26,7 +26,7 @@ jobs:
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Tag ARM container image
         uses: seerbio/action-tag-container@2.1.0
@@ -42,7 +42,7 @@ jobs:
     needs: [publish_x86_docker, publish_arm_docker]
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Publish Docker Manifest
         env:
           CONTAINER: seer/radiant-dia
@@ -55,7 +55,7 @@ jobs:
     needs: publish_x86_docker
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Upload x86 deb
         env:
           CONTAINER: seer/radiant-dia
@@ -79,7 +79,7 @@ jobs:
     needs: publish_arm_docker
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Upload ARM deb
         env:
           CONTAINER: seer/radiant-dia
