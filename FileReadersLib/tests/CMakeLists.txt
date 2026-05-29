@@ -66,3 +66,9 @@ configure_file(${FRAME_PATH} ${CMAKE_BINARY_DIR}/bin/framePoints.frame COPYONLY)
 
 set(FRAG_LIB_TSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/tsv_library_trunc.tsv")
 configure_file(${FRAG_LIB_TSV_PATH} ${CMAKE_BINARY_DIR}/bin/tsv_library_trunc.tsv COPYONLY)
+
+set(FRAG_LIB_TSV_NO_DECOY_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/tsv_library_no_decoy_trunc.tsv")
+configure_file(${FRAG_LIB_TSV_NO_DECOY_PATH} ${CMAKE_BINARY_DIR}/bin/tsv_library_no_decoy_trunc.tsv COPYONLY)
+
+set(FRAG_LIB_TSV_APD_ALIAS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/tsv_library_apd_alias_trunc.tsv")
+configure_file(${FRAG_LIB_TSV_APD_ALIAS_PATH} ${CMAKE_BINARY_DIR}/bin/tsv_library_apd_alias_trunc.tsv COPYONLY)

@@ -72,20 +72,20 @@ Err FragLibReader::getFragLibReaderRows(
     QElapsedTimer et;
     et.start();
 
-    if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF)) {
+    if (fragLibFilePath.endsWith(S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF)) {
         e = ParquetReader::read(
                 fragLibFilePath,
                 fragLibReaderRows
         ); ree;
     }
 
-    else if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_SPECLIB)) {
+    else if (fragLibFilePath.endsWith(S_GLOBAL_SETTINGS.DOT_SPECLIB)) {
         e = SpecLibReader::getFragLibReaerRows(
                 fragLibFilePath,
                 fragLibReaderRows
         ); ree;
     }
-    else if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_TSV)){
+    else if (fragLibFilePath.endsWith(S_GLOBAL_SETTINGS.DOT_TSV)){
             FragLibTsvReader fragLibTsvReader;
             fragLibTsvReader.setEnableTerminalByPenultimateDecoyAnnotationShift(useAlternativeDecoys);
             e = fragLibTsvReader.getFragLibReaderRows(

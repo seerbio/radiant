@@ -9,6 +9,7 @@
 #include "FileReadersLib_Exports.h"
 #include "PeptideStringWithMods.h"
 
+#include <QHash>
 
 using namespace Error;
 
@@ -46,36 +47,68 @@ namespace FragLibTsvReaderRowNamespace {
         ExcludeFromAssay
     */
 
+    enum class FragLibTsvColumn {
+        PrecursorMz,
+        ProductMz,
+        TrRecalibrated,
+        IonMobility,
+        LibraryIntensity,
+        Decoy,
+        ModifiedPeptide,
+        PrecursorCharge,
+        FragmentType,
+        FragmentCharge,
+        FragmentSeriesNumber
+    };
+
+    struct FragLibTsvColumnBinding {
+        int headerIndex = -1;
+        FragLibTsvColumn column = FragLibTsvColumn::PrecursorMz;
+    };
+
+    struct FragLibTsvColumnAliasPriority {
+        FragLibTsvColumn column = FragLibTsvColumn::PrecursorMz;
+        QVector<QString> aliases;
+    };
+
     const QString FRAG_LIB_TSV_SUFFIX = QStringLiteral("tsv");
 
-    const QString PRECURSOR_MZ = "PrecursorMz";
-    const QString PRODUCT_MZ = "ProductMz";
-    const QString TR_RECALIB = "Tr_recalibrated";
-    const QString ION_MOBILITY = "IonMobility";
-    const QString LIB_INTENSITY = "LibraryIntensity";
-    const QString DECOY = "decoy";
-    const QString MOD_PEP = "ModifiedPeptide";
-    const QString MOD_PEP_SEQ = "ModifiedPeptideSequence";
-    const QString PRECURSOR_CHARGE = "PrecursorCharge";
-    const QString FRAG_TYPE = "FragmentType";
-    const QString FRAG_CHARGE = "FragmentCharge";
-    const QString FRAG_SERIES_NUMB = "FragmentSeriesNumber";
+    const QString PRECURSOR_MZ = QStringLiteral("PrecursorMz");
+    const QString PRODUCT_MZ = QStringLiteral("ProductMz");
+    const QString FRAGMENT_MZ = QStringLiteral("FragmentMz");
+    const QString TR_RECALIB = QStringLiteral("Tr_recalibrated");
+    const QString RT = QStringLiteral("RT");
+    const QString NORM_RT = QStringLiteral("NormalizedRetentionTime");
+    const QString ION_MOBILITY = QStringLiteral("IonMobility");
+    const QString LIB_INTENSITY = QStringLiteral("LibraryIntensity");
+    const QString RELATIVE_INTENSITY = QStringLiteral("RelativeIntensity");
+    const QString DECOY = QStringLiteral("decoy");
+    const QString MOD_PEP = QStringLiteral("ModifiedPeptide");
+    const QString MOD_PEP_SEQ = QStringLiteral("ModifiedPeptideSequence");
+    const QString PRECURSOR_CHARGE = QStringLiteral("PrecursorCharge");
+    const QString FRAG_TYPE = QStringLiteral("FragmentType");
+    const QString FRAG_CHARGE = QStringLiteral("FragmentCharge");
+    const QString FRAG_SERIES_NUMB = QStringLiteral("FragmentSeriesNumber");
+    const QString FRAG_NUMB = QStringLiteral("FragmentNumber");
 
-    const QVector<QString> keysToCheck = {
-            PRECURSOR_MZ,
-            PRODUCT_MZ,
-            TR_RECALIB,
-            ION_MOBILITY,
-            MOD_PEP,
-            MOD_PEP_SEQ,
-            PRECURSOR_CHARGE,
-            LIB_INTENSITY,
-            DECOY,
-            FRAG_TYPE,
-            FRAG_CHARGE,
-            FRAG_SERIES_NUMB
+    inline const QVector<FragLibTsvColumnAliasPriority> &columnAliases() {
+        static const QVector<FragLibTsvColumnAliasPriority> stacks = {
+                {FragLibTsvColumn::PrecursorMz, {PRECURSOR_MZ}},
+                {FragLibTsvColumn::ProductMz, {PRODUCT_MZ, FRAGMENT_MZ}},
+                {FragLibTsvColumn::TrRecalibrated, {TR_RECALIB, RT, NORM_RT}},
+                {FragLibTsvColumn::IonMobility, {ION_MOBILITY}},
+                {FragLibTsvColumn::LibraryIntensity, {LIB_INTENSITY, RELATIVE_INTENSITY}},
+                {FragLibTsvColumn::Decoy, {DECOY}},
+                {FragLibTsvColumn::ModifiedPeptide, {MOD_PEP, MOD_PEP_SEQ}},
+                {FragLibTsvColumn::PrecursorCharge, {PRECURSOR_CHARGE}},
+                {FragLibTsvColumn::FragmentType, {FRAG_TYPE}},
+                {FragLibTsvColumn::FragmentCharge, {FRAG_CHARGE}},
+                {FragLibTsvColumn::FragmentSeriesNumber, {FRAG_SERIES_NUMB, FRAG_NUMB}}
+        };
 
-    };
+        return stacks;
+    }
+
 }//namespace
 
 /**

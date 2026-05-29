@@ -24,6 +24,8 @@ public:
 private Q_SLOTS:
 
     static void getFragLibReaderRowsTest();
+    static void getFragLibReaderRowsApdAliasTest();
+    static void getFragLibReaderRowsNoDecoyColumnTest();
     static void getFragLibReaderRowsFiltersInvalidSequencesTest();
 
     static void compareTest();
@@ -71,6 +73,80 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
 
     QCOMPARE(e, eNoError);
 
+}
+
+void FragLibTsvReaderTests::getFragLibReaderRowsApdAliasTest() {
+
+    ERR_INIT
+
+    const QString &testFile = QDir(qApp->applicationDirPath()).filePath("tsv_library_apd_alias_trunc.tsv");
+
+    FragLibTsvReader fragLibTsvReader;
+
+    QList<FragLibReaderRow> fragLibReaderRows;
+    e = fragLibTsvReader.getFragLibReaderRows(
+            testFile,
+            &fragLibReaderRows
+            );
+
+    QCOMPARE(fragLibReaderRows.size(), 1);
+
+    const FragLibReaderRow &fragLibReaderRow = fragLibReaderRows.at(0);
+    qDebug() << fragLibReaderRow.peptideSequenceChargeKey
+             << fragLibReaderRow.precursorCharge
+             << fragLibReaderRow.mzVals
+             << fragLibReaderRow.isDecoy
+             << fragLibReaderRow.intensityVals
+             << fragLibReaderRow.mass
+             << fragLibReaderRow.iRT
+             << fragLibReaderRow.ionLabels;
+
+    QCOMPARE(fragLibReaderRow.precursorCharge, 2);
+    QCOMPARE(fragLibReaderRow.mzVals.size(), 2);
+    QCOMPARE(fragLibReaderRow.intensityVals.size(), 2);
+    QCOMPARE(fragLibReaderRow.isDecoy, 0);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 997);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), 10);
+    QCOMPARE(fragLibReaderRow.ionLabels.size(), 5);
+
+    QCOMPARE(e, eNoError);
+}
+
+void FragLibTsvReaderTests::getFragLibReaderRowsNoDecoyColumnTest() {
+
+    ERR_INIT
+
+    const QString &testFile = QDir(qApp->applicationDirPath()).filePath("tsv_library_no_decoy_trunc.tsv");
+
+    FragLibTsvReader fragLibTsvReader;
+
+    QList<FragLibReaderRow> fragLibReaderRows;
+    e = fragLibTsvReader.getFragLibReaderRows(
+            testFile,
+            &fragLibReaderRows
+            );
+
+    QCOMPARE(fragLibReaderRows.size(), 1);
+
+    const FragLibReaderRow &fragLibReaderRow = fragLibReaderRows.at(0);
+    qDebug() << fragLibReaderRow.peptideSequenceChargeKey
+             << fragLibReaderRow.precursorCharge
+             << fragLibReaderRow.mzVals
+             << fragLibReaderRow.isDecoy
+             << fragLibReaderRow.intensityVals
+             << fragLibReaderRow.mass
+             << fragLibReaderRow.iRT
+             << fragLibReaderRow.ionLabels;
+
+    QCOMPARE(fragLibReaderRow.precursorCharge, 2);
+    QCOMPARE(fragLibReaderRow.mzVals.size(), 2);
+    QCOMPARE(fragLibReaderRow.intensityVals.size(), 2);
+    QCOMPARE(fragLibReaderRow.isDecoy, 0);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 997);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), 10);
+    QCOMPARE(fragLibReaderRow.ionLabels.size(), 5);
+
+    QCOMPARE(e, eNoError);
 }
 
 void FragLibTsvReaderTests::getFragLibReaderRowsFiltersInvalidSequencesTest() {
