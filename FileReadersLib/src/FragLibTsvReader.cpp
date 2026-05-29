@@ -14,6 +14,7 @@
 #include <Eigen/Dense>
 
 #include <QtConcurrent/QtConcurrent>
+#include <QDebug>
 
 #include <iostream>
 #include <fstream>
@@ -698,6 +699,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
     QVector<QString> header;
     QHash<int, QString> headerIndexVsColumnNames;
     QList<int> headerIndexes;
+    bool hasDecoyColumn = false;
 
     std::ifstream file(tsvFilePath.toStdString());
     std::string line;
@@ -718,10 +720,19 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 headerIndexVsColumnNames = buildHeaderIndexVsColumnNames(lineSplit);
                 headerIndexes = headerIndexVsColumnNames.keys();
                 e = ErrorUtils::isNotEmpty(headerIndexVsColumnNames); ree;
+                hasDecoyColumn = headerIndexVsColumnNames.values().contains(DECOY);
+                if (!hasDecoyColumn) {
+                    qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                               << "Library TSV is missing the" << DECOY
+                               << "column; assuming all entries are non-decoys";
+                }
                 continue;
             }
 
             FragLibTsvReaderRow fragLibTsvReaderRow;
+            if (!hasDecoyColumn) {
+                fragLibTsvReaderRow.decoy = 0;
+            }
 
             for (int headerIndex : headerIndexes) {
 
