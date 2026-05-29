@@ -77,7 +77,8 @@ namespace FragLibTsvReaderRowNamespace {
     const QString PRODUCT_MZ = QStringLiteral("ProductMz");
     const QString FRAGMENT_MZ = QStringLiteral("FragmentMz");
     const QString TR_RECALIB = QStringLiteral("Tr_recalibrated");
-    const QString TR_RECALIB_APD = QStringLiteral("RT");
+    const QString RT = QStringLiteral("RT");
+    const QString NORM_RT = QStringLiteral("NormalizedRetentionTime");
     const QString ION_MOBILITY = QStringLiteral("IonMobility");
     const QString LIB_INTENSITY = QStringLiteral("LibraryIntensity");
     const QString RELATIVE_INTENSITY = QStringLiteral("RelativeIntensity");
@@ -94,7 +95,7 @@ namespace FragLibTsvReaderRowNamespace {
         static const QVector<FragLibTsvColumnAliasPriority> stacks = {
                 {FragLibTsvColumn::PrecursorMz, {PRECURSOR_MZ}},
                 {FragLibTsvColumn::ProductMz, {PRODUCT_MZ, FRAGMENT_MZ}},
-                {FragLibTsvColumn::TrRecalibrated, {TR_RECALIB, TR_RECALIB_APD}},
+                {FragLibTsvColumn::TrRecalibrated, {TR_RECALIB, RT, NORM_RT}},
                 {FragLibTsvColumn::IonMobility, {ION_MOBILITY}},
                 {FragLibTsvColumn::LibraryIntensity, {LIB_INTENSITY, RELATIVE_INTENSITY}},
                 {FragLibTsvColumn::Decoy, {DECOY}},
