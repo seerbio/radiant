@@ -25,6 +25,8 @@
 
 
 namespace {
+    using namespace FragLibTsvReaderRowNamespace;
+
     const QMap<QChar, double> &sourceResidueToDeltaMassMap() {
         static const QMap<QChar, double> map = AminoAcids::diannMutateAminoAcidToMass();
         return map;
@@ -153,20 +155,49 @@ namespace {
         return result;
     }
 
-    QHash<int, QString> buildHeaderIndexVsColumnNames(const QVector<QString> &headerLine) {
+    QVector<FragLibTsvColumnBinding> buildHeaderColumns(const QVector<QString> &headerLine) {
+        using namespace FragLibTsvReaderRowNamespace;
 
-        QHash<int, QString> hashTable;
+        QVector<FragLibTsvColumnBinding> headerColumns;
+        headerColumns.reserve(columnAliases().size());
 
-        int counter = 0;
-        for (const QString &ss : headerLine) {
-            if (FragLibTsvReaderRowNamespace::keysToCheck.contains(ss)) {
-                hashTable.insert(counter, ss);
+        QHash<QString, int> headerNameToIndex;
+        headerNameToIndex.reserve(headerLine.size());
+        for (int headerIndex = 0; headerIndex < headerLine.size(); ++headerIndex) {
+            const QString &headerName = headerLine.at(headerIndex);
+            if (!headerNameToIndex.contains(headerName)) {
+                headerNameToIndex.insert(headerName, headerIndex);
             }
-
-            counter++;
         }
 
-        return hashTable;
+        for (const FragLibTsvColumnAliasPriority &aliasPriority : columnAliases()) {
+            for (const QString &alias : aliasPriority.aliases) {
+                const auto headerIndexIt = headerNameToIndex.constFind(alias);
+                if (headerIndexIt == headerNameToIndex.constEnd()) {
+                    continue;
+                }
+
+                headerColumns.push_back({headerIndexIt.value(), aliasPriority.column});
+                break;
+            }
+        }
+
+        return headerColumns;
+    }
+
+    bool hasHeaderColumn(
+            const QVector<FragLibTsvColumnBinding> &headerColumns,
+            const FragLibTsvColumn column
+            ) {
+        using namespace FragLibTsvReaderRowNamespace;
+
+        for (const FragLibTsvColumnBinding &headerColumn : headerColumns) {
+            if (headerColumn.column == column) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     Err splitPeptideSequenceChargeKey(
@@ -697,8 +728,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
     et.start();
 
     QVector<QString> header;
-    QHash<int, QString> headerIndexVsColumnNames;
-    QList<int> headerIndexes;
+    QVector<FragLibTsvColumnBinding> headerColumns;
     bool hasDecoyColumn = false;
 
     std::ifstream file(tsvFilePath.toStdString());
@@ -717,10 +747,9 @@ Err FragLibTsvReader::getFragLibReaderRows(
 
             if (header.empty()) {
                 header = lineSplit;
-                headerIndexVsColumnNames = buildHeaderIndexVsColumnNames(lineSplit);
-                headerIndexes = headerIndexVsColumnNames.keys();
-                e = ErrorUtils::isNotEmpty(headerIndexVsColumnNames); ree;
-                hasDecoyColumn = headerIndexVsColumnNames.values().contains(DECOY);
+                headerColumns = buildHeaderColumns(lineSplit);
+                e = ErrorUtils::isTrue(!headerColumns.isEmpty()); ree;
+                hasDecoyColumn = hasHeaderColumn(headerColumns, FragLibTsvColumn::Decoy);
                 if (!hasDecoyColumn) {
                     qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
                                << "Library TSV is missing the" << DECOY
@@ -734,55 +763,49 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 fragLibTsvReaderRow.decoy = 0;
             }
 
-            for (int headerIndex : headerIndexes) {
+            for (const FragLibTsvColumnBinding &headerColumn : headerColumns) {
 
-                const QString &colName = headerIndexVsColumnNames.value(headerIndex);
-
-                if (colName.isEmpty()) {
-                    continue;
-                }
-
-                const QString &valString = lineSplit.at(headerIndex);
+                const QString &valString = lineSplit.at(headerColumn.headerIndex);
                 if (valString.isEmpty()) {
                     continue;
                 }
 
-                if (colName == PRECURSOR_MZ) {
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.precursorMz); eee_absorb;
-                }
-                else if (colName == PRODUCT_MZ){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.productMz); eee_absorb;
-                }
-                else if (colName == TR_RECALIB){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.trRecalibrated); eee_absorb;
-                }
-                else if (colName == ION_MOBILITY){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); eee_absorb;
-                }
-                else if (colName == MOD_PEP || colName == MOD_PEP_SEQ){
-                    fragLibTsvReaderRow.modifiedPeptide = valString;
-                }
-                else if (colName == PRECURSOR_CHARGE){
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); eee_absorb;
-                }
-                else if (colName == LIB_INTENSITY){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); eee_absorb;
-                }
-                else if (colName == DECOY) {
-                	const QString boolConversion = valString.toLower() == "true" || valString == "1" ? "1" : "0";
-                    e = ErrorUtils::toInt(boolConversion, &fragLibTsvReaderRow.decoy); eee_absorb;
-                }
-                else if (colName == FRAG_TYPE){
-                    fragLibTsvReaderRow.fragmentType = valString;
-                }
-                else if (colName == FRAG_CHARGE){
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentCharge); eee_absorb;
-                }
-                else if (colName == FRAG_SERIES_NUMB){
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); eee_absorb;
-                }
-                else {
-                    rrr(eValueError);
+                switch (headerColumn.column) {
+                    case FragLibTsvColumn::PrecursorMz:
+                        e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.precursorMz); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::ProductMz:
+                        e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.productMz); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::TrRecalibrated:
+                        e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.trRecalibrated); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::IonMobility:
+                        e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::LibraryIntensity:
+                        e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::Decoy: {
+                        const QString boolConversion = valString.toLower() == "true" || valString == "1" ? "1" : "0";
+                        e = ErrorUtils::toInt(boolConversion, &fragLibTsvReaderRow.decoy); eee_absorb;
+                        break;
+                    }
+                    case FragLibTsvColumn::ModifiedPeptide:
+                        fragLibTsvReaderRow.modifiedPeptide = valString;
+                        break;
+                    case FragLibTsvColumn::PrecursorCharge:
+                        e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::FragmentType:
+                        fragLibTsvReaderRow.fragmentType = valString;
+                        break;
+                    case FragLibTsvColumn::FragmentCharge:
+                        e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentCharge); eee_absorb;
+                        break;
+                    case FragLibTsvColumn::FragmentSeriesNumber:
+                        e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); eee_absorb;
+                        break;
                 }
             }
 
