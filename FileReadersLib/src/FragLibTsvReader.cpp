@@ -185,6 +185,16 @@ namespace {
         return headerColumns;
     }
 
+    QString normalizeLibraryModifiedPeptide(const QString &modifiedPeptide) {
+        if (modifiedPeptide.size() >= 2
+            && modifiedPeptide.startsWith('_')
+            && modifiedPeptide.endsWith('_')) {
+            return modifiedPeptide.mid(1, modifiedPeptide.size() - 2);
+        }
+
+        return modifiedPeptide;
+    }
+
     bool hasHeaderColumn(
             const QVector<FragLibTsvColumnBinding> &headerColumns,
             const FragLibTsvColumn column
@@ -792,7 +802,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
                         break;
                     }
                     case FragLibTsvColumn::ModifiedPeptide:
-                        fragLibTsvReaderRow.modifiedPeptide = valString;
+                        fragLibTsvReaderRow.modifiedPeptide = normalizeLibraryModifiedPeptide(valString);
                         break;
                     case FragLibTsvColumn::PrecursorCharge:
                         e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); eee_absorb;
