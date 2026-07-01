@@ -6,6 +6,12 @@ on:
       - master
 
 jobs:
+  dummy:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dummy"
+
   #build-x86_64:
   #  # Require that this step run on a self-hosted runner
   #  # within the aws-master AWS account; this will ensure

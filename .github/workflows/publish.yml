@@ -5,6 +5,12 @@ on:
     types: [created]
 
 jobs:
+  dummy:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dummy"
+
   #publish_x86_docker:
   #  runs-on: [self-hosted, aws-master, X64]
   #  steps:
