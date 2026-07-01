@@ -5,40 +5,39 @@ on:
     branches:
       - master
 
-#TODO: configure builds for each architecture (x86_64 / aarch_64)
 jobs:
-  build-x86_64:
-    # Require that this step run on a self-hosted runner
-    # within the aws-master AWS account; this will ensure
-    # it has the necessary access to ECR.
-    runs-on: [self-hosted, aws-master, X64]
+  #build-x86_64:
+  #  # Require that this step run on a self-hosted runner
+  #  # within the aws-master AWS account; this will ensure
+  #  # it has the necessary access to ECR.
+  #  runs-on: [self-hosted, aws-master, X64]
 
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
+  #  steps:
+  #    - name: Check out code
+  #      uses: actions/checkout@v6
 
-      - name: Build and tag container image
-        uses: seerbio/action-build-container@1.1.0
-        with:
-          container: seer/radiant-dia
-          container_tag: x86_64-build-${{ github.run_number }}
-          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
-          test_script: ./test_container.sh
+  #    - name: Build and tag container image
+  #      uses: seerbio/action-build-container@1.1.0
+  #      with:
+  #        container: seer/radiant-dia
+  #        container_tag: x86_64-build-${{ github.run_number }}
+  #        repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+  #        test_script: ./test_container.sh
 
-  build-aarch64:
-    # Require that this step run on a self-hosted runner
-    # within the aws-master AWS account; this will ensure
-    # it has the necessary access to ECR.
-    runs-on: [self-hosted, aws-master, ARM64]
+  #build-aarch64:
+  #  # Require that this step run on a self-hosted runner
+  #  # within the aws-master AWS account; this will ensure
+  #  # it has the necessary access to ECR.
+  #  runs-on: [self-hosted, aws-master, ARM64]
 
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
+  #  steps:
+  #    - name: Check out code
+  #      uses: actions/checkout@v6
 
-      - name: Build and tag container image
-        uses: seerbio/action-build-container@1.1.0
-        with:
-          container: seer/radiant-dia
-          container_tag: aarch64-build-${{ github.run_number }}
-          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
-          test_script: ./test_container.sh
+  #    - name: Build and tag container image
+  #      uses: seerbio/action-build-container@1.1.0
+  #      with:
+  #        container: seer/radiant-dia
+  #        container_tag: aarch64-build-${{ github.run_number }}
+  #        repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+  #        test_script: ./test_container.sh
