@@ -4,14 +4,15 @@ Use of the Radiant DIA™ search engine software, including any portion
 thereof, is licensed under a Mandatory Grant-Back Apache 2.0 license, as
 modified by the Commons Clause (collectively, the "**License**").
 
-You may not use the Radiant DIA™ software, including any portion
-thereof, except in compliance with the License. See the entire License
-for specific language governing permissions and limitations under the
-License.
+You may not use the Radiant DIA™ search engine software, including any
+portion thereof, except in compliance with the License. See the entire
+License for specific language governing permissions and limitations
+under the License.
 
-------------------------------------------------------------------------
+---
 
-**Mandatory Grant-Back Apache 2.0 License, as modified by the Commons Clause May 2026**
+**Mandatory Grant-Back Apache 2.0 License, as modified by the Commons Clause**  
+**July 2026**
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -25,7 +26,8 @@ this document.
 the copyright owner that is granting the License.
 
 "**Original Licensor**" shall mean Seer, Inc., or any assignee of or
-successor in interest to Seer, Inc.
+successor in interest to the rights of Seer, Inc. in the Radiant DIA™
+search engine software.
 
 "**Legal Entity**" shall mean the union of the acting entity and all
 other entities that control, are controlled by, or are under common
@@ -51,25 +53,33 @@ conversions to other media types.
 Object form, made available under the License, as indicated by a
 copyright notice that is included in or attached to the work.
 
+"**Modified Works**" shall mean any work, whether in Source or Object
+form, that is a modification, correction, enhancement, patch, bug fix,
+update, adaptation, or other change to the Work. For the purposes of
+this License, Modified Works shall not include works, including known or
+novel plugins, that remain separable from, or merely link (or bind by
+name) to the interfaces of, the Work and Modified Works thereof.
+
 "**Derivative Works**" shall mean any work, whether in Source or
 Object form, that is based on (or derived from) the Work and for which
 the editorial revisions, annotations, elaborations, or other
 modifications represent, as a whole, an original work of authorship. For
-the purposes of this License, Derivative Works shall not include works
-that remain separable from, or merely link (or bind by name) to the
-interfaces of, the Work and Derivative Works thereof.
+the purposes of this License, Derivative Works shall not include works,
+including known or novel plugins, that remain separable from, or merely
+link (or bind by name) to the interfaces of, the Work and Derivative
+Works thereof.
 
 "**Contribution**" shall mean any work of authorship, including the
-original version of the Work and any modifications or additions to that
-Work or Derivative Works thereof, that is intentionally submitted to
-Licensor for inclusion in the Work by the copyright owner or by an
-individual or Legal Entity authorized to submit on behalf of the
-copyright owner. For the purposes of this definition, "**submitted**"
-means any form of electronic, verbal, or written communication sent to
-the Licensor or its representatives, including but not limited to
-communication on electronic mailing lists, source code control systems,
-and issue tracking systems that are managed by, or on behalf of, the
-Licensor for the purpose of discussing and improving the Work.
+original version of the Work and any Modified Works or Derivative Works
+thereof, that is intentionally submitted to Licensor for inclusion in
+the Work by the copyright owner or by an individual or Legal Entity
+authorized to submit on behalf of the copyright owner. For the purposes
+of this definition, "**submitted**" means any form of electronic,
+verbal, or written communication sent to the Licensor or its
+representatives, including but not limited to communication on
+electronic mailing lists, source code control systems, and issue
+tracking systems that are managed by, or on behalf of, the Licensor for
+the purpose of discussing and improving the Work.
 
 "**Contributor**" shall mean Licensor and any individual or Legal
 Entity on behalf of whom a Contribution has been received by Licensor
@@ -77,18 +87,19 @@ and subsequently incorporated within the Work.
 
 "**Sell**" shall mean practicing any or all of the rights granted to
 You under the License to provide to third parties, for a fee or other
-consideration (including without limitation fees for hosting or
-consulting/ support services related to the Work or modified Work,
+consideration (including, without limitation, fees for hosting or
+consulting/support services related to the Work or Modified Work,
 including Derivative Work(s) thereof), a product or service whose value
 derives, entirely or substantially, from the functionality of the Work,
-modified Work, or Derivative Work(s).
+Modified Work, or Derivative Work(s).
 
 **2. Grant of Copyright License**. Subject to the terms and conditions
 of this License, each Contributor hereby grants to You a perpetual,
 worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright
-license to reproduce, prepare Derivative Works of, publicly display,
-publicly perform, sublicense, and distribute the Work and such
-Derivative Works in Source or Object form.
+license to reproduce, prepare Modified Works of (including Derivative
+Works of), publicly display, publicly perform, sublicense, and
+distribute the Work and such Modified Works or Derivative Works in
+Source or Object form.
 
 **3. Grant of Patent License**. Subject to the terms and conditions of
 this License, each Contributor hereby grants to You a perpetual,
@@ -106,47 +117,50 @@ any patent licenses granted to You under this License for that Work
 shall terminate as of the date such litigation is filed.
 
 **4. Redistribution**. You may reproduce and distribute copies of the
-Work or Derivative Works thereof in any medium, with or without
-modifications, and in Source or Object form, provided that You meet the
-following conditions:
+Work or Modified Works or Derivative Works thereof in any medium, with
+or without modifications, and in Source or Object form, provided that
+You meet the following conditions:
 
-a)  You must give any other recipients of the Work or Derivative Works a
-    copy of this License; and
+a)  You must give any other recipients of the Work, Modified Work, or
+    Derivative Works a copy of this License; and
 
 b)  You must cause any modified files to carry prominent notices stating
     that You changed the files; and
 
-c)  You must retain, in the Source form of any Derivative Works that You
-    distribute, all copyright, patent, trademark, and attribution
-    notices from the Source form of the Work, excluding those notices
-    that do not pertain to any part of the Derivative Works; and
+c)  You must retain, in the Source form of any Modified Works or
+    Derivative Works that You distribute, all copyright, patent,
+    trademark, and attribution notices from the Source form of the Work,
+    excluding those notices that do not pertain to any part of the
+    Modified Works or Derivative Works; and
 
 d)  If the Work includes a "**NOTICE**" text file as part of its
-    distribution, then any Derivative Works that You distribute must
-    include a readable copy of the attribution notices contained within
-    such NOTICE file, excluding those notices that do not pertain to any
-    part of the Derivative Works, in at least one of the following
-    places: within a NOTICE text file distributed as part of the
-    Derivative Works; within the Source form or documentation, if
-    provided along with the Derivative Works; or, within a display
-    generated by the Derivative Works, if and wherever such third-party
-    notices normally appear. The contents of the NOTICE file are for
-    informational purposes only and do not modify the License. You may
-    add Your own attribution notices within Derivative Works that You
-    distribute, alongside or as an addendum to the NOTICE text from the
-    Work, provided that such additional attribution notices cannot be
-    construed as modifying the License.
+    distribution, then any Modified Works or Derivative Works that You
+    distribute must include a readable copy of the attribution notices
+    contained within such NOTICE file, excluding those notices that do
+    not pertain to any part of the Modified Works or Derivative Works,
+    in at least one of the following places: within a NOTICE text file
+    distributed as part of the Modified Works or Derivative Works;
+    within the Source form or documentation, if provided along with the
+    Modified Works or Derivative Works; or, within a display generated
+    by the Modified Works or Derivative Works, if and wherever such
+    third-party notices normally appear. The contents of the NOTICE file
+    are for informational purposes only and do not modify the License.
+    You may add Your own attribution notices within Modified Works or
+    Derivative Works that You distribute, alongside or as an addendum to
+    the NOTICE text from the Work, provided that such additional
+    attribution notices cannot be construed as modifying the License.
 
-e)  To the extent that You generate any Derivative Works or otherwise
-    modify the Work, You must submit such modified Work or Derivative
-    Work(s) to the Original Licensor and such submitted modified Work or
+e)  To the extent that You generate any Modified Work(s) or Derivative
+    Work(s), You must submit such Modified Work(s) or Derivative Work(s)
+    to the Original Licensor and such submitted Modified Work(s) or
     Derivative Work(s) shall constitute a Contribution as defined
-    herein.
+    herein. Inclusion of such Contribution in the Work shall be decided
+    solely by the Original Licensor.
 
 You may add Your own copyright statement to Your modifications and may
 provide additional or different license terms and conditions for use,
 reproduction, or distribution of Your modifications, provided Your use,
-reproduction, and distribution of the modified Work (or Derivative Work)
+reproduction, and distribution of the Modified Work (or Derivative Work)
 otherwise complies with the conditions stated in this License.
 
 **5. Submission of Contributions**. Unless You explicitly state
@@ -159,6 +173,10 @@ irrevocable copyright license to reproduce, prepare Derivative Works of,
 publicly display, publicly perform, sublicense, and distribute such
 Contribution in Source or Object form, and (b) Original Licensor's use
 of such Contribution shall not be subject to Section 10 of this License.
+Upon reasonable request, You shall provide written confirmation of the
+foregoing license grant, provided that such confirmation shall not
+impose obligations materially broader than those set forth in this
+License.
 
 **6. Trademarks**. This License does not grant permission to use the
 trade names, trademarks, service marks, or product names of the
@@ -189,20 +207,22 @@ losses), even if such Contributor has been advised of the possibility of
 such damages.
 
 **9. Accepting Warranty or Additional Liability**. While redistributing
-the Work or Derivative Works thereof, You may choose to offer, and
-charge a fee for, acceptance of support, warranty, indemnity, or other
-liability obligations and/or rights consistent with this License.
-However, in accepting such obligations, You may act only on Your own
-behalf and on Your sole responsibility, not on behalf of any other
-Contributor, and only if You agree to indemnify, defend, and hold each
-Contributor harmless for any liability incurred by, or claims asserted
-against, such Contributor by reason of your accepting any such warranty
-or additional liability.
+the Work or Modified Works or Derivative Works thereof, You may choose
+to offer, and charge a fee for, acceptance of support, warranty,
+indemnity, or other liability obligations and/or rights consistent with
+this License. However, in accepting such obligations, You may act only
+on Your own behalf and on Your sole responsibility, not on behalf of any
+other Contributor, and only if You agree to indemnify, defend, and hold
+each Contributor harmless for any liability incurred by, or claims
+asserted against, such Contributor by reason of your accepting any such
+warranty or additional liability.
 
 **10. "Commons Clause" License Condition.** The Work is provided to You
 by the Licensor under the License, subject to the following condition.
 Without limiting other conditions in the License, the grant of rights
 under the License will not include, and the License does not grant to
-You, the right to Sell the Work or Derivative Works thereof. Any license
-notice or attribution required by the License must also include this
-Commons Clause License Condition.
+You, the right to Sell the Work or Modified Works or Derivative Works
+thereof. Any license notice or attribution required by the License must
+also include this Commons Clause License Condition.
+
+END OF TERMS AND CONDITIONS
