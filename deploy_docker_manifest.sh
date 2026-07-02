@@ -4,10 +4,7 @@
 set -eu -o pipefail
 
 CONTAINER=${CONTAINER:-seer/radiant}
-
-GIT_TAG_VERSION=$(git tag --points-at | grep -Po "^($CONTAINER/)?v?\K\d+\.\d+\.\d+.*$" | sort -Vr | head -n 1 || true)
-
-export VERSION=${VERSION:-${GIT_TAG_VERSION}}
+export VERSION=${VERSION:-$(./get_release_version.sh)}
 
 echo "Found RadiantDIA version '${VERSION}'"
 
@@ -15,9 +12,6 @@ MAJVER=$(grep -Po '^.+?(?=\..+)' <<< "$VERSION") \
   || (echo "Could not parse major version from $VERSION" && exit 1)
 MINVER=$(grep -Po '^.+?\..+?(?=\..+)' <<< "$VERSION") \
   || (echo "Could not parse minor version from $VERSION" && exit 1)
-
-# Log into the repository so we can push
-aws ecr get-login-password | docker login --username AWS --password-stdin $REPOSITORY
 
 # Build and push a manifest with the semantic version.
 echo "Building multi-arch manifest ${REPOSITORY}/${CONTAINER}:${VERSION}"

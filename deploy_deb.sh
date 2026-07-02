@@ -4,15 +4,13 @@
 set -eu -o pipefail
 
 CONTAINER=${CONTAINER:-seer/radiant}
-
-GIT_TAG_VERSION=$(git tag --points-at | grep -Po "^($CONTAINER/)?v?\K\d+\.\d+\.\d+.*$" | sort -Vr | head -n 1 || true)
-
-export radiantdia_version=${radiantdia_version:-${GIT_TAG_VERSION}}
+VERSION=${VERSION:-$(./get_release_version.sh)}
+export radiantdia_version=${radiantdia_version:-${VERSION}}
 
 echo "Found radiantdia version '${radiantdia_version}'"
 
 echo "Building deploy container…"
-DEPLOY_IMG="${CONTAINER}-deb-build:${GIT_TAG_VERSION}"
+DEPLOY_IMG="${CONTAINER}-deb-build:${radiantdia_version}"
 docker build --target build-deb --build-arg radiantdia_version -t "${DEPLOY_IMG}" .
 
 # Run the default command from the `deploy` stage.
