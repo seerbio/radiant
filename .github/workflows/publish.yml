@@ -17,6 +17,14 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Expose GitHub runtime for Buildx cache
+        run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${ACTIONS_RUNTIME_TOKEN}" >> "${GITHUB_ENV}"
+          echo "ACTIONS_RESULTS_URL=${ACTIONS_RESULTS_URL}" >> "${GITHUB_ENV}"
+          echo "ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL}" >> "${GITHUB_ENV}"
+          echo "ACTIONS_CACHE_SERVICE_V2=${ACTIONS_CACHE_SERVICE_V2:-}" >> "${GITHUB_ENV}"
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -26,7 +34,16 @@ jobs:
         env:
           REPOSITORY: ${{ env.DOCKERHUB_REGISTRY }}
           TAG_SUFFIX: -x86_64
+          CACHE_SCOPE: radiant-dia-x86_64
         run: ./deploy_docker_image.sh "latest-x86_64"
+      - name: Build x86 deb
+        env:
+          DEB_OUTPUT_DIR: ${{ runner.temp }}/deb-out
+        run: ./deploy_deb.sh
+      - name: Upload Release Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/deb-out/*.deb
 
   publish_arm_docker:
     runs-on: ubuntu-24.04-arm
@@ -35,6 +52,14 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Expose GitHub runtime for Buildx cache
+        run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${ACTIONS_RUNTIME_TOKEN}" >> "${GITHUB_ENV}"
+          echo "ACTIONS_RESULTS_URL=${ACTIONS_RESULTS_URL}" >> "${GITHUB_ENV}"
+          echo "ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL}" >> "${GITHUB_ENV}"
+          echo "ACTIONS_CACHE_SERVICE_V2=${ACTIONS_CACHE_SERVICE_V2:-}" >> "${GITHUB_ENV}"
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -44,7 +69,16 @@ jobs:
         env:
           REPOSITORY: ${{ env.DOCKERHUB_REGISTRY }}
           TAG_SUFFIX: -aarch64
+          CACHE_SCOPE: radiant-dia-aarch64
         run: ./deploy_docker_image.sh "latest-aarch64"
+      - name: Build ARM deb
+        env:
+          DEB_OUTPUT_DIR: ${{ runner.temp }}/deb-out
+        run: ./deploy_deb.sh
+      - name: Upload Release Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/deb-out/*.deb
 
   publish_docker_manifest:
     runs-on: ubuntu-24.04
@@ -64,49 +98,3 @@ jobs:
           REPOSITORY: ${{ env.DOCKERHUB_REGISTRY }}
           ADDL_TAGS: latest
         run: ./deploy_docker_manifest.sh "${ADDL_TAGS}"
-
-  #publish_x86_deb:
-  #  runs-on: [self-hosted, aws-master, X64]
-  #  needs: publish_x86_docker
-  #  steps:
-  #    - name: Check out code
-  #      uses: actions/checkout@v6
-  #    - name: Upload x86 deb
-  #      env:
-  #        CONTAINER: seer/radiant-dia
-  #        DEB_OUTPUT_DIR: ${{ runner.temp }}/deb-out
-  #      run: ./deploy_deb.sh
-  #    - name: Upload Release Artifacts
-  #      if: ${{ github.event_name == 'release' }}
-  #      uses: softprops/action-gh-release@v2
-  #      with:
-  #        files: ${{ runner.temp }}/deb-out/*.deb
-  #    - name: Upload Build Artifacts
-  #      if: ${{ github.event_name != 'release' }}
-  #      uses: actions/upload-artifact@v4
-  #      with:
-  #        name: radiantdia-deb-x86_64
-  #        path: ${{ runner.temp }}/deb-out/*.deb
-
-  #publish_arm_deb:
-  #  runs-on: [self-hosted, aws-master, ARM64]
-  #  needs: publish_arm_docker
-  #  steps:
-  #    - name: Check out code
-  #      uses: actions/checkout@v6
-  #    - name: Upload ARM deb
-  #      env:
-  #        CONTAINER: seer/radiant-dia
-  #        DEB_OUTPUT_DIR: ${{ runner.temp }}/deb-out
-  #      run: ./deploy_deb.sh
-  #    - name: Upload Release Artifacts
-  #      if: ${{ github.event_name == 'release' }}
-  #      uses: softprops/action-gh-release@v2
-  #      with:
-  #        files: ${{ runner.temp }}/deb-out/*.deb
-  #    - name: Upload Build Artifacts
-  #      if: ${{ github.event_name != 'release' }}
-  #      uses: actions/upload-artifact@v4
-  #      with:
-  #        name: radiantdia-deb-arm64
-  #        path: ${{ runner.temp }}/deb-out/*.deb
