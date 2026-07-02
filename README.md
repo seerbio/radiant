@@ -31,14 +31,14 @@ On Intel (`x86`):
 
 ```
 apt-get install -y radiantdia_<version>+amd64.deb
-/usr/local/bin/radiant/RadiantDIA --help
+RadiantDIA --help
 ```
 
 On ARM / Apple Silicon (`aarch64`):
 
 ```
 apt-get install -y radiantdia_<version>+arm64.deb
-/usr/local/bin/radiant/RadiantDIA --help
+RadiantDIA --help
 ```
 
 ## Development
