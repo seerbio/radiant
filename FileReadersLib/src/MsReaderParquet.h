@@ -28,10 +28,19 @@ namespace MsParquetReaderNamespace {
     const QString ISO_WINDOW_LOWER = QStringLiteral("isoWindowLower");
     const QString ISO_WINDOW_UPPER = QStringLiteral("isoWindowUpper");
     const QString IM_DRIFT_TIME = QStringLiteral("ionMobilityDriftTime");
+    const QString IM_WINDOW_LOWER = QStringLiteral("ionMobilityWindowLower");
+    const QString IM_WINDOW_UPPER = QStringLiteral("ionMobilityWindowUpper");
     const QString IM_IND = QStringLiteral("ionMobilityIndex");
     const QString MZ_VALS = QStringLiteral("mzVals");
     const QString INTENSITY_VALS = QStringLiteral("intensityVals");
     const QString TARGET_KEY = QStringLiteral("targetKey");
+    const QString ROW_TYPE = QStringLiteral("rowType");
+    const QString NATIVE_FRAME_NUMBER = QStringLiteral("nativeFrameNumber");
+    const QString NATIVE_SCAN_NUMBER = QStringLiteral("nativeScanNumber");
+
+    const QString ROW_TYPE_SPECTRUM = QStringLiteral("spectrum");
+    const QString ROW_TYPE_TIMS_MS1_SCAN = QStringLiteral("tims_ms1_scan");
+    const QString ROW_TYPE_TIMS_MS2_SCAN = QStringLiteral("tims_ms2_scan");
 
     const QStringList keysToCheck = {
         MS_LEVEL,
@@ -59,10 +68,15 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
     float isoWindowLower = -1.0;
     float isoWindowUpper = -1.0;
     float ionMobilityDriftTime = -1.0;
+    float ionMobilityWindowLower = -1.0;
+    float ionMobilityWindowUpper = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
     QVector<float> mzVals;
     QVector<float> intensityVals;
     QString targetKey;
+    QString rowType = MsParquetReaderNamespace::ROW_TYPE_SPECTRUM;
+    int nativeFrameNumber = -1;
+    int nativeScanNumber = -1;
 
     QMap<QString, QVariant> map() override {
 
@@ -77,10 +91,15 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
             {ISO_WINDOW_LOWER, QVariant(isoWindowLower)},
             {ISO_WINDOW_UPPER, QVariant(isoWindowUpper)},
             {IM_DRIFT_TIME, QVariant(ionMobilityDriftTime)},
+            {IM_WINDOW_LOWER, QVariant(ionMobilityWindowLower)},
+            {IM_WINDOW_UPPER, QVariant(ionMobilityWindowUpper)},
             {IM_IND, QVariant(ionMobilityIndex)},
             {MZ_VALS, QVariant(qVectorToQByteArray(mzVals))},
             {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
-            {TARGET_KEY, QVariant(QVariant(targetKey))}
+            {TARGET_KEY, QVariant(QVariant(targetKey))},
+            {ROW_TYPE, QVariant(rowType)},
+            {NATIVE_FRAME_NUMBER, QVariant(nativeFrameNumber)},
+            {NATIVE_SCAN_NUMBER, QVariant(nativeScanNumber)}
         };
     }
 
@@ -106,10 +125,25 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
         isoWindowLower = dataMap.value(ISO_WINDOW_LOWER).toFloat();
         isoWindowUpper = dataMap.value(ISO_WINDOW_UPPER).toFloat();
         ionMobilityDriftTime = dataMap.value(IM_DRIFT_TIME).toFloat();
+        ionMobilityWindowLower = dataMap.contains(IM_WINDOW_LOWER)
+                ? dataMap.value(IM_WINDOW_LOWER).toFloat()
+                : -1.0f;
+        ionMobilityWindowUpper = dataMap.contains(IM_WINDOW_UPPER)
+                ? dataMap.value(IM_WINDOW_UPPER).toFloat()
+                : -1.0f;
         ionMobilityIndex = dataMap.value(IM_IND).toInt();
         mzVals = bytesArrayToQVector<float>(dataMap.value(MZ_VALS).toByteArray());
         intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
+        rowType = dataMap.contains(ROW_TYPE)
+                ? dataMap.value(ROW_TYPE).toString()
+                : ROW_TYPE_SPECTRUM;
+        nativeFrameNumber = dataMap.contains(NATIVE_FRAME_NUMBER)
+                ? dataMap.value(NATIVE_FRAME_NUMBER).toInt()
+                : -1;
+        nativeScanNumber = dataMap.contains(NATIVE_SCAN_NUMBER)
+                ? dataMap.value(NATIVE_SCAN_NUMBER).toInt()
+                : -1;
 
         ERR_RETURN
     }

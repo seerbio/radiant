@@ -58,6 +58,36 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
 }
 
 namespace {
+
+    constexpr float TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0 = 0.03f;
+    constexpr float TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
+
+    bool isLibraryIonMobilityInAcquisitionWindow(
+        const TargetDecoyCandidatePair *candidate,
+        const MsScanInfo &msScanInfo
+        ) {
+
+        if (candidate == nullptr) {
+            return false;
+        }
+
+        const float libraryIonMobility = candidate->iIM();
+        if (libraryIonMobility <= 0.0f || msScanInfo.ionMobilityDriftTime <= 0.0f) {
+            return true;
+        }
+
+        float windowLower = msScanInfo.ionMobilityWindowLower;
+        float windowUpper = msScanInfo.ionMobilityWindowUpper;
+        if (windowLower <= 0.0f || windowUpper <= 0.0f || windowUpper < windowLower) {
+            windowLower = msScanInfo.ionMobilityDriftTime - TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
+            windowUpper = msScanInfo.ionMobilityDriftTime + TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
+        }
+
+        windowLower -= TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        windowUpper += TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        return windowLower <= libraryIonMobility && libraryIonMobility <= windowUpper;
+    }
+
     struct TurboXICLoadInput {
         QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
@@ -283,7 +313,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     const PythiaParameters &pythiaParameters,
     QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
     QMap<int, int> *fdrVsCounts,
-    QVector<float> *weights
+    QVector<float> *weights,
+    bool useMonotonePairQValues
     ) {
 
     ERR_INIT
@@ -359,7 +390,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     //Need to speed this up
     e = QValueSettertron::setQValueForCandidates(
         QValueSettertron::QValueScoreType::DiscriminantScore,
-        &targetDecoyCandidateScorePairsPntrs
+        &targetDecoyCandidateScorePairsPntrs,
+        useMonotonePairQValues
         ); ree;
 
     e = FDRCLassifierNeuralNet::outputFDRResults(
@@ -470,10 +502,21 @@ QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWo
     e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
 
     const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-    const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+    const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowUpper + pythiaParameters.precursorExtractionWindowThomsons);
 
     QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
     filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
+    if (msScanInfo.ionMobilityDriftTime > 0.0f) {
+        const auto terminatorLogic = [&msScanInfo](const TargetDecoyCandidatePair *candidate) {
+            return !isLibraryIonMobilityInAcquisitionWindow(candidate, msScanInfo);
+        };
+        const auto terminator = std::remove_if(
+            targetDecoyCandidatePairsFiltered.begin(),
+            targetDecoyCandidatePairsFiltered.end(),
+            terminatorLogic
+            );
+        targetDecoyCandidatePairsFiltered.erase(terminator, targetDecoyCandidatePairsFiltered.end());
+    }
 
     if (pythiaParameters.verbosity > 0) {
         qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
@@ -666,4 +709,3 @@ double PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(const QMap<int, int> &f
 
     return fdrMean;
 }
-

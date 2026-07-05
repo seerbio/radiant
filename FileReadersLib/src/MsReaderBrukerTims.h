@@ -41,6 +41,12 @@ public:
 
     Err openFile(const QString &filePath) override;
 
+    Err openFile(
+        const QString &filePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> &filterRange
+        ) override;
+
     Err closeFile() override;
 
     Err writeFrame(
@@ -50,6 +56,12 @@ public:
         );
 
 private:
+
+    Err openFile(
+        const QString &filePath,
+        bool filterByScanTime,
+        const QPair<double, double> &scanTimeFilterRange
+        );
 
     QHash<MzTargetKey, TimsMS2WindowsInfo> m_mzTargetVsTimsMs2WindowsInfos;
     QHash<int, QVector<TimsMS2WindowsInfo>> m_windowGroupIndexVsTimsMs2WindowsInfoses;

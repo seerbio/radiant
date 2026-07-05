@@ -31,6 +31,7 @@ SET(SOURCE_FILES
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/IdLevelQValueAnnotator.cpp
         src/IonMobilitron.cpp
         src/InterferingCandidatesEliminatomatic.cpp
         src/IsotopicDistributionBuilder.cpp
@@ -47,6 +48,7 @@ SET(SOURCE_FILES
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
+        src/TimsMs2IonMobilityIndex.cpp
         src/TurboXIC.cpp
         src/TurboXIC2D.cpp
         src/XICPeakManager.cpp
@@ -65,6 +67,7 @@ SET(HEADER_FILES
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/IdLevelQValueAnnotator.h
         src/InterferingCandidatesEliminatomatic.h
         src/IonMobilitron.h
         src/IsotopicDistributionBuilder.h
@@ -81,6 +84,7 @@ SET(HEADER_FILES
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
+        src/TimsMs2IonMobilityIndex.h
         src/TurboXIC.h
         src/TurboXIC2D.h
         src/XICPeakManager.h

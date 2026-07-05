@@ -19,6 +19,8 @@ using namespace Error;
 using FrameNumberTIMS = int;
 using Ms1FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
 using Ms1FrameTIMSPntrs = QMap<IonMobilityIndex, ScanPoints*>;
+using Ms2FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
+using MzTargetKeyVsMs2FrameTIMS = QMap<MzTargetKey, QMap<FrameNumberTIMS, Ms2FrameTIMS>>;
 
 enum class ScanPointsSort {
     AscMz,
@@ -39,7 +41,11 @@ public:
     float isoWindowLower = -1.0;
     float isoWindowUpper = -1.0;
     float ionMobilityDriftTime = -1.0;
+    float ionMobilityWindowLower = -1.0;
+    float ionMobilityWindowUpper = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
+    int nativeFrameNumber = -1;
+    int nativeScanNumber = -1;
 
     long scanOffsetStart = -1;
     long scanOffsetEnd = -1;
@@ -498,11 +504,14 @@ public:
 
     Err printFileInfo();
     [[nodiscard]] bool isTIMS() const;
+    Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax);
 
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
     QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
+    MzTargetKeyVsMs2FrameTIMS* mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
+    const QMap<FrameIndex, double>* frameIndexVsDriftTimePntr() const;
 
 
 protected:
@@ -516,6 +525,7 @@ protected:
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
     QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
+    MzTargetKeyVsMs2FrameTIMS m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS;
     QMap<FrameIndex, double> m_frameIndexVsDriftTime;
 
 

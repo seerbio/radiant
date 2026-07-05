@@ -6,23 +6,27 @@
 
 #include "GlobalSettings.h"
 
+#include <QFileInfo>
+
 Err ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(
-        const QString &mzmlFilePath,
+        const QString &msDataFilePath,
         QString *outputFilePath
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(mzmlFilePath); ree;
+    e = ErrorUtils::fileExists(msDataFilePath); ree;
 
-    MsReaderMzML msReaderMzMl;
-    e = msReaderMzMl.openFile(mzmlFilePath); ree;
+    MsReaderPointerAcc msReaderPointerAcc;
+    msReaderPointerAcc.setUseLazyLoading(false);
+    e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
-    *outputFilePath = mzmlFilePath + S_GLOBAL_SETTINGS.DOT_PRQ_FF;
+    const QFileInfo fileInfo(msDataFilePath);
+    *outputFilePath = fileInfo.absoluteFilePath() + S_GLOBAL_SETTINGS.DOT_PRQ_FF;
 
     e = MsReaderParquet::writeMsReaderToParquet(
             *outputFilePath,
-            QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderMzMl.msReaderBase()))
+            msReaderPointerAcc.ptr
             ); ree;
 
     ERR_RETURN

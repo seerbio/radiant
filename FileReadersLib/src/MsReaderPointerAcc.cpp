@@ -5,7 +5,7 @@
 #include "MsReaderPointerAcc.h"
 
 #include "GlobalSettings.h"
-// #include "MsReaderBrukerTims.h"
+#include "MsReaderBrukerTims.h"
 #include "MsReaderParquet.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
@@ -70,15 +70,12 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     }
 
     else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-        rrr(eFunctionNotImplemented);
-        // // //TODO uncomment code when ARM is sorted out.
-        //
-        // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
-        // m_useLazyLoading = false;
-        //
-        // QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
-        // ptr = msReader;
-        // e = ptr->openFile(filePath); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
+        m_useLazyLoading = false;
+
+        QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
+        ptr = msReader;
+        e = ptr->openFile(filePath); ree;
     }
 
     else {
@@ -102,6 +99,8 @@ Err MsReaderPointerAcc::openFile(
 
     ERR_INIT
 
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading MsFile";
+
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
 
@@ -118,6 +117,15 @@ Err MsReaderPointerAcc::openFile(
             && fi.isFile()) {
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
+        ptr = msReader;
+        e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
+    }
+
+    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
+        m_useLazyLoading = false;
+
+        QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
     }

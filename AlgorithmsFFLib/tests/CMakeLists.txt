@@ -22,6 +22,7 @@ SET(TEST_CLASSES
         FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
+        IdLevelQValueAnnotatorTests
         IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests
@@ -34,6 +35,7 @@ SET(TEST_CLASSES
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
+        TimsMs2IonMobilityIndexTests
         TurboXICTests
         TurboXIC2DTests
         XICPeakManagerTests

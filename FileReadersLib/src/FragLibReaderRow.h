@@ -26,6 +26,7 @@ namespace FragLibReaderNamespace {
     const QString ION_LABLES = QStringLiteral("ionLabels");
     const QString IRT_LABEL = QStringLiteral("iRT");
     const QString IM_LABEL = QStringLiteral("iM");
+    const QString PROTEIN_GROUPS = QStringLiteral("proteinGroups");
 
     const QStringList keysToCheck = {
             PEP_SEQ_CHRG_KEY,
@@ -66,7 +67,8 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
             {IS_DECOY, QVariant(isDecoy)},
             {ION_LABLES, QVariant(ionLabels)},
             {IRT_LABEL, QVariant(iRT)},
-            {IM_LABEL, QVariant(iM)}
+            {IM_LABEL, QVariant(iM)},
+            {PROTEIN_GROUPS, QVariant(proteinGroups)}
         };
     }
 
@@ -92,6 +94,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
         ionLabels = dataMap.value(ION_LABLES).toString();
         iRT = dataMap.value(IRT_LABEL).toDouble();
         iM = dataMap.value(IM_LABEL).toDouble();
+        proteinGroups = dataMap.value(PROTEIN_GROUPS).toString();
 
         const QStringList peptideSequenceChargeKeySplit
             = peptideSequenceChargeKey.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP);

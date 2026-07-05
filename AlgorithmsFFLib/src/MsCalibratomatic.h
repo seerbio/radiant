@@ -68,12 +68,19 @@ public:
         float *predictedScanTime
         ) const;
 
+    Err predictIonMobility(
+        float iIM,
+        float *predictedIonMobility
+        ) const;
+
 	Err predictIRT(
 		float scanTime,
 		float *predictedIRT
 		) const;
 
     [[nodiscard]] bool isInitRT() const;
+
+    [[nodiscard]] bool isInitIM() const;
 
     [[nodiscard]] bool isInitCalMS1() const;
 

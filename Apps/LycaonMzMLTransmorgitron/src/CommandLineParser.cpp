@@ -11,12 +11,12 @@
 
 
 namespace {
-    const QString ARG_MZML_PATH = QStringLiteral("mzML-path");
+    const QString ARG_MSDATA_PATH = QStringLiteral("ms-data-path");
 }//END NAMESPACE
 
 CommandLineParser::CommandLineParser() {
     addHelpOption();
-    addPositionalArgument(ARG_MZML_PATH, QObject::tr("*.mzML file"));
+    addPositionalArgument(ARG_MSDATA_PATH, QObject::tr("*.mzML file or Bruker *.d directory"));
 }
 
 bool CommandLineParser::validateArguments(const QStringList &args) {
@@ -29,15 +29,18 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
         return false;
     }
 
-    m_cliParams.mzMLFilePath = args[1];
+    m_cliParams.msDataFilePath = args[1];
 
-    const bool mzMLPathIsValid = CommandLineParserUtils::checkFileNameExtensions(
-            m_cliParams.mzMLFilePath,
-            {S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION}
+    const bool msDataPathIsValid = CommandLineParserUtils::checkFileNameExtensions(
+            m_cliParams.msDataFilePath,
+            {
+                S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION,
+                S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION
+            }
     );
 
-    if (!mzMLPathIsValid) {
-        qCritical() << QStringLiteral("First command line argument *.mzML, argument invalid");
+    if (!msDataPathIsValid) {
+        qCritical() << QStringLiteral("First command line argument must be *.mzML or a Bruker *.d directory");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
@@ -50,7 +53,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
 const CommandLineParser::CliParameters &CommandLineParser::getCliParams() const {
 
-    qDebug() << ARG_MZML_PATH  << m_cliParams.mzMLFilePath;
+    qDebug() << ARG_MSDATA_PATH  << m_cliParams.msDataFilePath;
 
     return m_cliParams;
 }

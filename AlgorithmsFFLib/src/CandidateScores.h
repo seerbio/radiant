@@ -275,6 +275,19 @@ enum Features {
 
 	MzFoundOverCount650,
 	MzFoundUnderCount650,
+    IonMobilityDelta,
+    IonMobilityDeltaAbs,
+    IonMobilityPdAbs,
+    Ms2IonMobilityWeightedDelta,
+    Ms2IonMobilityWeightedDeltaAbs,
+    Ms2IonMobilityApexDeltaAbsMean,
+    Ms2IonMobilityApexDeltaAbsStDev,
+    Ms2IonMobilityMatchedIonFraction,
+    Ms2IonMobilityFwhmMean,
+    Ms2IonMobilityFwhmStDev,
+    Ms2IonMobilityRtCosineMean,
+    Ms2IonMobilityRtCosineStDev,
+    Ms2IonMobilityRtApexAgreementFraction,
 
     FeaturesSize
     };
@@ -322,6 +335,12 @@ public:
     double discriminantScore = -1.0;
     double qValue = 1.0;
     double decoyRatio = -1.0;
+    double precursorQValue = 1.0;
+    double peptideQValue = 1.0;
+    double proteinQValue = 1.0;
+    int isBestPrecursorCandidate = 0;
+    int isBestPeptideCandidate = 0;
+    int isBestProteinCandidate = 0;
 
     QVector<float> featuresArray;
     QVector<float> integrations;
@@ -382,6 +401,21 @@ namespace CandidateScoresReaderRowNamespace {
     const QString SHADOW_COSINE_SIM_SUM = QStringLiteral("ShadowsCosineSimSum");
     const QString IRT_PRED = QStringLiteral("IRTPredicted");
     const QString IRT_EMP = QStringLiteral("IRTEmpirical");
+    const QString ION_MOBILITY_LIBRARY = QStringLiteral("IonMobilityLibrary");
+    const QString ION_MOBILITY_FOUND = QStringLiteral("IonMobilityFound");
+    const QString ION_MOBILITY_INDEX = QStringLiteral("IonMobilityIndex");
+    const QString ION_MOBILITY_INDEX_START = QStringLiteral("IonMobilityIndexStart");
+    const QString ION_MOBILITY_INDEX_END = QStringLiteral("IonMobilityIndexEnd");
+    const QString ION_MOBILITY_DELTA = QStringLiteral("IonMobilityDelta");
+    const QString ION_MOBILITY_DELTA_ABS = QStringLiteral("IonMobilityDeltaAbs");
+    const QString ION_MOBILITY_PD_ABS = QStringLiteral("IonMobilityPdAbs");
+    const QString MS2_ION_MOBILITY_WEIGHTED_DELTA = QStringLiteral("Ms2IonMobilityWeightedDelta");
+    const QString MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS = QStringLiteral("Ms2IonMobilityWeightedDeltaAbs");
+    const QString MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN = QStringLiteral("Ms2IonMobilityApexDeltaAbsMean");
+    const QString MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV = QStringLiteral("Ms2IonMobilityApexDeltaAbsStDev");
+    const QString MS2_ION_MOBILITY_MATCHED_ION_FRACTION = QStringLiteral("Ms2IonMobilityMatchedIonFraction");
+    const QString MS2_ION_MOBILITY_FWHM_MEAN = QStringLiteral("Ms2IonMobilityFwhmMean");
+    const QString MS2_ION_MOBILITY_FWHM_STDEV = QStringLiteral("Ms2IonMobilityFwhmStDev");
     const QString COS_SIM_ANCH_1 = QStringLiteral("CosineSimToAnchor1");
     const QString COS_SIM_ANCH_2 = QStringLiteral("CosineSimToAnchor2");
     const QString COS_SIM_ANCH_3 = QStringLiteral("CosineSimToAnchor3");
@@ -506,6 +540,12 @@ namespace CandidateScoresReaderRowNamespace {
     const QString DISC_SCR = QStringLiteral("DiscriminantScore");
     const QString Q_VAL = QStringLiteral("QValue");
     const QString DECOY_RATIO = QStringLiteral("DecoyRatio");
+    const QString PRECURSOR_Q_VAL = QStringLiteral("PrecursorQValue");
+    const QString PEPTIDE_Q_VAL = QStringLiteral("PeptideQValue");
+    const QString PROTEIN_Q_VAL = QStringLiteral("ProteinQValue");
+    const QString IS_BEST_PRECURSOR_CANDIDATE = QStringLiteral("IsBestPrecursorCandidate");
+    const QString IS_BEST_PEPTIDE_CANDIDATE = QStringLiteral("IsBestPeptideCandidate");
+    const QString IS_BEST_PROTEIN_CANDIDATE = QStringLiteral("IsBestProteinCandidate");
     const QString ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT = QStringLiteral("AltTargetKeyIdDiscScoreChargeOG_alt");
     const QString ALT_TARG_ID_DISC_SCORE_CHRG1_1 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge1_1");
     const QString ALT_TARG_ID_DISC_SCORE_CHRG1_2 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge1_2");
@@ -535,6 +575,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MS1_MZ_MEAN_FND_ISO_1_STD = QStringLiteral("Ms1MzStDevFoundIso1");
     const QString MS1_MZ_MEAN_FND_ISO_2_STD = QStringLiteral("Ms1MzStDevFoundIso2");
     const QString MS1_INTZ_FND_100 = QStringLiteral("Ms1IntensityFound100");
+    const QString MS1_INTZ_FND_APEX_100_IM = QStringLiteral("Ms1IntensityFoundApex100IM");
     const QString MS1_INTZ_FND_45 = QStringLiteral("Ms1IntensityFound45");
     const QString MS1_INTZ_FND_PRE_MONO = QStringLiteral("Ms1IntensityFoundPreMono");
     const QString MS1_INTZ_FND_ISO_1 = QStringLiteral("Ms1IntensityFoundIso1");
@@ -610,6 +651,11 @@ namespace CandidateScoresReaderRowNamespace {
             SHADOW_COSINE_SIM_SUM,
             IRT_PRED,
             IRT_EMP,
+            ION_MOBILITY_LIBRARY,
+            ION_MOBILITY_FOUND,
+            ION_MOBILITY_INDEX,
+            ION_MOBILITY_INDEX_START,
+            ION_MOBILITY_INDEX_END,
             COS_SIM_ANCH_1,
             COS_SIM_ANCH_2,
             COS_SIM_ANCH_3,
@@ -722,6 +768,12 @@ namespace CandidateScoresReaderRowNamespace {
             DISC_SCR,
             Q_VAL,
             DECOY_RATIO,
+            PRECURSOR_Q_VAL,
+            PEPTIDE_Q_VAL,
+            PROTEIN_Q_VAL,
+            IS_BEST_PRECURSOR_CANDIDATE,
+            IS_BEST_PEPTIDE_CANDIDATE,
+            IS_BEST_PROTEIN_CANDIDATE,
             ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT,
             ALT_TARG_ID_DISC_SCORE_CHRG1_1,
             ALT_TARG_ID_DISC_SCORE_CHRG1_2,
@@ -751,6 +803,7 @@ namespace CandidateScoresReaderRowNamespace {
             MS1_MZ_MEAN_FND_ISO_1_STD,
             MS1_MZ_MEAN_FND_ISO_2_STD,
             MS1_INTZ_FND_100,
+            MS1_INTZ_FND_APEX_100_IM,
             MS1_INTZ_FND_45,
             MS1_INTZ_FND_PRE_MONO,
             MS1_INTZ_FND_ISO_1,
@@ -828,6 +881,21 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float shadowsCosineSimSum = -1.0;
     float iRtPredicted = -1.0;
     float iRtEmpirical = -1.0;
+    float ionMobilityLibrary = -1.0;
+    float ionMobilityFound = -1.0;
+    IonMobilityIndex ionMobilityIndex = -1;
+    IonMobilityIndex ionMobilityIndexStart = -1;
+    IonMobilityIndex ionMobilityIndexEnd = -1;
+    float ionMobilityDelta = 0.0;
+    float ionMobilityDeltaAbs = 0.0;
+    float ionMobilityPdAbs = 0.0;
+    float ms2IonMobilityWeightedDelta = 0.0;
+    float ms2IonMobilityWeightedDeltaAbs = 0.0;
+    float ms2IonMobilityApexDeltaAbsMean = 0.0;
+    float ms2IonMobilityApexDeltaAbsStDev = 0.0;
+    float ms2IonMobilityMatchedIonFraction = 0.0;
+    float ms2IonMobilityFwhmMean = 0.0;
+    float ms2IonMobilityFwhmStDev = 0.0;
     float cosineSimToAnchor1 = -1.0;
     float cosineSimToAnchor2 = -1.0;
     float cosineSimToAnchor3 = -1.0;
@@ -941,6 +1009,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     double discriminantScore = -1.0;
     double qValue = 1.0;
     double decoyRatio = -1.0;
+    double precursorQValue = 1.0;
+    double peptideQValue = 1.0;
+    double proteinQValue = 1.0;
+    int isBestPrecursorCandidate = 0;
+    int isBestPeptideCandidate = 0;
+    int isBestProteinCandidate = 0;
 
     float altTargetKeyIdDiscScoreChargeOG_alt = -1.0;
     float altTargetKeyIdDiscScoreCharge1_1 = -1.0;
@@ -973,6 +1047,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float ms1MzStDevFoundIso1 = -1.0;
     float ms1MzStDevFoundIso2 = -1.0;
     float ms1IntensityFound100 = -1.0;
+    float ms1IntensityFoundApex100IM = -1.0;
     float ms1IntensityFound45 = -1.0;
     float ms1IntensityFoundPreMono = -1.0;
     float ms1IntensityFoundIso1 = -1.0;
@@ -1075,6 +1150,21 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         shadowsCosineSimSum = dataMap.value(SHADOW_COSINE_SIM_SUM).toFloat();
         iRtPredicted = dataMap.value(IRT_PRED).toFloat();
         iRtEmpirical = dataMap.value(IRT_EMP).toFloat();
+        ionMobilityLibrary = dataMap.value(ION_MOBILITY_LIBRARY).toFloat();
+        ionMobilityFound = dataMap.value(ION_MOBILITY_FOUND).toFloat();
+        ionMobilityIndex = dataMap.value(ION_MOBILITY_INDEX).toInt();
+        ionMobilityIndexStart = dataMap.value(ION_MOBILITY_INDEX_START).toInt();
+        ionMobilityIndexEnd = dataMap.value(ION_MOBILITY_INDEX_END).toInt();
+        ionMobilityDelta = dataMap.value(ION_MOBILITY_DELTA).toFloat();
+        ionMobilityDeltaAbs = dataMap.value(ION_MOBILITY_DELTA_ABS).toFloat();
+        ionMobilityPdAbs = dataMap.value(ION_MOBILITY_PD_ABS).toFloat();
+        ms2IonMobilityWeightedDelta = dataMap.value(MS2_ION_MOBILITY_WEIGHTED_DELTA).toFloat();
+        ms2IonMobilityWeightedDeltaAbs = dataMap.value(MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS).toFloat();
+        ms2IonMobilityApexDeltaAbsMean = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN).toFloat();
+        ms2IonMobilityApexDeltaAbsStDev = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV).toFloat();
+        ms2IonMobilityMatchedIonFraction = dataMap.value(MS2_ION_MOBILITY_MATCHED_ION_FRACTION).toFloat();
+        ms2IonMobilityFwhmMean = dataMap.value(MS2_ION_MOBILITY_FWHM_MEAN).toFloat();
+        ms2IonMobilityFwhmStDev = dataMap.value(MS2_ION_MOBILITY_FWHM_STDEV).toFloat();
         cosineSimToAnchor1 = dataMap.value(COS_SIM_ANCH_1).toFloat();
         cosineSimToAnchor2 = dataMap.value(COS_SIM_ANCH_2).toFloat();
         cosineSimToAnchor3 = dataMap.value(COS_SIM_ANCH_3).toFloat();
@@ -1188,6 +1278,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         discriminantScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
         decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
+        precursorQValue = dataMap.value(PRECURSOR_Q_VAL).toDouble();
+        peptideQValue = dataMap.value(PEPTIDE_Q_VAL).toDouble();
+        proteinQValue = dataMap.value(PROTEIN_Q_VAL).toDouble();
+        isBestPrecursorCandidate = dataMap.value(IS_BEST_PRECURSOR_CANDIDATE).toInt();
+        isBestPeptideCandidate = dataMap.value(IS_BEST_PEPTIDE_CANDIDATE).toInt();
+        isBestProteinCandidate = dataMap.value(IS_BEST_PROTEIN_CANDIDATE).toInt();
 
         altTargetKeyIdDiscScoreChargeOG_alt = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT).toFloat();
         altTargetKeyIdDiscScoreCharge1_1 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG1_1).toFloat();
@@ -1218,6 +1314,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         ms1MzStDevFoundIso1 = dataMap.value(MS1_MZ_MEAN_FND_ISO_1_STD).toFloat();
         ms1MzStDevFoundIso2 = dataMap.value(MS1_MZ_MEAN_FND_ISO_2_STD).toFloat();
         ms1IntensityFound100 = dataMap.value(MS1_INTZ_FND_100).toFloat();
+        ms1IntensityFoundApex100IM = dataMap.value(MS1_INTZ_FND_APEX_100_IM).toFloat();
         ms1IntensityFound45 = dataMap.value(MS1_INTZ_FND_45).toFloat();
         ms1IntensityFoundPreMono = dataMap.value(MS1_INTZ_FND_PRE_MONO).toFloat();
         ms1IntensityFoundIso1 = dataMap.value(MS1_INTZ_FND_ISO_1).toFloat();
@@ -1274,6 +1371,21 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {SHADOW_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {IRT_PRED, QVariant(iRtPredicted)},
                 {IRT_EMP, QVariant(iRtEmpirical)},
+                {ION_MOBILITY_LIBRARY, QVariant(ionMobilityLibrary)},
+                {ION_MOBILITY_FOUND, QVariant(ionMobilityFound)},
+                {ION_MOBILITY_INDEX, QVariant(ionMobilityIndex)},
+                {ION_MOBILITY_INDEX_START, QVariant(ionMobilityIndexStart)},
+                {ION_MOBILITY_INDEX_END, QVariant(ionMobilityIndexEnd)},
+                {ION_MOBILITY_DELTA, QVariant(ionMobilityDelta)},
+                {ION_MOBILITY_DELTA_ABS, QVariant(ionMobilityDeltaAbs)},
+                {ION_MOBILITY_PD_ABS, QVariant(ionMobilityPdAbs)},
+                {MS2_ION_MOBILITY_WEIGHTED_DELTA, QVariant(ms2IonMobilityWeightedDelta)},
+                {MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS, QVariant(ms2IonMobilityWeightedDeltaAbs)},
+                {MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN, QVariant(ms2IonMobilityApexDeltaAbsMean)},
+                {MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV, QVariant(ms2IonMobilityApexDeltaAbsStDev)},
+                {MS2_ION_MOBILITY_MATCHED_ION_FRACTION, QVariant(ms2IonMobilityMatchedIonFraction)},
+                {MS2_ION_MOBILITY_FWHM_MEAN, QVariant(ms2IonMobilityFwhmMean)},
+                {MS2_ION_MOBILITY_FWHM_STDEV, QVariant(ms2IonMobilityFwhmStDev)},
                 {COS_SIM_ANCH_1, QVariant(cosineSimToAnchor1)},
                 {COS_SIM_ANCH_2, QVariant(cosineSimToAnchor2)},
                 {COS_SIM_ANCH_3, QVariant(cosineSimToAnchor3)},
@@ -1386,6 +1498,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {DISC_SCR, QVariant(discriminantScore)},
                 {Q_VAL, QVariant(qValue)},
                 {DECOY_RATIO, QVariant(decoyRatio)},
+                {PRECURSOR_Q_VAL, QVariant(precursorQValue)},
+                {PEPTIDE_Q_VAL, QVariant(peptideQValue)},
+                {PROTEIN_Q_VAL, QVariant(proteinQValue)},
+                {IS_BEST_PRECURSOR_CANDIDATE, QVariant(isBestPrecursorCandidate)},
+                {IS_BEST_PEPTIDE_CANDIDATE, QVariant(isBestPeptideCandidate)},
+                {IS_BEST_PROTEIN_CANDIDATE, QVariant(isBestProteinCandidate)},
 
                 {ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT, QVariant(altTargetKeyIdDiscScoreChargeOG_alt)},
                 {ALT_TARG_ID_DISC_SCORE_CHRG1_1, QVariant(altTargetKeyIdDiscScoreCharge1_1)},
@@ -1416,6 +1534,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MS1_MZ_MEAN_FND_ISO_1_STD, QVariant(ms1MzStDevFoundIso1)},
                 {MS1_MZ_MEAN_FND_ISO_2_STD, QVariant(ms1MzStDevFoundIso2)},
                 {MS1_INTZ_FND_100, QVariant(ms1IntensityFound100)},
+                {MS1_INTZ_FND_APEX_100_IM, QVariant(ms1IntensityFoundApex100IM)},
                 {MS1_INTZ_FND_45, QVariant(ms1IntensityFound45)},
                 {MS1_INTZ_FND_PRE_MONO, QVariant(ms1IntensityFoundPreMono)},
                 {MS1_INTZ_FND_ISO_1, QVariant(ms1IntensityFoundIso1)},
@@ -1477,6 +1596,21 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         CandidateScoresReaderRow row;
     	row.iRtEmpirical = candidateScores->empiricalIRT;
+        row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM();
+        row.ionMobilityFound = candidateScores->imDriftTime;
+        row.ionMobilityIndex = candidateScores->ionMobilityIndex;
+        row.ionMobilityIndexStart = candidateScores->ionMobilityIndexStart;
+        row.ionMobilityIndexEnd = candidateScores->ionMobilityIndexEnd;
+        row.ionMobilityDelta = candidateScores->featuresArray[IonMobilityDelta];
+        row.ionMobilityDeltaAbs = candidateScores->featuresArray[IonMobilityDeltaAbs];
+        row.ionMobilityPdAbs = candidateScores->featuresArray[IonMobilityPdAbs];
+        row.ms2IonMobilityWeightedDelta = candidateScores->featuresArray[Ms2IonMobilityWeightedDelta];
+        row.ms2IonMobilityWeightedDeltaAbs = candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs];
+        row.ms2IonMobilityApexDeltaAbsMean = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean];
+        row.ms2IonMobilityApexDeltaAbsStDev = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev];
+        row.ms2IonMobilityMatchedIonFraction = candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction];
+        row.ms2IonMobilityFwhmMean = candidateScores->featuresArray[Ms2IonMobilityFwhmMean];
+        row.ms2IonMobilityFwhmStDev = candidateScores->featuresArray[Ms2IonMobilityFwhmStDev];
         row.cosineSimSum100 = candidateScores->featuresArray[Features::CosineSimSum100];
         row.cosineSimSum100Greater80 = candidateScores->featuresArray[Features::CosineSimSum100GreaterThan80];
         row.allignedMaxIndexesCount = candidateScores->featuresArray[Features::AllignedMaxIndexesCount];
@@ -1624,6 +1758,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.discriminantScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
         row.decoyRatio = candidateScores->decoyRatio;
+        row.precursorQValue = candidateScores->precursorQValue;
+        row.peptideQValue = candidateScores->peptideQValue;
+        row.proteinQValue = candidateScores->proteinQValue;
+        row.isBestPrecursorCandidate = candidateScores->isBestPrecursorCandidate;
+        row.isBestPeptideCandidate = candidateScores->isBestPeptideCandidate;
+        row.isBestProteinCandidate = candidateScores->isBestProteinCandidate;
 
         row.altTargetKeyIdDiscScoreChargeOG_alt = candidateScores->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt];
         row.altTargetKeyIdDiscScoreCharge1_1 = candidateScores->featuresArray[AltTargetKeyIdDiscScoreCharge1_1];
@@ -1656,6 +1796,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.ms1MzStDevFoundIso1 = candidateScores->featuresArray[Ms1MzStDevFoundIso1];
         row.ms1MzStDevFoundIso2 = candidateScores->featuresArray[Ms1MzStDevFoundIso2];
         row.ms1IntensityFound100 = candidateScores->featuresArray[Ms1IntensityFound100];
+        row.ms1IntensityFoundApex100IM = candidateScores->featuresArray[Ms1IntensityFoundApex100IM];
         row.ms1IntensityFound45 = candidateScores->featuresArray[Ms1IntensityFound45];
         row.ms1IntensityFoundPreMono = candidateScores->featuresArray[Ms1IntensityFoundPreMono];
         row.ms1IntensityFoundIso1 = candidateScores->featuresArray[Ms1IntensityFoundIso1];
@@ -1905,6 +2046,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Features::Ms1MzStDevFoundIso1] = candidateScoresReaderRow.ms1MzStDevFoundIso1;
         featuresArray[Features::Ms1MzStDevFoundIso2] = candidateScoresReaderRow.ms1MzStDevFoundIso2;
         featuresArray[Features::Ms1IntensityFound100] = candidateScoresReaderRow.ms1IntensityFound100;
+        featuresArray[Features::Ms1IntensityFoundApex100IM] = candidateScoresReaderRow.ms1IntensityFoundApex100IM;
         featuresArray[Features::Ms1IntensityFound45] = candidateScoresReaderRow.ms1IntensityFound45;
         featuresArray[Features::Ms1IntensityFoundPreMono] = candidateScoresReaderRow.ms1IntensityFoundPreMono;
         featuresArray[Features::Ms1IntensityFoundIso1] = candidateScoresReaderRow.ms1IntensityFoundIso1;
@@ -1920,6 +2062,16 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[TotalIntensityPeakHeights] = candidateScoresReaderRow.totalIntensityPeakHeights;
         featuresArray[TotalIntensityRaw] = candidateScoresReaderRow.totalIntensityRaw;
         featuresArray[TargetWindowLocation] = candidateScoresReaderRow.targetWindowLocation;
+        featuresArray[IonMobilityDelta] = candidateScoresReaderRow.ionMobilityDelta;
+        featuresArray[IonMobilityDeltaAbs] = candidateScoresReaderRow.ionMobilityDeltaAbs;
+        featuresArray[IonMobilityPdAbs] = candidateScoresReaderRow.ionMobilityPdAbs;
+        featuresArray[Ms2IonMobilityWeightedDelta] = candidateScoresReaderRow.ms2IonMobilityWeightedDelta;
+        featuresArray[Ms2IonMobilityWeightedDeltaAbs] = candidateScoresReaderRow.ms2IonMobilityWeightedDeltaAbs;
+        featuresArray[Ms2IonMobilityApexDeltaAbsMean] = candidateScoresReaderRow.ms2IonMobilityApexDeltaAbsMean;
+        featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = candidateScoresReaderRow.ms2IonMobilityApexDeltaAbsStDev;
+        featuresArray[Ms2IonMobilityMatchedIonFraction] = candidateScoresReaderRow.ms2IonMobilityMatchedIonFraction;
+        featuresArray[Ms2IonMobilityFwhmMean] = candidateScoresReaderRow.ms2IonMobilityFwhmMean;
+        featuresArray[Ms2IonMobilityFwhmStDev] = candidateScoresReaderRow.ms2IonMobilityFwhmStDev;
 
         return featuresArray;
     }
@@ -1957,6 +2109,22 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
     float intensityFoundMax12 = -1.0;
 
     float totalIntensityRaw = -1.0;
+    float ms1IntensityFoundApex100IM = -1.0;
+    float ionMobilityLibrary = -1.0;
+    float ionMobilityFound = -1.0;
+    IonMobilityIndex ionMobilityIndex = -1;
+    IonMobilityIndex ionMobilityIndexStart = -1;
+    IonMobilityIndex ionMobilityIndexEnd = -1;
+    float ionMobilityDelta = 0.0;
+    float ionMobilityDeltaAbs = 0.0;
+    float ionMobilityPdAbs = 0.0;
+    float ms2IonMobilityWeightedDelta = 0.0;
+    float ms2IonMobilityWeightedDeltaAbs = 0.0;
+    float ms2IonMobilityApexDeltaAbsMean = 0.0;
+    float ms2IonMobilityApexDeltaAbsStDev = 0.0;
+    float ms2IonMobilityMatchedIonFraction = 0.0;
+    float ms2IonMobilityFwhmMean = 0.0;
+    float ms2IonMobilityFwhmStDev = 0.0;
 
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
@@ -1971,6 +2139,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
     double classifierScore = -1.0;
     double qValue = 1.0;
     double discScore = -1.0;
+    double precursorQValue = 1.0;
+    double peptideQValue = 1.0;
+    double proteinQValue = 1.0;
+    int isBestPrecursorCandidate = 0;
+    int isBestPeptideCandidate = 0;
+    int isBestProteinCandidate = 0;
 
     float mzSearched1 = -1.0;
     float mzSearched2 = -1.0;
@@ -2029,7 +2203,29 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         // classifier fold not included in truncated row
         discScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
+        precursorQValue = dataMap.value(PRECURSOR_Q_VAL).toDouble();
+        peptideQValue = dataMap.value(PEPTIDE_Q_VAL).toDouble();
+        proteinQValue = dataMap.value(PROTEIN_Q_VAL).toDouble();
+        isBestPrecursorCandidate = dataMap.value(IS_BEST_PRECURSOR_CANDIDATE).toInt();
+        isBestPeptideCandidate = dataMap.value(IS_BEST_PEPTIDE_CANDIDATE).toInt();
+        isBestProteinCandidate = dataMap.value(IS_BEST_PROTEIN_CANDIDATE).toInt();
         totalIntensityRaw = dataMap.value(TOT_INTENSITY_RAW).toFloat();
+        ms1IntensityFoundApex100IM = dataMap.value(MS1_INTZ_FND_APEX_100_IM).toFloat();
+        ionMobilityLibrary = dataMap.value(ION_MOBILITY_LIBRARY).toFloat();
+        ionMobilityFound = dataMap.value(ION_MOBILITY_FOUND).toFloat();
+        ionMobilityIndex = dataMap.value(ION_MOBILITY_INDEX).toInt();
+        ionMobilityIndexStart = dataMap.value(ION_MOBILITY_INDEX_START).toInt();
+        ionMobilityIndexEnd = dataMap.value(ION_MOBILITY_INDEX_END).toInt();
+        ionMobilityDelta = dataMap.value(ION_MOBILITY_DELTA).toFloat();
+        ionMobilityDeltaAbs = dataMap.value(ION_MOBILITY_DELTA_ABS).toFloat();
+        ionMobilityPdAbs = dataMap.value(ION_MOBILITY_PD_ABS).toFloat();
+        ms2IonMobilityWeightedDelta = dataMap.value(MS2_ION_MOBILITY_WEIGHTED_DELTA).toFloat();
+        ms2IonMobilityWeightedDeltaAbs = dataMap.value(MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS).toFloat();
+        ms2IonMobilityApexDeltaAbsMean = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN).toFloat();
+        ms2IonMobilityApexDeltaAbsStDev = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV).toFloat();
+        ms2IonMobilityMatchedIonFraction = dataMap.value(MS2_ION_MOBILITY_MATCHED_ION_FRACTION).toFloat();
+        ms2IonMobilityFwhmMean = dataMap.value(MS2_ION_MOBILITY_FWHM_MEAN).toFloat();
+        ms2IonMobilityFwhmStDev = dataMap.value(MS2_ION_MOBILITY_FWHM_STDEV).toFloat();
 
         ERR_RETURN
     }
@@ -2068,6 +2264,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 // classifier fold not included in truncated row
                 {DISC_SCR, QVariant(discScore)},
                 {Q_VAL, QVariant(qValue)},
+                {PRECURSOR_Q_VAL, QVariant(precursorQValue)},
+                {PEPTIDE_Q_VAL, QVariant(peptideQValue)},
+                {PROTEIN_Q_VAL, QVariant(proteinQValue)},
+                {IS_BEST_PRECURSOR_CANDIDATE, QVariant(isBestPrecursorCandidate)},
+                {IS_BEST_PEPTIDE_CANDIDATE, QVariant(isBestPeptideCandidate)},
+                {IS_BEST_PROTEIN_CANDIDATE, QVariant(isBestProteinCandidate)},
                 {IRT_EMP, QVariant(iRtEmpirical)},
 
                 {MZ_SEARCHED_1, QVariant(mzSearched1)},
@@ -2084,6 +2286,22 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 {MZ_SEARCHED_12, QVariant(mzSearched12)},
 
                 {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)},
+                {MS1_INTZ_FND_APEX_100_IM, QVariant(ms1IntensityFoundApex100IM)},
+                {ION_MOBILITY_LIBRARY, QVariant(ionMobilityLibrary)},
+                {ION_MOBILITY_FOUND, QVariant(ionMobilityFound)},
+                {ION_MOBILITY_INDEX, QVariant(ionMobilityIndex)},
+                {ION_MOBILITY_INDEX_START, QVariant(ionMobilityIndexStart)},
+                {ION_MOBILITY_INDEX_END, QVariant(ionMobilityIndexEnd)},
+                {ION_MOBILITY_DELTA, QVariant(ionMobilityDelta)},
+                {ION_MOBILITY_DELTA_ABS, QVariant(ionMobilityDeltaAbs)},
+                {ION_MOBILITY_PD_ABS, QVariant(ionMobilityPdAbs)},
+                {MS2_ION_MOBILITY_WEIGHTED_DELTA, QVariant(ms2IonMobilityWeightedDelta)},
+                {MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS, QVariant(ms2IonMobilityWeightedDeltaAbs)},
+                {MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN, QVariant(ms2IonMobilityApexDeltaAbsMean)},
+                {MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV, QVariant(ms2IonMobilityApexDeltaAbsStDev)},
+                {MS2_ION_MOBILITY_MATCHED_ION_FRACTION, QVariant(ms2IonMobilityMatchedIonFraction)},
+                {MS2_ION_MOBILITY_FWHM_MEAN, QVariant(ms2IonMobilityFwhmMean)},
+                {MS2_ION_MOBILITY_FWHM_STDEV, QVariant(ms2IonMobilityFwhmStDev)},
         };
     }
 
@@ -2123,12 +2341,34 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.classifierScore = candidateScores->classifierScore;
         row.discScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
+        row.precursorQValue = candidateScores->precursorQValue;
+        row.peptideQValue = candidateScores->peptideQValue;
+        row.proteinQValue = candidateScores->proteinQValue;
+        row.isBestPrecursorCandidate = candidateScores->isBestPrecursorCandidate;
+        row.isBestPeptideCandidate = candidateScores->isBestPeptideCandidate;
+        row.isBestProteinCandidate = candidateScores->isBestProteinCandidate;
 
         row.totalIntensityRaw = std::accumulate(
             candidateScores->integrations.begin(),
             candidateScores->integrations.end(),
             0.0f
             );
+        row.ms1IntensityFoundApex100IM = candidateScores->featuresArray[Ms1IntensityFoundApex100IM];
+        row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM();
+        row.ionMobilityFound = candidateScores->imDriftTime;
+        row.ionMobilityIndex = candidateScores->ionMobilityIndex;
+        row.ionMobilityIndexStart = candidateScores->ionMobilityIndexStart;
+        row.ionMobilityIndexEnd = candidateScores->ionMobilityIndexEnd;
+        row.ionMobilityDelta = candidateScores->featuresArray[IonMobilityDelta];
+        row.ionMobilityDeltaAbs = candidateScores->featuresArray[IonMobilityDeltaAbs];
+        row.ionMobilityPdAbs = candidateScores->featuresArray[IonMobilityPdAbs];
+        row.ms2IonMobilityWeightedDelta = candidateScores->featuresArray[Ms2IonMobilityWeightedDelta];
+        row.ms2IonMobilityWeightedDeltaAbs = candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs];
+        row.ms2IonMobilityApexDeltaAbsMean = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean];
+        row.ms2IonMobilityApexDeltaAbsStDev = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev];
+        row.ms2IonMobilityMatchedIonFraction = candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction];
+        row.ms2IonMobilityFwhmMean = candidateScores->featuresArray[Ms2IonMobilityFwhmMean];
+        row.ms2IonMobilityFwhmStDev = candidateScores->featuresArray[Ms2IonMobilityFwhmStDev];
 
         const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
                                        ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()

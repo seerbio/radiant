@@ -45,6 +45,14 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     MsReaderBase msReaderBase;
     msReaderBase.m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
     msReaderBase.m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
+    msReaderBase.m_isTIMS = true;
+
+    constexpr IonMobilityIndex ms2IonMobilityIndex = 123;
+    msReaderBase.m_frameIndexVsDriftTime.insert(ms2IonMobilityIndex, 1.23);
+    msReaderBase.m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS[msScanInfo.targetKey()][msScanInfo.scanNumber].insert(
+        ms2IonMobilityIndex,
+        scanPoints
+        );
 
     ERR_INIT
 
@@ -85,6 +93,12 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
 
     ScanPoints* scanPointsRead = scanPointsResult.second;
     QCOMPARE(*scanPointsRead, scanPoints);
+
+    MzTargetKeyVsMs2FrameTIMS *ms2FrameTims = msReaderParquet.mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
+    QVERIFY(ms2FrameTims->contains(msScanInfo.targetKey()));
+    QVERIFY(ms2FrameTims->value(msScanInfo.targetKey()).contains(msScanInfo.scanNumber));
+    QVERIFY(ms2FrameTims->value(msScanInfo.targetKey()).value(msScanInfo.scanNumber).contains(ms2IonMobilityIndex));
+    QCOMPARE(ms2FrameTims->value(msScanInfo.targetKey()).value(msScanInfo.scanNumber).value(ms2IonMobilityIndex), scanPoints);
 
     QFile::remove(msParquetFilePath);
     QFileInfo checkFile2(msParquetFilePath);

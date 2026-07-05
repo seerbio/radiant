@@ -153,6 +153,10 @@ private:
     FragLibReaderRow *m_fragLibReaderRowPntr;
     bool m_decoySharesSequenceWithOtherTarget;
     DecoyFragmentShiftMode m_decoyFragmentShiftMode = DecoyFragmentShiftMode::ShiftPenultimate;
+    mutable bool m_ms2IonsTargetCacheValid = false;
+    mutable bool m_ms2IonsDecoyCacheValid = false;
+    mutable QVector<MS2Ion> m_ms2IonsTargetCache;
+    mutable QVector<MS2Ion> m_ms2IonsDecoyCache;
 };
 
 

@@ -188,7 +188,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             *m_pythiaParameters,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
-            &weights
+            &weights,
+            m_msReaderPointerAcc->ptr->isTIMS()
             ); ree;
 
         constexpr int fdrKey = 5;

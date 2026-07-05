@@ -117,6 +117,8 @@ public:
 
     Err buildMzTargetKeyVsMsFrames();
 
+    void setUseAdaptiveTimsMobilityCentering(bool useAdaptiveTimsMobilityCentering);
+
 private:
 
     Err buildParallelInput(
@@ -165,6 +167,7 @@ private:
     QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
     QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFramePntr;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
+    bool m_useAdaptiveTimsMobilityCentering = false;
 
 };
 

@@ -24,6 +24,8 @@ public:
 private Q_SLOTS:
 
     static void getFragLibReaderRowsTest();
+    static void getFragLibReaderRowsImsTimeAliasTest();
+    static void getFragLibReaderRowsAverageExperimentalRtAliasTest();
     static void getFragLibReaderRowsApdAliasTest();
     static void getFragLibReaderRowsNoDecoyColumnTest();
     static void getFragLibReaderRowsFiltersInvalidSequencesTest();
@@ -69,10 +71,69 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
     QCOMPARE(fragLibReaderRow.isDecoy, 0);
     QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 600);
     QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), -38);
+    QVERIFY(qAbs(fragLibReaderRow.iM - 1.013057) < 0.0001);
     QCOMPARE(fragLibReaderRow.ionLabels.size(), 20);
 
     QCOMPARE(e, eNoError);
 
+}
+
+void FragLibTsvReaderTests::getFragLibReaderRowsImsTimeAliasTest() {
+
+    ERR_INIT
+
+    const QString testFile = QDir(qApp->applicationDirPath()).filePath("FragLibTsvReaderTests.ims_time.tsv");
+    QFile file(testFile);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text));
+
+    QTextStream out(&file);
+    out << "PrecursorMz\tProductMz\tTr_recalibrated\tIMS time\tLibraryIntensity\tDecoy\tModifiedPeptide\tPrecursorCharge\tFragmentType\tFragmentCharge\tFragmentSeriesNumber\n";
+    out << "500.0\t100.0\t10.0\t1.2345\t1000.0\t0\tACDE\t2\tb\t1\t1\n";
+    out << "500.0\t200.0\t10.0\t1.2345\t500.0\t0\tACDE\t2\ty\t1\t1\n";
+    file.close();
+
+    FragLibTsvReader fragLibTsvReader;
+    QList<FragLibReaderRow> fragLibReaderRows;
+    e = fragLibTsvReader.getFragLibReaderRows(
+            testFile,
+            &fragLibReaderRows
+            );
+
+    QCOMPARE(e, eNoError);
+    QCOMPARE(fragLibReaderRows.size(), 1);
+    QVERIFY(qAbs(fragLibReaderRows.front().iM - 1.2345) < 0.0001);
+
+    QFile::remove(testFile);
+}
+
+void FragLibTsvReaderTests::getFragLibReaderRowsAverageExperimentalRtAliasTest() {
+
+    ERR_INIT
+
+    const QString testFile = QDir(qApp->applicationDirPath()).filePath("FragLibTsvReaderTests.average_experimental_rt.tsv");
+    QFile file(testFile);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text));
+
+    QTextStream out(&file);
+    out << "PrecursorMz\tProductMz\tProteinId\tNormalizedRetentionTime\tAverageExperimentalRetentionTime\tPrecursorIonMobility\tLibraryIntensity\tdecoy\tModifiedPeptideSequence\tPrecursorCharge\tFragmentType\tFragmentCharge\tFragmentSeriesNumber\n";
+    out << "500.0\t100.0\tP12345\t12.0\t456.7\t1.2345\t1000.0\t0\tACDEFGH\t2\tb\t1\t1\n";
+    out << "500.0\t200.0\tP12345\t12.0\t456.7\t1.2345\t500.0\t0\tACDEFGH\t2\ty\t1\t1\n";
+    file.close();
+
+    FragLibTsvReader fragLibTsvReader;
+    QList<FragLibReaderRow> fragLibReaderRows;
+    e = fragLibTsvReader.getFragLibReaderRows(
+            testFile,
+            &fragLibReaderRows
+            );
+
+    QCOMPARE(e, eNoError);
+    QCOMPARE(fragLibReaderRows.size(), 1);
+    QVERIFY(qAbs(fragLibReaderRows.front().iRT - 456.7) < 0.0001);
+    QVERIFY(qAbs(fragLibReaderRows.front().iM - 1.2345) < 0.0001);
+    QCOMPARE(fragLibReaderRows.front().proteinGroups, QString("P12345"));
+
+    QFile::remove(testFile);
 }
 
 void FragLibTsvReaderTests::getFragLibReaderRowsApdAliasTest() {
@@ -107,6 +168,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsApdAliasTest() {
     QCOMPARE(fragLibReaderRow.isDecoy, 0);
     QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 997);
     QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), 10);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.iM), 1);
     QCOMPARE(fragLibReaderRow.ionLabels.size(), 5);
 
     QCOMPARE(e, eNoError);
@@ -144,6 +206,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsNoDecoyColumnTest() {
     QCOMPARE(fragLibReaderRow.isDecoy, 0);
     QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 997);
     QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), 10);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.iM), 1);
     QCOMPARE(fragLibReaderRow.ionLabels.size(), 5);
 
     QCOMPARE(e, eNoError);
@@ -170,6 +233,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsFiltersInvalidSequencesTest() {
 
     QCOMPARE(fragLibReaderRows.size(), 1);
     QCOMPARE(fragLibReaderRows.front().peptideSequenceChargeKey, QString("ACDE|2"));
+    QCOMPARE(static_cast<int>(fragLibReaderRows.front().iM), 1);
 }
 
 void FragLibTsvReaderTests::compareTest() {
