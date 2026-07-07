@@ -226,6 +226,7 @@ Err CandidateScorertron::init(
     m_msReaderPointerAcc = msReaderPointerAcc;
     m_timsMs2IonMobilityIndex = timsMs2IonMobilityIndex;
     m_ms1FrameNumbersTIMS.clear();
+    m_ms1DriftTimeVsIonMobilityIndexTIMS.clear();
     m_features = features;
     m_minPeakCount = minPeakCount;
     m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
@@ -237,6 +238,25 @@ Err CandidateScorertron::init(
             = m_msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
         if (frameNumberVsMs1FrameTIMS != nullptr && !frameNumberVsMs1FrameTIMS->isEmpty()) {
             m_ms1FrameNumbersTIMS = frameNumberVsMs1FrameTIMS->keys().toVector();
+        }
+
+        const QMap<FrameIndex, double> *frameIndexVsDriftTime
+            = m_msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
+        if (frameIndexVsDriftTime != nullptr && !frameIndexVsDriftTime->isEmpty()) {
+            m_ms1DriftTimeVsIonMobilityIndexTIMS.reserve(frameIndexVsDriftTime->size());
+            for (auto it = frameIndexVsDriftTime->constBegin(); it != frameIndexVsDriftTime->constEnd(); ++it) {
+                m_ms1DriftTimeVsIonMobilityIndexTIMS.push_back({static_cast<float>(it.value()), it.key()});
+            }
+            std::sort(
+                m_ms1DriftTimeVsIonMobilityIndexTIMS.begin(),
+                m_ms1DriftTimeVsIonMobilityIndexTIMS.end(),
+                [](const QPair<float, IonMobilityIndex> &left, const QPair<float, IonMobilityIndex> &right) {
+                    if (!MathUtils::tSame(left.first, right.first, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                        return left.first < right.first;
+                    }
+                    return left.second < right.second;
+                }
+                );
         }
     }
 
@@ -426,6 +446,47 @@ namespace {
         }
 
         return lowerFrameNumber > scanNumber ? previousIndex : lowerIndex;
+    }
+
+    struct DriftTimeIonMobilityRange {
+        QVector<QPair<float, IonMobilityIndex>>::const_iterator beginIt;
+        QVector<QPair<float, IonMobilityIndex>>::const_iterator endIt;
+    };
+
+    DriftTimeIonMobilityRange driftTimeIonMobilityRange(
+        const QVector<QPair<float, IonMobilityIndex>> &driftTimeVsIonMobilityIndex,
+        float driftTimeMin,
+        float driftTimeMax
+        ) {
+
+        DriftTimeIonMobilityRange range{
+            driftTimeVsIonMobilityIndex.constEnd(),
+            driftTimeVsIonMobilityIndex.constEnd()
+        };
+
+        if (driftTimeVsIonMobilityIndex.isEmpty() || driftTimeMax < driftTimeMin) {
+            return range;
+        }
+
+        range.beginIt = std::lower_bound(
+            driftTimeVsIonMobilityIndex.constBegin(),
+            driftTimeVsIonMobilityIndex.constEnd(),
+            driftTimeMin,
+            [](const QPair<float, IonMobilityIndex> &entry, float driftTime) {
+                return entry.first < driftTime;
+            }
+            );
+
+        range.endIt = std::upper_bound(
+            range.beginIt,
+            driftTimeVsIonMobilityIndex.constEnd(),
+            driftTimeMax,
+            [](float driftTime, const QPair<float, IonMobilityIndex> &entry) {
+                return driftTime < entry.first;
+            }
+            );
+
+        return range;
     }
 
     Err sortBestCorrelationResult(QVector<BestCorrelationResult> *bestCorrelationResults) {
@@ -3157,38 +3218,70 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
     IonMobilityIndex ionMobilityIndexEnd = -1;
 
     const Ms1FrameTIMS &ms1FrameTIMS = ms1FrameIt.value();
-    for (auto frameIt = ms1FrameTIMS.constBegin(); frameIt != ms1FrameTIMS.constEnd(); ++frameIt) {
-
-        const IonMobilityIndex ionMobilityIndex = frameIt.key();
-
-        double driftTime = -1.0;
-        if (!driftTimeFromIonMobilityIndex(
-            m_msReaderPointerAcc,
-            m_timsMs2IonMobilityIndex,
-            ionMobilityIndex,
-            &driftTime
-            )) {
-            continue;
-        }
-
-        if (std::abs(driftTime - mobilityCenter) > ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0) {
-            continue;
-        }
-
-        ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
-        ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
-
-        const ScanPoints &scanPoints = frameIt.value();
-        updateApexFromSortedScanPoints(
-            scanPoints,
-            mzMin,
-            mzMax,
-            ionMobilityIndex,
-            driftTime,
-            &apexIntensity,
-            &apexIonMobilityIndex,
-            &apexDriftTime
+    if (!m_ms1DriftTimeVsIonMobilityIndexTIMS.isEmpty()) {
+        const DriftTimeIonMobilityRange driftTimeRange = driftTimeIonMobilityRange(
+            m_ms1DriftTimeVsIonMobilityIndexTIMS,
+            mobilityCenter - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0),
+            mobilityCenter + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0)
             );
+
+        for (auto driftTimeIt = driftTimeRange.beginIt; driftTimeIt != driftTimeRange.endIt; ++driftTimeIt) {
+
+            const IonMobilityIndex ionMobilityIndex = driftTimeIt->second;
+            const auto frameIt = ms1FrameTIMS.constFind(ionMobilityIndex);
+            if (frameIt == ms1FrameTIMS.constEnd()) {
+                continue;
+            }
+
+            const double driftTime = driftTimeIt->first;
+            ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
+            ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
+
+            updateApexFromSortedScanPoints(
+                frameIt.value(),
+                mzMin,
+                mzMax,
+                ionMobilityIndex,
+                driftTime,
+                &apexIntensity,
+                &apexIonMobilityIndex,
+                &apexDriftTime
+                );
+        }
+    }
+    else {
+        for (auto frameIt = ms1FrameTIMS.constBegin(); frameIt != ms1FrameTIMS.constEnd(); ++frameIt) {
+
+            const IonMobilityIndex ionMobilityIndex = frameIt.key();
+
+            double driftTime = -1.0;
+            if (!driftTimeFromIonMobilityIndex(
+                m_msReaderPointerAcc,
+                m_timsMs2IonMobilityIndex,
+                ionMobilityIndex,
+                &driftTime
+                )) {
+                continue;
+            }
+
+            if (std::abs(driftTime - mobilityCenter) > ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0) {
+                continue;
+            }
+
+            ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
+            ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
+
+            updateApexFromSortedScanPoints(
+                frameIt.value(),
+                mzMin,
+                mzMax,
+                ionMobilityIndex,
+                driftTime,
+                &apexIntensity,
+                &apexIonMobilityIndex,
+                &apexDriftTime
+                );
+        }
     }
 
     if (ionMobilityIndexEnd >= 0) {
