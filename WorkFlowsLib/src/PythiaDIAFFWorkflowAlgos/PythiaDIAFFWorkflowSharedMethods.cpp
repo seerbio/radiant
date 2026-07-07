@@ -504,18 +504,25 @@ QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWo
     const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
     const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowUpper + pythiaParameters.precursorExtractionWindowThomsons);
 
-    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
-    filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
-    if (msScanInfo.ionMobilityDriftTime > 0.0f) {
-        const auto terminatorLogic = [&msScanInfo](const TargetDecoyCandidatePair *candidate) {
-            return !isLibraryIonMobilityInAcquisitionWindow(candidate, msScanInfo);
-        };
-        const auto terminator = std::remove_if(
-            targetDecoyCandidatePairsFiltered.begin(),
-            targetDecoyCandidatePairsFiltered.end(),
-            terminatorLogic
-            );
-        targetDecoyCandidatePairsFiltered.erase(terminator, targetDecoyCandidatePairsFiltered.end());
+    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered;
+    targetDecoyCandidatePairsFiltered.reserve(targetDecoyCandidatePairs.size());
+
+    const bool useIonMobilityFilter = msScanInfo.ionMobilityDriftTime > 0.0f;
+    for (TargetDecoyCandidatePair *candidate : targetDecoyCandidatePairs) {
+        if (candidate == nullptr) {
+            continue;
+        }
+
+        const float precursorMz = candidate->mz(false);
+        if (precursorMz < precursorMzMin || precursorMz > precursorMzMax) {
+            continue;
+        }
+
+        if (useIonMobilityFilter && !isLibraryIonMobilityInAcquisitionWindow(candidate, msScanInfo)) {
+            continue;
+        }
+
+        targetDecoyCandidatePairsFiltered.push_back(candidate);
     }
 
     if (pythiaParameters.verbosity > 0) {
