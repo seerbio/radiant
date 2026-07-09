@@ -1219,6 +1219,10 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isNotEmpty(features); ree;
 
     input->reserve(mzTargetKeyVsTargetDecoyCandidatePointers->size());
+    const bool avoidTargetKeySplit = m_msReaderPointerAcc != nullptr
+        && !m_msReaderPointerAcc->ptr.isNull()
+        && m_msReaderPointerAcc->ptr->isTIMS()
+        && containsMs2IonMobilityFeature(features);
 
     for (const MzTargetKey &mzTargetKey : mzTargetKeyVsTargetDecoyCandidatePointers->keys()) {
 
@@ -1260,6 +1264,12 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
             tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
         }
 
+        if (avoidTargetKeySplit) {
+            tdppi1.targetDecoyPointers = tdcpPntrs;
+            input->push_back(tdppi1);
+            continue;
+        }
+
         TargetDecoyPairParallelInput tdppi2 = tdppi1;
         tdppi2.targetDecoyPointers = tdcpPntrs.mid(midSize, midSize + bufferOddEvenSize);
 
@@ -1299,7 +1309,12 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isNotEmpty(features); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
-    const bool splitMzTargetKey = m_pythiaParameters.threadCount > msScanInfos.size();
+    const bool avoidTargetKeySplit = m_msReaderPointerAcc != nullptr
+        && !m_msReaderPointerAcc->ptr.isNull()
+        && m_msReaderPointerAcc->ptr->isTIMS()
+        && containsMs2IonMobilityFeature(features);
+    const bool splitMzTargetKey = !avoidTargetKeySplit
+        && m_pythiaParameters.threadCount > msScanInfos.size();
 
     for (const MsScanInfo &msi : msScanInfos) {
 
