@@ -152,6 +152,37 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
+        if (m_msReaderPointerAcc->ptr->isTIMS()) {
+            int candidateCountPreEvidencePrefilter = 0;
+            for (auto it = mzTargetKeyVsTargetDecoyCandidatePointers.constBegin();
+                 it != mzTargetKeyVsTargetDecoyCandidatePointers.constEnd();
+                 ++it) {
+                candidateCountPreEvidencePrefilter += it.value().size();
+            }
+
+            e = PythiaDIAFFWorkflowSharedMethods::applyTimsCalibrationEvidencePrefilter(
+                uniqueMsScanInfosCalibration,
+                *m_pythiaParameters,
+                m_msCalibratomatic,
+                mzTargetKeyVsTurboXicPntrs,
+                m_targetDecoyCandidatePairScoretron->mzTargetKeyVsMsFramePntr(),
+                &mzTargetKeyVsTargetDecoyCandidatePointers
+                ); ree;
+
+            int candidateCountPostEvidencePrefilter = 0;
+            for (auto it = mzTargetKeyVsTargetDecoyCandidatePointers.constBegin();
+                 it != mzTargetKeyVsTargetDecoyCandidatePointers.constEnd();
+                 ++it) {
+                candidateCountPostEvidencePrefilter += it.value().size();
+            }
+
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "TIMS calibration evidence prefilter"
+                     << "candidates_pre" << candidateCountPreEvidencePrefilter
+                     << "candidates_post" << candidateCountPostEvidencePrefilter
+                     << "budget" << m_pythiaParameters->timsMainCandidateBudgetPerTargetKey;
+        }
+
         constexpr int topNMS2IonsCalibration = 6;
 
         constexpr bool useTopNIntegrationsParameter = false;
