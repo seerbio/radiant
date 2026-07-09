@@ -17,12 +17,13 @@ namespace {
         return static_cast<int>(std::floor(mz / TIMS_MS2_MZ_BIN_WIDTH));
     }
 
-    template<typename PointIterator>
+    template<typename PointIterator, typename FrameIndexExtractor>
     void frameRestrictedRange(
         PointIterator pointsBegin,
         PointIterator pointsEnd,
         FrameIndex frameIndexMin,
         FrameIndex frameIndexMax,
+        FrameIndexExtractor frameIndexForPoint,
         PointIterator *beginIt,
         PointIterator *endIt
         ) {
@@ -38,8 +39,8 @@ namespace {
             pointsBegin,
             pointsEnd,
             frameIndexMin + 1,
-            [](const auto &point, FrameIndex frameIndex) {
-                return point.frameIndex < frameIndex;
+            [&](const auto &point, FrameIndex frameIndex) {
+                return frameIndexForPoint(point) < frameIndex;
             }
             );
 
@@ -47,12 +48,11 @@ namespace {
             *beginIt,
             pointsEnd,
             frameIndexMax,
-            [](const auto &point, FrameIndex frameIndex) {
-                return point.frameIndex < frameIndex;
+            [&](const auto &point, FrameIndex frameIndex) {
+                return frameIndexForPoint(point) < frameIndex;
             }
             );
     }
-
 }
 
 Err TimsMs2IonMobilityIndex::init(
@@ -68,8 +68,10 @@ Err TimsMs2IonMobilityIndex::init(
     e = ErrorUtils::isNotEmpty(ionMobilityIndexVsDriftTime); ree;
 
     m_mzBinVsPoints.clear();
+    m_sliceRefs.clear();
     m_ionMobilityIndexVsDriftTime.clear();
     m_pointCount = 0;
+    m_isInit = false;
 
     for (auto driftTimeIt = ionMobilityIndexVsDriftTime.constBegin();
          driftTimeIt != ionMobilityIndexVsDriftTime.constEnd();
@@ -80,6 +82,15 @@ Err TimsMs2IonMobilityIndex::init(
             );
     }
 
+    int sliceCount = 0;
+    for (auto frameIt = frameNumberVsMs2FrameTims.constBegin();
+         frameIt != frameNumberVsMs2FrameTims.constEnd();
+         ++frameIt) {
+        sliceCount += frameIt.value().size();
+    }
+    m_sliceRefs.reserve(sliceCount);
+
+    QHash<int, int> mzBinVsCounts;
     for (auto frameIt = frameNumberVsMs2FrameTims.constBegin();
          frameIt != frameNumberVsMs2FrameTims.constEnd();
          ++frameIt) {
@@ -95,18 +106,37 @@ Err TimsMs2IonMobilityIndex::init(
                 continue;
             }
 
-            const float driftTime = driftTimeIt.value();
             const ScanPoints &scanPoints = mobilityIt.value();
+            if (scanPoints.isEmpty()) {
+                continue;
+            }
+
+            SliceRef sliceRef;
+            sliceRef.scanPoints = &scanPoints;
+            sliceRef.frameIndex = frameIndex;
+            sliceRef.ionMobilityIndex = mobilityIt.key();
+            sliceRef.driftTime = driftTimeIt.value();
+            m_sliceRefs.push_back(sliceRef);
+
             m_pointCount += scanPoints.size();
             for (const ScanPoint &scanPoint : scanPoints) {
-                IndexedPoint indexedPoint;
-                indexedPoint.mz = scanPoint.x();
-                indexedPoint.intensity = scanPoint.y();
-                indexedPoint.frameIndex = frameIndex;
-                indexedPoint.ionMobilityIndex = mobilityIt.key();
-                indexedPoint.driftTime = driftTime;
-                m_mzBinVsPoints[mzBin(indexedPoint.mz)].push_back(indexedPoint);
+                ++mzBinVsCounts[mzBin(scanPoint.x())];
             }
+        }
+    }
+
+    for (auto countIt = mzBinVsCounts.constBegin(); countIt != mzBinVsCounts.constEnd(); ++countIt) {
+        m_mzBinVsPoints[countIt.key()].reserve(countIt.value());
+    }
+
+    for (quint32 sliceIndex = 0; sliceIndex < static_cast<quint32>(m_sliceRefs.size()); ++sliceIndex) {
+        const ScanPoints &scanPoints = *m_sliceRefs.at(static_cast<int>(sliceIndex)).scanPoints;
+        for (quint32 pointIndex = 0; pointIndex < static_cast<quint32>(scanPoints.size()); ++pointIndex) {
+            const ScanPoint &scanPoint = scanPoints.at(static_cast<int>(pointIndex));
+            IndexedPointRef pointRef;
+            pointRef.sliceIndex = sliceIndex;
+            pointRef.pointIndex = pointIndex;
+            m_mzBinVsPoints[mzBin(scanPoint.x())].push_back(pointRef);
         }
     }
 
@@ -114,14 +144,21 @@ Err TimsMs2IonMobilityIndex::init(
         std::sort(
             binIt.value().begin(),
             binIt.value().end(),
-            [](const IndexedPoint &left, const IndexedPoint &right) {
-                if (left.frameIndex != right.frameIndex) {
-                    return left.frameIndex < right.frameIndex;
+            [this](const IndexedPointRef &left, const IndexedPointRef &right) {
+                const SliceRef &leftSlice = sliceRefForPoint(left);
+                const SliceRef &rightSlice = sliceRefForPoint(right);
+                if (leftSlice.frameIndex != rightSlice.frameIndex) {
+                    return leftSlice.frameIndex < rightSlice.frameIndex;
                 }
-                if (left.driftTime != right.driftTime) {
-                    return left.driftTime < right.driftTime;
+                if (leftSlice.ionMobilityIndex != rightSlice.ionMobilityIndex) {
+                    return leftSlice.ionMobilityIndex < rightSlice.ionMobilityIndex;
                 }
-                return left.mz < right.mz;
+                const float leftMz = scanPointForRef(left).x();
+                const float rightMz = scanPointForRef(right).x();
+                if (leftMz != rightMz) {
+                    return leftMz < rightMz;
+                }
+                return left.pointIndex < right.pointIndex;
             }
             );
     }
@@ -137,6 +174,21 @@ bool TimsMs2IonMobilityIndex::isInit() const {
 
 int TimsMs2IonMobilityIndex::pointCount() const {
     return m_pointCount;
+}
+
+const TimsMs2IonMobilityIndex::SliceRef& TimsMs2IonMobilityIndex::sliceRefForPoint(
+    const IndexedPointRef &pointRef
+    ) const {
+
+    return m_sliceRefs.at(static_cast<int>(pointRef.sliceIndex));
+}
+
+const ScanPoint& TimsMs2IonMobilityIndex::scanPointForRef(
+    const IndexedPointRef &pointRef
+    ) const {
+
+    const SliceRef &sliceRef = sliceRefForPoint(pointRef);
+    return sliceRef.scanPoints->at(static_cast<int>(pointRef.pointIndex));
 }
 
 bool TimsMs2IonMobilityIndex::driftTimeFromIonMobilityIndex(
@@ -180,32 +232,40 @@ XICPoints TimsMs2IonMobilityIndex::extractPointsXIC(
             continue;
         }
 
-        const QVector<IndexedPoint> &points = binIt.value();
-        QVector<IndexedPoint>::const_iterator beginIt;
-        QVector<IndexedPoint>::const_iterator endIt;
+        const QVector<IndexedPointRef> &points = binIt.value();
+        QVector<IndexedPointRef>::const_iterator beginIt;
+        QVector<IndexedPointRef>::const_iterator endIt;
         frameRestrictedRange(
             points.constBegin(),
             points.constEnd(),
             frameIndexMin,
             frameIndexMax,
+            [this](const IndexedPointRef &pointRef) {
+                return sliceRefForPoint(pointRef).frameIndex;
+            },
             &beginIt,
             &endIt
             );
 
         for (auto pointIt = beginIt; pointIt != endIt; ++pointIt) {
-            const IndexedPoint &point = *pointIt;
-            if (point.mz < mzMin || point.mz > mzMax) {
+            const IndexedPointRef &pointRef = *pointIt;
+            const SliceRef &sliceRef = sliceRefForPoint(pointRef);
+            const ScanPoint &scanPoint = scanPointForRef(pointRef);
+            const float mz = scanPoint.x();
+            if (mz < mzMin || mz > mzMax) {
                 continue;
             }
-            if (!(ionMobilityMin <= point.driftTime && point.driftTime <= ionMobilityMax)) {
+
+            const float driftTime = sliceRef.driftTime;
+            if (!(ionMobilityMin <= driftTime && driftTime <= ionMobilityMax)) {
                 continue;
             }
 
             XICPoint xicPoint;
-            xicPoint.mz = point.mz;
-            xicPoint.intensity = point.intensity;
-            xicPoint.scanNumber = point.frameIndex;
-            xicPoint.ionMobilityIndex = point.ionMobilityIndex;
+            xicPoint.mz = mz;
+            xicPoint.intensity = scanPoint.y();
+            xicPoint.scanNumber = sliceRef.frameIndex;
+            xicPoint.ionMobilityIndex = sliceRef.ionMobilityIndex;
             xicPoints.push_back(xicPoint);
         }
     }
@@ -246,33 +306,42 @@ bool TimsMs2IonMobilityIndex::extractMobilityProfile(
             continue;
         }
 
-        const QVector<IndexedPoint> &points = binIt.value();
-        QVector<IndexedPoint>::const_iterator beginIt;
-        QVector<IndexedPoint>::const_iterator endIt;
+        const QVector<IndexedPointRef> &points = binIt.value();
+        QVector<IndexedPointRef>::const_iterator beginIt;
+        QVector<IndexedPointRef>::const_iterator endIt;
         frameRestrictedRange(
             points.constBegin(),
             points.constEnd(),
             frameIndexMin,
             frameIndexMax,
+            [this](const IndexedPointRef &pointRef) {
+                return sliceRefForPoint(pointRef).frameIndex;
+            },
             &beginIt,
             &endIt
             );
 
         for (auto pointIt = beginIt; pointIt != endIt; ++pointIt) {
-            const IndexedPoint &point = *pointIt;
-            if (point.mz < mzMin || point.mz > mzMax) {
-                continue;
-            }
-            if (!(ionMobilityMin <= point.driftTime && point.driftTime <= ionMobilityMax)) {
+            const IndexedPointRef &pointRef = *pointIt;
+            const SliceRef &sliceRef = sliceRefForPoint(pointRef);
+            const ScanPoint &scanPoint = scanPointForRef(pointRef);
+            const float mz = scanPoint.x();
+            if (mz < mzMin || mz > mzMax) {
                 continue;
             }
 
-            const double intensity = std::max(0.0f, point.intensity);
-            (*mobilityProfile)[point.ionMobilityIndex] += intensity;
+            const float driftTime = sliceRef.driftTime;
+            if (!(ionMobilityMin <= driftTime && driftTime <= ionMobilityMax)) {
+                continue;
+            }
 
-            if (point.intensity > *apexIntensity) {
-                *apexIntensity = point.intensity;
-                *apexDeltaAbs = std::abs(point.driftTime - ionMobilityCenter);
+            const float pointIntensity = scanPoint.y();
+            const double intensity = std::max(0.0f, pointIntensity);
+            (*mobilityProfile)[sliceRef.ionMobilityIndex] += intensity;
+
+            if (pointIntensity > *apexIntensity) {
+                *apexIntensity = pointIntensity;
+                *apexDeltaAbs = std::abs(driftTime - ionMobilityCenter);
             }
         }
     }

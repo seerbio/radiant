@@ -13,6 +13,7 @@
 
 #include <QHash>
 #include <QMap>
+#include <QtGlobal>
 
 class MsFrame;
 
@@ -59,15 +60,25 @@ public:
 
 private:
 
-    struct IndexedPoint {
-        float mz = -1.0f;
-        float intensity = 0.0f;
+    // Points remain owned by the source Ms2FrameTIMS. The index stores
+    // slice-local references so we do not duplicate mz/intensity payloads.
+    struct SliceRef {
+        const ScanPoints *scanPoints = nullptr;
         FrameIndex frameIndex = -1;
         IonMobilityIndex ionMobilityIndex = -1;
         float driftTime = -1.0f;
     };
 
-    QHash<int, QVector<IndexedPoint>> m_mzBinVsPoints;
+    struct IndexedPointRef {
+        quint32 sliceIndex = 0;
+        quint32 pointIndex = 0;
+    };
+
+    [[nodiscard]] const SliceRef& sliceRefForPoint(const IndexedPointRef &pointRef) const;
+    [[nodiscard]] const ScanPoint& scanPointForRef(const IndexedPointRef &pointRef) const;
+
+    QHash<int, QVector<IndexedPointRef>> m_mzBinVsPoints;
+    QVector<SliceRef> m_sliceRefs;
     QMap<IonMobilityIndex, float> m_ionMobilityIndexVsDriftTime;
     int m_pointCount = 0;
     bool m_isInit = false;
