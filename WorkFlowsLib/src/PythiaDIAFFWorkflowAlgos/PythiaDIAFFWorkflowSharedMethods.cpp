@@ -60,10 +60,64 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
 namespace {
 
     constexpr float TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0 = 0.03f;
+    constexpr float TIMS_CALIBRATED_IM_FILTER_PAD_MIN_ONE_OVER_K0 = 0.01f;
     constexpr float TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
+
+    float ionMobilityCenterForFilter(
+        const TargetDecoyCandidatePair *candidate,
+        const MsCalibratomatic *msCalibratomatic
+        ) {
+
+        if (candidate == nullptr) {
+            return -1.0f;
+        }
+
+        const float libraryIonMobility = candidate->iIM();
+        if (libraryIonMobility <= 0.0f
+            || msCalibratomatic == nullptr
+            || !msCalibratomatic->isInitIM()) {
+            return libraryIonMobility;
+        }
+
+        float predictedIonMobility = 0.0f;
+        if (msCalibratomatic->predictIonMobility(
+            libraryIonMobility,
+            &predictedIonMobility
+            ) != eNoError) {
+            return libraryIonMobility;
+        }
+
+        return predictedIonMobility > 0.0f
+             ? predictedIonMobility
+             : libraryIonMobility;
+    }
+
+    float ionMobilityFilterPad(
+        const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic *msCalibratomatic
+        ) {
+
+        if (msCalibratomatic == nullptr || !msCalibratomatic->isInitIM()) {
+            return TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        }
+
+        const float calibratedPad = msCalibratomatic->ionMobilityStDev(
+            pythiaParameters.scanTimeWindowStDevs
+            );
+        if (calibratedPad <= 0.0f) {
+            return TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        }
+
+        return std::max(
+            TIMS_CALIBRATED_IM_FILTER_PAD_MIN_ONE_OVER_K0,
+            std::min(calibratedPad, TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0)
+            );
+    }
 
     bool isLibraryIonMobilityInAcquisitionWindow(
         const TargetDecoyCandidatePair *candidate,
+        const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic *msCalibratomatic,
         const MsScanInfo &msScanInfo
         ) {
 
@@ -71,8 +125,11 @@ namespace {
             return false;
         }
 
-        const float libraryIonMobility = candidate->iIM();
-        if (libraryIonMobility <= 0.0f || msScanInfo.ionMobilityDriftTime <= 0.0f) {
+        const float ionMobilityCenter = ionMobilityCenterForFilter(
+            candidate,
+            msCalibratomatic
+            );
+        if (ionMobilityCenter <= 0.0f || msScanInfo.ionMobilityDriftTime <= 0.0f) {
             return true;
         }
 
@@ -83,9 +140,10 @@ namespace {
             windowUpper = msScanInfo.ionMobilityDriftTime + TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
         }
 
-        windowLower -= TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
-        windowUpper += TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
-        return windowLower <= libraryIonMobility && libraryIonMobility <= windowUpper;
+        const float windowPad = ionMobilityFilterPad(pythiaParameters, msCalibratomatic);
+        windowLower -= windowPad;
+        windowUpper += windowPad;
+        return windowLower <= ionMobilityCenter && ionMobilityCenter <= windowUpper;
     }
 
     struct TurboXICLoadInput {
@@ -448,6 +506,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         const PythiaParameters &pythiaParameters,
         const QVector<MsScanInfo> &msScanInfos,
+        const MsCalibratomatic *msCalibratomatic,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
         ) {
 
@@ -463,6 +522,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         filterParallelLogic,
         targetDecoyCandidatePairs,
         pythiaParameters,
+        msCalibratomatic,
         std::placeholders::_1
         );
 
@@ -481,6 +541,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> result = filterParallelLogic(
             targetDecoyCandidatePairs,
             pythiaParameters,
+            msCalibratomatic,
             msScanInfo
             );
         e = result.first; ree;
@@ -494,6 +555,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
 QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWorkflowSharedMethods::filterParallelLogic(
     const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
     const PythiaParameters &pythiaParameters,
+    const MsCalibratomatic *msCalibratomatic,
     const MsScanInfo &msScanInfo
     ) {
 
@@ -518,7 +580,12 @@ QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWo
             continue;
         }
 
-        if (useIonMobilityFilter && !isLibraryIonMobilityInAcquisitionWindow(candidate, msScanInfo)) {
+        if (useIonMobilityFilter && !isLibraryIonMobilityInAcquisitionWindow(
+            candidate,
+            pythiaParameters,
+            msCalibratomatic,
+            msScanInfo
+            )) {
             continue;
         }
 

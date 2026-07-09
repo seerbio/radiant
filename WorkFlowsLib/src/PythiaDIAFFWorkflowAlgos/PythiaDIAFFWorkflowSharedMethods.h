@@ -67,12 +67,14 @@ public:
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         const PythiaParameters &pythiaParameters,
         const QVector<MsScanInfo> &msScanInfos,
+        const MsCalibratomatic *msCalibratomatic,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
         );
 
     static QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic *msCalibratomatic,
         const MsScanInfo &msScanInfo
         );
 

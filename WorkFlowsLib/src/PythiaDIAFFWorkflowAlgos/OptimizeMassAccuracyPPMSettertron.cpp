@@ -219,6 +219,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             targetDecoyCandidatePointersTranched.first(),
             *m_pythiaParameters,
             uniqueMsScanInfosOptimization,
+            nullptr,
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 

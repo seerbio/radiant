@@ -330,6 +330,7 @@ public:
 namespace {
 
     constexpr double ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
+    constexpr double ALPHADIA_MS1_TARGET_MOBILITY_TOLERANCE_MIN_ONE_OVER_K0 = 0.03;
     constexpr double ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.06;
     constexpr double ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 = 0.01;
     constexpr double ALPHADIA_RT_FWHM_SECONDS = 5.0;
@@ -417,6 +418,31 @@ namespace {
             || features.contains(Ms2IonMobilityRtCosineMean)
             || features.contains(Ms2IonMobilityRtCosineStDev)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
+    }
+
+    float timsMs1MobilityHalfWidth(
+        const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic &msCalibratomatic
+        ) {
+
+        if (!msCalibratomatic.isInitIM()) {
+            return static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        }
+
+        const float calibratedHalfWidth = msCalibratomatic.ionMobilityStDev(
+            pythiaParameters.scanTimeWindowStDevs
+            );
+        if (calibratedHalfWidth <= 0.0f) {
+            return static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        }
+
+        return std::max(
+            static_cast<float>(ALPHADIA_MS1_TARGET_MOBILITY_TOLERANCE_MIN_ONE_OVER_K0),
+            std::min(
+                calibratedHalfWidth,
+                static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0)
+                )
+            );
     }
 
     int closestMs1FrameIndexAtOrBefore(
@@ -3204,6 +3230,10 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
     }
 
     const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
+    const float mobilityHalfWidth = timsMs1MobilityHalfWidth(
+        m_pythiaParameters,
+        m_msCalibratomatic
+        );
     const float massTol = MathUtils::calculatePPM(
         monoIsotopeMz,
         static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM)
@@ -3221,8 +3251,8 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
     if (!m_ms1DriftTimeVsIonMobilityIndexTIMS.isEmpty()) {
         const DriftTimeIonMobilityRange driftTimeRange = driftTimeIonMobilityRange(
             m_ms1DriftTimeVsIonMobilityIndexTIMS,
-            mobilityCenter - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0),
-            mobilityCenter + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0)
+            mobilityCenter - mobilityHalfWidth,
+            mobilityCenter + mobilityHalfWidth
             );
 
         for (auto driftTimeIt = driftTimeRange.beginIt; driftTimeIt != driftTimeRange.endIt; ++driftTimeIt) {
@@ -3264,7 +3294,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
                 continue;
             }
 
-            if (std::abs(driftTime - mobilityCenter) > ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0) {
+            if (std::abs(driftTime - mobilityCenter) > mobilityHalfWidth) {
                 continue;
             }
 

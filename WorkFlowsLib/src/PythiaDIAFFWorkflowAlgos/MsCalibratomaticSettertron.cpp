@@ -148,6 +148,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 targetDecoyCandidatePairsBatch,
                 *m_pythiaParameters,
                 uniqueMsScanInfosCalibration,
+                &m_msCalibratomatic,
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
