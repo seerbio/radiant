@@ -216,7 +216,6 @@ namespace {
     constexpr int TIMS_MAIN_TOP_N_MS2_IONS = 12;
     constexpr int TIMS_MAIN_EVIDENCE_TOP_N_MS2_IONS = 4;
     constexpr float TIMS_MAIN_EVIDENCE_BUDGET_FRACTION = 0.75f;
-    constexpr int TIMS_MAIN_MAX_THREAD_COUNT = 8;
     constexpr int TIMS_MAIN_CANDIDATE_BUDGET_BIN_COUNT = 24;
 
     struct TimsEvidenceCandidate {
@@ -1132,17 +1131,10 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputs
             ); ree;
 
-    const bool useTimsMainThreadLimit = m_msReaderPointerAcc->ptr->isTIMS()
-        && targetDecoyCandidateAllPntrs != nullptr
-        && !targetDecoyCandidateAllPntrs->isEmpty();
-    const int effectiveThreadCount = useTimsMainThreadLimit
-        ? std::max(1, std::min(threadCount, TIMS_MAIN_MAX_THREAD_COUNT))
-        : threadCount;
-
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
-            effectiveThreadCount,
+            threadCount,
             &parallelInputsTranched
             ); ree;
 

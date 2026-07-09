@@ -942,7 +942,7 @@ Err PythiaDIAFFWorkflow::rescoreTimsFilteredCandidatesForNeuralNet(
     constexpr int topNMs2IonsTimsSecondStage = 8;
     constexpr bool useTopNIntegrationsParameter = false;
     constexpr float minPeakCountTims = 2.9f;
-    const int threadCount = std::max(1, std::min(m_pythiaParameters.threadCount, 8));
+    const int threadCount = std::max(1, m_pythiaParameters.threadCount);
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "TIMS 4D second-stage rescoring"
