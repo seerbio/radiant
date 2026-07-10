@@ -180,7 +180,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                      << "TIMS calibration evidence prefilter"
                      << "candidates_pre" << candidateCountPreEvidencePrefilter
                      << "candidates_post" << candidateCountPostEvidencePrefilter
-                     << "budget" << m_pythiaParameters->timsMainCandidateBudgetPerTargetKey;
+                     << "min_matched_fragments" << 2
+                     << "min_evidence_score" << 0.0;
         }
 
         constexpr int topNMS2IonsCalibration = 6;

@@ -68,10 +68,17 @@ namespace {
     constexpr float TIMS_CALIBRATED_IM_FILTER_PAD_MIN_ONE_OVER_K0 = 0.01f;
     constexpr float TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
     constexpr int TIMS_MAIN_EVIDENCE_TOP_N_MS2_IONS = 4;
+    constexpr int TIMS_CALIBRATION_EVIDENCE_MIN_MATCHED_IONS = 2;
 
     struct TimsEvidenceCandidate {
         TargetDecoyCandidatePair *targetDecoyPair = nullptr;
         double evidenceScore = 0.0;
+        int matchedIonCount = 0;
+    };
+
+    struct TimsEvidenceSummary {
+        double evidenceScore = 0.0;
+        int matchedIonCount = 0;
     };
 
     float ionMobilityCenterForFilter(
@@ -253,7 +260,7 @@ namespace {
         return true;
     }
 
-    double calculateCheapTimsEvidenceScore(
+    TimsEvidenceSummary calculateCheapTimsEvidenceScore(
         const TurboXIC &turboXic,
         const MsCalibratomatic &msCalibratomatic,
         const PythiaParameters &pythiaParameters,
@@ -261,8 +268,10 @@ namespace {
         const TargetDecoyCandidatePair *targetDecoyPair
         ) {
 
+        TimsEvidenceSummary evidenceSummary;
+
         if (targetDecoyPair == nullptr) {
-            return 0.0;
+            return evidenceSummary;
         }
 
         FrameIndex frameIndexMin = 0;
@@ -275,12 +284,12 @@ namespace {
                 &frameIndexMin,
                 &frameIndexMax
                 )) {
-            return 0.0;
+            return evidenceSummary;
         }
 
         QVector<MS2Ion> ms2Ions = targetDecoyPair->ms2IonsTarget();
         if (ms2Ions.isEmpty()) {
-            return 0.0;
+            return evidenceSummary;
         }
 
         MS2Ion::sortMS2IonsIntensityDesc(&ms2Ions);
@@ -307,11 +316,13 @@ namespace {
             ++matchedIonCount;
         }
 
+        evidenceSummary.matchedIonCount = matchedIonCount;
         if (matchedIonCount == 0) {
-            return 0.0;
+            return evidenceSummary;
         }
 
-        return weightedSignal * static_cast<double>(matchedIonCount);
+        evidenceSummary.evidenceScore = weightedSignal * static_cast<double>(matchedIonCount);
+        return evidenceSummary;
     }
 }//namespace
 Err PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
@@ -376,19 +387,11 @@ Err PythiaDIAFFWorkflowSharedMethods::applyTimsCalibrationEvidencePrefilter(
         ERR_RETURN
     }
 
-    const int candidateBudget = pythiaParameters.timsMainCandidateBudgetPerTargetKey;
-    if (candidateBudget <= 0) {
-        ERR_RETURN
-    }
-
     for (auto it = mzTargetKeyVsTargetDecoyCandidatePointers->begin();
          it != mzTargetKeyVsTargetDecoyCandidatePointers->end();
          ++it) {
 
         QVector<TargetDecoyCandidatePair*> &targetDecoyPointers = it.value();
-        if (targetDecoyPointers.size() <= candidateBudget) {
-            continue;
-        }
 
         const auto turboXicIt = mzTargetKeyVsTurboXicPntrs.constFind(it.key());
         const auto msFrameIt = mzTargetKeyVsMsFramePntr.constFind(it.key());
@@ -404,14 +407,18 @@ Err PythiaDIAFFWorkflowSharedMethods::applyTimsCalibrationEvidencePrefilter(
         QVector<TimsEvidenceCandidate> rankedCandidates;
         rankedCandidates.reserve(targetDecoyPointers.size());
         for (TargetDecoyCandidatePair *tdcp : targetDecoyPointers) {
-            const double evidenceScore = calculateCheapTimsEvidenceScore(
+            const TimsEvidenceSummary evidenceSummary = calculateCheapTimsEvidenceScore(
                 *turboXicIt.value(),
                 msCalibratomatic,
                 pythiaParameters,
                 *msFrameIt.value(),
                 tdcp
                 );
-            rankedCandidates.push_back({tdcp, evidenceScore});
+            rankedCandidates.push_back({
+                tdcp,
+                evidenceSummary.evidenceScore,
+                evidenceSummary.matchedIonCount
+            });
         }
 
         std::sort(
@@ -426,12 +433,10 @@ Err PythiaDIAFFWorkflowSharedMethods::applyTimsCalibrationEvidencePrefilter(
             );
 
         QVector<TargetDecoyCandidatePair*> selected;
-        selected.reserve(candidateBudget);
+        selected.reserve(targetDecoyPointers.size());
         for (const TimsEvidenceCandidate &rankedCandidate : rankedCandidates) {
-            if (selected.size() >= candidateBudget) {
-                break;
-            }
-            if (rankedCandidate.evidenceScore <= 0.0) {
+            if (rankedCandidate.matchedIonCount < TIMS_CALIBRATION_EVIDENCE_MIN_MATCHED_IONS
+                || rankedCandidate.evidenceScore <= 0.0) {
                 break;
             }
             selected.push_back(rankedCandidate.targetDecoyPair);
