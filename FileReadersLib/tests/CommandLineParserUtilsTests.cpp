@@ -5,6 +5,9 @@
 #include "ErrorUtils.h"
 #include "CommandLineParserUtils.h"
 
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QtTest/QtTest>
 
 class CommandLineParserUtilsTests : public QObject
@@ -17,6 +20,7 @@ public:
 
 private Q_SLOTS:
     void checkFileNameExtensionTest();
+    void isMassSpectrometryDataPathTest();
     void getDataFilesFromDirectoryTest();
 
 };
@@ -37,6 +41,29 @@ void CommandLineParserUtilsTests::checkFileNameExtensionTest() {
     );
     QCOMPARE(falseTest, false);
 
+}
+
+void CommandLineParserUtilsTests::isMassSpectrometryDataPathTest() {
+
+    const QString sidecarPathBySuffix = QStringLiteral("/tmp/example_run.d.idx");
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix), true);
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString metadataSidecarRoot = QDir(temporaryDir.path()).filePath("custom_sidecar_root");
+    QVERIFY(QDir().mkpath(metadataSidecarRoot));
+
+    QFile metadataFile(QDir(metadataSidecarRoot).filePath("metadata.json"));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    metadataFile.write("{}");
+    metadataFile.close();
+
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(metadataSidecarRoot), true);
+
+    const QString plainDirectoryPath = QDir(temporaryDir.path()).filePath("plain_directory");
+    QVERIFY(QDir().mkpath(plainDirectoryPath));
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(plainDirectoryPath), false);
 }
 
 void CommandLineParserUtilsTests::getDataFilesFromDirectoryTest() {

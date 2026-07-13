@@ -17,6 +17,24 @@
 #include <QFile>
 #include <QFileInfo>
 
+namespace {
+
+    bool isTimsbukIndexInputPath(const QString &filePath) {
+        const QFileInfo fileInfo(filePath);
+        if (!fileInfo.isDir()) {
+            return false;
+        }
+
+        return StringUtils::stringsMatch(
+                   fileInfo.suffix(),
+                   S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION,
+                   false
+                   )
+            || StringUtils::stringsMatch(fileInfo.suffix(), QStringLiteral("idx"), false)
+            || MsReaderTimsbukIndex::isDirectIndexRootPath(filePath);
+    }
+
+}//namespace
 
 MsReaderPointerAcc::MsReaderPointerAcc() : m_useLazyLoading(false) {}
 
@@ -69,8 +87,8 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
         e = ptr->openFile(filePath); ree;
     }
 
-    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
+    else if (isTimsbukIndexInputPath(filePath)) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ TIMS sidecar inputs";
         m_useLazyLoading = false;
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);
@@ -121,8 +139,8 @@ Err MsReaderPointerAcc::openFile(
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
     }
 
-    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
+    else if (isTimsbukIndexInputPath(filePath)) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ TIMS sidecar inputs";
         m_useLazyLoading = false;
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);

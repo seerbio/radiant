@@ -3,7 +3,11 @@
 //
 
 #include "MsReaderPointerAcc.h"
+#include "MsReaderTimsbukIndex.h"
 
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QString>
 #include <QtTest/QtTest>
 
@@ -24,6 +28,8 @@ private Q_SLOTS:
     static void openFileTest2();
     static void openFileTest3();
     static void openFileTest4();
+    static void openFileTest5();
+    static void openFileTest6();
 
 
 
@@ -114,6 +120,53 @@ void MsReaderPointerAccTests::openFileTest4() {
     // QCOMPARE(msScanInfos.first().scanNumber, 1);
     // QCOMPARE(msScanInfos.first().msLevel, -1);
 
+}
+
+void MsReaderPointerAccTests::openFileTest5() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
+    QVERIFY(QDir().mkpath(sidecarRootPath));
+
+    QFile metadataFile(QDir(sidecarRootPath).filePath("metadata.json"));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    metadataFile.write("{}");
+    metadataFile.close();
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(sidecarRootPath);
+    QCOMPARE(e, eFunctionNotImplemented);
+    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
+    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+}
+
+void MsReaderPointerAccTests::openFileTest6() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString brukerPath = QDir(temporaryDir.path()).filePath("run.d");
+    QVERIFY(QDir().mkpath(brukerPath));
+
+    const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
+    QVERIFY(QDir().mkpath(sidecarRootPath));
+
+    QFile metadataFile(QDir(sidecarRootPath).filePath("metadata.json"));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    metadataFile.write("{}");
+    metadataFile.close();
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(brukerPath);
+    QCOMPARE(e, eFunctionNotImplemented);
+    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
+    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
 }
 
 

@@ -4,6 +4,7 @@
 
 #include "CommandLineParserUtils.h"
 
+#include "MsReaderTimsbukIndex.h"
 #include "StringUtils.h"
 
 #include <QFileInfo>
@@ -23,6 +24,20 @@ bool CommandLineParserUtils::checkFileNameExtensions(
             expectedFileExtensions.end(),
             [fileSuffix](const QString &s){return s.toLower() == fileSuffix;}
             );
+}
+
+bool CommandLineParserUtils::isMassSpectrometryDataPath(const QString &filePath) {
+
+    return checkFileNameExtensions(
+               filePath,
+               {
+                   S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION,
+                   S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION,
+                   S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION,
+                   QStringLiteral("idx")
+               }
+               )
+        || MsReaderTimsbukIndex::isDirectIndexRootPath(filePath);
 }
 
 Err CommandLineParserUtils::getDataFilesFromDirectory(

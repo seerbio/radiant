@@ -18,6 +18,14 @@ public:
     MsReaderTimsbukIndex() = default;
     ~MsReaderTimsbukIndex() override = default;
 
+    [[nodiscard]] static bool isDirectIndexRootPath(const QString &filePath);
+
+    static Err resolveInputPath(
+        const QString &inputPath,
+        QString *sidecarRootPath,
+        QString *sourceBrukerDirectoryPath
+        );
+
     Err openFile(const QString &filePath) override;
 
     Err openFile(
@@ -27,6 +35,11 @@ public:
         ) override;
 
     Err closeFile() override;
+
+private:
+
+    QString m_sidecarRootPath;
+    QString m_sourceBrukerDirectoryPath;
 };
 
 #endif // MSREADERTIMSBUKINDEX_H

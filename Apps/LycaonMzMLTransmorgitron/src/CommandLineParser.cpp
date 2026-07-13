@@ -5,6 +5,7 @@
 
 #include "CommandLineParserUtils.h"
 #include "GlobalSettings.h"
+#include "MsReaderTimsbukIndex.h"
 #include "StringUtils.h"
 
 #include <QFileInfo>
@@ -16,7 +17,7 @@ namespace {
 
 CommandLineParser::CommandLineParser() {
     addHelpOption();
-    addPositionalArgument(ARG_MSDATA_PATH, QObject::tr("*.mzML file or Bruker *.d directory"));
+    addPositionalArgument(ARG_MSDATA_PATH, QObject::tr("*.mzML file, Bruker *.d directory, or TIMS sidecar *.idx directory"));
 }
 
 bool CommandLineParser::validateArguments(const QStringList &args) {
@@ -35,12 +36,13 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             m_cliParams.msDataFilePath,
             {
                 S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION,
-                S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION
+                S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION,
+                QStringLiteral("idx")
             }
-    );
+    ) || MsReaderTimsbukIndex::isDirectIndexRootPath(m_cliParams.msDataFilePath);
 
     if (!msDataPathIsValid) {
-        qCritical() << QStringLiteral("First command line argument must be *.mzML or a Bruker *.d directory");
+        qCritical() << QStringLiteral("First command line argument must be *.mzML, Bruker *.d, or a TIMS sidecar *.idx path");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
