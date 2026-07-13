@@ -35,6 +35,7 @@ SET(SOURCE_FILES
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderBrukerTims.cpp
+        src/MsReaderTimsbukIndex.cpp
         src/MsReaderMzML.cpp
         src/MsReaderMzMLLazyLoad.cpp
         src/MsReaderMzMLMapped.cpp
@@ -62,6 +63,7 @@ SET(HEADER_FILES
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderBrukerTims.h
+        src/MsReaderTimsbukIndex.h
         src/MsReaderMzML.h
         src/MsReaderMzMLLazyLoad.h
         src/MsReaderMzMLMapped.h

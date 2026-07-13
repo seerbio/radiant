@@ -5,8 +5,8 @@
 #include "MsReaderPointerAcc.h"
 
 #include "GlobalSettings.h"
-#include "MsReaderBrukerTims.h"
 #include "MsReaderParquet.h"
+#include "MsReaderTimsbukIndex.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
@@ -73,7 +73,7 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
         m_useLazyLoading = false;
 
-        QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
+        QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);
         ptr = msReader;
         e = ptr->openFile(filePath); ree;
     }
@@ -125,7 +125,7 @@ Err MsReaderPointerAcc::openFile(
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
         m_useLazyLoading = false;
 
-        QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
+        QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
     }
