@@ -8,6 +8,7 @@
 #include "FileReadersLib_Exports.h"
 
 #include "MsReaderBase.h"
+#include "TimsbukIndexTypes.h"
 
 using namespace Error;
 
@@ -26,6 +27,11 @@ public:
         QString *sourceBrukerDirectoryPath
         );
 
+    static Err loadMetadata(
+        const QString &sidecarRootPath,
+        TimsbukIndexMetadata *metadata
+        );
+
     Err openFile(const QString &filePath) override;
 
     Err openFile(
@@ -40,6 +46,8 @@ private:
 
     QString m_sidecarRootPath;
     QString m_sourceBrukerDirectoryPath;
+    QString m_metadataFilePath;
+    TimsbukIndexMetadata m_metadata;
 };
 
 #endif // MSREADERTIMSBUKINDEX_H

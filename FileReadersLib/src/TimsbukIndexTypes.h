@@ -9,6 +9,7 @@
 
 #include "GlobalSettings.h"
 
+#include <QJsonArray>
 #include <QVector>
 #include <QtGlobal>
 
@@ -98,6 +99,60 @@ struct FILEREADERSLIB_EXPORTS TimsbukLogicalScan {
 
     [[nodiscard]] bool isValid() const {
         return descriptor.scanNumber > 0 && pointStore.isAligned();
+    }
+};
+
+struct FILEREADERSLIB_EXPORTS TimsbukPeakGroupMetadata {
+    QString relativePath;
+    QVector<float> cycleToRtMilliseconds;
+    int bucketSize = -1;
+
+    void clear() {
+        relativePath.clear();
+        cycleToRtMilliseconds.clear();
+        bucketSize = -1;
+    }
+
+    [[nodiscard]] bool isValid() const {
+        return !relativePath.isEmpty() && !cycleToRtMilliseconds.isEmpty() && bucketSize > 0;
+    }
+};
+
+struct FILEREADERSLIB_EXPORTS TimsbukMs2GroupMetadata {
+    TimsbukWindowGroupId groupId = -1;
+    // Preserve the upstream isolation payload until the centroid DIA window model is finalized.
+    QJsonArray quadrupoleIsolation;
+    TimsbukPeakGroupMetadata groupInfo;
+
+    void clear() {
+        groupId = -1;
+        quadrupoleIsolation = QJsonArray();
+        groupInfo.clear();
+    }
+
+    [[nodiscard]] bool isValid() const {
+        return groupId >= 0 && !quadrupoleIsolation.isEmpty() && groupInfo.isValid();
+    }
+};
+
+struct FILEREADERSLIB_EXPORTS TimsbukIndexMetadata {
+    QString version;
+    QString createdAt;
+    TimsbukPeakGroupMetadata ms1Peaks;
+    QVector<TimsbukMs2GroupMetadata> ms2WindowGroups;
+
+    void clear() {
+        version.clear();
+        createdAt.clear();
+        ms1Peaks.clear();
+        ms2WindowGroups.clear();
+    }
+
+    [[nodiscard]] bool isValid() const {
+        return !version.isEmpty()
+            && !createdAt.isEmpty()
+            && ms1Peaks.isValid()
+            && !ms2WindowGroups.isEmpty();
     }
 };
 

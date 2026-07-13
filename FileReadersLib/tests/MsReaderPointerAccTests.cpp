@@ -11,6 +11,74 @@
 #include <QString>
 #include <QtTest/QtTest>
 
+namespace {
+
+bool writeFile(const QString &filePath, const QByteArray &content = {}) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+
+    if (!content.isEmpty() && file.write(content) != content.size()) {
+        return false;
+    }
+
+    file.close();
+    return true;
+}
+
+bool createMinimalTimsbukSidecar(const QString &sidecarRootPath) {
+    if (!QDir().mkpath(sidecarRootPath)) {
+        return false;
+    }
+
+    const QString ms2DirectoryPath = QDir(sidecarRootPath).filePath("ms2");
+    if (!QDir().mkpath(ms2DirectoryPath)) {
+        return false;
+    }
+
+    if (!writeFile(QDir(sidecarRootPath).filePath("ms1.parquet"))) {
+        return false;
+    }
+
+    if (!writeFile(QDir(ms2DirectoryPath).filePath("group_0.parquet"))) {
+        return false;
+    }
+
+    static const QByteArray metadataJson = R"json(
+{
+  "version": "2.0",
+  "created_at": "2026-07-13T22:44:50.135679776+00:00",
+  "ms1_peaks": {
+    "relative_path": "ms1.parquet",
+    "cycle_to_rt_ms": [0, 811, 1770],
+    "bucket_size": 4096
+  },
+  "ms2_window_groups": [
+    {
+      "id": 0,
+      "quadrupole_isolation": [
+        {
+          "Aabb": {
+            "mz": [400.0, 425.0],
+            "im": [0.6408845279309161, 0.830315627111824]
+          }
+        }
+      ],
+      "group_info": {
+        "relative_path": "ms2/group_0.parquet",
+        "cycle_to_rt_ms": [0, 918, 1877],
+        "bucket_size": 4096
+      }
+    }
+  ]
+}
+)json";
+
+    return writeFile(QDir(sidecarRootPath).filePath("metadata.json"), metadataJson);
+}
+
+} // namespace
 
 class MsReaderPointerAccTests : public QObject
 {
@@ -32,8 +100,7 @@ private Q_SLOTS:
     static void openFileTest6();
     static void openFileTest7();
     static void openFileTest8();
-
-
+    static void openFileTest9();
 
 };
 
@@ -132,18 +199,14 @@ void MsReaderPointerAccTests::openFileTest5() {
     QVERIFY(temporaryDir.isValid());
 
     const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
-    QVERIFY(QDir().mkpath(sidecarRootPath));
-
-    QFile metadataFile(QDir(sidecarRootPath).filePath("metadata.json"));
-    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    metadataFile.write("{}");
-    metadataFile.close();
+    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(sidecarRootPath);
-    QCOMPARE(e, eFunctionNotImplemented);
+    QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
 }
 
 void MsReaderPointerAccTests::openFileTest6() {
@@ -157,18 +220,14 @@ void MsReaderPointerAccTests::openFileTest6() {
     QVERIFY(QDir().mkpath(brukerPath));
 
     const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
-    QVERIFY(QDir().mkpath(sidecarRootPath));
-
-    QFile metadataFile(QDir(sidecarRootPath).filePath("metadata.json"));
-    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    metadataFile.write("{}");
-    metadataFile.close();
+    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(brukerPath);
-    QCOMPARE(e, eFunctionNotImplemented);
+    QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
 }
 
 void MsReaderPointerAccTests::openFileTest7() {
@@ -179,18 +238,14 @@ void MsReaderPointerAccTests::openFileTest7() {
     QVERIFY(temporaryDir.isValid());
 
     const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
-    QVERIFY(QDir().mkpath(sidecarRootPath));
-
-    QFile metadataFile(QDir(sidecarRootPath).filePath("metadata.json"));
-    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    metadataFile.write("{}");
-    metadataFile.close();
+    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(sidecarRootPath + QStringLiteral("/"));
-    QCOMPARE(e, eFunctionNotImplemented);
+    QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
 }
 
 void MsReaderPointerAccTests::openFileTest8() {
@@ -204,18 +259,33 @@ void MsReaderPointerAccTests::openFileTest8() {
     QVERIFY(QDir().mkpath(brukerPath));
 
     const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
-    QVERIFY(QDir().mkpath(sidecarRootPath));
-
-    QFile metadataFile(QDir(sidecarRootPath).filePath("metadata.json"));
-    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    metadataFile.write("{}");
-    metadataFile.close();
+    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(brukerPath + QStringLiteral("/"));
-    QCOMPARE(e, eFunctionNotImplemented);
+    QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
+}
+
+void MsReaderPointerAccTests::openFileTest9() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
+    QVERIFY(QDir().mkpath(sidecarRootPath));
+    QVERIFY(writeFile(QDir(sidecarRootPath).filePath("ms1.parquet")));
+    QVERIFY(QDir().mkpath(QDir(sidecarRootPath).filePath("ms2")));
+    QVERIFY(writeFile(QDir(sidecarRootPath).filePath("ms2/group_0.parquet")));
+    QVERIFY(writeFile(QDir(sidecarRootPath).filePath("metadata.json"), QByteArrayLiteral("{}")));
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(sidecarRootPath);
+    QCOMPARE(e, eFileError);
 }
 
 
