@@ -61,6 +61,7 @@ SET(HEADER_FILES
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderTimsbukIndex.h
+        src/TimsbukIndexTypes.h
         src/MsReaderMzML.h
         src/MsReaderMzMLLazyLoad.h
         src/MsReaderMzMLMapped.h
