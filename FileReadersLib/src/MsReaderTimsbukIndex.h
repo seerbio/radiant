@@ -40,6 +40,11 @@ public:
         const QPair<double, double> &filterRange
         ) override;
 
+    Err getMzTargetScanPoints(
+        const MzTargetKey &targetKey,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+        ) override;
+
     Err closeFile() override;
 
 private:

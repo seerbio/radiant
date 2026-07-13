@@ -4,6 +4,7 @@
 
 #include "MsReaderPointerAcc.h"
 #include "MsReaderTimsbukIndex.h"
+#include "ParquetReader.h"
 
 #include <QDir>
 #include <QFile>
@@ -12,6 +13,37 @@
 #include <QtTest/QtTest>
 
 namespace {
+
+struct TestTimsbukPeakRow : public ParquetReaderInputBase {
+    float mz = -1.0f;
+    float intensity = -1.0f;
+    float mobilityOok0 = -1.0f;
+    int cycleIndex = -1;
+
+    QMap<QString, QVariant> map() override {
+        return {
+            {QStringLiteral("mz"), QVariant(mz)},
+            {QStringLiteral("intensity"), QVariant(intensity)},
+            {QStringLiteral("mobility_ook0"), QVariant(mobilityOok0)},
+            {QStringLiteral("cycle_index"), QVariant(cycleIndex)}
+        };
+    }
+};
+
+TestTimsbukPeakRow makeTestTimsbukPeakRow(
+    float mz,
+    float intensity,
+    float mobilityOok0,
+    int cycleIndex
+    ) {
+
+    TestTimsbukPeakRow row;
+    row.mz = mz;
+    row.intensity = intensity;
+    row.mobilityOok0 = mobilityOok0;
+    row.cycleIndex = cycleIndex;
+    return row;
+}
 
 bool writeFile(const QString &filePath, const QByteArray &content = {}) {
     QFile file(filePath);
@@ -41,7 +73,13 @@ bool createMinimalTimsbukSidecar(const QString &sidecarRootPath) {
         return false;
     }
 
-    if (!writeFile(QDir(ms2DirectoryPath).filePath("group_0.parquet"))) {
+    const QVector<TestTimsbukPeakRow> ms2Rows = {
+        makeTestTimsbukPeakRow(150.0f, 10.0f, 0.90f, 1),
+        makeTestTimsbukPeakRow(151.0f, 11.0f, 0.70f, 1),
+        makeTestTimsbukPeakRow(152.0f, 12.0f, 0.90f, 2),
+        makeTestTimsbukPeakRow(153.0f, 13.0f, 0.70f, 2)
+    };
+    if (ParquetReader::write(ms2Rows, QDir(ms2DirectoryPath).filePath("group_0.parquet")) != eNoError) {
         return false;
     }
 
@@ -58,6 +96,12 @@ bool createMinimalTimsbukSidecar(const QString &sidecarRootPath) {
     {
       "id": 0,
       "quadrupole_isolation": [
+        {
+          "Aabb": {
+            "mz": [600.0, 625.0],
+            "im": [0.830315627111824, 1.0103231398002852]
+          }
+        },
         {
           "Aabb": {
             "mz": [400.0, 425.0],
@@ -207,6 +251,30 @@ void MsReaderPointerAccTests::openFileTest5() {
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
+
+    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
+    QCOMPARE(msScanInfos.size(), 4);
+
+    const QMap<ScanNumber, ScanPoints> scanPoints = msReaderPointerAcc.ptr->getScanPoints();
+    QCOMPARE(scanPoints.size(), 4);
+
+    const MzTargetKey lowTargetKey = MsScanInfo::targetKey(400.0f, 425.0f);
+    const MzTargetKey highTargetKey = MsScanInfo::targetKey(600.0f, 625.0f);
+
+    QMap<ScanNumber, ScanPoints> lowTargetScanPoints;
+    e = msReaderPointerAcc.ptr->getMzTargetScanPoints(lowTargetKey, &lowTargetScanPoints);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(lowTargetScanPoints.size(), 2);
+    QCOMPARE(lowTargetScanPoints.first().size(), 1);
+    QCOMPARE(lowTargetScanPoints.first().first().x(), 151.0f);
+    QCOMPARE(lowTargetScanPoints.last().first().x(), 153.0f);
+
+    QMap<ScanNumber, ScanPoints> highTargetScanPoints;
+    e = msReaderPointerAcc.ptr->getMzTargetScanPoints(highTargetKey, &highTargetScanPoints);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(highTargetScanPoints.size(), 2);
+    QCOMPARE(highTargetScanPoints.first().first().x(), 150.0f);
+    QCOMPARE(highTargetScanPoints.last().first().x(), 152.0f);
 }
 
 void MsReaderPointerAccTests::openFileTest6() {
@@ -228,6 +296,7 @@ void MsReaderPointerAccTests::openFileTest6() {
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
 }
 
 void MsReaderPointerAccTests::openFileTest7() {
@@ -246,6 +315,7 @@ void MsReaderPointerAccTests::openFileTest7() {
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
 }
 
 void MsReaderPointerAccTests::openFileTest8() {
@@ -267,6 +337,7 @@ void MsReaderPointerAccTests::openFileTest8() {
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
 }
 
 void MsReaderPointerAccTests::openFileTest9() {
