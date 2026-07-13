@@ -34,7 +34,6 @@ SET(SOURCE_FILES
         src/FragLibTsvReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
-        src/MsReaderBrukerTims.cpp
         src/MsReaderTimsbukIndex.cpp
         src/MsReaderMzML.cpp
         src/MsReaderMzMLLazyLoad.cpp
@@ -43,7 +42,6 @@ SET(SOURCE_FILES
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
         src/SpecLibReader.cpp
-        ${TIMS_CPPSQL_SOURCE}
         )
 
 SET(HEADER_FILES
@@ -62,7 +60,6 @@ SET(HEADER_FILES
         src/FragLibTsvReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
-        src/MsReaderBrukerTims.h
         src/MsReaderTimsbukIndex.h
         src/MsReaderMzML.h
         src/MsReaderMzMLLazyLoad.h
@@ -72,7 +69,6 @@ SET(HEADER_FILES
         src/PythiaParameterReader.h
         src/SpecLibReader.h
         src/toml.hpp
-        ${TIMS_CPPSQL_HEADER}
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -90,8 +86,6 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
         ${NANOFLANN_DIRECTORY}
-        ${TIMS_INCLUDE_DIRECTORY}
-        ${TIMS_CPPSQL_DIRECTORY}
         ${LIBXML2_INCLUDE_DIR}
 )
 
@@ -111,15 +105,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         EigenLib
         UtilsLib
         Parquet::parquet_static
-        ${TIMS_LIB}
         ${LIBXML2_LIBRARIES}
-        sqlite3
-        )
-
-GET_FILENAME_COMPONENT(TIMS_LIB_DIRECTORY "${TIMS_LIB}" DIRECTORY)
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES
-        BUILD_RPATH "${TIMS_LIB_DIRECTORY}"
-        INSTALL_RPATH "$ORIGIN"
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
@@ -128,6 +114,7 @@ SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES
         ${CMAKE_BINARY_DIR}/bin
         CXX_STANDARD 17
         CXX_EXTENSIONS OFF
+        INSTALL_RPATH "$ORIGIN"
         )
 
 SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY FOLDER "Libs")
