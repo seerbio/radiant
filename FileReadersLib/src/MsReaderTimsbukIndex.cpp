@@ -100,10 +100,11 @@ bool MsReaderTimsbukIndex::isDirectIndexRootPath(const QString &filePath) {
         return false;
     }
 
-    const QFileInfo fileInfo(filePath);
+    const QString normalizedPath = cleanPath(filePath);
+    const QFileInfo fileInfo(normalizedPath);
     return fileInfo.exists()
         && fileInfo.isDir()
-        && directoryContainsMetadataFile(cleanPath(filePath));
+        && directoryContainsMetadataFile(normalizedPath);
 }
 
 Err MsReaderTimsbukIndex::resolveInputPath(

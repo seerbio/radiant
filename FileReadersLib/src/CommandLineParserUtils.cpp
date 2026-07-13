@@ -7,6 +7,7 @@
 #include "MsReaderTimsbukIndex.h"
 #include "StringUtils.h"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QDirIterator>
 
@@ -16,7 +17,8 @@ bool CommandLineParserUtils::checkFileNameExtensions(
         const QStringList &expectedFileExtensions
 ) {
 
-    QFileInfo fi(filePath);
+    const QString normalizedPath = QDir::cleanPath(filePath);
+    QFileInfo fi(normalizedPath);
     const QString fileSuffix = fi.suffix().toLower();
 
     return std::any_of(

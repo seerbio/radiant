@@ -14,13 +14,15 @@
 #include <QByteArray>
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 
 namespace {
 
     bool isTimsbukIndexInputPath(const QString &filePath) {
-        const QFileInfo fileInfo(filePath);
+        const QString normalizedPath = QDir::cleanPath(filePath);
+        const QFileInfo fileInfo(normalizedPath);
         if (!fileInfo.isDir()) {
             return false;
         }
@@ -31,7 +33,7 @@ namespace {
                    false
                    )
             || StringUtils::stringsMatch(fileInfo.suffix(), QStringLiteral("idx"), false)
-            || MsReaderTimsbukIndex::isDirectIndexRootPath(filePath);
+            || MsReaderTimsbukIndex::isDirectIndexRootPath(normalizedPath);
     }
 
 }//namespace

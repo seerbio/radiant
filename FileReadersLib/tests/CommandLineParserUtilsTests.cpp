@@ -41,12 +41,23 @@ void CommandLineParserUtilsTests::checkFileNameExtensionTest() {
     );
     QCOMPARE(falseTest, false);
 
+    const QString directoryPathTrailingSlash = QStringLiteral("/tmp/example_run.d/");
+    const bool directorySuffixTrailingSlashTest = CommandLineParserUtils::checkFileNameExtensions(
+            directoryPathTrailingSlash,
+            {"d"}
+            );
+    QCOMPARE(directorySuffixTrailingSlashTest, true);
 }
 
 void CommandLineParserUtilsTests::isMassSpectrometryDataPathTest() {
 
     const QString sidecarPathBySuffix = QStringLiteral("/tmp/example_run.d.idx");
     QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix), true);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix + QStringLiteral("/")), true);
+
+    const QString brukerPathBySuffix = QStringLiteral("/tmp/example_run.d");
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(brukerPathBySuffix), true);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(brukerPathBySuffix + QStringLiteral("/")), true);
 
     QTemporaryDir temporaryDir;
     QVERIFY(temporaryDir.isValid());
