@@ -249,7 +249,10 @@ void MsReaderPointerAccTests::openFileTest5() {
     e = msReaderPointerAcc.openFile(sidecarRootPath);
     QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(
+        msReaderPointerAcc.ptr->filePath(),
+        QDir(temporaryDir.path()).filePath("run.d")
+        );
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
 
     const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
@@ -294,7 +297,7 @@ void MsReaderPointerAccTests::openFileTest6() {
     e = msReaderPointerAcc.openFile(brukerPath);
     QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
 }
@@ -313,7 +316,10 @@ void MsReaderPointerAccTests::openFileTest7() {
     e = msReaderPointerAcc.openFile(sidecarRootPath + QStringLiteral("/"));
     QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(
+        msReaderPointerAcc.ptr->filePath(),
+        QDir(temporaryDir.path()).filePath("run.d")
+        );
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
 }
@@ -335,7 +341,7 @@ void MsReaderPointerAccTests::openFileTest8() {
     e = msReaderPointerAcc.openFile(brukerPath + QStringLiteral("/"));
     QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(sidecarRootPath));
+    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
 }

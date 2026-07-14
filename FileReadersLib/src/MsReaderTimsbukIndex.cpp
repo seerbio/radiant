@@ -160,13 +160,7 @@ namespace {
             return {};
         }
 
-        const QString brukerDirectoryPath = sidecarRootPath.left(sidecarRootPath.size() - 4);
-        const QFileInfo brukerDirectoryInfo(brukerDirectoryPath);
-        if (!hasBrukerDirectorySuffix(brukerDirectoryInfo)) {
-            return {};
-        }
-
-        return cleanPath(brukerDirectoryPath);
+        return cleanPath(sidecarRootPath.left(sidecarRootPath.size() - 4));
     }
 
     Err validateSidecarRootPath(
@@ -1323,7 +1317,9 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
     m_sourceBrukerDirectoryPath = sourceBrukerDirectoryPath;
     m_metadata = metadata;
     m_metadataFilePath = metadataFilePathForRoot(m_sidecarRootPath);
-    m_filePath = m_sidecarRootPath;
+    m_filePath = m_sourceBrukerDirectoryPath.isEmpty()
+        ? m_sidecarRootPath
+        : m_sourceBrukerDirectoryPath;
     m_isTIMS = false;
 
     e = populateMs2ScansFromSidecar(
