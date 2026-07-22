@@ -69,7 +69,13 @@ bool createMinimalTimsbukSidecar(const QString &sidecarRootPath) {
         return false;
     }
 
-    if (!writeFile(QDir(sidecarRootPath).filePath("ms1.parquet"))) {
+    const QVector<TestTimsbukPeakRow> ms1Rows = {
+        makeTestTimsbukPeakRow(100.0f, 5.0f, 0.50f, 1),
+        makeTestTimsbukPeakRow(101.0f, 6.0f, 0.55f, 1),
+        makeTestTimsbukPeakRow(102.0f, 7.0f, 0.50f, 2),
+        makeTestTimsbukPeakRow(103.0f, 8.0f, 0.55f, 2)
+    };
+    if (ParquetReader::write(ms1Rows, QDir(sidecarRootPath).filePath("ms1.parquet")) != eNoError) {
         return false;
     }
 
@@ -256,10 +262,24 @@ void MsReaderPointerAccTests::openFileTest5() {
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
 
     const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
-    QCOMPARE(msScanInfos.size(), 4);
+    QCOMPARE(msScanInfos.size(), 6);
+    QCOMPARE(msScanInfos.value(1).msLevel, 1);
+    QCOMPARE(msScanInfos.value(1).nativeFrameNumber, 1);
+    QCOMPARE(msScanInfos.value(2).msLevel, 2);
+    QCOMPARE(msScanInfos.value(3).msLevel, 2);
+    QCOMPARE(msScanInfos.value(4).msLevel, 1);
+    QCOMPARE(msScanInfos.value(4).nativeFrameNumber, 2);
 
     const QMap<ScanNumber, ScanPoints> scanPoints = msReaderPointerAcc.ptr->getScanPoints();
-    QCOMPARE(scanPoints.size(), 4);
+    QCOMPARE(scanPoints.size(), 6);
+
+    QMap<ScanNumber, ScanPoints> ms1ScanPoints;
+    e = msReaderPointerAcc.ptr->getScanPoints(1, &ms1ScanPoints);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(ms1ScanPoints.size(), 2);
+    QCOMPARE(ms1ScanPoints.first().size(), 2);
+    QCOMPARE(ms1ScanPoints.first().first().x(), 100.0f);
+    QCOMPARE(ms1ScanPoints.last().last().x(), 103.0f);
 
     const MzTargetKey lowTargetKey = MsScanInfo::targetKey(400.0f, 425.0f);
     const MzTargetKey highTargetKey = MsScanInfo::targetKey(600.0f, 625.0f);
@@ -299,7 +319,7 @@ void MsReaderPointerAccTests::openFileTest6() {
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
-    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
 }
 
 void MsReaderPointerAccTests::openFileTest7() {
@@ -321,7 +341,7 @@ void MsReaderPointerAccTests::openFileTest7() {
         QDir(temporaryDir.path()).filePath("run.d")
         );
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
-    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
 }
 
 void MsReaderPointerAccTests::openFileTest8() {
@@ -343,7 +363,7 @@ void MsReaderPointerAccTests::openFileTest8() {
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
-    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 4);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
 }
 
 void MsReaderPointerAccTests::openFileTest9() {

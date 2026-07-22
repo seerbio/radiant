@@ -119,9 +119,27 @@ namespace {
         }
     };
 
-    struct TimsbukPendingLogicalMs2Scan {
-        TimsbukLogicalScan logicalScan;
-        TimsbukIsolationWindowSegment isolationWindow;
+    struct TimsbukPendingMs1Group {
+        TimsbukPeakGroupMetadata metadata;
+        QVector<TimsbukScanPointStore> scanStores;
+
+        [[nodiscard]] int cycleCount() const {
+            return metadata.cycleToRtMilliseconds.size();
+        }
+
+        [[nodiscard]] TimsbukScanPointStore *scanStore(TimsbukCycleIndex cycleIndex) {
+            return &scanStores[static_cast<int>(cycleIndex)];
+        }
+
+        [[nodiscard]] const TimsbukScanPointStore &scanStore(TimsbukCycleIndex cycleIndex) const {
+            return scanStores.at(static_cast<int>(cycleIndex));
+        }
+    };
+
+    struct TimsbukPendingOrdinaryScan {
+        MsScanInfo msScanInfo;
+        ScanPoints scanPoints;
+        float scanTimeMilliseconds = -1.0f;
     };
 
     QString cleanPath(const QString &filePath) {
@@ -883,6 +901,120 @@ namespace {
         return bestIndex;
     }
 
+    Err materializeMs1CycleScanStores(
+        const QString &sidecarRootPath,
+        TimsbukPendingMs1Group *pendingGroup
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isAboveThreshold(pendingGroup->cycleCount(), 1, ErrorUtilsParam::ExcludeThreshold, eFileError); ree;
+
+        pendingGroup->scanStores.clear();
+        pendingGroup->scanStores.resize(pendingGroup->cycleCount());
+
+        const QString parquetFilePath = cleanPath(
+            QDir(sidecarRootPath).filePath(pendingGroup->metadata.relativePath)
+            );
+
+        parquet::arrow::FileReaderBuilder readerBuilder;
+        arrow::Status status = initArrowReaderBuilder(parquetFilePath, &readerBuilder);
+        if (!status.ok()) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "TIMSBUK parquet reader initialization failed"
+                     << parquetFilePath
+                     << QString::fromStdString(status.ToString());
+            rrr(eFileError);
+        }
+
+        auto fileReaderResult = readerBuilder.Build();
+        if (!fileReaderResult.ok()) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "TIMSBUK parquet reader build failed"
+                     << parquetFilePath
+                     << QString::fromStdString(fileReaderResult.status().ToString());
+            rrr(eFileError);
+        }
+
+        std::unique_ptr<parquet::arrow::FileReader> fileReader = std::move(fileReaderResult).ValueOrDie();
+        std::shared_ptr<arrow::RecordBatchReader> recordBatchReader;
+        status = fileReader->GetRecordBatchReader(&recordBatchReader);
+        if (!status.ok()) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "TIMSBUK parquet record-batch reader failed"
+                     << parquetFilePath
+                     << QString::fromStdString(status.ToString());
+            rrr(eFileError);
+        }
+
+        int mzFieldIndex = -1;
+        int intensityFieldIndex = -1;
+        int ionMobilityFieldIndex = -1;
+        int cycleIndexFieldIndex = -1;
+        qint64 totalPeakCount = 0;
+
+        while (true) {
+            std::shared_ptr<arrow::RecordBatch> recordBatch;
+            status = recordBatchReader->ReadNext(&recordBatch);
+            if (!status.ok()) {
+                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                         << "TIMSBUK parquet batch read failed"
+                         << parquetFilePath
+                         << QString::fromStdString(status.ToString());
+                rrr(eFileError);
+            }
+
+            if (!recordBatch) {
+                break;
+            }
+
+            if (mzFieldIndex < 0) {
+                const std::shared_ptr<arrow::Schema> schema = recordBatch->schema();
+                e = fieldIndexFromSchema(schema, JSON_FIELD_MZ.toStdString(), &mzFieldIndex); ree;
+                e = fieldIndexFromSchema(schema, QStringLiteral("intensity").toStdString(), &intensityFieldIndex); ree;
+                e = fieldIndexFromSchema(schema, QStringLiteral("mobility_ook0").toStdString(), &ionMobilityFieldIndex); ree;
+                e = fieldIndexFromSchema(schema, QStringLiteral("cycle_index").toStdString(), &cycleIndexFieldIndex); ree;
+            }
+
+            const std::shared_ptr<arrow::Array> mzArray = recordBatch->column(mzFieldIndex);
+            const std::shared_ptr<arrow::Array> intensityArray = recordBatch->column(intensityFieldIndex);
+            const std::shared_ptr<arrow::Array> ionMobilityArray = recordBatch->column(ionMobilityFieldIndex);
+            const std::shared_ptr<arrow::Array> cycleIndexArray = recordBatch->column(cycleIndexFieldIndex);
+
+            for (int64_t rowIndex = 0; rowIndex < recordBatch->num_rows(); ++rowIndex) {
+                float mz = -1.0f;
+                float intensity = -1.0f;
+                float ionMobility = -1.0f;
+                TimsbukCycleIndex cycleIndex = 0;
+
+                e = readFloatValue(mzArray, rowIndex, &mz); ree;
+                e = readFloatValue(intensityArray, rowIndex, &intensity); ree;
+                e = readIonMobilityValue(ionMobilityArray, rowIndex, &ionMobility); ree;
+                e = readCycleIndexValue(cycleIndexArray, rowIndex, &cycleIndex); ree;
+                Q_UNUSED(ionMobility)
+
+                if (cycleIndex == 0 || cycleIndex >= static_cast<TimsbukCycleIndex>(pendingGroup->cycleCount())) {
+                    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                             << "TIMSBUK MS1 cycle_index outside metadata range"
+                             << "cycle_index" << cycleIndex
+                             << "cycle_count" << pendingGroup->cycleCount();
+                    rrr(eFileError);
+                }
+
+                pendingGroup->scanStore(cycleIndex)->scanPoints.push_back({mz, intensity});
+                ++totalPeakCount;
+            }
+        }
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "TIMSBUK materialized MS1 peak rows"
+                 << "cycle_count" << (pendingGroup->cycleCount() - 1)
+                 << "point_count" << totalPeakCount
+                 << "relative_path" << pendingGroup->metadata.relativePath;
+
+        ERR_RETURN
+    }
+
     Err materializeMs2GroupScanStores(
         const QString &sidecarRootPath,
         TimsbukPendingMs2Group *pendingGroup
@@ -1020,9 +1152,41 @@ namespace {
         ERR_RETURN
     }
 
-    Err appendPendingLogicalMs2Scans(
+    Err appendPendingOrdinaryMs1Scans(
+        const TimsbukPendingMs1Group &pendingGroup,
+        QVector<TimsbukPendingOrdinaryScan> *pendingScans
+        ) {
+
+        ERR_INIT
+
+        for (TimsbukCycleIndex cycleIndex = 1;
+             cycleIndex < static_cast<TimsbukCycleIndex>(pendingGroup.cycleCount());
+             ++cycleIndex) {
+
+            const TimsbukScanPointStore &pointStore = pendingGroup.scanStore(cycleIndex);
+            if (pointStore.isEmpty()) {
+                continue;
+            }
+
+            TimsbukPendingOrdinaryScan pendingScan;
+            pendingScan.msScanInfo.msLevel = 1;
+            pendingScan.msScanInfo.nativeFrameNumber = static_cast<int>(cycleIndex);
+            pendingScan.scanTimeMilliseconds = pendingGroup.metadata.cycleToRtMilliseconds.at(static_cast<int>(cycleIndex));
+            pendingScan.scanPoints = pointStore.scanPoints;
+            MsReaderBase::sortScanPoints(
+                ScanPointsSort::AscMz,
+                &pendingScan.scanPoints
+                );
+
+            pendingScans->push_back(pendingScan);
+        }
+
+        ERR_RETURN
+    }
+
+    Err appendPendingOrdinaryMs2Scans(
         const TimsbukPendingMs2Group &pendingGroup,
-        QVector<TimsbukPendingLogicalMs2Scan> *pendingScans
+        QVector<TimsbukPendingOrdinaryScan> *pendingScans
         ) {
 
         ERR_INIT
@@ -1038,22 +1202,23 @@ namespace {
                     continue;
                 }
 
-                TimsbukPendingLogicalMs2Scan pendingScan;
-                pendingScan.isolationWindow = window;
-                pendingScan.logicalScan.descriptor.msLevel = 2;
-                pendingScan.logicalScan.descriptor.cycleIndex = cycleIndex;
-                pendingScan.logicalScan.descriptor.windowGroupId = window.logicalWindowId();
-                pendingScan.logicalScan.descriptor.scanTimeMilliseconds
+                TimsbukPendingOrdinaryScan pendingScan;
+                pendingScan.msScanInfo.msLevel = 2;
+                pendingScan.msScanInfo.collisionEnergy = window.collisionEnergy;
+                pendingScan.msScanInfo.precursorTargetMz = window.precursorTargetMz();
+                pendingScan.msScanInfo.isoWindowLower = window.isolationWindowLower();
+                pendingScan.msScanInfo.isoWindowUpper = window.isolationWindowUpper();
+                pendingScan.msScanInfo.ionMobilityDriftTime = window.ionMobilityCenter();
+                pendingScan.msScanInfo.ionMobilityWindowLower = window.ionMobilityLower;
+                pendingScan.msScanInfo.ionMobilityWindowUpper = window.ionMobilityUpper;
+                pendingScan.msScanInfo.nativeFrameNumber = static_cast<int>(cycleIndex);
+                pendingScan.msScanInfo.nativeScanNumber = window.logicalWindowId();
+                pendingScan.scanTimeMilliseconds
                     = pendingGroup.metadata.groupInfo.cycleToRtMilliseconds.at(static_cast<int>(cycleIndex));
-                pendingScan.logicalScan.descriptor.collisionEnergy = window.collisionEnergy;
-                pendingScan.logicalScan.descriptor.precursorTargetMz = window.precursorTargetMz();
-                pendingScan.logicalScan.descriptor.isoWindowLower = window.isolationWindowLower();
-                pendingScan.logicalScan.descriptor.isoWindowUpper = window.isolationWindowUpper();
-                pendingScan.logicalScan.descriptor.targetKey = window.targetKey();
-                pendingScan.logicalScan.pointStore = pointStore;
+                pendingScan.scanPoints = pointStore.scanPoints;
                 MsReaderBase::sortScanPoints(
                     ScanPointsSort::AscMz,
-                    &pendingScan.logicalScan.pointStore.scanPoints
+                    &pendingScan.scanPoints
                     );
 
                 pendingScans->push_back(pendingScan);
@@ -1063,12 +1228,14 @@ namespace {
         ERR_RETURN
     }
 
-    Err populateMs2ScansFromSidecar(
+    Err populateOrdinaryScansFromSidecar(
         const QString &sidecarRootPath,
         const TimsbukIndexMetadata &metadata,
         QMap<ScanNumber, MsScanInfo> *msScanInfo,
         QMap<ScanNumber, ScanPoints> *scanPoints,
         QMap<MzTargetKey, QVector<MsScanInfo*>> *mzTargetVsScanInfosPntrs,
+        float *mzMs1Min,
+        float *mzMs1Max,
         float *mzMs2Min,
         float *mzMs2Max
         ) {
@@ -1078,11 +1245,13 @@ namespace {
         msScanInfo->clear();
         scanPoints->clear();
         mzTargetVsScanInfosPntrs->clear();
+        *mzMs1Min = std::numeric_limits<float>::max();
+        *mzMs1Max = -1.0f;
         *mzMs2Min = std::numeric_limits<float>::max();
         *mzMs2Max = -1.0f;
 
-        QVector<TimsbukPendingLogicalMs2Scan> pendingScans;
-        int totalPossibleScanCount = 0;
+        QVector<TimsbukPendingOrdinaryScan> pendingScans;
+        int totalPossibleScanCount = metadata.ms1Peaks.cycleToRtMilliseconds.size() - 1;
         for (const TimsbukMs2GroupMetadata &groupMetadata : metadata.ms2WindowGroups) {
             QVector<TimsbukIsolationWindowSegment> isolationWindows;
             e = parseIsolationWindowSegments(groupMetadata, &isolationWindows); ree;
@@ -1090,12 +1259,20 @@ namespace {
         }
         pendingScans.reserve(totalPossibleScanCount);
 
+        {
+            TimsbukPendingMs1Group pendingGroup;
+            pendingGroup.metadata = metadata.ms1Peaks;
+
+            e = materializeMs1CycleScanStores(sidecarRootPath, &pendingGroup); ree;
+            e = appendPendingOrdinaryMs1Scans(pendingGroup, &pendingScans); ree;
+        }
+
         for (const TimsbukMs2GroupMetadata &groupMetadata : metadata.ms2WindowGroups) {
             TimsbukPendingMs2Group pendingGroup;
             pendingGroup.metadata = groupMetadata;
 
             e = materializeMs2GroupScanStores(sidecarRootPath, &pendingGroup); ree;
-            e = appendPendingLogicalMs2Scans(pendingGroup, &pendingScans); ree;
+            e = appendPendingOrdinaryMs2Scans(pendingGroup, &pendingScans); ree;
         }
 
         e = ErrorUtils::isNotEmpty(pendingScans, eFileError); ree;
@@ -1103,54 +1280,59 @@ namespace {
         std::stable_sort(
             pendingScans.begin(),
             pendingScans.end(),
-            [](const TimsbukPendingLogicalMs2Scan &left, const TimsbukPendingLogicalMs2Scan &right) {
+            [](const TimsbukPendingOrdinaryScan &left, const TimsbukPendingOrdinaryScan &right) {
                 if (!MathUtils::tSame(
-                        left.logicalScan.descriptor.scanTimeMilliseconds,
-                        right.logicalScan.descriptor.scanTimeMilliseconds
+                        left.scanTimeMilliseconds,
+                        right.scanTimeMilliseconds
                         )) {
-                    return left.logicalScan.descriptor.scanTimeMilliseconds
-                         < right.logicalScan.descriptor.scanTimeMilliseconds;
+                    return left.scanTimeMilliseconds < right.scanTimeMilliseconds;
                 }
 
-                if (left.logicalScan.descriptor.windowGroupId != right.logicalScan.descriptor.windowGroupId) {
-                    return left.logicalScan.descriptor.windowGroupId
-                         < right.logicalScan.descriptor.windowGroupId;
+                if (left.msScanInfo.msLevel != right.msScanInfo.msLevel) {
+                    return left.msScanInfo.msLevel < right.msScanInfo.msLevel;
                 }
 
-                return left.logicalScan.descriptor.precursorTargetMz
-                     < right.logicalScan.descriptor.precursorTargetMz;
+                if (left.msScanInfo.nativeFrameNumber != right.msScanInfo.nativeFrameNumber) {
+                    return left.msScanInfo.nativeFrameNumber < right.msScanInfo.nativeFrameNumber;
+                }
+
+                if (left.msScanInfo.nativeScanNumber != right.msScanInfo.nativeScanNumber) {
+                    return left.msScanInfo.nativeScanNumber < right.msScanInfo.nativeScanNumber;
+                }
+
+                return left.msScanInfo.precursorTargetMz < right.msScanInfo.precursorTargetMz;
             }
             );
 
         ScanNumber scanNumber = 1;
         qint64 totalPointCount = 0;
-        for (const TimsbukPendingLogicalMs2Scan &pendingScan : pendingScans) {
-            const ScanPoints &logicalScanPoints = pendingScan.logicalScan.pointStore.scanPoints;
-            if (logicalScanPoints.isEmpty()) {
+        int ms1ScanCount = 0;
+        int ms2ScanCount = 0;
+        for (const TimsbukPendingOrdinaryScan &pendingScan : pendingScans) {
+            if (pendingScan.scanPoints.isEmpty()) {
                 continue;
             }
 
-            MsScanInfo logicalMsScanInfo;
-            logicalMsScanInfo.msLevel = 2;
-            logicalMsScanInfo.scanNumber = scanNumber;
-            logicalMsScanInfo.scanTime = pendingScan.logicalScan.descriptor.scanTimeMilliseconds
+            MsScanInfo materializedMsScanInfo = pendingScan.msScanInfo;
+            materializedMsScanInfo.scanNumber = scanNumber;
+            materializedMsScanInfo.scanTime = pendingScan.scanTimeMilliseconds
                 * TIMSBUK_SCAN_TIME_MILLISECONDS_TO_MINUTES;
-            logicalMsScanInfo.collisionEnergy = pendingScan.logicalScan.descriptor.collisionEnergy;
-            logicalMsScanInfo.precursorTargetMz = pendingScan.logicalScan.descriptor.precursorTargetMz;
-            logicalMsScanInfo.isoWindowLower = pendingScan.logicalScan.descriptor.isoWindowLower;
-            logicalMsScanInfo.isoWindowUpper = pendingScan.logicalScan.descriptor.isoWindowUpper;
-            logicalMsScanInfo.ionMobilityDriftTime = pendingScan.isolationWindow.ionMobilityCenter();
-            logicalMsScanInfo.ionMobilityWindowLower = pendingScan.isolationWindow.ionMobilityLower;
-            logicalMsScanInfo.ionMobilityWindowUpper = pendingScan.isolationWindow.ionMobilityUpper;
-            logicalMsScanInfo.nativeFrameNumber = static_cast<int>(pendingScan.logicalScan.descriptor.cycleIndex);
-            logicalMsScanInfo.nativeScanNumber = pendingScan.logicalScan.descriptor.windowGroupId;
 
-            msScanInfo->insert(scanNumber, logicalMsScanInfo);
-            scanPoints->insert(scanNumber, logicalScanPoints);
+            msScanInfo->insert(scanNumber, materializedMsScanInfo);
+            scanPoints->insert(scanNumber, pendingScan.scanPoints);
 
-            *mzMs2Min = std::min(*mzMs2Min, logicalScanPoints.front().x());
-            *mzMs2Max = std::max(*mzMs2Max, logicalScanPoints.back().x());
-            totalPointCount += logicalScanPoints.size();
+            if (materializedMsScanInfo.msLevel == 1) {
+                *mzMs1Min = std::min(*mzMs1Min, pendingScan.scanPoints.front().x());
+                *mzMs1Max = std::max(*mzMs1Max, pendingScan.scanPoints.back().x());
+                ++ms1ScanCount;
+            }
+            else {
+                *mzMs2Min = std::min(*mzMs2Min, pendingScan.scanPoints.front().x());
+                *mzMs2Max = std::max(*mzMs2Max, pendingScan.scanPoints.back().x());
+                ++ms2ScanCount;
+            }
+
+            totalPointCount += pendingScan.scanPoints.size();
             ++scanNumber;
         }
 
@@ -1162,8 +1344,10 @@ namespace {
         }
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "MsReaderTimsbukIndex materialized MS2 logical scans"
+                 << "MsReaderTimsbukIndex materialized ordinary sidecar scans"
                  << "scan_count" << msScanInfo->size()
+                 << "ms1_scan_count" << ms1ScanCount
+                 << "ms2_scan_count" << ms2ScanCount
                  << "target_count" << mzTargetVsScanInfosPntrs->size()
                  << "point_count" << totalPointCount;
 
@@ -1322,12 +1506,14 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
         : m_sourceBrukerDirectoryPath;
     m_isTIMS = false;
 
-    e = populateMs2ScansFromSidecar(
+    e = populateOrdinaryScansFromSidecar(
         m_sidecarRootPath,
         m_metadata,
         &m_msScanInfo,
         &m_scanPoints,
         &m_mzTargetVsScanInfosPntrs,
+        &m_mzMs1Min,
+        &m_mzMs1Max,
         &m_mzMs2Min,
         &m_mzMs2Max
         ); ree;
@@ -1341,7 +1527,7 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
              << "ms2_group_count" << m_metadata.ms2WindowGroups.size()
              << "scan_count" << m_msScanInfo.size();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "MsReaderTimsbukIndex metadata loaded and MS2 scans materialized";
+             << "MsReaderTimsbukIndex metadata loaded and ordinary MS1/MS2 scans materialized";
 
     ERR_RETURN
 }
