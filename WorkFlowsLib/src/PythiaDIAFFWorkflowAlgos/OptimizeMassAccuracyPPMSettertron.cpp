@@ -8,7 +8,6 @@
 
 #include "EigenUtils.h"
 #include "FDRCLassifierNeuralNet.h"
-#include "InterferingCandidatesEliminatomatic.h"
 #include "MsCalibratomaticSettertron.h"
 #include "ParallelUtils.h"
 #include "TurboXIC.h"
@@ -64,52 +63,26 @@ namespace {
 
     constexpr int OPTIMIZATION_SUPPORT_FDR_KEY = 5;
     constexpr int OPTIMIZATION_SUPPORT_FDR_COUNT_MIN = 100;
-    constexpr int OPTIMIZATION_CARRY_FORWARD_COUNT_MIN = 50;
+    constexpr int OPTIMIZATION_SUPPORT_TRANCHE_CAP = 5;
 
     struct DOEResult {
         double ppm = -1.0;
         double fdrCount = -1;
     };
 
-    Err appendCarryForwardTargetDecoyPairs(
-        QVector<CandidateScores*> candidateScoresVecBatchPntrs,
-        const PythiaParameters &pythiaParameters,
-        int fdrCountAtFivePercent,
-        QVector<TargetDecoyCandidatePair*> *carryForwardTargetDecoyPairs,
-        QMap<TargetDecoyCandidatePair*, bool> *enteredCarryForwardTargetDecoyPairs
-        ) {
+    QString ppmCacheKey(double ppm) {
+        return QString::number(ppm, 'f', 4);
+    }
 
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(candidateScoresVecBatchPntrs); ree;
-
-        PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
-        candidateScoresVecBatchPntrs.resize(std::min(
-            candidateScoresVecBatchPntrs.size(),
-            std::max(OPTIMIZATION_CARRY_FORWARD_COUNT_MIN, fdrCountAtFivePercent)
-            ));
-
-        e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
-            pythiaParameters.ionsSharedToReject,
-            pythiaParameters.mzMinMS2,
-            pythiaParameters.mzMaxMS2,
-            &candidateScoresVecBatchPntrs
-            ); ree;
-
-        for (const CandidateScores *cs : candidateScoresVecBatchPntrs) {
-            if (cs == nullptr || cs->targetDecoyCandidatePair == nullptr) {
-                continue;
+    int fallbackOptimizationSupportFdrKey(const QMap<int, int> &fdrVsCounts) {
+        const QVector<int> fallbackKeys = {10, 20, 50};
+        for (int fdrKey : fallbackKeys) {
+            if (fdrVsCounts.value(fdrKey) > 0) {
+                return fdrKey;
             }
-
-            if (enteredCarryForwardTargetDecoyPairs->value(cs->targetDecoyCandidatePair)) {
-                continue;
-            }
-
-            carryForwardTargetDecoyPairs->push_back(cs->targetDecoyCandidatePair);
-            enteredCarryForwardTargetDecoyPairs->insert(cs->targetDecoyCandidatePair, true);
         }
 
-        ERR_RETURN
+        return -1;
     }
 
     Err buildDOE(
@@ -278,53 +251,119 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
     constexpr int topNMS2Ions = 12;
     const QVector<float> defaultOptimizationWeights = DiscriminantScoretron::defaultWeights(m_optimizeFeatures);
 
-    double bestResultCount = 0;
-    int countSinceLastHigh = 0;
-    QVector<DOEResult> results;
-    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+    auto scoreOptimizationTranche = [&](
+        const PythiaParameters &pythiaParams,
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePointers,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScorePairs
+        ) -> Err {
 
-        e = m_targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
+        ERR_INIT
 
-        QMap<int, int> fdrVsCounts;
-        QVector<float> weights;
-        QString fdrString;
-        double fdrMean = -1.0;
-        QVector<TargetDecoyCandidatePair*> carryForwardTargetDecoyPairs;
-        QMap<TargetDecoyCandidatePair*, bool> enteredCarryForwardTargetDecoyPairs;
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+        e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            targetDecoyCandidatePointers,
+            pythiaParams,
+            uniqueMsScanInfosOptimization,
+            nullptr,
+            &mzTargetKeyVsTargetDecoyCandidatePointers
+            ); ree;
 
-        for (int trancheIndex = 0; trancheIndex < targetDecoyCandidatePointersTranched.size(); trancheIndex++) {
-            QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsBatch = carryForwardTargetDecoyPairs;
-            targetDecoyCandidatePairsBatch.append(targetDecoyCandidatePointersTranched.at(trancheIndex));
+        candidateScorePairs->clear();
+        e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
+                m_optimizeFeatures,
+                topNMS2Ions,
+                *m_msCalibratomatic,
+                minPeakCountOptimization,
+                threadCount,
+                useTopNIntegrationsParameter,
+                mzTargetKeyVsTurboXicPntrs,
+                defaultOptimizationWeights,
+                &mzTargetKeyVsTargetDecoyCandidatePointers,
+                candidateScorePairs
+                ); ree
 
-            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-            e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-                targetDecoyCandidatePairsBatch,
+        ERR_RETURN
+    };
+
+    auto buildCandidateScorePairsForSweep = [&](
+        const PythiaParameters &pythiaParams,
+        int trancheCountToUse,
+        QMap<QString, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> *firstTrancheScorePairsByPpm,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScorePairsForBatch
+        ) -> Err {
+
+        ERR_INIT
+
+        const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
+        const QString cacheKey = ppmCacheKey(pythiaParams.ms2ExtractionWidthPPM);
+
+        candidateScorePairsForBatch->clear();
+        if (firstTrancheScorePairsByPpm->contains(cacheKey)) {
+            candidateScorePairsForBatch->append(firstTrancheScorePairsByPpm->value(cacheKey));
+        }
+        else {
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> firstTrancheCandidateScorePairs;
+            e = scoreOptimizationTranche(
                 pythiaParams,
-                uniqueMsScanInfosOptimization,
-                nullptr,
-                &mzTargetKeyVsTargetDecoyCandidatePointers
+                targetDecoyCandidatePointersTranched.first(),
+                &firstTrancheCandidateScorePairs
                 ); ree;
 
-            m_candidateScorePairs.clear();
-            e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
-                    m_optimizeFeatures,
-                    topNMS2Ions,
-                    *m_msCalibratomatic,
-                    minPeakCountOptimization,
-                    threadCount,
-                    useTopNIntegrationsParameter,
-                    mzTargetKeyVsTurboXicPntrs,
-                    defaultOptimizationWeights,
-                    &mzTargetKeyVsTargetDecoyCandidatePointers,
-                    &m_candidateScorePairs
-                    ); ree
+            firstTrancheScorePairsByPpm->insert(cacheKey, firstTrancheCandidateScorePairs);
+            candidateScorePairsForBatch->append(firstTrancheCandidateScorePairs);
+        }
+
+        for (int trancheIndex = 1; trancheIndex < trancheCountBounded; ++trancheIndex) {
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> trancheCandidateScorePairs;
+            e = scoreOptimizationTranche(
+                pythiaParams,
+                targetDecoyCandidatePointersTranched.at(trancheIndex),
+                &trancheCandidateScorePairs
+                ); ree;
+            candidateScorePairsForBatch->append(trancheCandidateScorePairs);
+        }
+
+        ERR_RETURN
+    };
+
+    auto runPpmSweep = [&](
+        int trancheCountToUse,
+        QMap<QString, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> *firstTrancheScorePairsByPpm,
+        QVector<DOEResult> *resultsOut,
+        QVector<float> *bestWeightsOut,
+        int *bestIdsAtFivePercent,
+        QMap<int, int> *bestFdrVsCountsOut
+        ) -> Err {
+
+        ERR_INIT
+
+        resultsOut->clear();
+        bestWeightsOut->clear();
+        *bestIdsAtFivePercent = 0;
+        bestFdrVsCountsOut->clear();
+
+        double bestResultCount = 0;
+        int countSinceLastHigh = 0;
+        const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
+
+        for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+
+            e = m_targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
+
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> candidateScorePairsForBatch;
+            e = buildCandidateScorePairsForSweep(
+                pythiaParams,
+                trancheCountBounded,
+                firstTrancheScorePairsByPpm,
+                &candidateScorePairsForBatch
+                ); ree;
 
             QVector<CandidateScores*> candidateScoresVecBatchPntrs;
-            fdrVsCounts.clear();
-            weights.clear();
+            QMap<int, int> fdrVsCounts;
+            QVector<float> weights;
             e = PythiaDIAFFWorkflowSharedMethods::processBatch(
                 m_optimizeFeatures,
-                m_candidateScorePairs,
+                candidateScorePairsForBatch,
                 pythiaParams,
                 &candidateScoresVecBatchPntrs,
                 &fdrVsCounts,
@@ -332,65 +371,115 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                 m_msReaderPointerAcc->ptr->isTIMS()
                 ); ree;
 
+            QString fdrString;
             e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
-            fdrMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
-            e = appendCarryForwardTargetDecoyPairs(
-                candidateScoresVecBatchPntrs,
-                pythiaParams,
-                fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY),
-                &carryForwardTargetDecoyPairs,
-                &enteredCarryForwardTargetDecoyPairs
-                ); ree;
-
-            if (fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY) >= OPTIMIZATION_SUPPORT_FDR_COUNT_MIN
-                || trancheIndex == targetDecoyCandidatePointersTranched.size() - 1) {
-                break;
-            }
+            const double fdrMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "PPM optimization expanding support"
                      << "ppmTol"
                      << pythiaParams.ms2ExtractionWidthPPM
-                     << "tranche"
-                     << trancheIndex + 1
-                     << "of"
-                     << targetDecoyCandidatePointersTranched.size()
-                     << "ids_at_5pct"
-                     << fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY)
-                     << "carry_forward_pairs"
-                     << carryForwardTargetDecoyPairs.size();
+                     << "tranches"
+                     << trancheCountBounded
+                     << "fdrMean"
+                     << fdrMean
+                     << "Finished"
+                     << qPrintable(fdrString);
+
+            DOEResult res;
+            res.ppm = pythiaParams.ms2ExtractionWidthPPM;
+            res.fdrCount = fdrMean;
+            resultsOut->push_back(res);
+
+            if (res.fdrCount >= bestResultCount) {
+                bestResultCount = res.fdrCount;
+                countSinceLastHigh = 0;
+                *bestWeightsOut = weights;
+                *bestIdsAtFivePercent = fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY);
+                *bestFdrVsCountsOut = fdrVsCounts;
+                continue;
+            }
+
+            constexpr int maxCountsSinceLastHigh = 3;
+            if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
+                break;
+            }
+        }
+
+        ERR_RETURN
+    };
+
+    QMap<QString, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> firstTrancheScorePairsByPpm;
+    QVector<DOEResult> results;
+    QVector<float> bestWeights;
+    int bestIdsAtFivePercent = 0;
+    QMap<int, int> bestFdrVsCounts;
+    e = runPpmSweep(
+        1,
+        &firstTrancheScorePairsByPpm,
+        &results,
+        &bestWeights,
+        &bestIdsAtFivePercent,
+        &bestFdrVsCounts
+        ); ree;
+
+    if (bestIdsAtFivePercent < OPTIMIZATION_SUPPORT_FDR_COUNT_MIN
+        && targetDecoyCandidatePointersTranched.size() > 1) {
+
+        int expandedTrancheCount = 5;
+        int supportCountForExpansion = bestIdsAtFivePercent;
+        int supportFdrKeyForExpansion = OPTIMIZATION_SUPPORT_FDR_KEY;
+
+        if (supportCountForExpansion == 0) {
+            supportFdrKeyForExpansion = fallbackOptimizationSupportFdrKey(bestFdrVsCounts);
+            if (supportFdrKeyForExpansion > OPTIMIZATION_SUPPORT_FDR_KEY) {
+                supportCountForExpansion = bestFdrVsCounts.value(supportFdrKeyForExpansion);
+            }
+        }
+
+        if (supportCountForExpansion > 0) {
+            expandedTrancheCount = std::min(
+                OPTIMIZATION_SUPPORT_TRANCHE_CAP,
+                std::min(
+                    targetDecoyCandidatePointersTranched.size(),
+                    std::max(
+                        2,
+                        static_cast<int>(std::ceil(
+                            static_cast<double>(OPTIMIZATION_SUPPORT_FDR_COUNT_MIN)
+                            / static_cast<double>(supportCountForExpansion)
+                            ))
+                        )
+                    )
+                );
+        }
+        else {
+            expandedTrancheCount = std::min(OPTIMIZATION_SUPPORT_TRANCHE_CAP, targetDecoyCandidatePointersTranched.size());
+            qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                       << "PPM optimization support remained zero across all tracked FDR levels;"
+                       << "rerunning sweep with fallback tranche count"
+                       << expandedTrancheCount;
         }
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "ppmTol"
-                 << pythiaParams.ms2ExtractionWidthPPM
-                 << "fdrMean"
-                 << fdrMean
-                 << "Finished"
-                 << qPrintable(fdrString);
+                 << "PPM optimization rerunning sweep with expanded support"
+                 << "support_fdr_pct"
+                 << supportFdrKeyForExpansion
+                 << "support_count"
+                 << supportCountForExpansion
+                 << "tranches"
+                 << expandedTrancheCount;
 
-        DOEResult res;
-        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-        res.fdrCount = fdrMean;
-        results.push_back(res);
-
-    	// if (fdrVsCounts.value(2) == 0) {
-    	// 	continue;
-    	// }
-
-        if (res.fdrCount >= bestResultCount) {
-            bestResultCount = res.fdrCount;
-            countSinceLastHigh = 0;
-            m_weights = weights;
-            continue;
-        }
-
-        constexpr int maxCountsSinceLastHigh = 3;
-        if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
-            break;
-        }
+        e = runPpmSweep(
+            expandedTrancheCount,
+            &firstTrancheScorePairsByPpm,
+            &results,
+            &bestWeights,
+            &bestIdsAtFivePercent,
+            &bestFdrVsCounts
+            ); ree;
     }
+
+    m_weights = bestWeights;
 
     e = getTopFrequencyParameters(
             results,
