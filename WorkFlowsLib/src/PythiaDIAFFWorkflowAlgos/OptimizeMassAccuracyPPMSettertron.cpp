@@ -8,6 +8,7 @@
 
 #include "EigenUtils.h"
 #include "FDRCLassifierNeuralNet.h"
+#include "InterferingCandidatesEliminatomatic.h"
 #include "MsCalibratomaticSettertron.h"
 #include "ParallelUtils.h"
 #include "TurboXIC.h"
@@ -61,10 +62,55 @@ QVector<float> OptimizeMassAccuracyPPMSettertron::weights() const {
 
 namespace {
 
+    constexpr int OPTIMIZATION_SUPPORT_FDR_KEY = 5;
+    constexpr int OPTIMIZATION_SUPPORT_FDR_COUNT_MIN = 100;
+    constexpr int OPTIMIZATION_CARRY_FORWARD_COUNT_MIN = 50;
+
     struct DOEResult {
         double ppm = -1.0;
         double fdrCount = -1;
     };
+
+    Err appendCarryForwardTargetDecoyPairs(
+        QVector<CandidateScores*> candidateScoresVecBatchPntrs,
+        const PythiaParameters &pythiaParameters,
+        int fdrCountAtFivePercent,
+        QVector<TargetDecoyCandidatePair*> *carryForwardTargetDecoyPairs,
+        QMap<TargetDecoyCandidatePair*, bool> *enteredCarryForwardTargetDecoyPairs
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(candidateScoresVecBatchPntrs); ree;
+
+        PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
+        candidateScoresVecBatchPntrs.resize(std::min(
+            candidateScoresVecBatchPntrs.size(),
+            std::max(OPTIMIZATION_CARRY_FORWARD_COUNT_MIN, fdrCountAtFivePercent)
+            ));
+
+        e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
+            pythiaParameters.ionsSharedToReject,
+            pythiaParameters.mzMinMS2,
+            pythiaParameters.mzMaxMS2,
+            &candidateScoresVecBatchPntrs
+            ); ree;
+
+        for (const CandidateScores *cs : candidateScoresVecBatchPntrs) {
+            if (cs == nullptr || cs->targetDecoyCandidatePair == nullptr) {
+                continue;
+            }
+
+            if (enteredCarryForwardTargetDecoyPairs->value(cs->targetDecoyCandidatePair)) {
+                continue;
+            }
+
+            carryForwardTargetDecoyPairs->push_back(cs->targetDecoyCandidatePair);
+            enteredCarryForwardTargetDecoyPairs->insert(cs->targetDecoyCandidatePair, true);
+        }
+
+        ERR_RETURN
+    }
 
     Err buildDOE(
             const PythiaParameters &pythiaParameters,
@@ -214,15 +260,6 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             &targetDecoyCandidatePointersTranched
             ); ree;
 
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            targetDecoyCandidatePointersTranched.first(),
-            *m_pythiaParameters,
-            uniqueMsScanInfosOptimization,
-            nullptr,
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            ); ree;
-
     QVector<PythiaParameters> pythiaParametersExperiments;
     e = buildDOE(
             *m_pythiaParameters,
@@ -231,6 +268,16 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             &pythiaParametersExperiments
             ); ree;
 
+    constexpr int splitter = 2;
+    const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters->threadCount
+                  ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters->threadCount)
+                  : m_pythiaParameters->threadCount;
+
+    constexpr bool useTopNIntegrationsParameter = true;
+    constexpr float minPeakCountOptimization = 3.9;
+    constexpr int topNMS2Ions = 12;
+    const QVector<float> defaultOptimizationWeights = DiscriminantScoretron::defaultWeights(m_optimizeFeatures);
+
     double bestResultCount = 0;
     int countSinceLastHigh = 0;
     QVector<DOEResult> results;
@@ -238,45 +285,82 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
         e = m_targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
 
-        constexpr int splitter = 2;
-        const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters->threadCount
-                      ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters->threadCount)
-                      : m_pythiaParameters->threadCount;
-
-        constexpr bool useTopNIntegrationsParameter = true;
-        constexpr float minPeakCountOptimization = 3.9;
-        constexpr int topNMS2Ions = 12;
-        m_candidateScorePairs.clear();
-        e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
-                m_optimizeFeatures,
-                topNMS2Ions,
-                *m_msCalibratomatic,
-                minPeakCountOptimization,
-                threadCount,
-                useTopNIntegrationsParameter,
-                mzTargetKeyVsTurboXicPntrs,
-                DiscriminantScoretron::defaultWeights(m_optimizeFeatures),
-                &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &m_candidateScorePairs
-                ); ree
-
-        QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
         QVector<float> weights;
-        e = PythiaDIAFFWorkflowSharedMethods::processBatch(
-            m_optimizeFeatures,
-            m_candidateScorePairs,
-            *m_pythiaParameters,
-            &candidateScoresVecBatchPntrs,
-            &fdrVsCounts,
-            &weights,
-            m_msReaderPointerAcc->ptr->isTIMS()
-            ); ree;
-
         QString fdrString;
-        e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+        double fdrMean = -1.0;
+        QVector<TargetDecoyCandidatePair*> carryForwardTargetDecoyPairs;
+        QMap<TargetDecoyCandidatePair*, bool> enteredCarryForwardTargetDecoyPairs;
 
-        const double fdrMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
+        for (int trancheIndex = 0; trancheIndex < targetDecoyCandidatePointersTranched.size(); trancheIndex++) {
+            QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsBatch = carryForwardTargetDecoyPairs;
+            targetDecoyCandidatePairsBatch.append(targetDecoyCandidatePointersTranched.at(trancheIndex));
+
+            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+            e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+                targetDecoyCandidatePairsBatch,
+                pythiaParams,
+                uniqueMsScanInfosOptimization,
+                nullptr,
+                &mzTargetKeyVsTargetDecoyCandidatePointers
+                ); ree;
+
+            m_candidateScorePairs.clear();
+            e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
+                    m_optimizeFeatures,
+                    topNMS2Ions,
+                    *m_msCalibratomatic,
+                    minPeakCountOptimization,
+                    threadCount,
+                    useTopNIntegrationsParameter,
+                    mzTargetKeyVsTurboXicPntrs,
+                    defaultOptimizationWeights,
+                    &mzTargetKeyVsTargetDecoyCandidatePointers,
+                    &m_candidateScorePairs
+                    ); ree
+
+            QVector<CandidateScores*> candidateScoresVecBatchPntrs;
+            fdrVsCounts.clear();
+            weights.clear();
+            e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+                m_optimizeFeatures,
+                m_candidateScorePairs,
+                pythiaParams,
+                &candidateScoresVecBatchPntrs,
+                &fdrVsCounts,
+                &weights,
+                m_msReaderPointerAcc->ptr->isTIMS()
+                ); ree;
+
+            e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+            fdrMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
+
+            e = appendCarryForwardTargetDecoyPairs(
+                candidateScoresVecBatchPntrs,
+                pythiaParams,
+                fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY),
+                &carryForwardTargetDecoyPairs,
+                &enteredCarryForwardTargetDecoyPairs
+                ); ree;
+
+            if (fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY) >= OPTIMIZATION_SUPPORT_FDR_COUNT_MIN
+                || trancheIndex == targetDecoyCandidatePointersTranched.size() - 1) {
+                break;
+            }
+
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "PPM optimization expanding support"
+                     << "ppmTol"
+                     << pythiaParams.ms2ExtractionWidthPPM
+                     << "tranche"
+                     << trancheIndex + 1
+                     << "of"
+                     << targetDecoyCandidatePointersTranched.size()
+                     << "ids_at_5pct"
+                     << fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY)
+                     << "carry_forward_pairs"
+                     << carryForwardTargetDecoyPairs.size();
+        }
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "ppmTol"
