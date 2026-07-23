@@ -133,6 +133,13 @@ namespace {
 
     constexpr int TIMS_NEURAL_NET_AUTO_INFERENCE_CANDIDATE_LIMIT = 200000;
 
+    bool usesLegacyTimsWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
+        return msReaderPointerAcc != nullptr
+            && !msReaderPointerAcc->ptr.isNull()
+            && msReaderPointerAcc->ptr->isTIMS()
+            && msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
+    }
+
     Err filterScoredCandidatesForNeuralNet(
             int minMs2FragCount,
             int neuralNetCandidateLimit,
@@ -834,7 +841,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 ); ree;
     }
 
-    const bool useLocalRtIdLevelQValues = !msReaderPointerAcc.ptr.isNull() && msReaderPointerAcc.ptr->isTIMS();
+    const bool useLocalRtIdLevelQValues = usesLegacyTimsWorkflow(&msReaderPointerAcc);
     e = IdLevelQValueAnnotator::annotate(
         &candidateScoreClassifierPntrs,
         !usedDiscriminantFallback,
@@ -891,7 +898,7 @@ Err PythiaDIAFFWorkflow::rescoreTimsFilteredCandidatesForNeuralNet(
 
     if (msReaderPointerAcc == nullptr
         || msReaderPointerAcc->ptr.isNull()
-        || !msReaderPointerAcc->ptr->isTIMS()
+        || !usesLegacyTimsWorkflow(msReaderPointerAcc)
         || candidateScoresTargetsAndDecoysNeuralNet == nullptr
         || candidateScoresTargetsAndDecoysNeuralNet->isEmpty()
         || rescoredCandidateScorePairs == nullptr
@@ -1056,7 +1063,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
 
-    const float minPeakCount = msReaderPointerAcc->ptr->isTIMS() ? 2.9f : 3.9f;
+    const float minPeakCount = usesLegacyTimsWorkflow(msReaderPointerAcc) ? 2.9f : 3.9f;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             m_ppmOptimizationFeatures,
@@ -1083,7 +1090,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
         &candidateScoresVecBatchPntrs,
         &fdrVsCounts,
         &weights,
-        msReaderPointerAcc->ptr->isTIMS()
+        usesLegacyTimsWorkflow(msReaderPointerAcc)
         ); ree;
 
     QString fdrString;
@@ -1893,9 +1900,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         *usedDiscriminantFallback = false;
     }
 
-    const bool isTimsRun = msReaderPointerAcc != nullptr
-                           && !msReaderPointerAcc->ptr.isNull()
-                           && msReaderPointerAcc->ptr->isTIMS();
+    const bool useLegacyTimsWorkflowPath = usesLegacyTimsWorkflow(msReaderPointerAcc);
     QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet = candidateScoresTargetsAndDecoys;
     QVector<CandidateScores*> candidateScoresForDiscriminantFallback = candidateScoresTargetsAndDecoys;
     m_timsSecondStageCandidateScorePairs.clear();
@@ -2014,7 +2019,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     }
 
     const int neuralNetInferenceCandidateLimit =
-        isTimsRun
+        useLegacyTimsWorkflowPath
             ? std::max(
                   m_pythiaParameters.neuralNetCandidateLimit,
                   m_pythiaParameters.timsNeuralNetInferenceCandidateLimit > 0
@@ -2024,7 +2029,8 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             : m_pythiaParameters.neuralNetCandidateLimit;
 
     QVector<CandidateScores*> candidateScoresForNeuralNetTraining;
-    if (isTimsRun && neuralNetInferenceCandidateLimit > m_pythiaParameters.neuralNetCandidateLimit) {
+    if (useLegacyTimsWorkflowPath
+        && neuralNetInferenceCandidateLimit > m_pythiaParameters.neuralNetCandidateLimit) {
         candidateScoresForNeuralNetTraining = candidateScoresTargetsAndDecoys;
         e = filterScoredCandidatesForNeuralNet(
             m_pythiaParameters.minMs2FragCount,
@@ -2043,11 +2049,11 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     e = filterScoredCandidatesForNeuralNet(
         m_pythiaParameters.minMs2FragCount,
         neuralNetInferenceCandidateLimit,
-        isTimsRun,
+        useLegacyTimsWorkflowPath,
 		        &candidateScoresTargetsAndDecoysNeuralNet
 		        ); ree;
 
-    if (isTimsRun) {
+    if (useLegacyTimsWorkflowPath) {
         completeCandidateRowsToTargetDecoyPairs(&candidateScoresTargetsAndDecoysNeuralNet);
         candidateScoresForDiscriminantFallback = candidateScoresTargetsAndDecoysNeuralNet;
         rebuildTargetDecoyCandidateScorePairPointersFromCandidateRows(candidateScoresForDiscriminantFallback);
@@ -2060,7 +2066,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     constexpr bool enableTimsSecondStageRescoring = true;
     if (msReaderPointerAcc != nullptr
         && !msReaderPointerAcc->ptr.isNull()
-        && msReaderPointerAcc->ptr->isTIMS()
+        && useLegacyTimsWorkflowPath
         && enableTimsSecondStageRescoring) {
         e = rescoreTimsFilteredCandidatesForNeuralNet(
             msReaderPointerAcc,
@@ -2073,9 +2079,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             rebuildTargetDecoyCandidateScorePairPointersFromCandidateRows(candidateScoresTargetsAndDecoysNeuralNet);
         }
     }
-    else if (msReaderPointerAcc != nullptr
-             && !msReaderPointerAcc->ptr.isNull()
-             && msReaderPointerAcc->ptr->isTIMS()) {
+    else if (useLegacyTimsWorkflowPath) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "TIMS 4D second-stage rescoring skipped; using main IMS-aware candidate scores";
     }
@@ -2166,22 +2170,20 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             m_pythiaParameters,
             karnnNNTargetsNormTranched,
             seed,
-            isTimsRun,
+            useLegacyTimsWorkflowPath,
             &fdrClassifierNeuralNets,
             &inferenceKarnnVecs
             ); ree;
 
-    const bool useMonotonePairQValues = msReaderPointerAcc != nullptr
-                                        && !msReaderPointerAcc->ptr.isNull()
-                                        && msReaderPointerAcc->ptr->isTIMS();
+    const bool useMonotonePairQValues = useLegacyTimsWorkflowPath;
     const bool useTargetKeyStratifiedQValues = useMonotonePairQValues;
     const double localRtBinSecondsForQValues = useMonotonePairQValues
                                                    ? m_pythiaParameters.timsLocalFdrRtBinSeconds
                                                    : 0.0;
-    const bool normalizeNeuralNetPredictions = isTimsRun
+    const bool normalizeNeuralNetPredictions = useLegacyTimsWorkflowPath
                                                    ? false
                                                    : m_pythiaParameters.normalizeNeuralNetPredictions;
-    if (isTimsRun && m_pythiaParameters.normalizeNeuralNetPredictions) {
+    if (useLegacyTimsWorkflowPath && m_pythiaParameters.normalizeNeuralNetPredictions) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "TIMS neural-net prediction normalization disabled";
     }
@@ -2271,7 +2273,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             &discriminantTargetCount
             ); ree;
 
-        if (isTimsRun && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
+        if (useLegacyTimsWorkflowPath && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
             constexpr double fdrQValThreshold = 0.5;
 
             QVector<CandidateScores*> neuralNetFilteredCandidates = candidateScoresTargetsAndDecoysNeuralNet;
@@ -2381,7 +2383,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 	                    ); ree;
 	            }
 
-                if (isTimsRun && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
+                if (useLegacyTimsWorkflowPath && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
                 e = applyTimsHighEvidenceGlobalQValueFilter(
                     candidateScoreClassifier,
                     &discriminantPairPntrs,
@@ -2389,7 +2391,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
                     m_pythiaParameters
                     ); ree;
                 }
-                else if (isTimsRun) {
+                else if (useLegacyTimsWorkflowPath) {
                     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                              << "TIMS high-evidence global q-value filter skipped";
                 }
@@ -2433,7 +2435,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 	            ); ree;
 	    }
 
-        if (isTimsRun && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
+        if (useLegacyTimsWorkflowPath && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
             e = applyTimsHighEvidenceGlobalQValueFilter(
                 candidateScoreClassifier,
                 &targetDecoyCandidateScorePairsPntrs,
@@ -2441,7 +2443,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
                 m_pythiaParameters
                 ); ree;
         }
-        else if (isTimsRun) {
+        else if (useLegacyTimsWorkflowPath) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                      << "TIMS high-evidence global q-value filter skipped";
         }

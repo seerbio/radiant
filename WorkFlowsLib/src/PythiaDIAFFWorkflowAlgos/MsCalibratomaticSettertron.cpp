@@ -134,6 +134,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             numberOfTranches,
             &targetDecoyCandidatePointersTranched
             ); ree;
+    const bool useLegacyTimsFrameMaps = m_msReaderPointerAcc->ptr->isTIMS()
+        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
 
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
@@ -152,7 +154,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
-        if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        if (useLegacyTimsFrameMaps) {
             int candidateCountPreEvidencePrefilter = 0;
             for (auto it = mzTargetKeyVsTargetDecoyCandidatePointers.constBegin();
                  it != mzTargetKeyVsTargetDecoyCandidatePointers.constEnd();
@@ -222,7 +224,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
             &weights,
-            m_msReaderPointerAcc->ptr->isTIMS()
+            useLegacyTimsFrameMaps
             ); ree;
 
         constexpr int fdrKey = 5;
@@ -439,7 +441,8 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         ERR_RETURN
     }
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+    if (m_msReaderPointerAcc->ptr->isTIMS()
+        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps()) {
         e = IonMobilitron::assignIonMobilityIndexesToCandidateScores(
             candidateScoresVecBatchPntrsResized,
             m_pythiaParameters->ms1ExtractionWidthPPM,
@@ -472,7 +475,8 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+    if (m_msReaderPointerAcc->ptr->isTIMS()
+        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps()) {
         e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
     }
 
@@ -527,7 +531,8 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         << MathUtils::median(m_ms2PPMStDevs);
     }
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+    if (m_msReaderPointerAcc->ptr->isTIMS()
+        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps()) {
         std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
         if (m_ionMobilityStDevs.size() >= minVecSize) {
             m_ionMobilityStDevs.pop_front();

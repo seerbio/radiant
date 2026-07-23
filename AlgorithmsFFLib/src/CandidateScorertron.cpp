@@ -25,6 +25,17 @@
 #include <numeric>
 #include <unordered_map>
 
+namespace {
+
+    bool usesLegacyTimsFrameMaps(const MsReaderPointerAcc *msReaderPointerAcc) {
+        return msReaderPointerAcc != nullptr
+            && !msReaderPointerAcc->ptr.isNull()
+            && msReaderPointerAcc->ptr->isTIMS()
+            && msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
+    }
+
+}
+
 class Q_DECL_HIDDEN CandidateScorertron::Private {
 public:
 
@@ -231,9 +242,7 @@ Err CandidateScorertron::init(
     m_minPeakCount = minPeakCount;
     m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
 
-    if (m_msReaderPointerAcc != nullptr
-        && !m_msReaderPointerAcc->ptr.isNull()
-        && m_msReaderPointerAcc->ptr->isTIMS()) {
+    if (usesLegacyTimsFrameMaps(m_msReaderPointerAcc)) {
         const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
             = m_msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
         if (frameNumberVsMs1FrameTIMS != nullptr && !frameNumberVsMs1FrameTIMS->isEmpty()) {
@@ -3198,7 +3207,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
         ERR_RETURN
     }
 
-    if (!m_msReaderPointerAcc->ptr->isTIMS()) {
+    if (!usesLegacyTimsFrameMaps(m_msReaderPointerAcc)) {
         ERR_RETURN
     }
 

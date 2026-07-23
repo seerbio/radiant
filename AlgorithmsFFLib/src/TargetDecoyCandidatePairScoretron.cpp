@@ -710,6 +710,8 @@ namespace {
             const bool isTimsReader = pi.msReaderPointerAcc != nullptr
                 && !pi.msReaderPointerAcc->ptr.isNull()
                 && pi.msReaderPointerAcc->ptr->isTIMS();
+            const bool hasLegacyTimsFrameMaps = isTimsReader
+                && pi.msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
 
             QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
             MsFrame msFrameMzTarget;
@@ -756,7 +758,7 @@ namespace {
             int evidenceSelectedCandidateCount = 0;
             int fallbackSelectedCandidateCount = 0;
             if (builtTargetDecoyPointersFromAllCandidates
-                && isTimsReader
+                && hasLegacyTimsFrameMaps
                 && pi.msScanInfo.ionMobilityDriftTime > 0.0f
                 && targetDecoyPointers.size() > pi.pythiaParameters.timsMainCandidateBudgetPerTargetKey) {
 
@@ -781,7 +783,7 @@ namespace {
                 }
             }
 
-            if (builtTargetDecoyPointersFromAllCandidates && isTimsReader) {
+            if (builtTargetDecoyPointersFromAllCandidates && hasLegacyTimsFrameMaps) {
                 qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                          << "TIMS main target candidate filter"
                          << "target_key" << pi.targetKey
@@ -802,7 +804,7 @@ namespace {
                 continue;
             }
 
-            const int scoringTopNMs2Ions = builtTargetDecoyPointersFromAllCandidates && isTimsReader
+            const int scoringTopNMs2Ions = builtTargetDecoyPointersFromAllCandidates && hasLegacyTimsFrameMaps
                 ? std::min(pi.topNMs2Ions, TIMS_MAIN_TOP_N_MS2_IONS)
                 : pi.topNMs2Ions;
 
@@ -833,7 +835,7 @@ namespace {
             TimsMs2IonMobilityIndex timsMs2IonMobilityIndex;
             TimsMs2IonMobilityIndex *timsMs2IonMobilityIndexPntr = nullptr;
 
-            const bool hasLibraryIonMobility = isTimsReader
+            const bool hasLibraryIonMobility = hasLegacyTimsFrameMaps
                 && std::any_of(
                     targetDecoyPointers.constBegin(),
                     targetDecoyPointers.constEnd(),
