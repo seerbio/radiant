@@ -134,7 +134,7 @@ bool MsReaderBase::isDIA() {
     return std::all_of(withinCountDistance.begin(), withinCountDistance.end(), [](bool b){return b;});
 }
 
-bool MsReaderBase::isInit() {
+bool MsReaderBase::isInit() const {
     return !m_msScanInfo.isEmpty();
 }
 

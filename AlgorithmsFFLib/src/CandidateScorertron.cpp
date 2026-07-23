@@ -14,6 +14,7 @@
 #include "MsUtils.h"
 #include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
+#include "TimsbukIndexTypes.h"
 #include "TimsMs2IonMobilityIndex.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
@@ -44,8 +45,6 @@ namespace {
         constexpr float centroidIonMobilityIndexScale = 10000.0f;
         return static_cast<IonMobilityIndex>(std::lround(driftTime * centroidIonMobilityIndexScale));
     }
-
-}
 
 }
 

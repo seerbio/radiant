@@ -213,7 +213,7 @@ public:
     * @return Returns true if m_msScanInfo is not empty, indicating that the MS Reader has been initialized.
     * If m_msScanInfo is empty, returns false.
     */
-    bool isInit();
+    bool isInit() const;
 
     /**
     * @brief Retrieves the minimum and maximum scan times from the currently opened file in the MS Reader.
