@@ -1504,7 +1504,9 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
     m_filePath = m_sourceBrukerDirectoryPath.isEmpty()
         ? m_sidecarRootPath
         : m_sourceBrukerDirectoryPath;
-    m_isTIMS = false;
+    setTIMS(false);
+    setHasIonMobility(false);
+    setHasLegacyTIMSFrameMaps(false);
 
     e = populateOrdinaryScansFromSidecar(
         m_sidecarRootPath,
@@ -1579,7 +1581,6 @@ Err MsReaderTimsbukIndex::closeFile() {
     m_mzTargetVsScanInfosPntrs.clear();
     m_frameIndexVsDriftTime.clear();
     m_filePath.clear();
-    m_isTIMS = false;
     m_mzMs1Min = std::numeric_limits<float>::max();
     m_mzMs1Max = -1.0f;
     m_mzMs2Min = std::numeric_limits<float>::max();

@@ -16,6 +16,8 @@ namespace {
             QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMS1FrameTIMS,
             MzTargetKeyVsMs2FrameTIMS *mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             QMap<FrameIndex, double> *frameIndexVsDriftTime,
+            bool *hasIonMobility,
+            bool *hasLegacyTIMSFrameMaps,
             bool *isTIMS
             ) {
 
@@ -97,7 +99,10 @@ namespace {
             }
         }
 
-        *isTIMS = !frameNumberVsMS1FrameTIMS->isEmpty() || !mzTargetKeyVsFrameNumberVsMS2FrameTIMS->isEmpty();
+        *hasLegacyTIMSFrameMaps = !frameNumberVsMS1FrameTIMS->isEmpty()
+            || !mzTargetKeyVsFrameNumberVsMS2FrameTIMS->isEmpty();
+        *hasIonMobility = *hasLegacyTIMSFrameMaps || !frameIndexVsDriftTime->isEmpty();
+        *isTIMS = *hasLegacyTIMSFrameMaps;
 
         ERR_RETURN
     }
@@ -132,6 +137,8 @@ Err MsReaderParquet::openFile(const QString &filePath) {
             &m_frameNumberVsMS1FrameTIMS,
             &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             &m_frameIndexVsDriftTime,
+            &m_hasIonMobility,
+            &m_hasLegacyTIMSFrameMaps,
             &m_isTIMS
             ); ree;
 
@@ -176,6 +183,8 @@ Err MsReaderParquet::openFile(
             &m_frameNumberVsMS1FrameTIMS,
             &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             &m_frameIndexVsDriftTime,
+            &m_hasIonMobility,
+            &m_hasLegacyTIMSFrameMaps,
             &m_isTIMS
     ); ree;
 
@@ -216,6 +225,8 @@ Err MsReaderParquet::openFile(
             &m_frameNumberVsMS1FrameTIMS,
             &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             &m_frameIndexVsDriftTime,
+            &m_hasIonMobility,
+            &m_hasLegacyTIMSFrameMaps,
             &m_isTIMS
     ); ree;
 
@@ -233,7 +244,7 @@ Err MsReaderParquet::closeFile() {
     m_frameNumberVsMS1FrameTIMS.clear();
     m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.clear();
     m_frameIndexVsDriftTime.clear();
-    m_isTIMS = false;
+    resetTIMSCapabilityState();
 
     e = ErrorUtils::isTrue(m_msScanInfo.isEmpty()); ree;
     e = ErrorUtils::isTrue(m_scanPoints.isEmpty()); ree;

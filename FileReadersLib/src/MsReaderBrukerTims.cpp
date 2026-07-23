@@ -544,7 +544,9 @@ Err MsReaderBrukerTims::openFile(
 
     e = ErrorUtils::fileExists(QString::fromStdString(tdfFile)); ree;
     m_filePath = filePath;
-    m_isTIMS = true;
+    setTIMS(true);
+    setHasIonMobility(true);
+    setHasLegacyTIMSFrameMaps(true);
 
     try {
         // Match AlphaRaw/DIA-NN's reported 1/K0 axis; pressure compensation shifts scan-to-mobility values.

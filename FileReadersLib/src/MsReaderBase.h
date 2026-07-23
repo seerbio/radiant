@@ -504,6 +504,8 @@ public:
 
     Err printFileInfo();
     [[nodiscard]] bool isTIMS() const;
+    [[nodiscard]] bool hasIonMobility() const;
+    [[nodiscard]] bool hasLegacyTIMSFrameMaps() const;
     Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax);
 
     [[nodiscard]] float mzMs2Min() const;
@@ -516,8 +518,15 @@ public:
 
 protected:
 
+    void setTIMS(bool isTIMS);
+    void setHasIonMobility(bool hasIonMobility);
+    void setHasLegacyTIMSFrameMaps(bool hasLegacyTIMSFrameMaps);
+    void resetTIMSCapabilityState();
+
     bool m_fileIsCalibrated;
     bool m_isTIMS;
+    bool m_hasIonMobility;
+    bool m_hasLegacyTIMSFrameMaps;
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetVsScanInfosPntrs;

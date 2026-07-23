@@ -16,6 +16,8 @@
 MsReaderBase::MsReaderBase()
 : m_fileIsCalibrated(false)
 , m_isTIMS(false)
+, m_hasIonMobility(false)
+, m_hasLegacyTIMSFrameMaps(false)
 , m_mzMs1Min(std::numeric_limits<float>::max())
 , m_mzMs1Max(-1.0)
 , m_mzMs2Min(std::numeric_limits<float>::max())
@@ -43,6 +45,7 @@ void MsReaderBase::reset() {
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
     QMap<FrameNumberTIMS, Ms1FrameTIMS>().swap(m_frameNumberVsMS1FrameTIMS);
     MzTargetKeyVsMs2FrameTIMS().swap(m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS);
+    resetTIMSCapabilityState();
 }
 
 Err MsReaderBase::openFile(const QString &filePath) {
@@ -70,6 +73,7 @@ Err MsReaderBase::closeFile() {
     QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
     QMap<FrameNumberTIMS, Ms1FrameTIMS>().swap(m_frameNumberVsMS1FrameTIMS);
     MzTargetKeyVsMs2FrameTIMS().swap(m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS);
+    resetTIMSCapabilityState();
     return Error::eNoError;
 }
 
@@ -615,6 +619,14 @@ bool MsReaderBase::isTIMS() const {
     return m_isTIMS;
 }
 
+bool MsReaderBase::hasIonMobility() const {
+    return m_hasIonMobility;
+}
+
+bool MsReaderBase::hasLegacyTIMSFrameMaps() const {
+    return m_hasLegacyTIMSFrameMaps;
+}
+
 float MsReaderBase::mzMs2Min() const {
     return m_mzMs2Min;
 }
@@ -633,4 +645,22 @@ MzTargetKeyVsMs2FrameTIMS* MsReaderBase::mzTargetKeyVsFrameNumberVsMS2FrameTIMSP
 
 const QMap<FrameIndex, double>* MsReaderBase::frameIndexVsDriftTimePntr() const {
     return &m_frameIndexVsDriftTime;
+}
+
+void MsReaderBase::setTIMS(bool isTIMS) {
+    m_isTIMS = isTIMS;
+}
+
+void MsReaderBase::setHasIonMobility(bool hasIonMobility) {
+    m_hasIonMobility = hasIonMobility;
+}
+
+void MsReaderBase::setHasLegacyTIMSFrameMaps(bool hasLegacyTIMSFrameMaps) {
+    m_hasLegacyTIMSFrameMaps = hasLegacyTIMSFrameMaps;
+}
+
+void MsReaderBase::resetTIMSCapabilityState() {
+    m_isTIMS = false;
+    m_hasIonMobility = false;
+    m_hasLegacyTIMSFrameMaps = false;
 }
