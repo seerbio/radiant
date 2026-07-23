@@ -45,6 +45,13 @@ public:
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
         ) override;
 
+    Err getMzTargetAlignedPointData(
+        const MzTargetKey &targetKey,
+        QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+        ) const override;
+
+    const TimsbukAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const override;
+
     Err closeFile() override;
 
 private:
@@ -53,6 +60,7 @@ private:
     QString m_sourceBrukerDirectoryPath;
     QString m_metadataFilePath;
     TimsbukIndexMetadata m_metadata;
+    QMap<ScanNumber, TimsbukAlignedPointData> m_alignedPointDataByScanNumber;
 };
 
 #endif // MSREADERTIMSBUKINDEX_H

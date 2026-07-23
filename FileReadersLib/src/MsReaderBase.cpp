@@ -91,6 +91,15 @@ Err MsReaderBase::getMzTargetScanPoints(
     return eFunctionNotImplemented;
 }
 
+Err MsReaderBase::getMzTargetAlignedPointData(
+    const MzTargetKey &targetKey,
+    QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+    ) const {
+    Q_UNUSED(targetKey)
+    Q_UNUSED(scanNumberVsAlignedPointData)
+    return eFunctionNotImplemented;
+}
+
 QString MsReaderBase::filePath() {
     return m_filePath;
 }
@@ -645,6 +654,11 @@ MzTargetKeyVsMs2FrameTIMS* MsReaderBase::mzTargetKeyVsFrameNumberVsMS2FrameTIMSP
 
 const QMap<FrameIndex, double>* MsReaderBase::frameIndexVsDriftTimePntr() const {
     return &m_frameIndexVsDriftTime;
+}
+
+const TimsbukAlignedPointData *MsReaderBase::alignedPointDataPntr(ScanNumber scanNumber) const {
+    Q_UNUSED(scanNumber)
+    return nullptr;
 }
 
 void MsReaderBase::setTIMS(bool isTIMS) {

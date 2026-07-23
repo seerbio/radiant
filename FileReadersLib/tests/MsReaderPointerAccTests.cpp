@@ -260,6 +260,7 @@ void MsReaderPointerAccTests::openFileTest5() {
         QDir(temporaryDir.path()).filePath("run.d")
         );
     QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
+    QCOMPARE(msReaderPointerAcc.ptr->hasIonMobility(), true);
 
     const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
     QCOMPARE(msScanInfos.size(), 6);
@@ -298,6 +299,23 @@ void MsReaderPointerAccTests::openFileTest5() {
     QCOMPARE(highTargetScanPoints.size(), 2);
     QCOMPARE(highTargetScanPoints.first().first().x(), 150.0f);
     QCOMPARE(highTargetScanPoints.last().first().x(), 152.0f);
+
+    const TimsbukAlignedPointData *ms1AlignedPointData = msReaderPointerAcc.ptr->alignedPointDataPntr(1);
+    QVERIFY(ms1AlignedPointData != nullptr);
+    QCOMPARE(ms1AlignedPointData->isAlignedWith(scanPoints.value(1)), true);
+    QCOMPARE(ms1AlignedPointData->ionMobilityByPoint.size(), 2);
+    QCOMPARE(ms1AlignedPointData->ionMobilityByPoint.at(0), 0.50f);
+    QCOMPARE(ms1AlignedPointData->ionMobilityByPoint.at(1), 0.55f);
+
+    QMap<ScanNumber, const TimsbukAlignedPointData*> highTargetAlignedPointData;
+    e = msReaderPointerAcc.ptr->getMzTargetAlignedPointData(highTargetKey, &highTargetAlignedPointData);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(highTargetAlignedPointData.size(), 2);
+    QVERIFY(highTargetAlignedPointData.contains(2));
+    QVERIFY(highTargetAlignedPointData.contains(5));
+    QCOMPARE(highTargetAlignedPointData.value(2)->ionMobilityByPoint.size(), 1);
+    QCOMPARE(highTargetAlignedPointData.value(2)->ionMobilityByPoint.first(), 0.90f);
+    QCOMPARE(highTargetAlignedPointData.value(5)->ionMobilityByPoint.first(), 0.90f);
 }
 
 void MsReaderPointerAccTests::openFileTest6() {

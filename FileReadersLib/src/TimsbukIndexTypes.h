@@ -88,6 +88,30 @@ struct FILEREADERSLIB_EXPORTS TimsbukScanPointStore {
     }
 };
 
+struct FILEREADERSLIB_EXPORTS TimsbukAlignedPointData {
+    QVector<float> ionMobilityByPoint;
+
+    void clear() {
+        ionMobilityByPoint.clear();
+    }
+
+    [[nodiscard]] bool isEmpty() const {
+        return ionMobilityByPoint.isEmpty();
+    }
+
+    [[nodiscard]] bool hasIonMobility() const {
+        return !ionMobilityByPoint.isEmpty();
+    }
+
+    [[nodiscard]] bool isAlignedWith(const ScanPoints &scanPoints) const {
+        return ionMobilityByPoint.isEmpty() || ionMobilityByPoint.size() == scanPoints.size();
+    }
+
+    [[nodiscard]] int pointCount() const {
+        return ionMobilityByPoint.size();
+    }
+};
+
 struct FILEREADERSLIB_EXPORTS TimsbukLogicalScan {
     TimsbukLogicalScanDescriptor descriptor;
     TimsbukScanPointStore pointStore;
@@ -162,6 +186,18 @@ struct FILEREADERSLIB_EXPORTS TimsbukIndexMetadata {
 
 [[nodiscard]] inline float timsbukIntensityOf(const ScanPoint &scanPoint) {
     return scanPoint.y();
+}
+
+[[nodiscard]] inline float timsbukIonMobilityOf(
+    const TimsbukAlignedPointData &pointData,
+    int pointIndex
+    ) {
+
+    if (pointIndex < 0 || pointIndex >= pointData.ionMobilityByPoint.size()) {
+        return -1.0f;
+    }
+
+    return pointData.ionMobilityByPoint.at(pointIndex);
 }
 
 [[nodiscard]] inline float timsbukIonMobilityOf(

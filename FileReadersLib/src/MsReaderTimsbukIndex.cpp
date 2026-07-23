@@ -138,9 +138,52 @@ namespace {
 
     struct TimsbukPendingOrdinaryScan {
         MsScanInfo msScanInfo;
-        ScanPoints scanPoints;
+        TimsbukScanPointStore pointStore;
         float scanTimeMilliseconds = -1.0f;
     };
+
+    void sortScanPointStoreByMz(TimsbukScanPointStore *pointStore) {
+        if (pointStore == nullptr || pointStore->scanPoints.size() <= 1) {
+            return;
+        }
+
+        QVector<int> sortIndexes(pointStore->scanPoints.size());
+        for (int i = 0; i < sortIndexes.size(); ++i) {
+            sortIndexes[i] = i;
+        }
+
+        std::sort(
+            sortIndexes.begin(),
+            sortIndexes.end(),
+            [pointStore](int leftIndex, int rightIndex) {
+                const ScanPoint &leftPoint = pointStore->scanPoints.at(leftIndex);
+                const ScanPoint &rightPoint = pointStore->scanPoints.at(rightIndex);
+                if (!MathUtils::tSame(leftPoint.x(), rightPoint.x())) {
+                    return leftPoint.x() < rightPoint.x();
+                }
+                return leftPoint.y() < rightPoint.y();
+            }
+            );
+
+        ScanPoints sortedScanPoints;
+        sortedScanPoints.reserve(pointStore->scanPoints.size());
+        QVector<float> sortedIonMobilityByPoint;
+        if (pointStore->hasIonMobility()) {
+            sortedIonMobilityByPoint.reserve(pointStore->ionMobilityByPoint.size());
+        }
+
+        for (int sortIndex : sortIndexes) {
+            sortedScanPoints.push_back(pointStore->scanPoints.at(sortIndex));
+            if (pointStore->hasIonMobility()) {
+                sortedIonMobilityByPoint.push_back(pointStore->ionMobilityByPoint.at(sortIndex));
+            }
+        }
+
+        pointStore->scanPoints = sortedScanPoints;
+        if (pointStore->hasIonMobility()) {
+            pointStore->ionMobilityByPoint = sortedIonMobilityByPoint;
+        }
+    }
 
     QString cleanPath(const QString &filePath) {
         return QDir::cleanPath(filePath);
@@ -1172,11 +1215,8 @@ namespace {
             pendingScan.msScanInfo.msLevel = 1;
             pendingScan.msScanInfo.nativeFrameNumber = static_cast<int>(cycleIndex);
             pendingScan.scanTimeMilliseconds = pendingGroup.metadata.cycleToRtMilliseconds.at(static_cast<int>(cycleIndex));
-            pendingScan.scanPoints = pointStore.scanPoints;
-            MsReaderBase::sortScanPoints(
-                ScanPointsSort::AscMz,
-                &pendingScan.scanPoints
-                );
+            pendingScan.pointStore = pointStore;
+            sortScanPointStoreByMz(&pendingScan.pointStore);
 
             pendingScans->push_back(pendingScan);
         }
@@ -1215,11 +1255,8 @@ namespace {
                 pendingScan.msScanInfo.nativeScanNumber = window.logicalWindowId();
                 pendingScan.scanTimeMilliseconds
                     = pendingGroup.metadata.groupInfo.cycleToRtMilliseconds.at(static_cast<int>(cycleIndex));
-                pendingScan.scanPoints = pointStore.scanPoints;
-                MsReaderBase::sortScanPoints(
-                    ScanPointsSort::AscMz,
-                    &pendingScan.scanPoints
-                    );
+                pendingScan.pointStore = pointStore;
+                sortScanPointStoreByMz(&pendingScan.pointStore);
 
                 pendingScans->push_back(pendingScan);
             }
@@ -1233,6 +1270,7 @@ namespace {
         const TimsbukIndexMetadata &metadata,
         QMap<ScanNumber, MsScanInfo> *msScanInfo,
         QMap<ScanNumber, ScanPoints> *scanPoints,
+        QMap<ScanNumber, TimsbukAlignedPointData> *alignedPointDataByScanNumber,
         QMap<MzTargetKey, QVector<MsScanInfo*>> *mzTargetVsScanInfosPntrs,
         float *mzMs1Min,
         float *mzMs1Max,
@@ -1244,6 +1282,7 @@ namespace {
 
         msScanInfo->clear();
         scanPoints->clear();
+        alignedPointDataByScanNumber->clear();
         mzTargetVsScanInfosPntrs->clear();
         *mzMs1Min = std::numeric_limits<float>::max();
         *mzMs1Max = -1.0f;
@@ -1309,7 +1348,7 @@ namespace {
         int ms1ScanCount = 0;
         int ms2ScanCount = 0;
         for (const TimsbukPendingOrdinaryScan &pendingScan : pendingScans) {
-            if (pendingScan.scanPoints.isEmpty()) {
+            if (pendingScan.pointStore.scanPoints.isEmpty()) {
                 continue;
             }
 
@@ -1319,20 +1358,26 @@ namespace {
                 * TIMSBUK_SCAN_TIME_MILLISECONDS_TO_MINUTES;
 
             msScanInfo->insert(scanNumber, materializedMsScanInfo);
-            scanPoints->insert(scanNumber, pendingScan.scanPoints);
+            scanPoints->insert(scanNumber, pendingScan.pointStore.scanPoints);
+            if (pendingScan.pointStore.hasIonMobility()) {
+                alignedPointDataByScanNumber->insert(
+                    scanNumber,
+                    TimsbukAlignedPointData{pendingScan.pointStore.ionMobilityByPoint}
+                    );
+            }
 
             if (materializedMsScanInfo.msLevel == 1) {
-                *mzMs1Min = std::min(*mzMs1Min, pendingScan.scanPoints.front().x());
-                *mzMs1Max = std::max(*mzMs1Max, pendingScan.scanPoints.back().x());
+                *mzMs1Min = std::min(*mzMs1Min, pendingScan.pointStore.scanPoints.front().x());
+                *mzMs1Max = std::max(*mzMs1Max, pendingScan.pointStore.scanPoints.back().x());
                 ++ms1ScanCount;
             }
             else {
-                *mzMs2Min = std::min(*mzMs2Min, pendingScan.scanPoints.front().x());
-                *mzMs2Max = std::max(*mzMs2Max, pendingScan.scanPoints.back().x());
+                *mzMs2Min = std::min(*mzMs2Min, pendingScan.pointStore.scanPoints.front().x());
+                *mzMs2Max = std::max(*mzMs2Max, pendingScan.pointStore.scanPoints.back().x());
                 ++ms2ScanCount;
             }
 
-            totalPointCount += pendingScan.scanPoints.size();
+            totalPointCount += pendingScan.pointStore.scanPoints.size();
             ++scanNumber;
         }
 
@@ -1513,12 +1558,14 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
         m_metadata,
         &m_msScanInfo,
         &m_scanPoints,
+        &m_alignedPointDataByScanNumber,
         &m_mzTargetVsScanInfosPntrs,
         &m_mzMs1Min,
         &m_mzMs1Max,
         &m_mzMs2Min,
         &m_mzMs2Max
         ); ree;
+    setHasIonMobility(!m_alignedPointDataByScanNumber.isEmpty());
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "MsReaderTimsbukIndex sidecar reader path active"
@@ -1527,6 +1574,7 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
              << "source_bruker" << m_sourceBrukerDirectoryPath
              << "metadata_version" << m_metadata.version
              << "ms2_group_count" << m_metadata.ms2WindowGroups.size()
+             << "aligned_im_scan_count" << m_alignedPointDataByScanNumber.size()
              << "scan_count" << m_msScanInfo.size();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "MsReaderTimsbukIndex metadata loaded and ordinary MS1/MS2 scans materialized";
@@ -1571,6 +1619,51 @@ Err MsReaderTimsbukIndex::getMzTargetScanPoints(
     ERR_RETURN
 }
 
+Err MsReaderTimsbukIndex::getMzTargetAlignedPointData(
+    const MzTargetKey &targetKey,
+    QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+    ) const {
+
+    ERR_INIT
+
+    scanNumberVsAlignedPointData->clear();
+
+    e = ErrorUtils::isNotEmpty(targetKey); ree;
+    e = ErrorUtils::isTrue(isInit()); ree;
+    e = ErrorUtils::contains(targetKey, m_mzTargetVsScanInfosPntrs); ree;
+
+    const QVector<MsScanInfo*> &targetMsScanInfos = m_mzTargetVsScanInfosPntrs.value(targetKey);
+    e = ErrorUtils::isNotEmpty(targetMsScanInfos); ree;
+
+    for (const MsScanInfo *msScanInfo : targetMsScanInfos) {
+        e = ErrorUtils::isTrue(msScanInfo != nullptr, eFileError); ree;
+        const auto alignedPointDataIt = m_alignedPointDataByScanNumber.constFind(msScanInfo->scanNumber);
+        if (alignedPointDataIt == m_alignedPointDataByScanNumber.constEnd()) {
+            continue;
+        }
+        e = ErrorUtils::contains(msScanInfo->scanNumber, m_scanPoints); ree;
+        e = ErrorUtils::isTrue(
+            alignedPointDataIt.value().isAlignedWith(m_scanPoints.value(msScanInfo->scanNumber)),
+            eFileError
+            ); ree;
+
+        scanNumberVsAlignedPointData->insert(msScanInfo->scanNumber, &alignedPointDataIt.value());
+    }
+
+    e = ErrorUtils::isNotEmpty(*scanNumberVsAlignedPointData); ree;
+
+    ERR_RETURN
+}
+
+const TimsbukAlignedPointData *MsReaderTimsbukIndex::alignedPointDataPntr(ScanNumber scanNumber) const {
+    const auto alignedPointDataIt = m_alignedPointDataByScanNumber.constFind(scanNumber);
+    if (alignedPointDataIt == m_alignedPointDataByScanNumber.constEnd()) {
+        return nullptr;
+    }
+
+    return &alignedPointDataIt.value();
+}
+
 Err MsReaderTimsbukIndex::closeFile() {
     ERR_INIT
 
@@ -1578,6 +1671,7 @@ Err MsReaderTimsbukIndex::closeFile() {
     m_sourceBrukerDirectoryPath.clear();
     m_metadataFilePath.clear();
     m_metadata.clear();
+    m_alignedPointDataByScanNumber.clear();
     m_mzTargetVsScanInfosPntrs.clear();
     m_frameIndexVsDriftTime.clear();
     m_filePath.clear();

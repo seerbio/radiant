@@ -22,6 +22,8 @@ using Ms1FrameTIMSPntrs = QMap<IonMobilityIndex, ScanPoints*>;
 using Ms2FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
 using MzTargetKeyVsMs2FrameTIMS = QMap<MzTargetKey, QMap<FrameNumberTIMS, Ms2FrameTIMS>>;
 
+struct TimsbukAlignedPointData;
+
 enum class ScanPointsSort {
     AscMz,
     AscIntensity,
@@ -174,6 +176,11 @@ public:
             const MzTargetKey& targetKey,
             QMap<ScanNumber, ScanPoints>* scanNumberVsScanPoints
             );
+
+    virtual Err getMzTargetAlignedPointData(
+            const MzTargetKey &targetKey,
+            QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+            ) const;
 
     /**
     * @brief Gets the file path of the currently opened file in the MS Reader.
@@ -514,6 +521,7 @@ public:
     QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
     MzTargetKeyVsMs2FrameTIMS* mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
     const QMap<FrameIndex, double>* frameIndexVsDriftTimePntr() const;
+    virtual const TimsbukAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const;
 
 
 protected:
