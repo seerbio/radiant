@@ -1761,7 +1761,7 @@ float CandidateScorertron::ionMobilityCenter(
 
     if (m_msReaderPointerAcc == nullptr
         || m_msReaderPointerAcc->ptr.isNull()
-        || !m_msReaderPointerAcc->ptr->isTIMS()) {
+        || !m_msReaderPointerAcc->ptr->hasIonMobility()) {
         return libraryIonMobility;
     }
 
