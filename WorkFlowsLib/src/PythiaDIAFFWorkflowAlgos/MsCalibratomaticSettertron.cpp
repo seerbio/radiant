@@ -475,8 +475,7 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
-    if (m_msReaderPointerAcc->ptr->isTIMS()
-        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps()) {
+    if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
         e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
     }
 
@@ -531,8 +530,7 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         << MathUtils::median(m_ms2PPMStDevs);
     }
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()
-        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps()) {
+    if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
         std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
         if (m_ionMobilityStDevs.size() >= minVecSize) {
             m_ionMobilityStDevs.pop_front();
