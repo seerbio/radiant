@@ -13,6 +13,7 @@
 #include "Readers.h"
 #include "SpecLibStructures.h"
 
+#include <QDebug>
 #include <fstream>
 #include <iostream>
 #include <vector>
