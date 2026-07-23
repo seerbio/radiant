@@ -17,7 +17,7 @@ namespace {
 
 CommandLineParser::CommandLineParser() {
     addHelpOption();
-    addPositionalArgument(ARG_MSDATA_PATH, QObject::tr("*.mzML file, Bruker *.d directory, or TIMS sidecar *.idx directory"));
+    addPositionalArgument(ARG_MSDATA_PATH, QObject::tr("*.mzML file, Bruker *.d directory, or timsbuktoolkit index *.idx directory"));
 }
 
 bool CommandLineParser::validateArguments(const QStringList &args) {
@@ -42,7 +42,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     ) || MsReaderTimsbukIndex::isDirectIndexRootPath(m_cliParams.msDataFilePath);
 
     if (!msDataPathIsValid) {
-        qCritical() << QStringLiteral("First command line argument must be *.mzML, Bruker *.d, or a TIMS sidecar *.idx path");
+        qCritical() << QStringLiteral("First command line argument must be *.mzML, Bruker *.d, or a timsbuktoolkit index *.idx path");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;

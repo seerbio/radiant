@@ -234,9 +234,9 @@ namespace {
         const QFileInfo sidecarRootInfo(sidecarRootPath);
         if (!sidecarRootInfo.exists() || !sidecarRootInfo.isDir()) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMSBUK sidecar root not found"
+                     << "timsbuktoolkit index root not found"
                      << "input_path" << contextPath
-                     << "sidecar_root" << sidecarRootPath;
+                     << "index_root" << sidecarRootPath;
             rrr(eFileError);
         }
 
@@ -244,9 +244,9 @@ namespace {
         const QFileInfo metadataFileInfo(metadataFilePath);
         if (!metadataFileInfo.exists() || !metadataFileInfo.isFile()) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMSBUK sidecar root missing metadata.json"
+                     << "timsbuktoolkit index root missing metadata.json"
                      << "input_path" << contextPath
-                     << "sidecar_root" << sidecarRootPath
+                     << "index_root" << sidecarRootPath
                      << "expected_metadata" << metadataFilePath;
             rrr(eFileError);
         }
@@ -1189,7 +1189,7 @@ namespace {
 
         if (fallbackAssignedPeakCount > 0) {
             qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                       << "TIMSBUK peaks outside literal quadrupole isolation IM bounds were assigned to the nearest window"
+                       << "diaPASEF centroid peaks outside literal quadrupole isolation IM bounds were assigned to the nearest window"
                        << "group_id" << pendingGroup->metadata.groupId
                        << "fallback_assigned_peaks" << fallbackAssignedPeakCount
                        << "total_peaks" << totalPeakCount
@@ -1393,7 +1393,7 @@ namespace {
         }
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "MsReaderTimsbukIndex materialized ordinary sidecar scans"
+                 << "MsReaderTimsbukIndex materialized ordinary timsbuktoolkit index scans"
                  << "scan_count" << msScanInfo->size()
                  << "ms1_scan_count" << ms1ScanCount
                  << "ms2_scan_count" << ms2ScanCount
@@ -1432,7 +1432,7 @@ Err MsReaderTimsbukIndex::resolveInputPath(
     if (!inputInfo.exists()) {
         if (normalizedInputPath.endsWith(QStringLiteral(".idx"), Qt::CaseInsensitive)) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMSBUK sidecar path missing"
+                     << "timsbuktoolkit index path missing"
                      << normalizedInputPath;
             rrr(eFileError);
         }
@@ -1440,7 +1440,7 @@ Err MsReaderTimsbukIndex::resolveInputPath(
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "Unsupported TIMSBUK input path"
                  << normalizedInputPath
-                 << "Expected Bruker .d directory or sidecar root";
+                 << "Expected Bruker .d directory or timsbuktoolkit index root";
         rrr(eFileIncorrectTypeError);
     }
 
@@ -1478,7 +1478,7 @@ Err MsReaderTimsbukIndex::resolveInputPath(
 
     if (hasIndexDirectorySuffix(inputInfo)) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "TIMSBUK sidecar root missing metadata.json"
+                 << "timsbuktoolkit index root missing metadata.json"
                  << normalizedInputPath;
         rrr(eFileError);
     }
@@ -1486,7 +1486,7 @@ Err MsReaderTimsbukIndex::resolveInputPath(
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "Unsupported TIMSBUK input path"
              << normalizedInputPath
-             << "Expected Bruker .d directory or sidecar root";
+             << "Expected Bruker .d directory or timsbuktoolkit index root";
     rrr(eFileIncorrectTypeError);
 }
 
@@ -1572,16 +1572,16 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
     setHasIonMobility(!m_alignedPointDataByScanNumber.isEmpty());
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "MsReaderTimsbukIndex sidecar reader path active"
+             << "MsReaderTimsbukIndex timsbuktoolkit index reader path active"
              << "input_path" << filePath
-             << "sidecar_root" << m_sidecarRootPath
+             << "index_root" << m_sidecarRootPath
              << "source_bruker" << m_sourceBrukerDirectoryPath
              << "metadata_version" << m_metadata.version
              << "ms2_group_count" << m_metadata.ms2WindowGroups.size()
              << "aligned_im_scan_count" << m_alignedPointDataByScanNumber.size()
              << "scan_count" << m_msScanInfo.size();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "MsReaderTimsbukIndex metadata loaded and ordinary MS1/MS2 scans materialized";
+             << "MsReaderTimsbukIndex metadata loaded and ordinary MS1/MS2 scans materialized from timsbuktoolkit index input";
 
     ERR_RETURN
 }

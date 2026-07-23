@@ -22,7 +22,7 @@ CommandLineParser::CommandLineParser() {
     addPositionalArgument(ARG_FRAGLIB_PATH, QObject::tr("*.fragLibFF file"));
     addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.radiantConfig file"));
-    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML, *.prqFF, Bruker *.d, or TIMS sidecar *.idx)"));
+    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML, *.prqFF, Bruker *.d, or timsbuktoolkit index *.idx)"));
 
     addOption(QCommandLineOption(
         {ARG_OUTPUT_FOLDER},
@@ -94,7 +94,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.msDataFile = args[4];
     const bool dataFilesPathIsValid = CommandLineParserUtils::isMassSpectrometryDataPath(m_cliParams.msDataFile);
     if (!dataFilesPathIsValid) {
-        qCritical() << QStringLiteral("Fourth command line argument must be *.prqFF, *.mzML, Bruker *.d, or a TIMS sidecar *.idx path");
+        qCritical() << QStringLiteral("Fourth command line argument must be *.prqFF, *.mzML, Bruker *.d, or a timsbuktoolkit index *.idx path");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;

@@ -90,7 +90,7 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     }
 
     else if (isTimsbukIndexInputPath(filePath)) {
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ TIMS sidecar inputs";
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsbuktoolkit index inputs";
         m_useLazyLoading = false;
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);
@@ -142,7 +142,7 @@ Err MsReaderPointerAcc::openFile(
     }
 
     else if (isTimsbukIndexInputPath(filePath)) {
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ TIMS sidecar inputs";
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsbuktoolkit index inputs";
         m_useLazyLoading = false;
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);
