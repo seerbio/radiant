@@ -590,7 +590,8 @@ namespace {
     }
 
     void configureWorkflowFeaturesForReader(
-        bool isTIMS,
+        bool hasIonMobility,
+        bool hasLegacyTIMSFrameMaps,
         QVector<Features> *calibratomaticFeatures,
         QVector<Features> *ppmOptimizationFeatures,
         QVector<Features> *neuralNetFeatures
@@ -600,7 +601,14 @@ namespace {
         *ppmOptimizationFeatures = DiscriminantScoretron::featuresOptimization();
         *neuralNetFeatures = DiscriminantScoretron::featuresNeuralNetwork();
 
-        if (isTIMS) {
+        if (!hasIonMobility) {
+            removeIonMobilityOnlyFeatures(calibratomaticFeatures);
+            removeIonMobilityOnlyFeatures(ppmOptimizationFeatures);
+            removeIonMobilityOnlyFeatures(neuralNetFeatures);
+            return;
+        }
+
+        if (hasLegacyTIMSFrameMaps) {
             appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtCosineMean);
             appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtCosineStDev);
             appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtApexAgreementFraction);
@@ -614,6 +622,26 @@ namespace {
         removeIonMobilityOnlyFeatures(calibratomaticFeatures);
         removeIonMobilityOnlyFeatures(ppmOptimizationFeatures);
         removeIonMobilityOnlyFeatures(neuralNetFeatures);
+
+        appendFeatureIfMissing(calibratomaticFeatures, Ms1IntensityFoundApex100IM);
+        appendFeatureIfMissing(calibratomaticFeatures, IonMobilityDeltaAbs);
+        appendFeatureIfMissing(calibratomaticFeatures, IonMobilityPdAbs);
+
+        appendFeatureIfMissing(ppmOptimizationFeatures, Ms1IntensityFoundApex100IM);
+        appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityDeltaAbs);
+        appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityPdAbs);
+        appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityWeightedDeltaAbs);
+        appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityMatchedIonFraction);
+        appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtApexAgreementFraction);
+
+        appendFeatureIfMissing(neuralNetFeatures, Ms1IntensityFoundApex100IM);
+        appendFeatureIfMissing(neuralNetFeatures, IonMobilityDelta);
+        appendFeatureIfMissing(neuralNetFeatures, IonMobilityDeltaAbs);
+        appendFeatureIfMissing(neuralNetFeatures, IonMobilityPdAbs);
+        appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityWeightedDelta);
+        appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityWeightedDeltaAbs);
+        appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityMatchedIonFraction);
+        appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtApexAgreementFraction);
     }
 
 }//namespace
@@ -661,7 +689,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     msReaderPointerAcc.ptr->printSize();
 
     configureWorkflowFeaturesForReader(
-        msReaderPointerAcc.ptr->isTIMS(),
+        msReaderPointerAcc.ptr->hasIonMobility(),
+        msReaderPointerAcc.ptr->hasLegacyTIMSFrameMaps(),
         &m_calibratomaticFeatures,
         &m_ppmOptimizationFeatures,
         &m_neuralNetFeatures
