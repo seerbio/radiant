@@ -1044,7 +1044,9 @@ namespace {
                     rrr(eFileError);
                 }
 
-                pendingGroup->scanStore(cycleIndex)->scanPoints.push_back({mz, intensity});
+                TimsbukScanPointStore *scanStore = pendingGroup->scanStore(cycleIndex);
+                scanStore->scanPoints.push_back({mz, intensity});
+                scanStore->ionMobilityByPoint.push_back(ionMobility);
                 ++totalPeakCount;
             }
         }
@@ -1178,7 +1180,9 @@ namespace {
                     ++fallbackAssignedPeakCount;
                 }
 
-                pendingGroup->scanStore(windowIndex, cycleIndex)->scanPoints.push_back({mz, intensity});
+                TimsbukScanPointStore *scanStore = pendingGroup->scanStore(windowIndex, cycleIndex);
+                scanStore->scanPoints.push_back({mz, intensity});
+                scanStore->ionMobilityByPoint.push_back(ionMobility);
                 ++totalPeakCount;
             }
         }
