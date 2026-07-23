@@ -163,6 +163,8 @@ public:
 		}
 
 		// fragLibReaderRows->reserve(static_cast<int>(entries.size()));
+		int droppedFragmentCount = 0;
+		int affectedPrecursorCount = 0;
 
 		for (int i = 0; i < entries.size(); i++) {
 
@@ -196,6 +198,7 @@ public:
 
 			QStringList ionLabelsList;
 			ionLabelsList.reserve(fragmentsSize);
+			bool droppedForCurrentPrecursor = false;
 
 			for (int i = 0; i < fragmentsSize; i++) {
 				const auto ionIndexRaw = static_cast<unsigned int>(target.fragments.at(i).index);
@@ -209,6 +212,10 @@ public:
 					constexpr float intensityCutoff = 0.01;
 					ionCharge > flrr.precursorCharge || intensityVal < intensityCutoff)
 					{
+					if (ionCharge > flrr.precursorCharge) {
+						droppedFragmentCount++;
+						droppedForCurrentPrecursor = true;
+					}
 					continue;
 				}
 
@@ -229,6 +236,18 @@ public:
 
 			flrr.ionLabels = ionLabelsList.join(S_GLOBAL_SETTINGS.SEPARATOR);
 			fragLibReaderRows->push_back(flrr);
+			if (droppedForCurrentPrecursor) {
+				affectedPrecursorCount++;
+			}
+		}
+
+		if (droppedFragmentCount > 0) {
+			qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+			           << "Dropped"
+			           << droppedFragmentCount
+			           << "fragments across"
+			           << affectedPrecursorCount
+			           << "precursors because fragment charge exceeded precursor charge while reading speclib";
 		}
 
 		ERR_RETURN
