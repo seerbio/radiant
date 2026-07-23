@@ -15,6 +15,7 @@
 
 #include <QtConcurrent/QtConcurrent>
 #include <QDebug>
+#include <QSet>
 
 #include <iostream>
 #include <fstream>
@@ -740,6 +741,8 @@ Err FragLibTsvReader::getFragLibReaderRows(
     QVector<QString> header;
     QVector<FragLibTsvColumnBinding> headerColumns;
     bool hasDecoyColumn = false;
+    int droppedFragmentChargeCount = 0;
+    QSet<QString> precursorsWithDroppedFragmentCharge;
 
     std::ifstream file(tsvFilePath.toStdString());
     std::string line;
@@ -819,6 +822,17 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 }
             }
 
+            if (fragLibTsvReaderRow.productMz > 0
+                && fragLibTsvReaderRow.fragmentCharge > fragLibTsvReaderRow.precursorCharge) {
+                droppedFragmentChargeCount++;
+                precursorsWithDroppedFragmentCharge.insert(
+                        fragLibTsvReaderRow.modifiedPeptide
+                        + "|"
+                        + QString::number(fragLibTsvReaderRow.precursorCharge)
+                        );
+                continue;
+            }
+
             e = convertFragLibTsvReaderRowsToFragLibReaderRow(fragLibTsvReaderRow); ree;
         }
     }
@@ -852,6 +866,15 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 fragLibReaderRows,
                 m_enableTerminalByPenultimateDecoyAnnotationShift
                 ); ree;
+    }
+
+    if (droppedFragmentChargeCount > 0) {
+        qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                   << "Dropped"
+                   << droppedFragmentChargeCount
+                   << "fragments across"
+                   << precursorsWithDroppedFragmentCharge.size()
+                   << "precursors because fragment charge exceeded precursor charge while reading TSV";
     }
 
     ERR_RETURN

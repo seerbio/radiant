@@ -27,6 +27,7 @@ private Q_SLOTS:
     static void getFragLibReaderRowsApdAliasTest();
     static void getFragLibReaderRowsNoDecoyColumnTest();
     static void getFragLibReaderRowsFiltersInvalidSequencesTest();
+    static void getFragLibReaderRowsDropsFragmentsWithChargeAbovePrecursorChargeTest();
 
     static void compareTest();
 
@@ -170,6 +171,32 @@ void FragLibTsvReaderTests::getFragLibReaderRowsFiltersInvalidSequencesTest() {
 
     QCOMPARE(fragLibReaderRows.size(), 1);
     QCOMPARE(fragLibReaderRows.front().peptideSequenceChargeKey, QString("ACDE|2"));
+}
+
+void FragLibTsvReaderTests::getFragLibReaderRowsDropsFragmentsWithChargeAbovePrecursorChargeTest() {
+    ERR_INIT
+
+    const QString testFile = QDir(qApp->applicationDirPath()).filePath("FragLibTsvReaderTests.high_fragment_charge.tsv");
+    QFile file(testFile);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text));
+
+    QTextStream out(&file);
+    out << "PrecursorMz\tProductMz\tTr_recalibrated\tIonMobility\tLibraryIntensity\tdecoy\tModifiedPeptide\tPrecursorCharge\tFragmentType\tFragmentCharge\tFragmentSeriesNumber\n";
+    out << "845.4\t314.1347\t-24.6\t1.0\t1000.0\t0\tSPEDLER\t1\tb\t1\t3\n";
+    out << "845.4\t379.6876\t-24.6\t1.0\t500.0\t0\tSPEDLER\t1\ty\t2\t6\n";
+    out << "845.4\t417.2456\t-24.6\t1.0\t750.0\t0\tSPEDLER\t1\ty\t1\t3\n";
+    file.close();
+
+    FragLibTsvReader fragLibTsvReader;
+    QList<FragLibReaderRow> fragLibReaderRows;
+    e = fragLibTsvReader.getFragLibReaderRows(testFile, &fragLibReaderRows);
+    QCOMPARE(e, eNoError);
+
+    QCOMPARE(fragLibReaderRows.size(), 1);
+    QCOMPARE(fragLibReaderRows.front().precursorCharge, 1);
+    QCOMPARE(fragLibReaderRows.front().mzVals, QVector<float>({314.1347f, 417.2456f}));
+    QCOMPARE(fragLibReaderRows.front().ionLabels, QString("b3;y3"));
+    QCOMPARE(fragLibReaderRows.front().intensityVals.size(), 2);
 }
 
 void FragLibTsvReaderTests::compareTest() {
