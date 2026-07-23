@@ -6,6 +6,7 @@
 
 #include "CandidateScores.h"
 #include "CandidateScorertron.h"
+#include "CentroidMs2IonMobilityIndex.h"
 #include "IsotopicDistributionBuilder.h"
 #include "MsCalibratomatic.h"
 #include "ParallelUtils.h"
@@ -833,9 +834,13 @@ namespace {
             }
 
             TimsMs2IonMobilityIndex timsMs2IonMobilityIndex;
-            TimsMs2IonMobilityIndex *timsMs2IonMobilityIndexPntr = nullptr;
+            CentroidMs2IonMobilityIndex centroidMs2IonMobilityIndex;
+            Ms2IonMobilityIndexBase *ms2IonMobilityIndexPntr = nullptr;
 
-            const bool hasLibraryIonMobility = hasLegacyTimsFrameMaps
+            const bool hasReaderIonMobility = pi.msReaderPointerAcc != nullptr
+                && !pi.msReaderPointerAcc->ptr.isNull()
+                && pi.msReaderPointerAcc->ptr->hasIonMobility();
+            const bool hasLibraryIonMobility = hasReaderIonMobility
                 && std::any_of(
                     targetDecoyPointers.constBegin(),
                     targetDecoyPointers.constEnd(),
@@ -852,23 +857,48 @@ namespace {
 
                 QElapsedTimer timsMs2IndexTimer;
                 timsMs2IndexTimer.start();
-                MzTargetKeyVsMs2FrameTIMS *ms2FrameTims
-                    = pi.msReaderPointerAcc->ptr->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
-                const QMap<FrameIndex, double> *ionMobilityIndexVsDriftTime
-                    = pi.msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
+                if (hasLegacyTimsFrameMaps) {
+                    MzTargetKeyVsMs2FrameTIMS *ms2FrameTims
+                        = pi.msReaderPointerAcc->ptr->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
+                    const QMap<FrameIndex, double> *ionMobilityIndexVsDriftTime
+                        = pi.msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
 
-                if (ms2FrameTims != nullptr && ionMobilityIndexVsDriftTime != nullptr) {
-                    const auto targetIt = ms2FrameTims->constFind(pi.targetKey);
-                    if (targetIt != ms2FrameTims->constEnd()) {
-                        e = timsMs2IonMobilityIndex.init(
-                            targetIt.value(),
-                            *msFrameMzTargetPntr,
-                            *ionMobilityIndexVsDriftTime
-                            ); rree;
+                    if (ms2FrameTims != nullptr && ionMobilityIndexVsDriftTime != nullptr) {
+                        const auto targetIt = ms2FrameTims->constFind(pi.targetKey);
+                        if (targetIt != ms2FrameTims->constEnd()) {
+                            e = timsMs2IonMobilityIndex.init(
+                                targetIt.value(),
+                                *msFrameMzTargetPntr,
+                                *ionMobilityIndexVsDriftTime
+                                ); rree;
 
-                        if (timsMs2IonMobilityIndex.isInit()) {
-                            timsMs2IonMobilityIndexPntr = &timsMs2IonMobilityIndex;
+                            if (timsMs2IonMobilityIndex.isInit()) {
+                                ms2IonMobilityIndexPntr = &timsMs2IonMobilityIndex;
+                            }
                         }
+                    }
+                }
+                else {
+                    if (scanNumberVsScanPoints.isEmpty()) {
+                        e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(
+                            pi.targetKey,
+                            &scanNumberVsScanPoints
+                            ); rtee;
+                    }
+
+                    QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
+                    e = pi.msReaderPointerAcc->ptr->getMzTargetAlignedPointData(
+                        pi.targetKey,
+                        &scanNumberVsAlignedPointData
+                        ); rtee;
+
+                    e = centroidMs2IonMobilityIndex.init(
+                        scanNumberVsScanPoints,
+                        scanNumberVsAlignedPointData,
+                        *msFrameMzTargetPntr
+                        ); rree;
+                    if (centroidMs2IonMobilityIndex.isInit()) {
+                        ms2IonMobilityIndexPntr = &centroidMs2IonMobilityIndex;
                     }
                 }
 
@@ -877,7 +907,8 @@ namespace {
                              << "TIMS MS2 mobility index"
                              << "target_key" << pi.targetKey
                              << "needed" << needsMs2IonMobilityIndex
-                             << "points" << timsMs2IonMobilityIndex.pointCount()
+                             << "points" << (ms2IonMobilityIndexPntr != nullptr ? ms2IonMobilityIndexPntr->pointCount() : 0)
+                             << "legacy_frame_maps" << hasLegacyTimsFrameMaps
                              << "msec" << timsMs2IndexTimer.elapsed();
                 }
             }
@@ -899,7 +930,7 @@ namespace {
                 pi.turboXicMS1,
                 pi.msFrameMS1,
                 pi.msReaderPointerAcc,
-                timsMs2IonMobilityIndexPntr
+                ms2IonMobilityIndexPntr
                 ); rree;
             candidateScorertron.setUseAdaptiveTimsMobilityCentering(
                 pi.useAdaptiveTimsMobilityCentering

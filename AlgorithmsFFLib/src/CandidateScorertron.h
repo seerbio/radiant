@@ -23,8 +23,8 @@ class CandidateScores;
 class MatriciesAndVecs;
 class MS2Ion;
 class MsFrame;
+class Ms2IonMobilityIndexBase;
 class TargetDecoyCandidatePair;
-class TimsMs2IonMobilityIndex;
 class XICPeakManager;
 
 using namespace Error;
@@ -56,7 +56,7 @@ public:
         TurboXIC *turboXicMS1,
         MsFrame *msFrameMS1,
         MsReaderPointerAcc *msReaderPointerAcc,
-        TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex
+        Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex
         );
 
     Err calculateScores(
@@ -136,7 +136,7 @@ private:
     TurboXIC *m_turboXicMS1;
     MsFrame *m_msFrameMS1;
     MsReaderPointerAcc *m_msReaderPointerAcc;
-    TimsMs2IonMobilityIndex *m_timsMs2IonMobilityIndex;
+    Ms2IonMobilityIndexBase *m_timsMs2IonMobilityIndex;
     MzTargetKey m_mzTargetKey;
     QVector<FrameNumberTIMS> m_ms1FrameNumbersTIMS;
     QVector<QPair<float, IonMobilityIndex>> m_ms1DriftTimeVsIonMobilityIndexTIMS;

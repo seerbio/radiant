@@ -19,7 +19,43 @@ class MsFrame;
 
 using namespace Error;
 
-class ALGORITHMSFFLIB_EXPORTS TimsMs2IonMobilityIndex {
+class ALGORITHMSFFLIB_EXPORTS Ms2IonMobilityIndexBase {
+
+public:
+
+    virtual ~Ms2IonMobilityIndexBase() = default;
+
+    [[nodiscard]] virtual bool isInit() const = 0;
+    [[nodiscard]] virtual int pointCount() const = 0;
+    [[nodiscard]] virtual bool driftTimeFromIonMobilityIndex(
+        IonMobilityIndex ionMobilityIndex,
+        float *driftTime
+        ) const = 0;
+
+    virtual XICPoints extractPointsXIC(
+        float mzMin,
+        float mzMax,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax,
+        float ionMobilityMin,
+        float ionMobilityMax
+        ) const = 0;
+
+    virtual bool extractMobilityProfile(
+        float mzMin,
+        float mzMax,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax,
+        float ionMobilityMin,
+        float ionMobilityMax,
+        float ionMobilityCenter,
+        QMap<IonMobilityIndex, double> *mobilityProfile,
+        float *apexIntensity,
+        float *apexDeltaAbs
+        ) const = 0;
+};
+
+class ALGORITHMSFFLIB_EXPORTS TimsMs2IonMobilityIndex : public Ms2IonMobilityIndexBase {
 
 public:
 
@@ -29,12 +65,12 @@ public:
         const QMap<FrameIndex, double> &ionMobilityIndexVsDriftTime
         );
 
-    [[nodiscard]] bool isInit() const;
-    [[nodiscard]] int pointCount() const;
+    [[nodiscard]] bool isInit() const override;
+    [[nodiscard]] int pointCount() const override;
     [[nodiscard]] bool driftTimeFromIonMobilityIndex(
         IonMobilityIndex ionMobilityIndex,
         float *driftTime
-        ) const;
+        ) const override;
 
     XICPoints extractPointsXIC(
         float mzMin,
@@ -43,7 +79,7 @@ public:
         FrameIndex frameIndexMax,
         float ionMobilityMin,
         float ionMobilityMax
-        ) const;
+        ) const override;
 
     bool extractMobilityProfile(
         float mzMin,
@@ -56,7 +92,7 @@ public:
         QMap<IonMobilityIndex, double> *mobilityProfile,
         float *apexIntensity,
         float *apexDeltaAbs
-        ) const;
+        ) const override;
 
 private:
 

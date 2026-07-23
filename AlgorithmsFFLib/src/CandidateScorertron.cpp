@@ -195,7 +195,7 @@ Err CandidateScorertron::init(
     TurboXIC *turboXicMS1,
     MsFrame *msFrameMS1,
     MsReaderPointerAcc *msReaderPointerAcc,
-    TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex
+    Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex
     ) {
 
     ERR_INIT
@@ -893,7 +893,7 @@ namespace {
 
     bool canUseLibraryIonMobilityFilteredMs2(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         float ionMobilityCenter
         ) {
 
@@ -908,7 +908,7 @@ namespace {
     }
 
     Err extractLibraryIonMobilityFilteredTimsMs2Xic(
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         float ionMobilityMin,
         float ionMobilityMax,
         float mzVal,
@@ -944,7 +944,7 @@ namespace {
 
     bool driftTimeFromIonMobilityIndex(
         const MsReaderPointerAcc *msReaderPointerAcc,
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         IonMobilityIndex ionMobilityIndex,
         double *driftTime
         ) {
@@ -1000,7 +1000,7 @@ namespace {
     }
 
     LocalIonMobilityPeak selectLocalIonMobilityPeakForTimsMs2(
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         const MsFrame *msFrameMzTarget,
         const QVector<MS2Ion> &ms2Ions,
         float libraryIonMobility,
@@ -1118,7 +1118,7 @@ namespace {
     }
 
     LocalIonMobilityPeak selectMobilityProfilePeakForTimsMs2(
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         const QVector<MS2Ion> &ms2Ions,
         float libraryIonMobility,
         float ppmTol,
@@ -1229,7 +1229,7 @@ namespace {
     Err getLibraryIonMobilityFilteredTimsMs2XICs(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         const MsFrame *msFrameMzTarget,
         float ionMobilityCenter,
         float ppmTol,
@@ -1327,7 +1327,7 @@ namespace {
         FrameIndex frameIndexPredictedMax,
         XICPeakManager *xicPeakManager,
         const MsFrame *msFrameMzTarget,
-        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         float ionMobilityCenter,
         float targetedIonMobilityWindowHalfWidth,
         bool useAdaptiveTimsMobilityCentering,
