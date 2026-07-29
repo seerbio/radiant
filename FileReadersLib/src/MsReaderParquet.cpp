@@ -9,6 +9,28 @@
 
 namespace {
 
+    Err prepareForOpen(
+            const QString &filePath,
+            QString *normalizedFilePath
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::fileExists(filePath); ree;
+
+        QFileInfo fi(filePath);
+        const QString fileSuffix = fi.suffix();
+
+        e = ErrorUtils::isTrue(
+                MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
+                eFileIncorrectTypeError
+        ); ree;
+
+        *normalizedFilePath = filePath;
+
+        ERR_RETURN
+    }
+
     Err convertForMemberVars(
             const QVector<MsParquetReaderRow> &msParquetReaderRows,
             QMap<ScanNumber, MsScanInfo> *memberMsScanInfo,
@@ -73,21 +95,8 @@ Err MsReaderParquet::openFile(const QString &filePath) {
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(filePath); ree;
-    m_filePath = filePath;
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
-            eFileIncorrectTypeError
-    ); ree;
-
-    m_msScanInfo.clear();
-    m_scanPoints.clear();
-    m_frameIndexVsDriftTime.clear();
-    m_hasIonMobility = false;
+    e = prepareForOpen(filePath, &m_filePath); ree;
+    e = closeFile(); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -118,21 +127,8 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(filePath); ree;
-    m_filePath = filePath;
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
-            eFileIncorrectTypeError
-    ); ree;
-
-    m_msScanInfo.clear();
-    m_scanPoints.clear();
-    m_frameIndexVsDriftTime.clear();
-    m_hasIonMobility = false;
+    e = prepareForOpen(filePath, &m_filePath); ree;
+    e = closeFile(); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -162,21 +158,8 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(filePath); ree;
-    m_filePath = filePath;
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
-            eFileIncorrectTypeError
-    ); ree;
-
-    m_msScanInfo.clear();
-    m_scanPoints.clear();
-    m_frameIndexVsDriftTime.clear();
-    m_hasIonMobility = false;
+    e = prepareForOpen(filePath, &m_filePath); ree;
+    e = closeFile(); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(

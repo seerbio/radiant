@@ -3322,7 +3322,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
 
     if (m_msReaderPointerAcc != nullptr
         && !m_msReaderPointerAcc->ptr.isNull()
-        && m_msReaderPointerAcc->ptr->usesCentroidIonMobility()) {
+        && m_msReaderPointerAcc->ptr->hasIonMobility()) {
         e = observeCentroidMs1IonMobility(
             m_msReaderPointerAcc,
             m_msFrameMS1,

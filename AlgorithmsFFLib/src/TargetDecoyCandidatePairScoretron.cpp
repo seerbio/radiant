@@ -344,7 +344,7 @@ namespace {
 
         if (pi.msReaderPointerAcc == nullptr
             || pi.msReaderPointerAcc->ptr.isNull()
-            || !pi.msReaderPointerAcc->ptr->usesCentroidIonMobility()) {
+            || !pi.msReaderPointerAcc->ptr->hasIonMobility()) {
             ERR_RETURN
         }
 

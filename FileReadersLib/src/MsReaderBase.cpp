@@ -580,10 +580,6 @@ bool MsReaderBase::hasIonMobility() const {
     return m_hasIonMobility;
 }
 
-bool MsReaderBase::usesCentroidIonMobility() const {
-    return hasIonMobility();
-}
-
 float MsReaderBase::mzMs2Min() const {
     return m_mzMs2Min;
 }

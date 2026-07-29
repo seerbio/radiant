@@ -95,17 +95,14 @@ void MsReaderBaseTests::capabilityStateTest() {
     MsReaderBase msReaderBase;
 
     QCOMPARE(msReaderBase.hasIonMobility(), false);
-    QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
 
     msReaderBase.m_hasIonMobility = true;
 
     QCOMPARE(msReaderBase.hasIonMobility(), true);
-    QCOMPARE(msReaderBase.usesCentroidIonMobility(), true);
 
     msReaderBase.reset();
 
     QCOMPARE(msReaderBase.hasIonMobility(), false);
-    QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
 }
 
 void MsReaderBaseTests::resetTest() {
