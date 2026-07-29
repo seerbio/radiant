@@ -13,7 +13,6 @@
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "IdLevelQValueAnnotator.h"
-#include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
@@ -44,13 +43,7 @@ PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
 , m_neuralNetFeatures(DiscriminantScoretron::featuresNeuralNetwork())
 {}
 
-PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() {
-
-    for (FeatureFinderHillBuilder *h : m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS) {
-        delete h;
-    }
-
-}
+PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() = default;
 
 Err PythiaDIAFFWorkflow::init(
         const PythiaParameters &pythiaParameters,
@@ -199,7 +192,7 @@ namespace {
             }
 
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS neural-net candidate pool stratified by target key"
+                     << "Ion-mobility neural-net candidate pool stratified by target key"
                      << "initial_rows" << candidateScoresTargetsAndDecoys->size()
                      << "selected_rows" << candidateScoresStratified.size()
                      << "target_keys" << targetKeyVsCandidateScores.size()
@@ -582,7 +575,6 @@ namespace {
 
     void configureWorkflowFeaturesForReader(
         bool hasIonMobility,
-        bool hasLegacyTIMSFrameMaps,
         QVector<Features> *calibratomaticFeatures,
         QVector<Features> *ppmOptimizationFeatures,
         QVector<Features> *neuralNetFeatures
@@ -596,17 +588,6 @@ namespace {
             removeIonMobilityOnlyFeatures(calibratomaticFeatures);
             removeIonMobilityOnlyFeatures(ppmOptimizationFeatures);
             removeIonMobilityOnlyFeatures(neuralNetFeatures);
-            return;
-        }
-
-        if (hasLegacyTIMSFrameMaps) {
-            appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtCosineMean);
-            appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtCosineStDev);
-            appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtApexAgreementFraction);
-
-            appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtCosineMean);
-            appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtCosineStDev);
-            appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtApexAgreementFraction);
             return;
         }
 
@@ -660,7 +641,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     configureWorkflowFeaturesForReader(
         msReaderPointerAcc.ptr->hasIonMobility(),
-        msReaderPointerAcc.ptr->usesLegacyTimsFrameMaps(),
         &m_calibratomaticFeatures,
         &m_ppmOptimizationFeatures,
         &m_neuralNetFeatures
@@ -746,17 +726,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         ); ree;
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
-
-    // if (msReaderPointerAcc.ptr->isTIMS()) {
-    //
-    //     e = IonMobilitron::assignIonMobilityValues(
-    //         m_pythiaParameters,
-    //         candidateScoresTargetsAndDecoys,
-    //         &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-    //         ); ree;
-    //
-    //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
-    // }
 
 // #define WRITE_DISC_RESULTS
 #ifdef WRITE_DISC_RESULTS

@@ -368,7 +368,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                 &candidateScoresVecBatchPntrs,
                 &fdrVsCounts,
                 &weights,
-                m_msReaderPointerAcc->ptr->isTIMS()
+                false
                 ); ree;
 
             QString fdrString;
@@ -499,7 +499,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
              << m_msCalibratomatic->scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs)
              << "minutes";
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+    if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "Optimal ionMobilityWindow setting:"
              << m_msCalibratomatic->ionMobilityStDev(m_pythiaParameters->scanTimeWindowStDevs)

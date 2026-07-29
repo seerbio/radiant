@@ -38,15 +38,6 @@ public:
         QMap<MzTargetKey, TurboXIC*> *mzTargetKeyVsTurboXicPntr
         );
 
-    static Err applyTimsCalibrationEvidencePrefilter(
-        const QVector<MsScanInfo> &msScanInfos,
-        const PythiaParameters &pythiaParameters,
-        const MsCalibratomatic &msCalibratomatic,
-        const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
-        const QMap<MzTargetKey, MsFrame*> &mzTargetKeyVsMsFramePntr,
-        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
-        );
-
     static Err buildCandidateScoresPtrs(
         QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
         QVector<CandidateScores*> *candidateScoresPntrs

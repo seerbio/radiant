@@ -8,7 +8,6 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
-#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
@@ -155,8 +154,6 @@ private:
     int m_minTrainingCountTranche;
 
     QVector<float> m_weights;
-
-    QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
     QList<FragLibReaderRow> m_fragLibReaderRows;
 
