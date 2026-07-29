@@ -138,8 +138,6 @@ private:
     MsReaderPointerAcc *m_msReaderPointerAcc;
     Ms2IonMobilityIndexBase *m_timsMs2IonMobilityIndex;
     MzTargetKey m_mzTargetKey;
-    QVector<FrameNumberTIMS> m_ms1FrameNumbersTIMS;
-    QVector<QPair<float, IonMobilityIndex>> m_ms1DriftTimeVsIonMobilityIndexTIMS;
 
     float m_minPeakCount;
     float m_scanTimeRange;

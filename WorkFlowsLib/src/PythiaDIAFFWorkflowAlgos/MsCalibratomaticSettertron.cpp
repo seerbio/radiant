@@ -7,7 +7,6 @@
 #include "ErrorUtils.h"
 #include "DiscriminantScoretron.h"
 #include "FDRCLassifierNeuralNet.h"
-#include "IonMobilitron.h"
 #include "InterferingCandidatesEliminatomatic.h"
 #include "MsReaderPointerAcc.h"
 #include "ObjectCSVWriters.h"
@@ -134,7 +133,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             numberOfTranches,
             &targetDecoyCandidatePointersTranched
             ); ree;
-    const bool useLegacyTimsFrameMaps = m_msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
 
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
@@ -152,38 +150,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &m_msCalibratomatic,
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
-
-        if (useLegacyTimsFrameMaps) {
-            int candidateCountPreEvidencePrefilter = 0;
-            for (auto it = mzTargetKeyVsTargetDecoyCandidatePointers.constBegin();
-                 it != mzTargetKeyVsTargetDecoyCandidatePointers.constEnd();
-                 ++it) {
-                candidateCountPreEvidencePrefilter += it.value().size();
-            }
-
-            e = PythiaDIAFFWorkflowSharedMethods::applyTimsCalibrationEvidencePrefilter(
-                uniqueMsScanInfosCalibration,
-                *m_pythiaParameters,
-                m_msCalibratomatic,
-                mzTargetKeyVsTurboXicPntrs,
-                m_targetDecoyCandidatePairScoretron->mzTargetKeyVsMsFramePntr(),
-                &mzTargetKeyVsTargetDecoyCandidatePointers
-                ); ree;
-
-            int candidateCountPostEvidencePrefilter = 0;
-            for (auto it = mzTargetKeyVsTargetDecoyCandidatePointers.constBegin();
-                 it != mzTargetKeyVsTargetDecoyCandidatePointers.constEnd();
-                 ++it) {
-                candidateCountPostEvidencePrefilter += it.value().size();
-            }
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS calibration evidence prefilter"
-                     << "candidates_pre" << candidateCountPreEvidencePrefilter
-                     << "candidates_post" << candidateCountPostEvidencePrefilter
-                     << "min_matched_fragments" << 2
-                     << "min_evidence_score" << 0.0;
-        }
 
         constexpr int topNMS2IonsCalibration = 6;
 
@@ -223,7 +189,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
             &weights,
-            useLegacyTimsFrameMaps
+            false
             ); ree;
 
         constexpr int fdrKey = 5;
@@ -438,14 +404,6 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     if (candidateScoresVecBatchPntrsResized.isEmpty()) {
         ERR_RETURN
-    }
-
-    if (m_msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps()) {
-        e = IonMobilitron::assignIonMobilityIndexesToCandidateScores(
-            candidateScoresVecBatchPntrsResized,
-            m_pythiaParameters->ms1ExtractionWidthPPM,
-            m_msReaderPointerAcc
-            ); ree;
     }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
