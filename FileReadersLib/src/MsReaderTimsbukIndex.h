@@ -40,6 +40,8 @@ public:
         const QPair<double, double> &filterRange
         ) override;
 
+    Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax) override;
+
     Err getMzTargetScanPoints(
         const MzTargetKey &targetKey,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints

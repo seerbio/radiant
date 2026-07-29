@@ -657,30 +657,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     const bool hasAnalysisScanTimeRange
         = m_pythiaParameters.analysisScanTimeMin >= 0.0
           && m_pythiaParameters.analysisScanTimeMax > m_pythiaParameters.analysisScanTimeMin;
-    const QFileInfo msDataFileInfo(msDataFilePath);
-    const bool useBrukerEarlyScanTimeFilter
-        = hasAnalysisScanTimeRange
-          && msDataFileInfo.isDir()
-          && msDataFileInfo.suffix().compare(
-              S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION,
-              Qt::CaseInsensitive
-              ) == 0;
+    e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
-    if (useBrukerEarlyScanTimeFilter) {
-        e = msReaderPointerAcc.openFile(
-            msDataFilePath,
-            QStringLiteral("scanTime"),
-            {
-                m_pythiaParameters.analysisScanTimeMin,
-                m_pythiaParameters.analysisScanTimeMax
-            }
-            ); ree;
-    }
-    else {
-        e = msReaderPointerAcc.openFile(msDataFilePath); ree;
-    }
-
-    if (hasAnalysisScanTimeRange && !useBrukerEarlyScanTimeFilter) {
+    if (hasAnalysisScanTimeRange) {
         e = msReaderPointerAcc.ptr->restrictScanTimeRange(
             static_cast<ScanTime>(m_pythiaParameters.analysisScanTimeMin),
             static_cast<ScanTime>(m_pythiaParameters.analysisScanTimeMax)

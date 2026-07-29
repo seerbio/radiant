@@ -513,7 +513,7 @@ public:
     [[nodiscard]] bool isTIMS() const;
     [[nodiscard]] bool hasIonMobility() const;
     [[nodiscard]] bool hasLegacyTIMSFrameMaps() const;
-    Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax);
+    virtual Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax);
 
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;

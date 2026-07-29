@@ -1592,10 +1592,51 @@ Err MsReaderTimsbukIndex::openFile(
     const QPair<double, double> &filterRange
     ) {
 
-    Q_UNUSED(columnToFilterBy)
-    Q_UNUSED(filterRange)
+    ERR_INIT
 
-    return openFile(filePath);
+    if (!columnToFilterBy.isEmpty()
+        && !StringUtils::stringsMatch(columnToFilterBy, QStringLiteral("scanTime"), false)) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Unsupported timsbuktoolkit index filter column"
+                 << columnToFilterBy;
+        rrr(eFunctionNotImplemented);
+    }
+
+    e = openFile(filePath); ree;
+    e = restrictScanTimeRange(
+        static_cast<ScanTime>(filterRange.first),
+        static_cast<ScanTime>(filterRange.second)
+        ); ree;
+
+    ERR_RETURN
+}
+
+Err MsReaderTimsbukIndex::restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax) {
+
+    ERR_INIT
+
+    const int originalAlignedPointDataCount = m_alignedPointDataByScanNumber.size();
+
+    e = MsReaderBase::restrictScanTimeRange(scanTimeMin, scanTimeMax); ree;
+
+    for (auto it = m_alignedPointDataByScanNumber.begin(); it != m_alignedPointDataByScanNumber.end();) {
+        if (m_msScanInfo.contains(it.key())) {
+            ++it;
+        }
+        else {
+            it = m_alignedPointDataByScanNumber.erase(it);
+        }
+    }
+
+    setHasIonMobility(!m_alignedPointDataByScanNumber.isEmpty());
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Restricted timsbuktoolkit aligned ion mobility state"
+             << scanTimeMin
+             << scanTimeMax
+             << "aligned_point_scans" << originalAlignedPointDataCount << "->" << m_alignedPointDataByScanNumber.size();
+
+    ERR_RETURN
 }
 
 Err MsReaderTimsbukIndex::getMzTargetScanPoints(
