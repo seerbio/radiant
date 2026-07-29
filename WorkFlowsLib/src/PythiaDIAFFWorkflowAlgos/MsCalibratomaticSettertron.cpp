@@ -134,8 +134,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             numberOfTranches,
             &targetDecoyCandidatePointersTranched
             ); ree;
-    const bool useLegacyTimsFrameMaps = m_msReaderPointerAcc->ptr->isTIMS()
-        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
+    const bool useLegacyTimsFrameMaps = m_msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
 
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
@@ -441,8 +440,7 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         ERR_RETURN
     }
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()
-        && m_msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps()) {
+    if (m_msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps()) {
         e = IonMobilitron::assignIonMobilityIndexesToCandidateScores(
             candidateScoresVecBatchPntrsResized,
             m_pythiaParameters->ms1ExtractionWidthPPM,

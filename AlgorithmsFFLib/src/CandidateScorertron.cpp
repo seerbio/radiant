@@ -31,8 +31,7 @@ namespace {
     bool usesLegacyTimsFrameMaps(const MsReaderPointerAcc *msReaderPointerAcc) {
         return msReaderPointerAcc != nullptr
             && !msReaderPointerAcc->ptr.isNull()
-            && msReaderPointerAcc->ptr->isTIMS()
-            && msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
+            && msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
     }
 
     bool readerHasIonMobility(const MsReaderPointerAcc *msReaderPointerAcc) {
@@ -1759,9 +1758,7 @@ float CandidateScorertron::ionMobilityCenter(
         return libraryIonMobility;
     }
 
-    if (m_msReaderPointerAcc == nullptr
-        || m_msReaderPointerAcc->ptr.isNull()
-        || !m_msReaderPointerAcc->ptr->hasIonMobility()) {
+    if (!readerHasIonMobility(m_msReaderPointerAcc)) {
         return libraryIonMobility;
     }
 

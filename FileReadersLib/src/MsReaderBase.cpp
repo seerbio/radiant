@@ -636,6 +636,14 @@ bool MsReaderBase::hasLegacyTIMSFrameMaps() const {
     return m_hasLegacyTIMSFrameMaps;
 }
 
+bool MsReaderBase::usesLegacyTimsFrameMaps() const {
+    return isTIMS() && hasLegacyTIMSFrameMaps();
+}
+
+bool MsReaderBase::usesCentroidIonMobility() const {
+    return hasIonMobility() && !usesLegacyTimsFrameMaps();
+}
+
 float MsReaderBase::mzMs2Min() const {
     return m_mzMs2Min;
 }

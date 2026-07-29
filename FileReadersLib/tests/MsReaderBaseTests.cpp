@@ -97,6 +97,8 @@ void MsReaderBaseTests::capabilityStateTest() {
     QCOMPARE(msReaderBase.isTIMS(), false);
     QCOMPARE(msReaderBase.hasIonMobility(), false);
     QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), false);
+    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), false);
+    QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
 
     msReaderBase.m_isTIMS = true;
     msReaderBase.m_hasIonMobility = true;
@@ -105,12 +107,20 @@ void MsReaderBaseTests::capabilityStateTest() {
     QCOMPARE(msReaderBase.isTIMS(), true);
     QCOMPARE(msReaderBase.hasIonMobility(), true);
     QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), true);
+    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), true);
+    QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
+
+    msReaderBase.m_isTIMS = false;
+    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), false);
+    QCOMPARE(msReaderBase.usesCentroidIonMobility(), true);
 
     msReaderBase.resetTIMSCapabilityState();
 
     QCOMPARE(msReaderBase.isTIMS(), false);
     QCOMPARE(msReaderBase.hasIonMobility(), false);
     QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), false);
+    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), false);
+    QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
 }
 
 void MsReaderBaseTests::resetTest() {

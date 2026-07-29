@@ -136,8 +136,7 @@ namespace {
     bool usesLegacyTimsWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
         return msReaderPointerAcc != nullptr
             && !msReaderPointerAcc->ptr.isNull()
-            && msReaderPointerAcc->ptr->isTIMS()
-            && msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
+            && msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
     }
 
     Err filterScoredCandidatesForNeuralNet(
@@ -669,7 +668,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     configureWorkflowFeaturesForReader(
         msReaderPointerAcc.ptr->hasIonMobility(),
-        msReaderPointerAcc.ptr->hasLegacyTIMSFrameMaps(),
+        msReaderPointerAcc.ptr->usesLegacyTimsFrameMaps(),
         &m_calibratomaticFeatures,
         &m_ppmOptimizationFeatures,
         &m_neuralNetFeatures

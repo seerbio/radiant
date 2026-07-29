@@ -20,6 +20,28 @@
 #include <algorithm>
 #include <cmath>
 
+namespace {
+
+    bool usesLegacyTimsWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
+        return msReaderPointerAcc != nullptr
+            && !msReaderPointerAcc->ptr.isNull()
+            && msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
+    }
+
+    bool readerHasIonMobility(const MsReaderPointerAcc *msReaderPointerAcc) {
+        return msReaderPointerAcc != nullptr
+            && !msReaderPointerAcc->ptr.isNull()
+            && msReaderPointerAcc->ptr->hasIonMobility();
+    }
+
+    bool usesCentroidIonMobilityWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
+        return msReaderPointerAcc != nullptr
+            && !msReaderPointerAcc->ptr.isNull()
+            && msReaderPointerAcc->ptr->usesCentroidIonMobility();
+    }
+
+}
+
 
 TargetDecoyCandidatePairScoretron2::TargetDecoyCandidatePairScoretron2()
 : m_msReaderPointerAcc(nullptr)
@@ -708,11 +730,7 @@ namespace {
                                     : targetDecoyPointers.mid(midPoint, targetDecoyPointers.size() - midPoint);
             }
 
-            const bool isTimsReader = pi.msReaderPointerAcc != nullptr
-                && !pi.msReaderPointerAcc->ptr.isNull()
-                && pi.msReaderPointerAcc->ptr->isTIMS();
-            const bool hasLegacyTimsFrameMaps = isTimsReader
-                && pi.msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps();
+            const bool hasLegacyTimsFrameMaps = usesLegacyTimsWorkflow(pi.msReaderPointerAcc);
 
             QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
             MsFrame msFrameMzTarget;
@@ -837,9 +855,7 @@ namespace {
             CentroidMs2IonMobilityIndex centroidMs2IonMobilityIndex;
             Ms2IonMobilityIndexBase *ms2IonMobilityIndexPntr = nullptr;
 
-            const bool hasReaderIonMobility = pi.msReaderPointerAcc != nullptr
-                && !pi.msReaderPointerAcc->ptr.isNull()
-                && pi.msReaderPointerAcc->ptr->hasIonMobility();
+            const bool hasReaderIonMobility = readerHasIonMobility(pi.msReaderPointerAcc);
             const bool hasLibraryIonMobility = hasReaderIonMobility
                 && std::any_of(
                     targetDecoyPointers.constBegin(),
@@ -878,7 +894,7 @@ namespace {
                         }
                     }
                 }
-                else {
+                else if (usesCentroidIonMobilityWorkflow(pi.msReaderPointerAcc)) {
                     if (scanNumberVsScanPoints.isEmpty()) {
                         e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(
                             pi.targetKey,
@@ -991,7 +1007,7 @@ namespace {
                 allCandidateScores.push_back({candidateScoresTarget, candidateScoresDecoy});
 
                 if (builtTargetDecoyPointersFromAllCandidates
-                    && isTimsReader
+                    && hasLegacyTimsFrameMaps
                     && scoreProgressTimer.elapsed() >= 30000) {
                     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                              << "TIMS main target progress"
@@ -1005,7 +1021,7 @@ namespace {
                 }
             }
 
-            if (builtTargetDecoyPointersFromAllCandidates && isTimsReader) {
+            if (builtTargetDecoyPointersFromAllCandidates && hasLegacyTimsFrameMaps) {
                 qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                          << "TIMS main target scored"
                          << "target_key" << pi.targetKey
