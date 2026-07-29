@@ -61,7 +61,7 @@ public:
         quint64 scoreCalls = 0;
         quint64 targetCalls = 0;
         quint64 decoyCalls = 0;
-        quint64 timsIonMobilityCalls = 0;
+        quint64 ionMobilityCalls = 0;
         quint64 zeroIntensityMatrix = 0;
         quint64 zeroIonCountVector = 0;
         quint64 zeroProductVector = 0;
@@ -127,7 +127,7 @@ void CandidateScorertron::Private::resetDiagnostics() {
 QString CandidateScorertron::Private::scoringDiagnosticsSummary(const MzTargetKey &mzTargetKey) const {
 
     return QStringLiteral(
-        "Radiant candidate scoring diagnostics target_key=%1 score_calls=%2 target_calls=%3 decoy_calls=%4 tims_im_calls=%5 "
+        "Radiant candidate scoring diagnostics target_key=%1 score_calls=%2 target_calls=%3 decoy_calls=%4 ion_mobility_calls=%5 "
         "zero_intensity_matrix=%6 zero_ion_count_vector=%7 zero_product_vector=%8 empty_peak_integrations=%9 "
         "empty_best_correlations=%10 low_correlation_rejected=%11 no_discriminant_candidate=%12 scored_candidates=%13"
         )
@@ -135,7 +135,7 @@ QString CandidateScorertron::Private::scoringDiagnosticsSummary(const MzTargetKe
         .arg(m_scoringDiagnostics.scoreCalls)
         .arg(m_scoringDiagnostics.targetCalls)
         .arg(m_scoringDiagnostics.decoyCalls)
-        .arg(m_scoringDiagnostics.timsIonMobilityCalls)
+        .arg(m_scoringDiagnostics.ionMobilityCalls)
         .arg(m_scoringDiagnostics.zeroIntensityMatrix)
         .arg(m_scoringDiagnostics.zeroIonCountVector)
         .arg(m_scoringDiagnostics.zeroProductVector)
@@ -157,20 +157,20 @@ CandidateScorertron::CandidateScorertron()
 , m_turboXicMS1(nullptr)
 , m_msFrameMS1(nullptr)
 , m_msReaderPointerAcc(nullptr)
-, m_timsMs2IonMobilityIndex(nullptr)
+, m_ms2IonMobilityIndex(nullptr)
 , d_ptr(QScopedPointer<Private>(new Private))
 , m_minPeakCount(3.9)
 , m_scanTimeRange(0)
 , m_useTopNIntegrationsParam(false)
-, m_useAdaptiveTimsMobilityCentering(false)
+, m_useAdaptiveIonMobilityCentering(false)
 {}
 
 CandidateScorertron::~CandidateScorertron() {}
 
-void CandidateScorertron::setUseAdaptiveTimsMobilityCentering(
-    bool useAdaptiveTimsMobilityCentering
+void CandidateScorertron::setUseAdaptiveIonMobilityCentering(
+    bool useAdaptiveIonMobilityCentering
     ) {
-    m_useAdaptiveTimsMobilityCentering = useAdaptiveTimsMobilityCentering;
+    m_useAdaptiveIonMobilityCentering = useAdaptiveIonMobilityCentering;
 }
 
 QString CandidateScorertron::scoringDiagnosticsSummary() const {
@@ -200,7 +200,7 @@ Err CandidateScorertron::init(
     TurboXIC *turboXicMS1,
     MsFrame *msFrameMS1,
     MsReaderPointerAcc *msReaderPointerAcc,
-    Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex
+    Ms2IonMobilityIndexBase *ms2IonMobilityIndex
     ) {
 
     ERR_INIT
@@ -240,7 +240,7 @@ Err CandidateScorertron::init(
     m_averagineTable = averagineTable;
     m_msFrameMS1 = msFrameMS1;
     m_msReaderPointerAcc = msReaderPointerAcc;
-    m_timsMs2IonMobilityIndex = timsMs2IonMobilityIndex;
+    m_ms2IonMobilityIndex = ms2IonMobilityIndex;
     m_features = features;
     m_minPeakCount = minPeakCount;
     m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
@@ -579,11 +579,11 @@ Err CandidateScorertron::calculateScores(
         else {
             d_ptr->m_scoringDiagnostics.targetCalls++;
         }
-        if (m_timsMs2IonMobilityIndex != nullptr
-            && m_timsMs2IonMobilityIndex->isInit()
+        if (m_ms2IonMobilityIndex != nullptr
+            && m_ms2IonMobilityIndex->isInit()
             && targetDecoyCandidatePair != nullptr
             && targetDecoyCandidatePair->iIM() > 0.0f) {
-            d_ptr->m_scoringDiagnostics.timsIonMobilityCalls++;
+            d_ptr->m_scoringDiagnostics.ionMobilityCalls++;
         }
     }
 
@@ -869,13 +869,13 @@ namespace {
 
     bool canUseLibraryIonMobilityFilteredMs2(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         float ionMobilityCenter
         ) {
 
         if (targetDecoyCandidatePair == nullptr
-            || timsMs2IonMobilityIndex == nullptr
-            || !timsMs2IonMobilityIndex->isInit()
+            || ms2IonMobilityIndex == nullptr
+            || !ms2IonMobilityIndex->isInit()
             || ionMobilityCenter <= 0.0f) {
             return false;
         }
@@ -884,7 +884,7 @@ namespace {
     }
 
     Err extractLibraryIonMobilityFilteredTimsMs2Xic(
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         float ionMobilityMin,
         float ionMobilityMax,
         float mzVal,
@@ -898,7 +898,7 @@ namespace {
 
         xicPoints->clear();
 
-        if (timsMs2IonMobilityIndex == nullptr || !timsMs2IonMobilityIndex->isInit()) {
+        if (ms2IonMobilityIndex == nullptr || !ms2IonMobilityIndex->isInit()) {
             ERR_RETURN
         }
 
@@ -906,7 +906,7 @@ namespace {
         const float mzMin = mzVal - massTol;
         const float mzMax = mzVal + massTol;
 
-        *xicPoints = timsMs2IonMobilityIndex->extractPointsXIC(
+        *xicPoints = ms2IonMobilityIndex->extractPointsXIC(
             mzMin,
             mzMax,
             frameIndexPredictedMin,
@@ -920,7 +920,7 @@ namespace {
 
     bool driftTimeFromIonMobilityIndex(
         const MsReaderPointerAcc *msReaderPointerAcc,
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         IonMobilityIndex ionMobilityIndex,
         double *driftTime
         ) {
@@ -930,8 +930,8 @@ namespace {
         }
 
         float indexedDriftTime = -1.0f;
-        if (timsMs2IonMobilityIndex != nullptr
-            && timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &indexedDriftTime)) {
+        if (ms2IonMobilityIndex != nullptr
+            && ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &indexedDriftTime)) {
             *driftTime = indexedDriftTime;
             return true;
         }
@@ -1092,7 +1092,7 @@ namespace {
     }
 
     LocalIonMobilityPeak selectLocalIonMobilityPeakForTimsMs2(
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         const MsFrame *msFrameMzTarget,
         const QVector<MS2Ion> &ms2Ions,
         float libraryIonMobility,
@@ -1103,8 +1103,8 @@ namespace {
 
         LocalIonMobilityPeak peak;
 
-        if (timsMs2IonMobilityIndex == nullptr
-            || !timsMs2IonMobilityIndex->isInit()
+        if (ms2IonMobilityIndex == nullptr
+            || !ms2IonMobilityIndex->isInit()
             || msFrameMzTarget == nullptr
             || !msFrameMzTarget->isValid()
             || ms2Ions.isEmpty()) {
@@ -1118,7 +1118,7 @@ namespace {
         for (const MS2Ion &ms2Ion : ms2Ions) {
 
             const float massTol = MathUtils::calculatePPM(ms2Ion.mz, ppmTol);
-            const XICPoints xicPoints = timsMs2IonMobilityIndex->extractPointsXIC(
+            const XICPoints xicPoints = ms2IonMobilityIndex->extractPointsXIC(
                 ms2Ion.mz - massTol,
                 ms2Ion.mz + massTol,
                 frameIndexPredictedMin,
@@ -1144,7 +1144,7 @@ namespace {
         for (auto it = mobilityFrameVsIntensity.constBegin(); it != mobilityFrameVsIntensity.constEnd(); ++it) {
 
             float driftTime = -1.0f;
-            if (!timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(it.key().first, &driftTime)) {
+            if (!ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(it.key().first, &driftTime)) {
                 continue;
             }
 
@@ -1210,7 +1210,7 @@ namespace {
     }
 
     LocalIonMobilityPeak selectMobilityProfilePeakForTimsMs2(
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         const QVector<MS2Ion> &ms2Ions,
         float libraryIonMobility,
         float ppmTol,
@@ -1220,8 +1220,8 @@ namespace {
 
         LocalIonMobilityPeak peak;
 
-        if (timsMs2IonMobilityIndex == nullptr
-            || !timsMs2IonMobilityIndex->isInit()
+        if (ms2IonMobilityIndex == nullptr
+            || !ms2IonMobilityIndex->isInit()
             || ms2Ions.isEmpty()
             || libraryIonMobility <= 0.0f) {
             return peak;
@@ -1244,7 +1244,7 @@ namespace {
             QMap<IonMobilityIndex, double> fragmentProfile;
             float apexIntensity = 0.0f;
             float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-            if (!timsMs2IonMobilityIndex->extractMobilityProfile(
+            if (!ms2IonMobilityIndex->extractMobilityProfile(
                     ms2Ion.mz - massTol,
                     ms2Ion.mz + massTol,
                     frameIndexPredictedMin,
@@ -1275,14 +1275,14 @@ namespace {
 
         for (auto centerIt = summedMobilityProfile.constBegin(); centerIt != summedMobilityProfile.constEnd(); ++centerIt) {
             float centerDriftTime = -1.0f;
-            if (!timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(centerIt.key(), &centerDriftTime)) {
+            if (!ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(centerIt.key(), &centerDriftTime)) {
                 continue;
             }
 
             double smoothedIntensity = 0.0;
             for (auto profileIt = summedMobilityProfile.constBegin(); profileIt != summedMobilityProfile.constEnd(); ++profileIt) {
                 float driftTime = -1.0f;
-                if (!timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(profileIt.key(), &driftTime)) {
+                if (!ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(profileIt.key(), &driftTime)) {
                     continue;
                 }
 
@@ -1321,14 +1321,14 @@ namespace {
     Err getLibraryIonMobilityFilteredTimsMs2XICs(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         const MsFrame *msFrameMzTarget,
         float ionMobilityCenter,
         float ppmTol,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
         float targetedIonMobilityWindowHalfWidth,
-        bool useAdaptiveTimsMobilityCentering,
+        bool useAdaptiveIonMobilityCentering,
         QVector<XICPoints> *xicPointsVec100,
         QVector<XICPoints> *xicPointsVec100Shadows,
         QVector<XICPoints> *xicPointsVec45
@@ -1349,9 +1349,9 @@ namespace {
         localIonMobilityPeak.minDriftTime = ionMobilityCenter - targetedIonMobilityWindowHalfWidth;
         localIonMobilityPeak.maxDriftTime = ionMobilityCenter + targetedIonMobilityWindowHalfWidth;
 
-        if (useAdaptiveTimsMobilityCentering) {
+        if (useAdaptiveIonMobilityCentering) {
             const LocalIonMobilityPeak observedMobilityPeak = selectMobilityProfilePeakForTimsMs2(
-                timsMs2IonMobilityIndex,
+                ms2IonMobilityIndex,
                 ms2Ions,
                 ionMobilityCenter,
                 ppmTol,
@@ -1374,7 +1374,7 @@ namespace {
 
             XICPoints xicPoints;
             e = extractLibraryIonMobilityFilteredTimsMs2Xic(
-                timsMs2IonMobilityIndex,
+                ms2IonMobilityIndex,
                 localIonMobilityPeak.minDriftTime,
                 localIonMobilityPeak.maxDriftTime,
                 ms2Ion.mz,
@@ -1387,7 +1387,7 @@ namespace {
             XICPoints xicPointsShadows;
             const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
             e = extractLibraryIonMobilityFilteredTimsMs2Xic(
-                timsMs2IonMobilityIndex,
+                ms2IonMobilityIndex,
                 localIonMobilityPeak.minDriftTime,
                 localIonMobilityPeak.maxDriftTime,
                 ms2Ion.mz - isotopeDistanceThomsons,
@@ -1419,10 +1419,10 @@ namespace {
         FrameIndex frameIndexPredictedMax,
         XICPeakManager *xicPeakManager,
         const MsFrame *msFrameMzTarget,
-        const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
         float ionMobilityCenter,
         float targetedIonMobilityWindowHalfWidth,
-        bool useAdaptiveTimsMobilityCentering,
+        bool useAdaptiveIonMobilityCentering,
         QVector<XICPoints> *xicPointsVec100,
         QVector<XICPoints> *xicPointsVec100Shadows,
         QVector<XICPoints> *xicPointsVec45
@@ -1434,21 +1434,21 @@ namespace {
 
         if (canUseLibraryIonMobilityFilteredMs2(
                 targetDecoyCandidatePair,
-                timsMs2IonMobilityIndex,
+                ms2IonMobilityIndex,
                 ionMobilityCenter
                 )) {
 
             e = getLibraryIonMobilityFilteredTimsMs2XICs(
                 targetDecoyCandidatePair,
                 ms2Ions,
-                timsMs2IonMobilityIndex,
+                ms2IonMobilityIndex,
                 msFrameMzTarget,
                 ionMobilityCenter,
                 ppmTol,
                 frameIndexPredictedMin,
                 frameIndexPredictedMax,
                 targetedIonMobilityWindowHalfWidth,
-                useAdaptiveTimsMobilityCentering,
+                useAdaptiveIonMobilityCentering,
                 xicPointsVec100,
                 xicPointsVec100Shadows,
                 xicPointsVec45
@@ -1704,10 +1704,10 @@ Err CandidateScorertron::initMatricesdAndVecs(
             frameIndexPredictedMax,
             m_xicPeakManager,
             m_msFrameMzTarget,
-            m_timsMs2IonMobilityIndex,
+            m_ms2IonMobilityIndex,
             calibratedIonMobilityCenter,
             static_cast<float>(m_pythiaParameters.timsTargetedMs2IonMobilityWindow),
-            m_useAdaptiveTimsMobilityCentering,
+            m_useAdaptiveIonMobilityCentering,
             &xicPointsVec100,
             &xicPointsVec100Shadow,
             &xicPointsVec45
@@ -3356,7 +3356,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     ERR_INIT
 
-    if (m_timsMs2IonMobilityIndex == nullptr || !m_timsMs2IonMobilityIndex->isInit()) {
+    if (m_ms2IonMobilityIndex == nullptr || !m_ms2IonMobilityIndex->isInit()) {
         ERR_RETURN
     }
 
@@ -3417,7 +3417,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
             float apexIntensity = 0.0f;
             float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
             QMap<IonMobilityIndex, double> fragmentMobilityProfile;
-            const bool hasMobilityProfile = m_timsMs2IonMobilityIndex->extractMobilityProfile(
+            const bool hasMobilityProfile = m_ms2IonMobilityIndex->extractMobilityProfile(
                 ms2Ion.mz - massTol,
                 ms2Ion.mz + massTol,
                 frameIndexMin,
@@ -3480,7 +3480,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
             std::unordered_map<RtMobilityKey, double> fragmentRtMobilityProfile;
             RtMobilityKey fragmentApexKey = invalidRtMobilityKey;
 
-            const XICPoints xicPoints = m_timsMs2IonMobilityIndex->extractPointsXIC(
+            const XICPoints xicPoints = m_ms2IonMobilityIndex->extractPointsXIC(
                 ms2Ion.mz - massTol,
                 ms2Ion.mz + massTol,
                 frameIndexMin,
@@ -3496,7 +3496,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
                 }
 
                 float driftTime = -1.0f;
-                if (!m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
                         xicPoint.ionMobilityIndex,
                         &driftTime
                         )) {
@@ -3640,7 +3640,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
             summedProfile.push_back(intensity);
 
             float driftTime = -1.0f;
-            if (!m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
+            if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
                 continue;
             }
 
@@ -3660,7 +3660,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         if (bestIndex >= 0) {
             const IonMobilityIndex observedIonMobilityIndex = mobilityIndices.at(bestIndex);
             float observedDriftTime = -1.0f;
-            if (m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+            if (m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
                     observedIonMobilityIndex,
                     &observedDriftTime
                     )) {
@@ -3700,7 +3700,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
             for (IonMobilityIndex ionMobilityIndex = indexStart; ionMobilityIndex <= indexEnd; ++ionMobilityIndex) {
                 float driftTime = -1.0f;
-                if (!m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
+                if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
                     continue;
                 }
 
@@ -3724,11 +3724,11 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
             float mobilityStart = -1.0f;
             float mobilityStop = -1.0f;
-            if (m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+            if (m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
                     fwhmMobilityIndices.front(),
                     &mobilityStart
                     )
-                && m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                && m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
                     fwhmMobilityIndices.back(),
                     &mobilityStop
                     )) {

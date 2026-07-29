@@ -56,7 +56,7 @@ public:
         TurboXIC *turboXicMS1,
         MsFrame *msFrameMS1,
         MsReaderPointerAcc *msReaderPointerAcc,
-        Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex
+        Ms2IonMobilityIndexBase *ms2IonMobilityIndex
         );
 
     Err calculateScores(
@@ -68,7 +68,7 @@ public:
 
     [[nodiscard]] QString scoringDiagnosticsSummary() const;
     void printScoringDiagnosticsIfEnabled() const;
-    void setUseAdaptiveTimsMobilityCentering(bool useAdaptiveTimsMobilityCentering);
+    void setUseAdaptiveIonMobilityCentering(bool useAdaptiveIonMobilityCentering);
 
 
 private:
@@ -136,7 +136,7 @@ private:
     TurboXIC *m_turboXicMS1;
     MsFrame *m_msFrameMS1;
     MsReaderPointerAcc *m_msReaderPointerAcc;
-    Ms2IonMobilityIndexBase *m_timsMs2IonMobilityIndex;
+    Ms2IonMobilityIndexBase *m_ms2IonMobilityIndex;
     MzTargetKey m_mzTargetKey;
 
     float m_minPeakCount;
@@ -146,7 +146,7 @@ private:
 
     QVector<Features> m_features;
     bool m_useTopNIntegrationsParam;
-    bool m_useAdaptiveTimsMobilityCentering;
+    bool m_useAdaptiveIonMobilityCentering;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

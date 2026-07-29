@@ -28,12 +28,6 @@ namespace {
             && msReaderPointerAcc->ptr->hasIonMobility();
     }
 
-    bool usesCentroidIonMobilityWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
-        return msReaderPointerAcc != nullptr
-            && !msReaderPointerAcc->ptr.isNull()
-            && msReaderPointerAcc->ptr->usesCentroidIonMobility();
-    }
-
     struct Ms2IonMobilityIndexStorage {
         CentroidMs2IonMobilityIndex centroidIndex;
         Ms2IonMobilityIndexBase *indexPntr = nullptr;
@@ -105,7 +99,7 @@ public:
     QVector<float> weights;
     QVector<Features> features;
     bool useTopNIntegrationsParameter = false;
-    bool useAdaptiveTimsMobilityCentering = false;
+    bool useAdaptiveIonMobilityCentering = false;
     MsReaderPointerAcc *msReaderPointerAcc = nullptr;
     QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePointersAllPntr = nullptr;
     bool splitMzTargetKey = false;
@@ -348,14 +342,18 @@ namespace {
             ERR_RETURN
         }
 
-        if (usesCentroidIonMobilityWorkflow(pi.msReaderPointerAcc)) {
-            e = buildCentroidMs2IonMobilityIndex(
-                pi,
-                scanNumberVsScanPoints,
-                *msFrameMzTarget,
-                indexStorage
-                ); ree;
+        if (pi.msReaderPointerAcc == nullptr
+            || pi.msReaderPointerAcc->ptr.isNull()
+            || !pi.msReaderPointerAcc->ptr->usesCentroidIonMobility()) {
+            ERR_RETURN
         }
+
+        e = buildCentroidMs2IonMobilityIndex(
+            pi,
+            scanNumberVsScanPoints,
+            *msFrameMzTarget,
+            indexStorage
+            ); ree;
 
         ERR_RETURN
     }
@@ -373,8 +371,8 @@ namespace {
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 
-    constexpr float TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0 = 0.03f;
-    constexpr float TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
+    constexpr float LIBRARY_IM_FILTER_PAD_ONE_OVER_K0 = 0.03f;
+    constexpr float LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
 
     bool isLibraryIonMobilityInAcquisitionWindow(
         const TargetDecoyCandidatePair *candidate,
@@ -393,12 +391,12 @@ namespace {
         float windowLower = msScanInfo.ionMobilityWindowLower;
         float windowUpper = msScanInfo.ionMobilityWindowUpper;
         if (windowLower <= 0.0f || windowUpper <= 0.0f || windowUpper < windowLower) {
-            windowLower = msScanInfo.ionMobilityDriftTime - TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
-            windowUpper = msScanInfo.ionMobilityDriftTime + TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
+            windowLower = msScanInfo.ionMobilityDriftTime - LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
+            windowUpper = msScanInfo.ionMobilityDriftTime + LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
         }
 
-        windowLower -= TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
-        windowUpper += TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        windowLower -= LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        windowUpper += LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
         return windowLower <= libraryIonMobility && libraryIonMobility <= windowUpper;
     }
 
@@ -545,8 +543,8 @@ namespace {
             if (needsMs2IonMobilityIndex
                 && msFrameMzTargetPntr != nullptr
                 && msFrameMzTargetPntr->isValid()) {
-                QElapsedTimer timsMs2IndexTimer;
-                timsMs2IndexTimer.start();
+                QElapsedTimer ms2IonMobilityIndexTimer;
+                ms2IonMobilityIndexTimer.start();
                 e = buildMs2IonMobilityIndex(
                     pi,
                     needsMs2IonMobilityIndex,
@@ -557,11 +555,11 @@ namespace {
 
                 if (builtTargetDecoyPointersFromAllCandidates) {
                     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                             << "TIMS MS2 mobility index"
+                             << "MS2 mobility index"
                              << "target_key" << pi.targetKey
                              << "needed" << needsMs2IonMobilityIndex
                              << "points" << (ms2IonMobilityIndexStorage.indexPntr != nullptr ? ms2IonMobilityIndexStorage.indexPntr->pointCount() : 0)
-                             << "msec" << timsMs2IndexTimer.elapsed();
+                             << "msec" << ms2IonMobilityIndexTimer.elapsed();
                 }
             }
 
@@ -584,8 +582,8 @@ namespace {
                 pi.msReaderPointerAcc,
                 ms2IonMobilityIndexStorage.indexPntr
                 ); rree;
-            candidateScorertron.setUseAdaptiveTimsMobilityCentering(
-                pi.useAdaptiveTimsMobilityCentering
+            candidateScorertron.setUseAdaptiveIonMobilityCentering(
+                pi.useAdaptiveIonMobilityCentering
                 );
 
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
@@ -842,10 +840,10 @@ bool TargetDecoyCandidatePairScoretron2::isInit() const {
     return m_pythiaParameters.isValid();
 }
 
-void TargetDecoyCandidatePairScoretron2::setUseAdaptiveTimsMobilityCentering(
-    bool useAdaptiveTimsMobilityCentering
+void TargetDecoyCandidatePairScoretron2::setUseAdaptiveIonMobilityCentering(
+    bool useAdaptiveIonMobilityCentering
     ) {
-    m_useAdaptiveTimsMobilityCentering = useAdaptiveTimsMobilityCentering;
+    m_useAdaptiveIonMobilityCentering = useAdaptiveIonMobilityCentering;
 }
 
 Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
@@ -898,7 +896,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.weights = weights;
         tdppi1.features = features;
         tdppi1.useTopNIntegrationsParameter = useTopNIntegrationsParameter;
-        tdppi1.useAdaptiveTimsMobilityCentering = m_useAdaptiveTimsMobilityCentering;
+        tdppi1.useAdaptiveIonMobilityCentering = m_useAdaptiveIonMobilityCentering;
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
 
@@ -972,7 +970,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.weights = weights;
         tdppi1.features = features;
         tdppi1.useTopNIntegrationsParameter = useTopNIntegrationsParameter;
-        tdppi1.useAdaptiveTimsMobilityCentering = m_useAdaptiveTimsMobilityCentering;
+        tdppi1.useAdaptiveIonMobilityCentering = m_useAdaptiveIonMobilityCentering;
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
         tdppi1.targetDecoyCandidatePointersAllPntr = targetDecoyCandidateAllPntrs;
