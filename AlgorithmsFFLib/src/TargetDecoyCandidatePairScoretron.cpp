@@ -273,8 +273,8 @@ namespace {
             ERR_RETURN
         }
 
-        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eNullPointerError); ree;
-        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eNullPointerError); ree;
+        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eValueError); ree;
+        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eValueError); ree;
 
         e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(pi.targetKey, scanNumberVsScanPoints); ree;
 
@@ -323,8 +323,8 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eNullPointerError); ree;
-        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eNullPointerError); ree;
+        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eValueError); ree;
+        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eValueError); ree;
 
         MzTargetKeyVsMs2FrameTIMS *ms2FrameTims
             = pi.msReaderPointerAcc->ptr->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
@@ -362,8 +362,8 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eNullPointerError); ree;
-        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eNullPointerError); ree;
+        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eValueError); ree;
+        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eValueError); ree;
 
         e = ensureTargetScanPointsLoaded(pi, scanNumberVsScanPoints); ree;
 

@@ -1010,6 +1010,231 @@ namespace {
         }
     }
 
+    struct Ms1IonMobilityObservation {
+        float apexIntensity = 0.0f;
+        IonMobilityIndex apexIonMobilityIndex = -1;
+        double apexDriftTime = -1.0;
+        IonMobilityIndex ionMobilityIndexStart = std::numeric_limits<IonMobilityIndex>::max();
+        IonMobilityIndex ionMobilityIndexEnd = -1;
+    };
+
+    void updateCentroidMs1Observation(
+        const ScanPoint &scanPoint,
+        float driftTime,
+        Ms1IonMobilityObservation *observation
+        ) {
+
+        const IonMobilityIndex ionMobilityIndex = centroidIonMobilityIndexForDriftTime(driftTime);
+        observation->ionMobilityIndexStart = std::min(observation->ionMobilityIndexStart, ionMobilityIndex);
+        observation->ionMobilityIndexEnd = std::max(observation->ionMobilityIndexEnd, ionMobilityIndex);
+
+        if (scanPoint.y() <= observation->apexIntensity) {
+            return;
+        }
+
+        observation->apexIntensity = scanPoint.y();
+        observation->apexIonMobilityIndex = ionMobilityIndex;
+        observation->apexDriftTime = driftTime;
+    }
+
+    Err observeLegacyMs1IonMobility(
+        const MsReaderPointerAcc *msReaderPointerAcc,
+        const QVector<FrameNumberTIMS> &ms1FrameNumbersTIMS,
+        const QVector<QPair<float, IonMobilityIndex>> &ms1DriftTimeVsIonMobilityIndexTIMS,
+        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
+        ScanNumber scoredScanNumber,
+        float mobilityCenter,
+        float mobilityHalfWidth,
+        float mzMin,
+        float mzMax,
+        Ms1IonMobilityObservation *observation
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(msReaderPointerAcc != nullptr, eValueError); ree;
+        e = ErrorUtils::isTrue(!msReaderPointerAcc->ptr.isNull(), eValueError); ree;
+        e = ErrorUtils::isTrue(observation != nullptr, eValueError); ree;
+
+        const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
+            = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
+        if (frameNumberVsMs1FrameTIMS == nullptr || frameNumberVsMs1FrameTIMS->isEmpty()) {
+            ERR_RETURN
+        }
+
+        const int closestIndex = closestMs1FrameIndexAtOrBefore(ms1FrameNumbersTIMS, scoredScanNumber);
+        if (closestIndex < 0 || closestIndex >= ms1FrameNumbersTIMS.size()) {
+            ERR_RETURN
+        }
+
+        FrameNumberTIMS ms1FrameNumber = ms1FrameNumbersTIMS.at(closestIndex);
+        if (ms1FrameNumber > scoredScanNumber && closestIndex > 0) {
+            ms1FrameNumber = ms1FrameNumbersTIMS.at(closestIndex - 1);
+        }
+
+        const auto ms1FrameIt = frameNumberVsMs1FrameTIMS->constFind(ms1FrameNumber);
+        if (ms1FrameIt == frameNumberVsMs1FrameTIMS->constEnd() || ms1FrameIt.value().isEmpty()) {
+            ERR_RETURN
+        }
+
+        const Ms1FrameTIMS &ms1FrameTIMS = ms1FrameIt.value();
+        if (!ms1DriftTimeVsIonMobilityIndexTIMS.isEmpty()) {
+            const DriftTimeIonMobilityRange driftTimeRange = driftTimeIonMobilityRange(
+                ms1DriftTimeVsIonMobilityIndexTIMS,
+                mobilityCenter - mobilityHalfWidth,
+                mobilityCenter + mobilityHalfWidth
+                );
+
+            for (auto driftTimeIt = driftTimeRange.beginIt; driftTimeIt != driftTimeRange.endIt; ++driftTimeIt) {
+                const IonMobilityIndex ionMobilityIndex = driftTimeIt->second;
+                const auto frameIt = ms1FrameTIMS.constFind(ionMobilityIndex);
+                if (frameIt == ms1FrameTIMS.constEnd()) {
+                    continue;
+                }
+
+                const double driftTime = driftTimeIt->first;
+                observation->ionMobilityIndexStart = std::min(observation->ionMobilityIndexStart, ionMobilityIndex);
+                observation->ionMobilityIndexEnd = std::max(observation->ionMobilityIndexEnd, ionMobilityIndex);
+
+                updateApexFromSortedScanPoints(
+                    frameIt.value(),
+                    mzMin,
+                    mzMax,
+                    ionMobilityIndex,
+                    driftTime,
+                    &observation->apexIntensity,
+                    &observation->apexIonMobilityIndex,
+                    &observation->apexDriftTime
+                    );
+            }
+
+            ERR_RETURN
+        }
+
+        for (auto frameIt = ms1FrameTIMS.constBegin(); frameIt != ms1FrameTIMS.constEnd(); ++frameIt) {
+            const IonMobilityIndex ionMobilityIndex = frameIt.key();
+
+            double driftTime = -1.0;
+            if (!driftTimeFromIonMobilityIndex(
+                msReaderPointerAcc,
+                ms2IonMobilityIndex,
+                ionMobilityIndex,
+                &driftTime
+                )) {
+                continue;
+            }
+
+            if (std::abs(driftTime - mobilityCenter) > mobilityHalfWidth) {
+                continue;
+            }
+
+            observation->ionMobilityIndexStart = std::min(observation->ionMobilityIndexStart, ionMobilityIndex);
+            observation->ionMobilityIndexEnd = std::max(observation->ionMobilityIndexEnd, ionMobilityIndex);
+
+            updateApexFromSortedScanPoints(
+                frameIt.value(),
+                mzMin,
+                mzMax,
+                ionMobilityIndex,
+                driftTime,
+                &observation->apexIntensity,
+                &observation->apexIonMobilityIndex,
+                &observation->apexDriftTime
+                );
+        }
+
+        ERR_RETURN
+    }
+
+    Err observeCentroidMs1IonMobility(
+        const MsReaderPointerAcc *msReaderPointerAcc,
+        const MsFrame *msFrameMS1,
+        float scoredScanTime,
+        float mobilityCenter,
+        float mobilityHalfWidth,
+        float mzMin,
+        float mzMax,
+        Ms1IonMobilityObservation *observation
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(msReaderPointerAcc != nullptr, eValueError); ree;
+        e = ErrorUtils::isTrue(!msReaderPointerAcc->ptr.isNull(), eValueError); ree;
+        e = ErrorUtils::isTrue(msFrameMS1 != nullptr, eValueError); ree;
+        e = ErrorUtils::isTrue(msFrameMS1->isValid()); ree;
+        e = ErrorUtils::isTrue(observation != nullptr, eValueError); ree;
+
+        FrameIndex ms1FrameIndex = -1;
+        e = msFrameMS1->frameIndexFromScanTime(scoredScanTime, &ms1FrameIndex); ree;
+        if (ms1FrameIndex < 0) {
+            ERR_RETURN
+        }
+
+        ScanNumber ms1ScanNumber = msFrameMS1->scanNumberFromFrameIndex(ms1FrameIndex);
+        if (msFrameMS1->scanTimeFromFrameIndex(ms1FrameIndex) > scoredScanTime
+            && ms1FrameIndex > 0) {
+            ms1ScanNumber = msFrameMS1->scanNumberFromFrameIndex(ms1FrameIndex - 1);
+        }
+
+        ScanPoints *ms1ScanPoints = msFrameMS1->getScanPointsByScanNumber(ms1ScanNumber);
+        const TimsbukAlignedPointData *alignedPointData = msReaderPointerAcc->ptr->alignedPointDataPntr(ms1ScanNumber);
+        if (ms1ScanPoints == nullptr
+            || alignedPointData == nullptr
+            || !alignedPointData->isAlignedWith(*ms1ScanPoints)) {
+            ERR_RETURN
+        }
+
+        for (int pointIndex = 0; pointIndex < ms1ScanPoints->size(); ++pointIndex) {
+            const ScanPoint &scanPoint = ms1ScanPoints->at(pointIndex);
+            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
+            if (driftTime <= 0.0f
+                || scanPoint.x() < mzMin
+                || scanPoint.x() > mzMax
+                || std::abs(driftTime - mobilityCenter) > mobilityHalfWidth) {
+                continue;
+            }
+
+            updateCentroidMs1Observation(
+                scanPoint,
+                driftTime,
+                observation
+                );
+        }
+
+        ERR_RETURN
+    }
+
+    void applyMs1IonMobilityObservation(
+        float mobilityCenter,
+        const Ms1IonMobilityObservation &observation,
+        CandidateScores *candidateScores
+        ) {
+
+        if (observation.ionMobilityIndexEnd >= 0) {
+            candidateScores->ionMobilityIndexStart = observation.ionMobilityIndexStart;
+            candidateScores->ionMobilityIndexEnd = observation.ionMobilityIndexEnd;
+        }
+
+        if (observation.apexIonMobilityIndex < 0) {
+            return;
+        }
+
+        candidateScores->featuresArray[Ms1IntensityFoundApex100IM] = observation.apexIntensity;
+        candidateScores->ionMobilityIndex = observation.apexIonMobilityIndex;
+        candidateScores->imDriftTime = static_cast<float>(observation.apexDriftTime);
+
+        const float ionMobilityDelta = candidateScores->imDriftTime - mobilityCenter;
+        candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
+        candidateScores->featuresArray[IonMobilityDeltaAbs] = std::abs(ionMobilityDelta);
+        candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
+            std::min(
+                static_cast<double>(std::abs(ionMobilityDelta)),
+                ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+            );
+    }
+
     LocalIonMobilityPeak selectLocalIonMobilityPeakForTimsMs2(
         const Ms2IonMobilityIndexBase *timsMs2IonMobilityIndex,
         const MsFrame *msFrameMzTarget,
@@ -3237,171 +3462,45 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
     const float mzMin = monoIsotopeMz - massTol;
     const float mzMax = monoIsotopeMz + massTol;
 
-    float apexIntensity = 0.0f;
-    IonMobilityIndex apexIonMobilityIndex = -1;
-    double apexDriftTime = -1.0;
-    IonMobilityIndex ionMobilityIndexStart = std::numeric_limits<IonMobilityIndex>::max();
-    IonMobilityIndex ionMobilityIndexEnd = -1;
+    Ms1IonMobilityObservation observation;
 
     if (usesLegacyTimsFrameMaps(m_msReaderPointerAcc)) {
-        const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
-            = m_msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
-        if (frameNumberVsMs1FrameTIMS == nullptr || frameNumberVsMs1FrameTIMS->isEmpty()) {
-            ERR_RETURN
-        }
-
-        const QVector<FrameNumberTIMS> &frameNumbers = m_ms1FrameNumbersTIMS;
-        const int closestIndex = closestMs1FrameIndexAtOrBefore(frameNumbers, candidateScores->scanNumber);
-        if (closestIndex < 0 || closestIndex >= frameNumbers.size()) {
-            ERR_RETURN
-        }
-
-        FrameNumberTIMS ms1FrameNumber = frameNumbers.at(closestIndex);
-        if (ms1FrameNumber > candidateScores->scanNumber && closestIndex > 0) {
-            ms1FrameNumber = frameNumbers.at(closestIndex - 1);
-        }
-
-        const auto ms1FrameIt = frameNumberVsMs1FrameTIMS->constFind(ms1FrameNumber);
-        if (ms1FrameIt == frameNumberVsMs1FrameTIMS->constEnd() || ms1FrameIt.value().isEmpty()) {
-            ERR_RETURN
-        }
-
-        const Ms1FrameTIMS &ms1FrameTIMS = ms1FrameIt.value();
-        if (!m_ms1DriftTimeVsIonMobilityIndexTIMS.isEmpty()) {
-            const DriftTimeIonMobilityRange driftTimeRange = driftTimeIonMobilityRange(
-                m_ms1DriftTimeVsIonMobilityIndexTIMS,
-                mobilityCenter - mobilityHalfWidth,
-                mobilityCenter + mobilityHalfWidth
-                );
-
-            for (auto driftTimeIt = driftTimeRange.beginIt; driftTimeIt != driftTimeRange.endIt; ++driftTimeIt) {
-
-                const IonMobilityIndex ionMobilityIndex = driftTimeIt->second;
-                const auto frameIt = ms1FrameTIMS.constFind(ionMobilityIndex);
-                if (frameIt == ms1FrameTIMS.constEnd()) {
-                    continue;
-                }
-
-                const double driftTime = driftTimeIt->first;
-                ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
-                ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
-
-                updateApexFromSortedScanPoints(
-                    frameIt.value(),
-                    mzMin,
-                    mzMax,
-                    ionMobilityIndex,
-                    driftTime,
-                    &apexIntensity,
-                    &apexIonMobilityIndex,
-                    &apexDriftTime
-                    );
-            }
-        }
-        else {
-            for (auto frameIt = ms1FrameTIMS.constBegin(); frameIt != ms1FrameTIMS.constEnd(); ++frameIt) {
-
-                const IonMobilityIndex ionMobilityIndex = frameIt.key();
-
-                double driftTime = -1.0;
-                if (!driftTimeFromIonMobilityIndex(
-                    m_msReaderPointerAcc,
-                    m_timsMs2IonMobilityIndex,
-                    ionMobilityIndex,
-                    &driftTime
-                    )) {
-                    continue;
-                }
-
-                if (std::abs(driftTime - mobilityCenter) > mobilityHalfWidth) {
-                    continue;
-                }
-
-                ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
-                ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
-
-                updateApexFromSortedScanPoints(
-                    frameIt.value(),
-                    mzMin,
-                    mzMax,
-                    ionMobilityIndex,
-                    driftTime,
-                    &apexIntensity,
-                    &apexIonMobilityIndex,
-                    &apexDriftTime
-                    );
-            }
-        }
-    } else {
-        if (m_msFrameMS1 == nullptr || !m_msFrameMS1->isValid()) {
-            ERR_RETURN
-        }
-
-        FrameIndex ms1FrameIndex = -1;
-        e = m_msFrameMS1->frameIndexFromScanTime(candidateScores->scanTime, &ms1FrameIndex); ree;
-        if (ms1FrameIndex < 0) {
-            ERR_RETURN
-        }
-
-        ScanNumber ms1ScanNumber = m_msFrameMS1->scanNumberFromFrameIndex(ms1FrameIndex);
-        if (m_msFrameMS1->scanTimeFromFrameIndex(ms1FrameIndex) > candidateScores->scanTime
-            && ms1FrameIndex > 0) {
-            ms1ScanNumber = m_msFrameMS1->scanNumberFromFrameIndex(ms1FrameIndex - 1);
-        }
-
-        ScanPoints *ms1ScanPoints = m_msFrameMS1->getScanPointsByScanNumber(ms1ScanNumber);
-        const TimsbukAlignedPointData *alignedPointData = m_msReaderPointerAcc->ptr->alignedPointDataPntr(ms1ScanNumber);
-        if (ms1ScanPoints == nullptr
-            || alignedPointData == nullptr
-            || !alignedPointData->isAlignedWith(*ms1ScanPoints)) {
-            ERR_RETURN
-        }
-
-        for (int pointIndex = 0; pointIndex < ms1ScanPoints->size(); ++pointIndex) {
-            const ScanPoint &scanPoint = ms1ScanPoints->at(pointIndex);
-            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
-            if (driftTime <= 0.0f
-                || scanPoint.x() < mzMin
-                || scanPoint.x() > mzMax
-                || std::abs(driftTime - mobilityCenter) > mobilityHalfWidth) {
-                continue;
-            }
-
-            const IonMobilityIndex ionMobilityIndex = centroidIonMobilityIndexForDriftTime(driftTime);
-            ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
-            ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
-
-            if (scanPoint.y() <= apexIntensity) {
-                continue;
-            }
-
-            apexIntensity = scanPoint.y();
-            apexIonMobilityIndex = ionMobilityIndex;
-            apexDriftTime = driftTime;
-        }
+        e = observeLegacyMs1IonMobility(
+            m_msReaderPointerAcc,
+            m_ms1FrameNumbersTIMS,
+            m_ms1DriftTimeVsIonMobilityIndexTIMS,
+            m_timsMs2IonMobilityIndex,
+            candidateScores->scanNumber,
+            mobilityCenter,
+            mobilityHalfWidth,
+            mzMin,
+            mzMax,
+            &observation
+            ); ree;
+    }
+    else if (m_msReaderPointerAcc != nullptr
+             && !m_msReaderPointerAcc->ptr.isNull()
+             && m_msReaderPointerAcc->ptr->usesCentroidIonMobility()) {
+        e = observeCentroidMs1IonMobility(
+            m_msReaderPointerAcc,
+            m_msFrameMS1,
+            candidateScores->scanTime,
+            mobilityCenter,
+            mobilityHalfWidth,
+            mzMin,
+            mzMax,
+            &observation
+            ); ree;
     }
 
-    if (ionMobilityIndexEnd >= 0) {
-        candidateScores->ionMobilityIndexStart = ionMobilityIndexStart;
-        candidateScores->ionMobilityIndexEnd = ionMobilityIndexEnd;
-    }
-
-    if (apexIonMobilityIndex < 0) {
+    if (observation.apexIonMobilityIndex < 0) {
         ERR_RETURN
     }
 
-    candidateScores->featuresArray[Ms1IntensityFoundApex100IM] = apexIntensity;
-    candidateScores->ionMobilityIndex = apexIonMobilityIndex;
-    candidateScores->imDriftTime = static_cast<float>(apexDriftTime);
-
-    const float ionMobilityDelta = candidateScores->imDriftTime - mobilityCenter;
-    candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
-    candidateScores->featuresArray[IonMobilityDeltaAbs] = std::abs(ionMobilityDelta);
-    candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
-        std::min(
-            static_cast<double>(std::abs(ionMobilityDelta)),
-            ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
-            ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+    applyMs1IonMobilityObservation(
+        mobilityCenter,
+        observation,
+        candidateScores
         );
 
     ERR_RETURN
