@@ -15,8 +15,6 @@
 
 #include <QtConcurrent/QtConcurrent>
 
-#include <QSet>
-
 #include <algorithm>
 #include <cmath>
 
@@ -439,15 +437,6 @@ namespace {
 
     constexpr float TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0 = 0.03f;
     constexpr float TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
-    constexpr int TIMS_MAIN_TOP_N_MS2_IONS = 12;
-    constexpr int TIMS_MAIN_EVIDENCE_TOP_N_MS2_IONS = 4;
-    constexpr float TIMS_MAIN_EVIDENCE_BUDGET_FRACTION = 0.75f;
-    constexpr int TIMS_MAIN_CANDIDATE_BUDGET_BIN_COUNT = 24;
-
-    struct TimsEvidenceCandidate {
-        TargetDecoyCandidatePair *targetDecoyPair = nullptr;
-        double evidenceScore = 0.0;
-    };
 
     bool isLibraryIonMobilityInAcquisitionWindow(
         const TargetDecoyCandidatePair *candidate,
@@ -475,394 +464,6 @@ namespace {
         return windowLower <= libraryIonMobility && libraryIonMobility <= windowUpper;
     }
 
-    void sortByIonMobilityCenterDistance(
-        float ionMobilityCenter,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-        ) {
-
-        std::sort(
-            targetDecoyPointers->begin(),
-            targetDecoyPointers->end(),
-            [ionMobilityCenter](const TargetDecoyCandidatePair *left, const TargetDecoyCandidatePair *right) {
-                return std::abs(left->iIM() - ionMobilityCenter)
-                     < std::abs(right->iIM() - ionMobilityCenter);
-            }
-            );
-    }
-
-    int clampedBinIndex(float value, float lower, float width, int binCount) {
-
-        if (binCount <= 1 || width <= 0.0f) {
-            return 0;
-        }
-
-        int binIndex = static_cast<int>(
-            ((value - lower) / width) * static_cast<float>(binCount)
-            );
-        return std::max(0, std::min(binCount - 1, binIndex));
-    }
-
-    void applyTimsMainIonMobilityCandidateBudget(
-        const MsScanInfo &msScanInfo,
-        const PythiaParameters &pythiaParameters,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-        ) {
-
-        const int candidateBudget = pythiaParameters.timsMainCandidateBudgetPerTargetKey;
-        if (candidateBudget <= 0
-            || targetDecoyPointers->size() <= candidateBudget) {
-            return;
-        }
-
-        const float ionMobilityCenter = msScanInfo.ionMobilityDriftTime;
-        if (!pythiaParameters.timsStratifyCandidateBudget
-            || ionMobilityCenter <= 0.0f
-            || msScanInfo.ionMobilityWindowLower <= 0.0f
-            || msScanInfo.ionMobilityWindowUpper <= msScanInfo.ionMobilityWindowLower) {
-
-            sortByIonMobilityCenterDistance(ionMobilityCenter, targetDecoyPointers);
-            targetDecoyPointers->resize(candidateBudget);
-            return;
-        }
-
-        const float windowLower = msScanInfo.ionMobilityWindowLower - TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
-        const float windowUpper = msScanInfo.ionMobilityWindowUpper + TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
-        const float windowWidth = windowUpper - windowLower;
-        if (windowWidth <= 0.0f) {
-            sortByIonMobilityCenterDistance(ionMobilityCenter, targetDecoyPointers);
-            targetDecoyPointers->resize(candidateBudget);
-            return;
-        }
-
-        QVector<QVector<TargetDecoyCandidatePair*>> bins(TIMS_MAIN_CANDIDATE_BUDGET_BIN_COUNT);
-        for (TargetDecoyCandidatePair *tdcp : *targetDecoyPointers) {
-            if (tdcp == nullptr) {
-                continue;
-            }
-            const int binIndex = clampedBinIndex(
-                tdcp->iIM(),
-                windowLower,
-                windowWidth,
-                TIMS_MAIN_CANDIDATE_BUDGET_BIN_COUNT
-                );
-            bins[binIndex].push_back(tdcp);
-        }
-
-        int nonEmptyBins = 0;
-        for (const QVector<TargetDecoyCandidatePair*> &bin : bins) {
-            if (!bin.isEmpty()) {
-                ++nonEmptyBins;
-            }
-        }
-        if (nonEmptyBins == 0) {
-            sortByIonMobilityCenterDistance(ionMobilityCenter, targetDecoyPointers);
-            targetDecoyPointers->resize(candidateBudget);
-            return;
-        }
-
-        const int quotaPerNonEmptyBin = std::max(1, candidateBudget / nonEmptyBins);
-        QVector<TargetDecoyCandidatePair*> selected;
-        selected.reserve(candidateBudget);
-        QSet<TargetDecoyCandidatePair*> selectedSet;
-        selectedSet.reserve(candidateBudget);
-
-        const float precursorTargetMz = msScanInfo.precursorTargetMz;
-        for (QVector<TargetDecoyCandidatePair*> &bin : bins) {
-            if (bin.isEmpty()) {
-                continue;
-            }
-            std::sort(
-                bin.begin(),
-                bin.end(),
-                [precursorTargetMz](const TargetDecoyCandidatePair *left, const TargetDecoyCandidatePair *right) {
-                    const float leftMzDelta = std::abs(left->mz(false) - precursorTargetMz);
-                    const float rightMzDelta = std::abs(right->mz(false) - precursorTargetMz);
-                    if (MathUtils::tSame(leftMzDelta, rightMzDelta, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                        return left->totalFragmentCount() > right->totalFragmentCount();
-                    }
-                    return leftMzDelta < rightMzDelta;
-                }
-                );
-
-            const int takeCount = std::min(quotaPerNonEmptyBin, bin.size());
-            for (int i = 0; i < takeCount && selected.size() < candidateBudget; ++i) {
-                selected.push_back(bin.at(i));
-                selectedSet.insert(bin.at(i));
-            }
-        }
-
-        if (selected.size() < candidateBudget) {
-            sortByIonMobilityCenterDistance(ionMobilityCenter, targetDecoyPointers);
-            for (TargetDecoyCandidatePair *tdcp : *targetDecoyPointers) {
-                if (selected.size() >= candidateBudget) {
-                    break;
-                }
-                if (selectedSet.contains(tdcp)) {
-                    continue;
-                }
-                selected.push_back(tdcp);
-                selectedSet.insert(tdcp);
-            }
-        }
-
-        *targetDecoyPointers = selected;
-    }
-
-    void applyTimsMainCandidateBudget(
-        const MsScanInfo &msScanInfo,
-        const PythiaParameters &pythiaParameters,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-        ) {
-
-        applyTimsMainIonMobilityCandidateBudget(
-            msScanInfo,
-            pythiaParameters,
-            targetDecoyPointers
-            );
-    }
-
-    double maxIntensityInFrameWindow(
-        const TurboXIC &turboXic,
-        const MS2Ion &ms2Ion,
-        float ppmTolerance,
-        FrameIndex frameIndexMin,
-        FrameIndex frameIndexMax
-        ) {
-
-        if (ms2Ion.mz <= 0.0f || ppmTolerance <= 0.0f) {
-            return 0.0;
-        }
-
-        if (frameIndexMax < frameIndexMin) {
-            std::swap(frameIndexMin, frameIndexMax);
-        }
-
-        const float massTol = MathUtils::calculatePPM(ms2Ion.mz, ppmTolerance);
-        const XICPoints xicPoints = turboXic.extractPointsXIC(ms2Ion.mz - massTol, ms2Ion.mz + massTol);
-
-        double maxIntensity = 0.0;
-        for (const XICPoint &xicPoint : xicPoints) {
-            if (xicPoint.scanNumber < frameIndexMin || xicPoint.scanNumber > frameIndexMax) {
-                continue;
-            }
-            if (xicPoint.intensity <= maxIntensity) {
-                continue;
-            }
-            maxIntensity = static_cast<double>(xicPoint.intensity);
-        }
-
-        return maxIntensity;
-    }
-
-    bool predictedFrameWindow(
-        const MsCalibratomatic &msCalibratomatic,
-        const PythiaParameters &pythiaParameters,
-        const MsFrame &msFrameMzTarget,
-        const TargetDecoyCandidatePair *targetDecoyPair,
-        FrameIndex *frameIndexMin,
-        FrameIndex *frameIndexMax
-        ) {
-
-        if (targetDecoyPair == nullptr
-            || !msCalibratomatic.isInitRT()
-            || !msFrameMzTarget.isValid()) {
-            return false;
-        }
-
-        float predictedScanTime = -1.0f;
-        Err e = msCalibratomatic.predictScanTime(targetDecoyPair->iRt(false), &predictedScanTime);
-        if (e != eNoError) {
-            return false;
-        }
-
-        const float scanTimeWindow
-            = msCalibratomatic.scanTimeStDev(static_cast<float>(pythiaParameters.scanTimeWindowStDevs));
-
-        e = msFrameMzTarget.frameIndexFromScanTime(predictedScanTime - scanTimeWindow, frameIndexMin);
-        if (e != eNoError) {
-            return false;
-        }
-
-        e = msFrameMzTarget.frameIndexFromScanTime(predictedScanTime + scanTimeWindow, frameIndexMax);
-        if (e != eNoError) {
-            return false;
-        }
-
-        if (*frameIndexMax < *frameIndexMin) {
-            std::swap(*frameIndexMin, *frameIndexMax);
-        }
-
-        return true;
-    }
-
-    double calculateCheapTimsEvidenceScore(
-        const TurboXIC &turboXic,
-        const MsCalibratomatic &msCalibratomatic,
-        const PythiaParameters &pythiaParameters,
-        const MsFrame &msFrameMzTarget,
-        const TargetDecoyCandidatePair *targetDecoyPair
-        ) {
-
-        if (targetDecoyPair == nullptr) {
-            return 0.0;
-        }
-
-        FrameIndex frameIndexMin = 0;
-        FrameIndex frameIndexMax = 0;
-        if (!predictedFrameWindow(
-                msCalibratomatic,
-                pythiaParameters,
-                msFrameMzTarget,
-                targetDecoyPair,
-                &frameIndexMin,
-                &frameIndexMax
-                )) {
-            return 0.0;
-        }
-
-        QVector<MS2Ion> ms2Ions = targetDecoyPair->ms2IonsTarget();
-        if (ms2Ions.isEmpty()) {
-            return 0.0;
-        }
-
-        MS2Ion::sortMS2IonsIntensityDesc(&ms2Ions);
-
-        const int ionCount = std::min(TIMS_MAIN_EVIDENCE_TOP_N_MS2_IONS, ms2Ions.size());
-        double weightedSignal = 0.0;
-        int matchedIonCount = 0;
-        for (int ionIndex = 0; ionIndex < ionCount; ++ionIndex) {
-            const MS2Ion &ms2Ion = ms2Ions.at(ionIndex);
-            const double maxIntensity = maxIntensityInFrameWindow(
-                turboXic,
-                ms2Ion,
-                static_cast<float>(pythiaParameters.ms2ExtractionWidthPPM),
-                frameIndexMin,
-                frameIndexMax
-                );
-            if (maxIntensity <= 0.0) {
-                continue;
-            }
-
-            const double libraryWeight = std::sqrt(std::max(1.0, static_cast<double>(ms2Ion.intensity)));
-            const double signalWeight = std::log1p(maxIntensity) * libraryWeight;
-            weightedSignal += signalWeight;
-            ++matchedIonCount;
-        }
-
-        if (matchedIonCount == 0) {
-            return 0.0;
-        }
-
-        return weightedSignal * static_cast<double>(matchedIonCount);
-    }
-
-    void applyTimsMainEvidenceCandidateBudget(
-        const MsScanInfo &msScanInfo,
-        const MsCalibratomatic &msCalibratomatic,
-        const PythiaParameters &pythiaParameters,
-        const MsFrame &msFrameMzTarget,
-        const TurboXIC &turboXicMS2,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers,
-        int *evidenceSelectedCount,
-        int *fallbackSelectedCount
-        ) {
-
-        if (evidenceSelectedCount != nullptr) {
-            *evidenceSelectedCount = 0;
-        }
-        if (fallbackSelectedCount != nullptr) {
-            *fallbackSelectedCount = 0;
-        }
-
-        const int candidateBudget = pythiaParameters.timsMainCandidateBudgetPerTargetKey;
-        if (candidateBudget <= 0
-            || targetDecoyPointers->size() <= candidateBudget
-            || !msCalibratomatic.isInitRT()
-            || !msFrameMzTarget.isValid()) {
-            applyTimsMainCandidateBudget(msScanInfo, pythiaParameters, targetDecoyPointers);
-            return;
-        }
-
-        QVector<TimsEvidenceCandidate> rankedCandidates;
-        rankedCandidates.reserve(targetDecoyPointers->size());
-        for (TargetDecoyCandidatePair *tdcp : *targetDecoyPointers) {
-            const double evidenceScore = calculateCheapTimsEvidenceScore(
-                turboXicMS2,
-                msCalibratomatic,
-                pythiaParameters,
-                msFrameMzTarget,
-                tdcp
-                );
-            rankedCandidates.push_back({tdcp, evidenceScore});
-        }
-
-        const auto sortByEvidence = [](const TimsEvidenceCandidate &left, const TimsEvidenceCandidate &right) {
-            if (MathUtils::tSame(left.evidenceScore, right.evidenceScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                return left.targetDecoyPair->totalFragmentCount() > right.targetDecoyPair->totalFragmentCount();
-            }
-            return left.evidenceScore > right.evidenceScore;
-        };
-
-        std::sort(rankedCandidates.begin(), rankedCandidates.end(), sortByEvidence);
-
-        const int evidenceBudget = std::max(
-            0,
-            std::min(
-                candidateBudget,
-                static_cast<int>(std::round(static_cast<float>(candidateBudget) * TIMS_MAIN_EVIDENCE_BUDGET_FRACTION))
-                )
-            );
-
-        QVector<TargetDecoyCandidatePair*> selected;
-        selected.reserve(candidateBudget);
-        QSet<TargetDecoyCandidatePair*> selectedSet;
-        selectedSet.reserve(candidateBudget);
-
-        for (const TimsEvidenceCandidate &rankedCandidate : rankedCandidates) {
-            if (selected.size() >= evidenceBudget) {
-                break;
-            }
-            if (rankedCandidate.evidenceScore <= 0.0) {
-                break;
-            }
-            selected.push_back(rankedCandidate.targetDecoyPair);
-            selectedSet.insert(rankedCandidate.targetDecoyPair);
-            if (evidenceSelectedCount != nullptr) {
-                ++(*evidenceSelectedCount);
-            }
-        }
-
-        QVector<TargetDecoyCandidatePair*> fallbackCandidates = *targetDecoyPointers;
-        applyTimsMainCandidateBudget(msScanInfo, pythiaParameters, &fallbackCandidates);
-        for (TargetDecoyCandidatePair *tdcp : fallbackCandidates) {
-            if (selected.size() >= candidateBudget) {
-                break;
-            }
-            if (selectedSet.contains(tdcp)) {
-                continue;
-            }
-            selected.push_back(tdcp);
-            selectedSet.insert(tdcp);
-            if (fallbackSelectedCount != nullptr) {
-                ++(*fallbackSelectedCount);
-            }
-        }
-
-        for (const TimsEvidenceCandidate &rankedCandidate : rankedCandidates) {
-            if (selected.size() >= candidateBudget) {
-                break;
-            }
-            if (selectedSet.contains(rankedCandidate.targetDecoyPair)) {
-                continue;
-            }
-            selected.push_back(rankedCandidate.targetDecoyPair);
-            selectedSet.insert(rankedCandidate.targetDecoyPair);
-        }
-
-        *targetDecoyPointers = selected;
-    }
-
-
     QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> parallelScoreLogic(
             const QVector<TargetDecoyPairParallelInput> &inputs
             ) {
@@ -884,7 +485,6 @@ namespace {
 
             QVector<TargetDecoyCandidatePair*> targetDecoyPointers = pi.targetDecoyPointers;
             bool builtTargetDecoyPointersFromAllCandidates = false;
-            int allCandidatePointerCount = 0;
 
             if (targetDecoyPointers.isEmpty()) {
                 if (pi.targetDecoyCandidatePointersAllPntr == nullptr) {
@@ -916,7 +516,6 @@ namespace {
 
                 targetDecoyPointers = *pi.targetDecoyCandidatePointersAllPntr;
                 builtTargetDecoyPointersFromAllCandidates = true;
-                allCandidatePointerCount = targetDecoyPointers.size();
                 const auto terminator = std::remove_if(
                     targetDecoyPointers.begin(),
                     targetDecoyPointers.end(),
@@ -962,59 +561,12 @@ namespace {
                 turboXicMS2Pntr = &turboXicMS2Local;
             }
 
-            int preBudgetCandidateCount = targetDecoyPointers.size();
-            int evidenceSelectedCandidateCount = 0;
-            int fallbackSelectedCandidateCount = 0;
-            if (builtTargetDecoyPointersFromAllCandidates
-                && hasLegacyTimsFrameMaps
-                && pi.msScanInfo.ionMobilityDriftTime > 0.0f
-                && targetDecoyPointers.size() > pi.pythiaParameters.timsMainCandidateBudgetPerTargetKey) {
-
-                if (turboXicMS2Pntr != nullptr && turboXicMS2Pntr->isInit()) {
-                    applyTimsMainEvidenceCandidateBudget(
-                        pi.msScanInfo,
-                        pi.msCalibratomatic,
-                        pi.pythiaParameters,
-                        *msFrameMzTargetPntr,
-                        *turboXicMS2Pntr,
-                        &targetDecoyPointers,
-                        &evidenceSelectedCandidateCount,
-                        &fallbackSelectedCandidateCount
-                        );
-                }
-                else {
-                    applyTimsMainCandidateBudget(
-                    pi.msScanInfo,
-                    pi.pythiaParameters,
-                    &targetDecoyPointers
-                    );
-                }
-            }
-
-            if (builtTargetDecoyPointersFromAllCandidates && hasLegacyTimsFrameMaps) {
-                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                         << "TIMS main target candidate filter"
-                         << "target_key" << pi.targetKey
-                         << "all_candidates" << allCandidatePointerCount
-                         << "pre_budget_candidates" << preBudgetCandidateCount
-                         << "filtered_candidates" << targetDecoyPointers.size()
-                         << "budget" << pi.pythiaParameters.timsMainCandidateBudgetPerTargetKey
-                         << "stratified_budget" << pi.pythiaParameters.timsStratifyCandidateBudget
-                         << "evidence_selected" << evidenceSelectedCandidateCount
-                         << "fallback_selected" << fallbackSelectedCandidateCount
-                         << "im_center" << pi.msScanInfo.ionMobilityDriftTime
-                         << "im_window_lower" << pi.msScanInfo.ionMobilityWindowLower
-                         << "im_window_upper" << pi.msScanInfo.ionMobilityWindowUpper;
-            }
-
             if (targetDecoyPointers.isEmpty()) {
                 qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << pi.targetKey << "Target key is empty";
                 continue;
             }
 
-            const int scoringTopNMs2Ions = builtTargetDecoyPointersFromAllCandidates && hasLegacyTimsFrameMaps
-                ? std::min(pi.topNMs2Ions, TIMS_MAIN_TOP_N_MS2_IONS)
-                : pi.topNMs2Ions;
+            const int scoringTopNMs2Ions = pi.topNMs2Ions;
 
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> allCandidateScores;
             allCandidateScores.reserve(targetDecoyPointers.size() * 2);
@@ -1102,14 +654,7 @@ namespace {
                 pi.useAdaptiveTimsMobilityCentering
                 );
 
-            QElapsedTimer scoreTimer;
-            scoreTimer.start();
-            QElapsedTimer scoreProgressTimer;
-            scoreProgressTimer.start();
-            int processedTargetDecoyPointers = 0;
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
-                ++processedTargetDecoyPointers;
-
                 QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
 
                 if (ms2TargetIons.isEmpty()) {
@@ -1155,30 +700,6 @@ namespace {
                 }
 
                 allCandidateScores.push_back({candidateScoresTarget, candidateScoresDecoy});
-
-                if (builtTargetDecoyPointersFromAllCandidates
-                    && hasLegacyTimsFrameMaps
-                    && scoreProgressTimer.elapsed() >= 30000) {
-                    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                             << "TIMS main target progress"
-                             << "target_key" << pi.targetKey
-                             << "processed_candidates" << processedTargetDecoyPointers
-                             << "filtered_candidates" << targetDecoyPointers.size()
-                             << "emitted_pairs" << allCandidateScores.size()
-                             << "zero_pairs" << zeroTargetDecoyScorePairs
-                             << "elapsed_msec" << scoreTimer.elapsed();
-                    scoreProgressTimer.restart();
-                }
-            }
-
-            if (builtTargetDecoyPointersFromAllCandidates && hasLegacyTimsFrameMaps) {
-                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                         << "TIMS main target scored"
-                         << "target_key" << pi.targetKey
-                         << "filtered_candidates" << targetDecoyPointers.size()
-                         << "emitted_pairs" << allCandidateScores.size()
-                         << "zero_pairs" << zeroTargetDecoyScorePairs
-                         << "msec" << scoreTimer.elapsed();
             }
 
             if (pi.pythiaParameters.writeFullCandidateDebug) {

@@ -118,13 +118,6 @@ private:
         bool *usedDiscriminantFallback
         );
 
-    Err rescoreTimsFilteredCandidatesForNeuralNet(
-        const MsReaderPointerAcc *msReaderPointerAcc,
-        QVector<CandidateScores*> *candidateScoresTargetsAndDecoysNeuralNet,
-        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *rescoredCandidateScorePairs,
-        QVector<Features> *neuralNetFeatures
-        );
-
     Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,
         int targetCountBelowFDRThresholdOnePercent,
@@ -151,7 +144,6 @@ private:
     QHash<TargetDecoyCandidatePair*, bool> m_entered;
 
 	QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
-    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_timsSecondStageCandidateScorePairs;
 	QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
 
     PythiaParameters m_pythiaParameters;

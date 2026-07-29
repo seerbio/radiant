@@ -131,14 +131,6 @@ Err PythiaDIAFFWorkflow::init(
 
 namespace {
 
-    constexpr int TIMS_NEURAL_NET_AUTO_INFERENCE_CANDIDATE_LIMIT = 200000;
-
-    bool usesLegacyTimsWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
-        return msReaderPointerAcc != nullptr
-            && !msReaderPointerAcc->ptr.isNull()
-            && msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
-    }
-
     Err filterScoredCandidatesForNeuralNet(
             int minMs2FragCount,
             int neuralNetCandidateLimit,
@@ -848,11 +840,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 ); ree;
     }
 
-    const bool useLocalRtIdLevelQValues = usesLegacyTimsWorkflow(&msReaderPointerAcc);
     e = IdLevelQValueAnnotator::annotate(
         &candidateScoreClassifierPntrs,
         !usedDiscriminantFallback,
-        useLocalRtIdLevelQValues ? m_pythiaParameters.timsLocalFdrRtBinSeconds : 0.0
+        0.0
         ); ree;
 
     filterDecoysOrNot(&candidateScoreClassifierPntrs);
@@ -894,146 +885,6 @@ ResultsSummary PythiaDIAFFWorkflow::resultsSummary() const {
     return m_resultsSummary;
 }
 
-Err PythiaDIAFFWorkflow::rescoreTimsFilteredCandidatesForNeuralNet(
-    const MsReaderPointerAcc *msReaderPointerAcc,
-    QVector<CandidateScores*> *candidateScoresTargetsAndDecoysNeuralNet,
-    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *rescoredCandidateScorePairs,
-    QVector<Features> *neuralNetFeatures
-    ) {
-
-    ERR_INIT
-
-    if (msReaderPointerAcc == nullptr
-        || msReaderPointerAcc->ptr.isNull()
-        || !usesLegacyTimsWorkflow(msReaderPointerAcc)
-        || candidateScoresTargetsAndDecoysNeuralNet == nullptr
-        || candidateScoresTargetsAndDecoysNeuralNet->isEmpty()
-        || rescoredCandidateScorePairs == nullptr
-        || neuralNetFeatures == nullptr) {
-        ERR_RETURN
-    }
-
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> targetKeyVsTargetDecoyCandidatePairs;
-    QSet<TargetDecoyCandidatePair*> seenTargetDecoyCandidatePairs;
-
-    const int maxTimsSecondStageCandidateRows = m_pythiaParameters.timsSecondStageCandidateRowLimit;
-    const int maxTimsSecondStageUniquePrecursors = m_pythiaParameters.timsSecondStageUniquePrecursorLimit;
-    int inspectedCandidateRows = 0;
-    for (const CandidateScores *candidateScores : *candidateScoresTargetsAndDecoysNeuralNet) {
-        if (inspectedCandidateRows >= maxTimsSecondStageCandidateRows
-            || seenTargetDecoyCandidatePairs.size() >= maxTimsSecondStageUniquePrecursors) {
-            break;
-        }
-
-        ++inspectedCandidateRows;
-        if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
-            continue;
-        }
-
-        TargetDecoyCandidatePair *targetDecoyCandidatePair = candidateScores->targetDecoyCandidatePair;
-        if (seenTargetDecoyCandidatePairs.contains(targetDecoyCandidatePair)) {
-            continue;
-        }
-
-        seenTargetDecoyCandidatePairs.insert(targetDecoyCandidatePair);
-        targetKeyVsTargetDecoyCandidatePairs[candidateScores->targetKey].push_back(targetDecoyCandidatePair);
-    }
-
-    if (targetKeyVsTargetDecoyCandidatePairs.isEmpty()) {
-        ERR_RETURN
-    }
-
-    QVector<Features> rescoringFeatures = m_ppmOptimizationFeatures;
-    appendFeatureIfMissing(&rescoringFeatures, Ms2IonMobilityRtCosineMean);
-    appendFeatureIfMissing(&rescoringFeatures, Ms2IonMobilityRtCosineStDev);
-    appendFeatureIfMissing(&rescoringFeatures, Ms2IonMobilityRtApexAgreementFraction);
-
-    appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtCosineMean);
-    appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtCosineStDev);
-    appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtApexAgreementFraction);
-
-    const QVector<float> rescoringWeights = DiscriminantScoretron::defaultWeights(rescoringFeatures);
-    constexpr int topNMs2IonsTimsSecondStage = 8;
-    constexpr bool useTopNIntegrationsParameter = false;
-    constexpr float minPeakCountTims = 2.9f;
-    const int threadCount = std::max(1, m_pythiaParameters.threadCount);
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "TIMS 4D second-stage rescoring"
-             << "unique_precursors" << seenTargetDecoyCandidatePairs.size()
-             << "selected_candidate_rows" << inspectedCandidateRows
-             << "candidate_rows" << candidateScoresTargetsAndDecoysNeuralNet->size()
-             << "candidate_row_limit" << maxTimsSecondStageCandidateRows
-             << "unique_precursor_limit" << maxTimsSecondStageUniquePrecursors
-             << "target_keys" << targetKeyVsTargetDecoyCandidatePairs.size();
-
-    QElapsedTimer timer;
-    timer.start();
-    rescoredCandidateScorePairs->clear();
-    m_targetDecoyCandidatePairScoretron.setUseAdaptiveTimsMobilityCentering(true);
-    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-        rescoringFeatures,
-        topNMs2IonsTimsSecondStage,
-        m_msCalibratomatic,
-        minPeakCountTims,
-        threadCount,
-        useTopNIntegrationsParameter,
-        QMap<MzTargetKey, TurboXIC*>(),
-        rescoringWeights,
-        &targetKeyVsTargetDecoyCandidatePairs,
-        rescoredCandidateScorePairs
-        );
-    m_targetDecoyCandidatePairScoretron.setUseAdaptiveTimsMobilityCentering(false);
-    ree;
-
-    if (rescoredCandidateScorePairs->isEmpty()) {
-        ERR_RETURN
-    }
-
-    QHash<TargetDecoyCandidatePair*, QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> rescoredScoresByCandidate;
-    rescoredScoresByCandidate.reserve(rescoredCandidateScorePairs->size());
-    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &rescoredPair : *rescoredCandidateScorePairs) {
-        TargetDecoyCandidatePair *targetDecoyCandidatePair = rescoredPair.first.targetDecoyCandidatePair;
-        if (targetDecoyCandidatePair == nullptr) {
-            targetDecoyCandidatePair = rescoredPair.second.targetDecoyCandidatePair;
-        }
-        if (targetDecoyCandidatePair == nullptr) {
-            continue;
-        }
-        rescoredScoresByCandidate.insert(targetDecoyCandidatePair, {&rescoredPair.first, &rescoredPair.second});
-    }
-
-    int replacedCandidateRows = 0;
-    for (CandidateScores *&candidateScores : *candidateScoresTargetsAndDecoysNeuralNet) {
-        if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
-            continue;
-        }
-
-        const auto rescoredIt = rescoredScoresByCandidate.constFind(candidateScores->targetDecoyCandidatePair);
-        if (rescoredIt == rescoredScoresByCandidate.constEnd()) {
-            continue;
-        }
-
-        CandidateScores *replacementCandidateScores
-            = candidateScores->isDecoy ? rescoredIt.value().second : rescoredIt.value().first;
-        if (!isCandidateScoresWritable(replacementCandidateScores)) {
-            continue;
-        }
-
-        candidateScores = replacementCandidateScores;
-        ++replacedCandidateRows;
-    }
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "TIMS 4D second-stage rescored"
-             << "pairs" << rescoredCandidateScorePairs->size()
-             << "replaced_candidate_rows" << replacedCandidateRows
-             << "candidate_rows" << candidateScoresTargetsAndDecoysNeuralNet->size()
-             << "msec" << timer.elapsed();
-
-    ERR_RETURN
-}
-
 Err PythiaDIAFFWorkflow::mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
         int *targetCountBelowFDRThresholdOnePercent
@@ -1044,7 +895,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
 
 	    m_candidateScorePairs.clear();
-        m_timsSecondStageCandidateScorePairs.clear();
 
     constexpr int topNMs2IonsMainAnalysis = 12;
     constexpr bool useTopNIntegrationsParameter = false;
@@ -1070,7 +920,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
 
-    const float minPeakCount = usesLegacyTimsWorkflow(msReaderPointerAcc) ? 2.9f : 3.9f;
+    constexpr float minPeakCount = 3.9f;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             m_ppmOptimizationFeatures,
@@ -1097,7 +947,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
         &candidateScoresVecBatchPntrs,
         &fdrVsCounts,
         &weights,
-        usesLegacyTimsWorkflow(msReaderPointerAcc)
+        false
         ); ree;
 
     QString fdrString;
@@ -1678,178 +1528,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err applyTimsHighEvidenceGlobalQValueFilter(
-        QVector<CandidateScores*> *candidateScores,
-        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairs,
-        const QValueSettertron::QValueScoreType &qValueScoreType,
-        const PythiaParameters &pythiaParameters
-        ) {
-
-        ERR_INIT
-
-        if (candidateScores == nullptr
-            || candidateScores->isEmpty()
-            || targetDecoyCandidateScorePairs == nullptr
-            || targetDecoyCandidateScorePairs->isEmpty()) {
-            ERR_RETURN
-        }
-
-        const float minCosineSimSum100 = pythiaParameters.timsHighEvidenceMinCosineSimSum100;
-        const float minCosineSimSpectrumOverTimeCubed = pythiaParameters.timsHighEvidenceMinCosineSimSpectrumOverTimeCubed;
-        const float maxScanTimeDeltaAbs = pythiaParameters.timsHighEvidenceMaxScanTimeDeltaAbs;
-
-        auto filteredPairsForThresholds = [targetDecoyCandidateScorePairs](
-            const float minCosineSimSum100Threshold,
-            const float minCosineSimSpectrumOverTimeCubedThreshold,
-            const float maxScanTimeDeltaAbsThreshold
-            ) {
-            QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> selectedPairs;
-            selectedPairs.reserve(targetDecoyCandidateScorePairs->size());
-            for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pair : *targetDecoyCandidateScorePairs) {
-                CandidateScoresTarget *targetScores = pair.first;
-                CandidateScoresDecoy *decoyScores = pair.second;
-                if (targetScores == nullptr || decoyScores == nullptr) {
-                    continue;
-                }
-
-                if (targetScores->featuresArray[CosineSimSum100] < minCosineSimSum100Threshold
-                    || targetScores->featuresArray[CosineSimSpectrumOverTimeCubed] < minCosineSimSpectrumOverTimeCubedThreshold
-                    || targetScores->featuresArray[ScanTimeDeltaAbs] > maxScanTimeDeltaAbsThreshold) {
-                    continue;
-                }
-
-                selectedPairs.push_back(pair);
-            }
-
-            return selectedPairs;
-        };
-
-        if (pythiaParameters.timsHighEvidenceFilterSweep) {
-            struct SweepThresholds {
-                float minCosineSimSum100;
-                float minCosineSimSpectrumOverTimeCubed;
-                float maxScanTimeDeltaAbs;
-            };
-
-            QVector<SweepThresholds> sweepThresholds = {
-                {3.6f, 0.15f, 120.0f},
-                {3.8f, 0.20f, 120.0f},
-                {4.0f, 0.20f, 90.0f},
-                {4.0f, 0.25f, 90.0f},
-                {4.2f, 0.30f, 70.0f},
-                {4.4f, 0.35f, 70.0f},
-                {minCosineSimSum100, minCosineSimSpectrumOverTimeCubed, maxScanTimeDeltaAbs},
-            };
-
-            for (const SweepThresholds &thresholds : sweepThresholds) {
-                QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> sweepPairs = filteredPairsForThresholds(
-                    thresholds.minCosineSimSum100,
-                    thresholds.minCosineSimSpectrumOverTimeCubed,
-                    thresholds.maxScanTimeDeltaAbs
-                );
-
-                if (sweepPairs.isEmpty()) {
-                    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                             << "TIMS high-evidence threshold sweep"
-                             << "pairs" << 0
-                             << "q01_targets" << 0
-                             << "q01_decoys" << 0
-                             << "min_cos_sum100" << thresholds.minCosineSimSum100
-                             << "min_cos_time_cubed" << thresholds.minCosineSimSpectrumOverTimeCubed
-                             << "max_scan_time_delta_abs" << thresholds.maxScanTimeDeltaAbs;
-                    continue;
-                }
-
-                e = QValueSettertron::setQValueForCandidates(
-                    qValueScoreType,
-                    &sweepPairs,
-                    true,
-                    true,
-                    pythiaParameters.timsLocalFdrRtBinSeconds
-                    ); ree;
-
-                const int q01Targets = static_cast<int>(std::count_if(
-                    sweepPairs.begin(),
-                    sweepPairs.end(),
-                    [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pair) {
-                        return pair.first != nullptr
-                               && !is_nn_decoy(pair.first)
-                               && pair.first->qValue <= 0.01;
-                    }));
-
-                int q01Decoys = 0;
-                for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pair : sweepPairs) {
-                    if (pair.first != nullptr
-                        && is_nn_decoy(pair.first)
-                        && pair.first->qValue <= 0.01) {
-                        ++q01Decoys;
-                    }
-                    if (pair.second != nullptr
-                        && is_nn_decoy(pair.second)
-                        && pair.second->qValue <= 0.01) {
-                        ++q01Decoys;
-                    }
-                }
-
-                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                         << "TIMS high-evidence threshold sweep"
-                         << "pairs" << sweepPairs.size()
-                         << "q01_targets" << q01Targets
-                         << "q01_decoys" << q01Decoys
-                         << "min_cos_sum100" << thresholds.minCosineSimSum100
-                         << "min_cos_time_cubed" << thresholds.minCosineSimSpectrumOverTimeCubed
-                         << "max_scan_time_delta_abs" << thresholds.maxScanTimeDeltaAbs;
-            }
-        }
-
-        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> filteredPairs = filteredPairsForThresholds(
-            minCosineSimSum100,
-            minCosineSimSpectrumOverTimeCubed,
-            maxScanTimeDeltaAbs
-            );
-
-        if (filteredPairs.isEmpty()) {
-            ERR_RETURN
-        }
-
-        e = QValueSettertron::setQValueForCandidates(
-            qValueScoreType,
-            &filteredPairs,
-            true,
-            true,
-            pythiaParameters.timsLocalFdrRtBinSeconds
-            ); ree;
-
-        const int originalRows = candidateScores->size();
-        candidateScores->clear();
-        candidateScores->reserve(filteredPairs.size() * 2);
-        for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pair : filteredPairs) {
-            candidateScores->push_back(pair.first);
-            candidateScores->push_back(pair.second);
-        }
-
-        const int targetRows = static_cast<int>(std::count_if(
-            candidateScores->begin(),
-            candidateScores->end(),
-            [](const CandidateScores *candidateScore) {
-                return candidateScore != nullptr && !is_nn_decoy(candidateScore);
-            }));
-        const int decoyRows = candidateScores->size() - targetRows;
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "TIMS high-evidence global q-value filter"
-                 << "rows" << originalRows << "->" << candidateScores->size()
-                 << "pairs" << filteredPairs.size()
-                 << "targets" << targetRows
-                 << "decoys" << decoyRows
-                 << "min_cos_sum100" << minCosineSimSum100
-                 << "min_cos_time_cubed" << minCosineSimSpectrumOverTimeCubed
-                 << "max_scan_time_delta_abs" << maxScanTimeDeltaAbs
-                 << "local_rt_bin_sec" << pythiaParameters.timsLocalFdrRtBinSeconds;
-
-        ERR_RETURN
-    }
-
 		void logNeuralNetStats(const QVector<KarnnNNTarget> &karnnNNTargetsNorm) {
     	const int totalCount = karnnNNTargetsNorm.size();
     	const int decoyCount = static_cast<int>(std::count_if(
@@ -1907,76 +1585,8 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         *usedDiscriminantFallback = false;
     }
 
-    const bool useLegacyTimsWorkflowPath = usesLegacyTimsWorkflow(msReaderPointerAcc);
     QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet = candidateScoresTargetsAndDecoys;
-    QVector<CandidateScores*> candidateScoresForDiscriminantFallback = candidateScoresTargetsAndDecoys;
-    m_timsSecondStageCandidateScorePairs.clear();
-	QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
-    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> discriminantFallbackTargetDecoyPairPntrs;
-
-    auto completeCandidateRowsToTargetDecoyPairs =
-        [this](QVector<CandidateScores*> *candidateScoreRows) {
-            if (candidateScoreRows == nullptr || candidateScoreRows->isEmpty()) {
-                return;
-            }
-
-            QHash<TargetDecoyCandidatePair*, QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> pairByCandidate;
-            pairByCandidate.reserve(m_candidateScorePairs.size());
-            for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : m_candidateScorePairs) {
-                TargetDecoyCandidatePair *candidatePair = pr.first.targetDecoyCandidatePair;
-                if (candidatePair == nullptr) {
-                    candidatePair = pr.second.targetDecoyCandidatePair;
-                }
-                if (candidatePair == nullptr) {
-                    continue;
-                }
-
-                pairByCandidate.insert(candidatePair, {&pr.first, &pr.second});
-            }
-
-            QSet<CandidateScores*> existingRows;
-            QSet<TargetDecoyCandidatePair*> selectedCandidatePairs;
-            existingRows.reserve(candidateScoreRows->size());
-            selectedCandidatePairs.reserve(candidateScoreRows->size() / 2);
-            for (CandidateScores *candidateScores : *candidateScoreRows) {
-                if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
-                    continue;
-                }
-
-                existingRows.insert(candidateScores);
-                selectedCandidatePairs.insert(candidateScores->targetDecoyCandidatePair);
-            }
-
-            const int initialRowCount = candidateScoreRows->size();
-            int appendedComplementRows = 0;
-            for (TargetDecoyCandidatePair *candidatePair : selectedCandidatePairs) {
-                const auto pairIt = pairByCandidate.constFind(candidatePair);
-                if (pairIt == pairByCandidate.constEnd()) {
-                    continue;
-                }
-
-                CandidateScoresTarget *targetScores = pairIt.value().first;
-                CandidateScoresDecoy *decoyScores = pairIt.value().second;
-                if (targetScores != nullptr && !existingRows.contains(targetScores)) {
-                    candidateScoreRows->push_back(targetScores);
-                    existingRows.insert(targetScores);
-                    ++appendedComplementRows;
-                }
-                if (decoyScores != nullptr && !existingRows.contains(decoyScores)) {
-                    candidateScoreRows->push_back(decoyScores);
-                    existingRows.insert(decoyScores);
-                    ++appendedComplementRows;
-                }
-            }
-
-            if (appendedComplementRows > 0) {
-                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                         << "TIMS neural-net candidate pool completed target-decoy pairs"
-                         << "initial_rows" << initialRowCount
-                         << "appended_rows" << appendedComplementRows
-                         << "final_rows" << candidateScoreRows->size();
-            }
-        };
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
 
     auto rebuildTargetDecoyCandidateScorePairPointers =
         [&targetDecoyCandidateScorePairsPntrs](QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScorePairs) {
@@ -1984,33 +1594,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             targetDecoyCandidateScorePairsPntrs.reserve(candidateScorePairs.size());
             for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : candidateScorePairs) {
                 targetDecoyCandidateScorePairsPntrs.push_back({&pr.first, &pr.second});
-            }
-        };
-    auto rebuildTargetDecoyCandidateScorePairPointersFromCandidateRows =
-        [&targetDecoyCandidateScorePairsPntrs](const QVector<CandidateScores*> &candidateScoreRows) {
-            QHash<TargetDecoyCandidatePair*, QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> pairByCandidate;
-            pairByCandidate.reserve(candidateScoreRows.size() / 2);
-            for (CandidateScores *candidateScores : candidateScoreRows) {
-                if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
-                    continue;
-                }
-
-                QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pair
-                    = pairByCandidate[candidateScores->targetDecoyCandidatePair];
-                if (candidateScores->isDecoy) {
-                    pair.second = candidateScores;
-                }
-                else {
-                    pair.first = candidateScores;
-                }
-            }
-
-            targetDecoyCandidateScorePairsPntrs.clear();
-            targetDecoyCandidateScorePairsPntrs.reserve(pairByCandidate.size());
-            for (auto it = pairByCandidate.begin(); it != pairByCandidate.end(); ++it) {
-                if (it.value().first != nullptr && it.value().second != nullptr) {
-                    targetDecoyCandidateScorePairsPntrs.push_back(it.value());
-                }
             }
         };
 
@@ -2025,71 +1608,17 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             ); ree;
     }
 
-    const int neuralNetInferenceCandidateLimit =
-        useLegacyTimsWorkflowPath
-            ? std::max(
-                  m_pythiaParameters.neuralNetCandidateLimit,
-                  m_pythiaParameters.timsNeuralNetInferenceCandidateLimit > 0
-                      ? m_pythiaParameters.timsNeuralNetInferenceCandidateLimit
-                      : TIMS_NEURAL_NET_AUTO_INFERENCE_CANDIDATE_LIMIT
-                  )
-            : m_pythiaParameters.neuralNetCandidateLimit;
-
-    QVector<CandidateScores*> candidateScoresForNeuralNetTraining;
-    if (useLegacyTimsWorkflowPath
-        && neuralNetInferenceCandidateLimit > m_pythiaParameters.neuralNetCandidateLimit) {
-        candidateScoresForNeuralNetTraining = candidateScoresTargetsAndDecoys;
-        e = filterScoredCandidatesForNeuralNet(
-            m_pythiaParameters.minMs2FragCount,
-            m_pythiaParameters.neuralNetCandidateLimit,
-            true,
-            &candidateScoresForNeuralNetTraining
-            ); ree;
-        completeCandidateRowsToTargetDecoyPairs(&candidateScoresForNeuralNetTraining);
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "TIMS neural-net split pool"
-                 << "training_rows" << candidateScoresForNeuralNetTraining.size()
-                 << "inference_limit" << neuralNetInferenceCandidateLimit;
-    }
-
     e = filterScoredCandidatesForNeuralNet(
         m_pythiaParameters.minMs2FragCount,
-        neuralNetInferenceCandidateLimit,
-        useLegacyTimsWorkflowPath,
-		        &candidateScoresTargetsAndDecoysNeuralNet
-		        ); ree;
+        m_pythiaParameters.neuralNetCandidateLimit,
+        false,
+        &candidateScoresTargetsAndDecoysNeuralNet
+        ); ree;
 
-    if (useLegacyTimsWorkflowPath) {
-        completeCandidateRowsToTargetDecoyPairs(&candidateScoresTargetsAndDecoysNeuralNet);
-        candidateScoresForDiscriminantFallback = candidateScoresTargetsAndDecoysNeuralNet;
-        rebuildTargetDecoyCandidateScorePairPointersFromCandidateRows(candidateScoresForDiscriminantFallback);
-        discriminantFallbackTargetDecoyPairPntrs = targetDecoyCandidateScorePairsPntrs;
-    }
-
-	    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
-
-    QVector<Features> neuralNetFeatures = m_neuralNetFeatures;
-    constexpr bool enableTimsSecondStageRescoring = true;
-    if (msReaderPointerAcc != nullptr
-        && !msReaderPointerAcc->ptr.isNull()
-        && useLegacyTimsWorkflowPath
-        && enableTimsSecondStageRescoring) {
-        e = rescoreTimsFilteredCandidatesForNeuralNet(
-            msReaderPointerAcc,
-            &candidateScoresTargetsAndDecoysNeuralNet,
-            &m_timsSecondStageCandidateScorePairs,
-            &neuralNetFeatures
-            ); ree;
-
-        if (!m_timsSecondStageCandidateScorePairs.isEmpty()) {
-            rebuildTargetDecoyCandidateScorePairPointersFromCandidateRows(candidateScoresTargetsAndDecoysNeuralNet);
-        }
-    }
-    else if (useLegacyTimsWorkflowPath) {
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "TIMS 4D second-stage rescoring skipped; using main IMS-aware candidate scores";
-    }
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Analyzing"
+             << candidateScoresTargetsAndDecoysNeuralNet.size()
+             << "for filtering";
 
 // #define WRITENN
 #ifdef WRITENN
@@ -2122,114 +1651,47 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     candidateScoreClassifier->clear();
 
-	    QVector<KarnnNNTarget> karnnNNTargetsNorm;
+    QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
-        neuralNetFeatures,
+        m_neuralNetFeatures,
         candidateScoresTargetsAndDecoysNeuralNet,
         &karnnNNTargetsNorm
         ); ree;
 
-    QVector<KarnnNNTarget> karnnNNTargetsNormTrain = karnnNNTargetsNorm;
-    QVector<KarnnNNTarget> karnnNNTargetsNormInferOnly;
-    if (!candidateScoresForNeuralNetTraining.isEmpty()) {
-        QSet<TargetDecoyCandidatePair*> trainingCandidatePairs;
-        trainingCandidatePairs.reserve(candidateScoresForNeuralNetTraining.size() / 2);
-        for (CandidateScores *candidateScores : candidateScoresForNeuralNetTraining) {
-            if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
-                continue;
-            }
-            trainingCandidatePairs.insert(candidateScores->targetDecoyCandidatePair);
-        }
+    logNeuralNetStats(karnnNNTargetsNorm);
 
-        karnnNNTargetsNormTrain.clear();
-        karnnNNTargetsNormTrain.reserve(candidateScoresForNeuralNetTraining.size());
-        karnnNNTargetsNormInferOnly.reserve(karnnNNTargetsNorm.size());
-        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-            if (kt.candidateScores != nullptr
-                && kt.candidateScores->targetDecoyCandidatePair != nullptr
-                && trainingCandidatePairs.contains(kt.candidateScores->targetDecoyCandidatePair)) {
-                karnnNNTargetsNormTrain.push_back(kt);
-            }
-            else {
-                karnnNNTargetsNormInferOnly.push_back(kt);
-            }
-        }
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "TIMS neural-net split pool normalized"
-                 << "training_rows" << karnnNNTargetsNormTrain.size()
-                 << "infer_only_rows" << karnnNNTargetsNormInferOnly.size()
-                 << "total_inference_rows" << karnnNNTargetsNorm.size();
-    }
-
-	logNeuralNetStats(karnnNNTargetsNormTrain);
-
-		QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormTranched;
-	e = ParallelUtils::trancheVectorForParallelization(
-			karnnNNTargetsNormTrain,
-			m_pythiaParameters.baggingSize,
-			&karnnNNTargetsNormTranched
-			); ree;
+    QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+        karnnNNTargetsNorm,
+        m_pythiaParameters.baggingSize,
+        &karnnNNTargetsNormTranched
+        ); ree;
 
     QVector<FDRCLassifierNeuralNet> fdrClassifierNeuralNets;
-	QVector<QVector<KarnnNNTarget>> inferenceKarnnVecs;
+    QVector<QVector<KarnnNNTarget>> inferenceKarnnVecs;
     e = trainNeuralNetwork(
-            m_pythiaParameters,
-            karnnNNTargetsNormTranched,
-            seed,
-            useLegacyTimsWorkflowPath,
-            &fdrClassifierNeuralNets,
-            &inferenceKarnnVecs
-            ); ree;
-
-    const bool useMonotonePairQValues = useLegacyTimsWorkflowPath;
-    const bool useTargetKeyStratifiedQValues = useMonotonePairQValues;
-    const double localRtBinSecondsForQValues = useMonotonePairQValues
-                                                   ? m_pythiaParameters.timsLocalFdrRtBinSeconds
-                                                   : 0.0;
-    const bool normalizeNeuralNetPredictions = useLegacyTimsWorkflowPath
-                                                   ? false
-                                                   : m_pythiaParameters.normalizeNeuralNetPredictions;
-    if (useLegacyTimsWorkflowPath && m_pythiaParameters.normalizeNeuralNetPredictions) {
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "TIMS neural-net prediction normalization disabled";
-    }
+        m_pythiaParameters,
+        karnnNNTargetsNormTranched,
+        seed,
+        false,
+        &fdrClassifierNeuralNets,
+        &inferenceKarnnVecs
+        ); ree;
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference start";
     QVector<QVector<float>> predictions;
     e = predictClassifierScores(
         inferenceKarnnVecs,
         fdrClassifierNeuralNets,
-        normalizeNeuralNetPredictions,
-        useMonotonePairQValues,
+        m_pythiaParameters.normalizeNeuralNetPredictions,
+        false,
         &predictions
         ); ree;
-	    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference end";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference end";
 
-		for (int i = 0; i < predictions.size(); i++) {
-		    processPredictions(predictions[i], &inferenceKarnnVecs[i], i); ree;
-		}
-
-        if (!karnnNNTargetsNormInferOnly.isEmpty()) {
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS inference-only candidate prediction start"
-                     << karnnNNTargetsNormInferOnly.size();
-            QVector<float> inferOnlyPredictions;
-            e = predictClassifierScoresWithAllNets(
-                karnnNNTargetsNormInferOnly,
-                fdrClassifierNeuralNets,
-                normalizeNeuralNetPredictions,
-                useMonotonePairQValues,
-                &inferOnlyPredictions
-                ); ree;
-            e = processPredictions(
-                inferOnlyPredictions,
-                &karnnNNTargetsNormInferOnly,
-                m_pythiaParameters.baggingSize
-                ); ree;
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS inference-only candidate prediction end";
-        }
+    for (int i = 0; i < predictions.size(); i++) {
+        processPredictions(predictions[i], &inferenceKarnnVecs[i], i); ree;
+    }
 
 	// #define WRITE_RESULTS_TO_FILE
 #ifdef WRITE_RESULTS_TO_FILE
@@ -2243,233 +1705,30 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 #endif
 
     e = QValueSettertron::setQValueForCandidates(
-            QValueSettertron::QValueScoreType::NNClassifierScore,
-            &targetDecoyCandidateScorePairsPntrs,
-            useMonotonePairQValues,
-            useTargetKeyStratifiedQValues,
-            localRtBinSecondsForQValues
-            ); ree
+        QValueSettertron::QValueScoreType::NNClassifierScore,
+        &targetDecoyCandidateScorePairsPntrs,
+        false,
+        false,
+        0.0
+        ); ree
 
-    const double targetFdrThreshold = m_pythiaParameters.percentFDR / 100.0;
-    int neuralNetTargetCount = 0;
-    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-        candidateScoresTargetsAndDecoysNeuralNet,
-        targetFdrThreshold,
-        &neuralNetTargetCount
-        ); ree;
+    *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
 
-    const bool canUseDiscriminantFallback = useMonotonePairQValues;
-	    if (canUseDiscriminantFallback) {
-	        QVector<CandidateScores*> discriminantCandidates = candidateScoresForDiscriminantFallback;
-            QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> discriminantPairPntrs =
-                discriminantFallbackTargetDecoyPairPntrs.isEmpty()
-                    ? targetDecoyCandidateScorePairsPntrs
-                    : discriminantFallbackTargetDecoyPairPntrs;
-	        e = QValueSettertron::setQValueForCandidates(
-            QValueSettertron::QValueScoreType::DiscriminantScore,
-            &discriminantPairPntrs,
-            useMonotonePairQValues,
-            useTargetKeyStratifiedQValues,
-            localRtBinSecondsForQValues
-            ); ree;
-
-        int discriminantTargetCount = 0;
-        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-            discriminantCandidates,
-            targetFdrThreshold,
-            &discriminantTargetCount
-            ); ree;
-
-        if (useLegacyTimsWorkflowPath && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
-            constexpr double fdrQValThreshold = 0.5;
-
-            QVector<CandidateScores*> neuralNetFilteredCandidates = candidateScoresTargetsAndDecoysNeuralNet;
-            QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> neuralNetFilteredPairPntrs =
-                targetDecoyCandidateScorePairsPntrs;
-            e = applyTimsHighEvidenceGlobalQValueFilter(
-                &neuralNetFilteredCandidates,
-                &neuralNetFilteredPairPntrs,
-                QValueSettertron::QValueScoreType::NNClassifierScore,
-                m_pythiaParameters
-                ); ree;
-            e = filterByQValueThreshold(
-                fdrQValThreshold,
-                &neuralNetFilteredCandidates,
-                true
-                ); ree;
-            int neuralNetFilteredTargetCount = 0;
-            e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                neuralNetFilteredCandidates,
-                targetFdrThreshold,
-                &neuralNetFilteredTargetCount
-                ); ree;
-
-            QVector<CandidateScores*> discriminantFilteredCandidates = candidateScoresForDiscriminantFallback;
-            QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> discriminantFilteredPairPntrs =
-                discriminantFallbackTargetDecoyPairPntrs.isEmpty()
-                    ? targetDecoyCandidateScorePairsPntrs
-                    : discriminantFallbackTargetDecoyPairPntrs;
-            e = applyTimsHighEvidenceGlobalQValueFilter(
-                &discriminantFilteredCandidates,
-                &discriminantFilteredPairPntrs,
-                QValueSettertron::QValueScoreType::DiscriminantScore,
-                m_pythiaParameters
-                ); ree;
-            e = filterByQValueThreshold(
-                fdrQValThreshold,
-                &discriminantFilteredCandidates,
-                false
-                ); ree;
-            int discriminantFilteredTargetCount = 0;
-            e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                discriminantFilteredCandidates,
-                targetFdrThreshold,
-                &discriminantFilteredTargetCount
-                ); ree;
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS scorer selection after high-evidence filter"
-                     << "neural-net targets" << neuralNetFilteredTargetCount
-                     << "discriminant targets" << discriminantFilteredTargetCount
-                     << "pre-filter neural-net targets" << neuralNetTargetCount
-                     << "pre-filter discriminant targets" << discriminantTargetCount;
-
-            if (discriminantFilteredTargetCount > neuralNetFilteredTargetCount) {
-                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                         << "TIMS neural-net fallback:"
-                         << "using discriminant q-values after high-evidence filter";
-
-                *candidateScoreClassifier = discriminantFilteredCandidates;
-                if (usedDiscriminantFallback != nullptr) {
-                    *usedDiscriminantFallback = true;
-                }
-
-                ERR_RETURN
-            }
-
-            neuralNetFilteredCandidates = candidateScoresTargetsAndDecoysNeuralNet;
-            neuralNetFilteredPairPntrs = targetDecoyCandidateScorePairsPntrs;
-            e = applyTimsHighEvidenceGlobalQValueFilter(
-                &neuralNetFilteredCandidates,
-                &neuralNetFilteredPairPntrs,
-                QValueSettertron::QValueScoreType::NNClassifierScore,
-                m_pythiaParameters
-                ); ree;
-            e = filterByQValueThreshold(
-                fdrQValThreshold,
-                &neuralNetFilteredCandidates,
-                true
-                ); ree;
-
-            *candidateScoreClassifier = neuralNetFilteredCandidates;
-            if (usedDiscriminantFallback != nullptr) {
-                *usedDiscriminantFallback = false;
-            }
-
-            ERR_RETURN
-        }
-
-        if (discriminantTargetCount > neuralNetTargetCount) {
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS neural-net fallback:"
-                     << "using discriminant q-values"
-                     << "linear targets" << discriminantTargetCount
-                     << "neural-net targets" << neuralNetTargetCount;
-
-            *candidateScoreClassifier = discriminantCandidates;
-            if (usedDiscriminantFallback != nullptr) {
-                *usedDiscriminantFallback = true;
-            }
-
-	            if (m_pythiaParameters.writeFullCandidateDebug) {
-	                e = writeCandidateScoresDebug(
-	                    *candidateScoreClassifier,
-	                    QStringLiteral(".discriminant_candidates.tsv"),
-	                    m_outputFolderPath,
-                    msReaderPointerAcc
-	                    ); ree;
-	            }
-
-                if (useLegacyTimsWorkflowPath && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
-                e = applyTimsHighEvidenceGlobalQValueFilter(
-                    candidateScoreClassifier,
-                    &discriminantPairPntrs,
-                    QValueSettertron::QValueScoreType::DiscriminantScore,
-                    m_pythiaParameters
-                    ); ree;
-                }
-                else if (useLegacyTimsWorkflowPath) {
-                    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                             << "TIMS high-evidence global q-value filter skipped";
-                }
-
-	            constexpr double fdrQValThreshold = 0.5;
-                if (useMonotonePairQValues) {
-                    e = filterByQValueThreshold(
-                        fdrQValThreshold,
-                        candidateScoreClassifier,
-                        false
-                        ); ree;
-                }
-                else {
-                    e = serialFilterByValue(
-                        fdrQValThreshold,
-                        candidateScoreClassifier,
-                        false
-                        ); ree;
-                }
-
-            ERR_RETURN
-	        }
-
-	        e = QValueSettertron::setQValueForCandidates(
-	            QValueSettertron::QValueScoreType::NNClassifierScore,
-	            &targetDecoyCandidateScorePairsPntrs,
-                useMonotonePairQValues,
-                useTargetKeyStratifiedQValues,
-                localRtBinSecondsForQValues
-	            ); ree;
-	    }
-
-	    *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
-
-	    if (m_pythiaParameters.writeFullCandidateDebug) {
-	        e = writeCandidateScoresDebug(
+    if (m_pythiaParameters.writeFullCandidateDebug) {
+        e = writeCandidateScoresDebug(
             candidateScoresTargetsAndDecoysNeuralNet,
             QStringLiteral(".nn_candidates.tsv"),
             m_outputFolderPath,
             msReaderPointerAcc
-	            ); ree;
-	    }
+            ); ree;
+    }
 
-        if (useLegacyTimsWorkflowPath && m_pythiaParameters.timsHighEvidenceFilterEnabled) {
-            e = applyTimsHighEvidenceGlobalQValueFilter(
-                candidateScoreClassifier,
-                &targetDecoyCandidateScorePairsPntrs,
-                QValueSettertron::QValueScoreType::NNClassifierScore,
-                m_pythiaParameters
-                ); ree;
-        }
-        else if (useLegacyTimsWorkflowPath) {
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "TIMS high-evidence global q-value filter skipped";
-        }
-
-	    constexpr double fdrQValThreshold = 0.5;
-        if (useMonotonePairQValues) {
-            e = filterByQValueThreshold(
-                fdrQValThreshold,
-                candidateScoreClassifier,
-                true
-                ); ree;
-        }
-        else {
-            e = serialFilterByValue(
-                fdrQValThreshold,
-                candidateScoreClassifier,
-                true
-                ); ree;
-        }
+    constexpr double fdrQValThreshold = 0.5;
+    e = serialFilterByValue(
+        fdrQValThreshold,
+        candidateScoreClassifier,
+        true
+        ); ree;
 
     ERR_RETURN
 }
