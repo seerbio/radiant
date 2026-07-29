@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <cmath>
 
+class TargetDecoyPairParallelInput;
+
 namespace {
 
     bool usesLegacyTimsWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
@@ -39,6 +41,45 @@ namespace {
             && !msReaderPointerAcc->ptr.isNull()
             && msReaderPointerAcc->ptr->usesCentroidIonMobility();
     }
+
+    struct Ms2IonMobilityIndexStorage {
+        TimsMs2IonMobilityIndex legacyIndex;
+        CentroidMs2IonMobilityIndex centroidIndex;
+        Ms2IonMobilityIndexBase *indexPntr = nullptr;
+    };
+
+    Err ensureTargetScanPointsLoaded(
+        const TargetDecoyPairParallelInput &pi,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+        );
+
+    Err initLocalMs2Frame(
+        const TargetDecoyPairParallelInput &pi,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+        MsFrame *msFrameMzTarget
+        );
+
+    Err buildLegacyMs2IonMobilityIndex(
+        const TargetDecoyPairParallelInput &pi,
+        const MsFrame &msFrameMzTarget,
+        Ms2IonMobilityIndexStorage *indexStorage
+        );
+
+    Err buildCentroidMs2IonMobilityIndex(
+        const TargetDecoyPairParallelInput &pi,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+        const MsFrame &msFrameMzTarget,
+        Ms2IonMobilityIndexStorage *indexStorage
+        );
+
+    Err buildMs2IonMobilityIndex(
+        const TargetDecoyPairParallelInput &pi,
+        bool hasLegacyTimsFrameMaps,
+        bool needsMs2IonMobilityIndex,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+        const MsFrame *msFrameMzTarget,
+        Ms2IonMobilityIndexStorage *indexStorage
+        );
 
 }
 
@@ -220,6 +261,168 @@ Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
 }
 
 namespace {
+
+    Err ensureTargetScanPointsLoaded(
+        const TargetDecoyPairParallelInput &pi,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+        ) {
+
+        ERR_INIT
+
+        if (!scanNumberVsScanPoints->isEmpty()) {
+            ERR_RETURN
+        }
+
+        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eNullPointerError); ree;
+        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eNullPointerError); ree;
+
+        e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(pi.targetKey, scanNumberVsScanPoints); ree;
+
+        if (pi.msCalibratomatic.isInitCalMS2()) {
+            e = pi.msCalibratomatic.recalibrateScanPoints(
+                MSLevelEnum::MS2,
+                scanNumberVsScanPoints
+                ); ree;
+        }
+
+        ERR_RETURN
+    }
+
+    Err initLocalMs2Frame(
+        const TargetDecoyPairParallelInput &pi,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+        MsFrame *msFrameMzTarget
+        ) {
+
+        ERR_INIT
+
+        if (pi.msFrameMzTarget != nullptr) {
+            ERR_RETURN
+        }
+
+        e = ensureTargetScanPointsLoaded(pi, scanNumberVsScanPoints); ree;
+
+        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsPntrs;
+        for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); ++it) {
+            scanNumberVsScanPointsPntrs.insert(it.key(), &it.value());
+        }
+
+        e = msFrameMzTarget->init(
+            scanNumberVsScanPointsPntrs,
+            pi.scanNumberVsScanTime
+            ); ree;
+
+        ERR_RETURN
+    }
+
+    Err buildLegacyMs2IonMobilityIndex(
+        const TargetDecoyPairParallelInput &pi,
+        const MsFrame &msFrameMzTarget,
+        Ms2IonMobilityIndexStorage *indexStorage
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eNullPointerError); ree;
+        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eNullPointerError); ree;
+
+        MzTargetKeyVsMs2FrameTIMS *ms2FrameTims
+            = pi.msReaderPointerAcc->ptr->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
+        const QMap<FrameIndex, double> *ionMobilityIndexVsDriftTime
+            = pi.msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
+
+        if (ms2FrameTims == nullptr || ionMobilityIndexVsDriftTime == nullptr) {
+            ERR_RETURN
+        }
+
+        const auto targetIt = ms2FrameTims->constFind(pi.targetKey);
+        if (targetIt == ms2FrameTims->constEnd()) {
+            ERR_RETURN
+        }
+
+        e = indexStorage->legacyIndex.init(
+            targetIt.value(),
+            msFrameMzTarget,
+            *ionMobilityIndexVsDriftTime
+            ); ree;
+
+        if (indexStorage->legacyIndex.isInit()) {
+            indexStorage->indexPntr = &indexStorage->legacyIndex;
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildCentroidMs2IonMobilityIndex(
+        const TargetDecoyPairParallelInput &pi,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+        const MsFrame &msFrameMzTarget,
+        Ms2IonMobilityIndexStorage *indexStorage
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eNullPointerError); ree;
+        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eNullPointerError); ree;
+
+        e = ensureTargetScanPointsLoaded(pi, scanNumberVsScanPoints); ree;
+
+        QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
+        e = pi.msReaderPointerAcc->ptr->getMzTargetAlignedPointData(
+            pi.targetKey,
+            &scanNumberVsAlignedPointData
+            ); ree;
+
+        e = indexStorage->centroidIndex.init(
+            *scanNumberVsScanPoints,
+            scanNumberVsAlignedPointData,
+            msFrameMzTarget
+            ); ree;
+
+        if (indexStorage->centroidIndex.isInit()) {
+            indexStorage->indexPntr = &indexStorage->centroidIndex;
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildMs2IonMobilityIndex(
+        const TargetDecoyPairParallelInput &pi,
+        bool hasLegacyTimsFrameMaps,
+        bool needsMs2IonMobilityIndex,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+        const MsFrame *msFrameMzTarget,
+        Ms2IonMobilityIndexStorage *indexStorage
+        ) {
+
+        ERR_INIT
+
+        if (!needsMs2IonMobilityIndex
+            || msFrameMzTarget == nullptr
+            || !msFrameMzTarget->isValid()) {
+            ERR_RETURN
+        }
+
+        if (hasLegacyTimsFrameMaps) {
+            e = buildLegacyMs2IonMobilityIndex(
+                pi,
+                *msFrameMzTarget,
+                indexStorage
+                ); ree;
+            ERR_RETURN
+        }
+
+        if (usesCentroidIonMobilityWorkflow(pi.msReaderPointerAcc)) {
+            e = buildCentroidMs2IonMobilityIndex(
+                pi,
+                scanNumberVsScanPoints,
+                *msFrameMzTarget,
+                indexStorage
+                ); ree;
+        }
+
+        ERR_RETURN
+    }
 
     bool containsMs2IonMobilityFeature(const QVector<Features> &features) {
         return features.contains(Ms2IonMobilityWeightedDelta)
@@ -739,24 +942,10 @@ namespace {
                 && !pi.msReaderPointerAcc->ptr.isNull();
 
             if (shouldLoadLocalMs2Frame) {
-
-                e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(pi.targetKey, &scanNumberVsScanPoints); rtee;
-
-                if (pi.msCalibratomatic.isInitCalMS2()) {
-                    e = pi.msCalibratomatic.recalibrateScanPoints(
-                        MSLevelEnum::MS2,
-                        &scanNumberVsScanPoints
-                        ); rtee;
-                }
-
-                QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsPntrs;
-                for(auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
-                    scanNumberVsScanPointsPntrs.insert(it.key(), &it.value());
-                }
-
-                e = msFrameMzTarget.init(
-                    scanNumberVsScanPointsPntrs,
-                    pi.scanNumberVsScanTime
+                e = initLocalMs2Frame(
+                    pi,
+                    &scanNumberVsScanPoints,
+                    &msFrameMzTarget
                     ); rtee;
             }
 
@@ -851,9 +1040,7 @@ namespace {
                     ); rree;
             }
 
-            TimsMs2IonMobilityIndex timsMs2IonMobilityIndex;
-            CentroidMs2IonMobilityIndex centroidMs2IonMobilityIndex;
-            Ms2IonMobilityIndexBase *ms2IonMobilityIndexPntr = nullptr;
+            Ms2IonMobilityIndexStorage ms2IonMobilityIndexStorage;
 
             const bool hasReaderIonMobility = readerHasIonMobility(pi.msReaderPointerAcc);
             const bool hasLibraryIonMobility = hasReaderIonMobility
@@ -870,60 +1057,23 @@ namespace {
             if (needsMs2IonMobilityIndex
                 && msFrameMzTargetPntr != nullptr
                 && msFrameMzTargetPntr->isValid()) {
-
                 QElapsedTimer timsMs2IndexTimer;
                 timsMs2IndexTimer.start();
-                if (hasLegacyTimsFrameMaps) {
-                    MzTargetKeyVsMs2FrameTIMS *ms2FrameTims
-                        = pi.msReaderPointerAcc->ptr->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
-                    const QMap<FrameIndex, double> *ionMobilityIndexVsDriftTime
-                        = pi.msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
-
-                    if (ms2FrameTims != nullptr && ionMobilityIndexVsDriftTime != nullptr) {
-                        const auto targetIt = ms2FrameTims->constFind(pi.targetKey);
-                        if (targetIt != ms2FrameTims->constEnd()) {
-                            e = timsMs2IonMobilityIndex.init(
-                                targetIt.value(),
-                                *msFrameMzTargetPntr,
-                                *ionMobilityIndexVsDriftTime
-                                ); rree;
-
-                            if (timsMs2IonMobilityIndex.isInit()) {
-                                ms2IonMobilityIndexPntr = &timsMs2IonMobilityIndex;
-                            }
-                        }
-                    }
-                }
-                else if (usesCentroidIonMobilityWorkflow(pi.msReaderPointerAcc)) {
-                    if (scanNumberVsScanPoints.isEmpty()) {
-                        e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(
-                            pi.targetKey,
-                            &scanNumberVsScanPoints
-                            ); rtee;
-                    }
-
-                    QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
-                    e = pi.msReaderPointerAcc->ptr->getMzTargetAlignedPointData(
-                        pi.targetKey,
-                        &scanNumberVsAlignedPointData
-                        ); rtee;
-
-                    e = centroidMs2IonMobilityIndex.init(
-                        scanNumberVsScanPoints,
-                        scanNumberVsAlignedPointData,
-                        *msFrameMzTargetPntr
-                        ); rree;
-                    if (centroidMs2IonMobilityIndex.isInit()) {
-                        ms2IonMobilityIndexPntr = &centroidMs2IonMobilityIndex;
-                    }
-                }
+                e = buildMs2IonMobilityIndex(
+                    pi,
+                    hasLegacyTimsFrameMaps,
+                    needsMs2IonMobilityIndex,
+                    &scanNumberVsScanPoints,
+                    msFrameMzTargetPntr,
+                    &ms2IonMobilityIndexStorage
+                    ); rree;
 
                 if (builtTargetDecoyPointersFromAllCandidates) {
                     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                              << "TIMS MS2 mobility index"
                              << "target_key" << pi.targetKey
                              << "needed" << needsMs2IonMobilityIndex
-                             << "points" << (ms2IonMobilityIndexPntr != nullptr ? ms2IonMobilityIndexPntr->pointCount() : 0)
+                             << "points" << (ms2IonMobilityIndexStorage.indexPntr != nullptr ? ms2IonMobilityIndexStorage.indexPntr->pointCount() : 0)
                              << "legacy_frame_maps" << hasLegacyTimsFrameMaps
                              << "msec" << timsMs2IndexTimer.elapsed();
                 }
@@ -946,7 +1096,7 @@ namespace {
                 pi.turboXicMS1,
                 pi.msFrameMS1,
                 pi.msReaderPointerAcc,
-                ms2IonMobilityIndexPntr
+                ms2IonMobilityIndexStorage.indexPntr
                 ); rree;
             candidateScorertron.setUseAdaptiveTimsMobilityCentering(
                 pi.useAdaptiveTimsMobilityCentering
