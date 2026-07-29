@@ -520,9 +520,12 @@ public:
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
-    MzTargetKeyVsMs2FrameTIMS* mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
-    const QMap<FrameIndex, double>* frameIndexVsDriftTimePntr() const;
+    QVector<FrameNumberTIMS> legacyMs1FrameNumbers() const;
+    const Ms1FrameTIMS *legacyMs1FramePntr(FrameNumberTIMS frameNumber) const;
+    QVector<MzTargetKey> legacyMs2TargetKeys() const;
+    QVector<FrameNumberTIMS> legacyMs2FrameNumbers(const MzTargetKey &targetKey) const;
+    const Ms2FrameTIMS *legacyMs2FramePntr(const MzTargetKey &targetKey, FrameNumberTIMS frameNumber) const;
+    QMap<FrameIndex, double> ionMobilityIndexVsDriftTime() const;
     virtual const TimsbukAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const;
 
 

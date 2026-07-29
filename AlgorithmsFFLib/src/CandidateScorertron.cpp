@@ -254,17 +254,13 @@ Err CandidateScorertron::init(
     m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
 
     if (usesLegacyTimsFrameMaps(m_msReaderPointerAcc)) {
-        const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
-            = m_msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
-        if (frameNumberVsMs1FrameTIMS != nullptr && !frameNumberVsMs1FrameTIMS->isEmpty()) {
-            m_ms1FrameNumbersTIMS = frameNumberVsMs1FrameTIMS->keys().toVector();
-        }
+        m_ms1FrameNumbersTIMS = m_msReaderPointerAcc->ptr->legacyMs1FrameNumbers();
 
-        const QMap<FrameIndex, double> *frameIndexVsDriftTime
-            = m_msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
-        if (frameIndexVsDriftTime != nullptr && !frameIndexVsDriftTime->isEmpty()) {
-            m_ms1DriftTimeVsIonMobilityIndexTIMS.reserve(frameIndexVsDriftTime->size());
-            for (auto it = frameIndexVsDriftTime->constBegin(); it != frameIndexVsDriftTime->constEnd(); ++it) {
+        const QMap<FrameIndex, double> frameIndexVsDriftTime
+            = m_msReaderPointerAcc->ptr->ionMobilityIndexVsDriftTime();
+        if (!frameIndexVsDriftTime.isEmpty()) {
+            m_ms1DriftTimeVsIonMobilityIndexTIMS.reserve(frameIndexVsDriftTime.size());
+            for (auto it = frameIndexVsDriftTime.constBegin(); it != frameIndexVsDriftTime.constEnd(); ++it) {
                 m_ms1DriftTimeVsIonMobilityIndexTIMS.push_back({static_cast<float>(it.value()), it.key()});
             }
             std::sort(
@@ -1056,9 +1052,7 @@ namespace {
         e = ErrorUtils::isTrue(!msReaderPointerAcc->ptr.isNull(), eValueError); ree;
         e = ErrorUtils::isTrue(observation != nullptr, eValueError); ree;
 
-        const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
-            = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
-        if (frameNumberVsMs1FrameTIMS == nullptr || frameNumberVsMs1FrameTIMS->isEmpty()) {
+        if (ms1FrameNumbersTIMS.isEmpty()) {
             ERR_RETURN
         }
 
@@ -1072,12 +1066,11 @@ namespace {
             ms1FrameNumber = ms1FrameNumbersTIMS.at(closestIndex - 1);
         }
 
-        const auto ms1FrameIt = frameNumberVsMs1FrameTIMS->constFind(ms1FrameNumber);
-        if (ms1FrameIt == frameNumberVsMs1FrameTIMS->constEnd() || ms1FrameIt.value().isEmpty()) {
+        const Ms1FrameTIMS *ms1FrameTIMS = msReaderPointerAcc->ptr->legacyMs1FramePntr(ms1FrameNumber);
+        if (ms1FrameTIMS == nullptr || ms1FrameTIMS->isEmpty()) {
             ERR_RETURN
         }
 
-        const Ms1FrameTIMS &ms1FrameTIMS = ms1FrameIt.value();
         if (!ms1DriftTimeVsIonMobilityIndexTIMS.isEmpty()) {
             const DriftTimeIonMobilityRange driftTimeRange = driftTimeIonMobilityRange(
                 ms1DriftTimeVsIonMobilityIndexTIMS,
@@ -1087,8 +1080,8 @@ namespace {
 
             for (auto driftTimeIt = driftTimeRange.beginIt; driftTimeIt != driftTimeRange.endIt; ++driftTimeIt) {
                 const IonMobilityIndex ionMobilityIndex = driftTimeIt->second;
-                const auto frameIt = ms1FrameTIMS.constFind(ionMobilityIndex);
-                if (frameIt == ms1FrameTIMS.constEnd()) {
+                const auto frameIt = ms1FrameTIMS->constFind(ionMobilityIndex);
+                if (frameIt == ms1FrameTIMS->constEnd()) {
                     continue;
                 }
 
@@ -1111,7 +1104,7 @@ namespace {
             ERR_RETURN
         }
 
-        for (auto frameIt = ms1FrameTIMS.constBegin(); frameIt != ms1FrameTIMS.constEnd(); ++frameIt) {
+        for (auto frameIt = ms1FrameTIMS->constBegin(); frameIt != ms1FrameTIMS->constEnd(); ++frameIt) {
             const IonMobilityIndex ionMobilityIndex = frameIt.key();
 
             double driftTime = -1.0;

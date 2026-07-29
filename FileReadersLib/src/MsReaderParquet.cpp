@@ -322,34 +322,35 @@ Err MsReaderParquet::writeMsReaderToParquet(
             ); ree;
 
     if (sharedMsReaderBase->isTIMS()) {
-        QMap<FrameNumberTIMS, Ms1FrameTIMS> *ms1Frames = sharedMsReaderBase->frameNumberVsMS1FrameTIMSPntr();
-
-        for (auto frameIt = ms1Frames->begin(); frameIt != ms1Frames->end(); ++frameIt) {
+        for (FrameNumberTIMS frameNumber : sharedMsReaderBase->legacyMs1FrameNumbers()) {
+            const Ms1FrameTIMS *ms1FrameTims = sharedMsReaderBase->legacyMs1FramePntr(frameNumber);
+            if (ms1FrameTims == nullptr || ms1FrameTims->isEmpty()) {
+                continue;
+            }
 
             MsScanInfo msScanInfo;
-            e = sharedMsReaderBase->getMsScanInfo(frameIt.key(), &msScanInfo); ree;
+            e = sharedMsReaderBase->getMsScanInfo(frameNumber, &msScanInfo); ree;
 
-            const Ms1FrameTIMS &ms1FrameTims = frameIt.value();
-            for (auto mobilityIt = ms1FrameTims.begin(); mobilityIt != ms1FrameTims.end(); ++mobilityIt) {
+            for (auto mobilityIt = ms1FrameTims->constBegin(); mobilityIt != ms1FrameTims->constEnd(); ++mobilityIt) {
 
                 QVector<float> mzVals;
                 QVector<float> intensityVals;
                 e = MsReaderBase::splitScanPoints(
-                        mobilityIt.value(),
-                        &mzVals,
-                        &intensityVals
-                        ); ree;
+                    mobilityIt.value(),
+                    &mzVals,
+                    &intensityVals
+                    ); ree;
 
                 double driftTime = -1.0;
                 e = sharedMsReaderBase->driftTimeFromIonMobilityIndex(
-                        mobilityIt.key(),
-                        &driftTime
-                        ); eee_absorb;
+                    mobilityIt.key(),
+                    &driftTime
+                    ); eee_absorb;
 
                 MsParquetReaderRow row;
                 row.rowType = MsParquetReaderNamespace::ROW_TYPE_TIMS_MS1_SCAN;
                 row.msLevel = 1;
-                row.scanNumber = frameIt.key();
+                row.scanNumber = frameNumber;
                 row.scanTime = msScanInfo.scanTime;
                 row.ionMobilityIndex = mobilityIt.key();
                 row.ionMobilityDriftTime = static_cast<float>(driftTime);
@@ -363,39 +364,36 @@ Err MsReaderParquet::writeMsReaderToParquet(
             }
         }
 
-        MzTargetKeyVsMs2FrameTIMS *ms2Frames = sharedMsReaderBase->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
-
-        for (auto targetIt = ms2Frames->begin(); targetIt != ms2Frames->end(); ++targetIt) {
-
-            const MzTargetKey &targetKey = targetIt.key();
-            const QMap<FrameNumberTIMS, Ms2FrameTIMS> &frameNumberVsMs2FrameTims = targetIt.value();
-
-            for (auto frameIt = frameNumberVsMs2FrameTims.begin(); frameIt != frameNumberVsMs2FrameTims.end(); ++frameIt) {
+        for (const MzTargetKey &targetKey : sharedMsReaderBase->legacyMs2TargetKeys()) {
+            for (FrameNumberTIMS frameNumber : sharedMsReaderBase->legacyMs2FrameNumbers(targetKey)) {
+                const Ms2FrameTIMS *ms2FrameTims = sharedMsReaderBase->legacyMs2FramePntr(targetKey, frameNumber);
+                if (ms2FrameTims == nullptr || ms2FrameTims->isEmpty()) {
+                    continue;
+                }
 
                 MsScanInfo msScanInfo;
-                e = sharedMsReaderBase->getMsScanInfo(frameIt.key(), &msScanInfo); ree;
+                e = sharedMsReaderBase->getMsScanInfo(frameNumber, &msScanInfo); ree;
 
-                const Ms2FrameTIMS &ms2FrameTims = frameIt.value();
-                for (auto mobilityIt = ms2FrameTims.begin(); mobilityIt != ms2FrameTims.end(); ++mobilityIt) {
+                for (auto mobilityIt = ms2FrameTims->constBegin(); mobilityIt != ms2FrameTims->constEnd(); ++mobilityIt) {
 
                     QVector<float> mzVals;
                     QVector<float> intensityVals;
                     e = MsReaderBase::splitScanPoints(
-                            mobilityIt.value(),
-                            &mzVals,
-                            &intensityVals
-                            ); ree;
+                        mobilityIt.value(),
+                        &mzVals,
+                        &intensityVals
+                        ); ree;
 
                     double driftTime = -1.0;
                     e = sharedMsReaderBase->driftTimeFromIonMobilityIndex(
-                            mobilityIt.key(),
-                            &driftTime
-                            ); eee_absorb;
+                        mobilityIt.key(),
+                        &driftTime
+                        ); eee_absorb;
 
                     MsParquetReaderRow row;
                     row.rowType = MsParquetReaderNamespace::ROW_TYPE_TIMS_MS2_SCAN;
                     row.msLevel = 2;
-                    row.scanNumber = frameIt.key();
+                    row.scanNumber = frameNumber;
                     row.scanTime = msScanInfo.scanTime;
                     row.collisionEnergy = msScanInfo.collisionEnergy;
                     row.precursorTargetMz = msScanInfo.precursorTargetMz;

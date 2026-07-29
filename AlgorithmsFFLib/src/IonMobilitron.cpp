@@ -334,7 +334,6 @@ Err IonMobilitron::assignIonMobilityIndexesToCandidateScores(
 
     ERR_INIT
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> *ms1Frames = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
     const QMap<ScanNumber, MsScanInfo> ms1ScanInfos = msReaderPointerAcc->ptr->getMsScanInfos(1);
     const QVector<ScanNumber> scanNumbers = ms1ScanInfos.keys().toVector();
     auto sgKernelVec = std::make_shared<Eigen::VectorX<float>>();
@@ -359,15 +358,15 @@ Err IonMobilitron::assignIonMobilityIndexesToCandidateScores(
             continue;
         }
 
-        const auto ms1FrameIt = ms1Frames->constFind(ms1ScanNumberClosest);
-        if (ms1FrameIt == ms1Frames->constEnd() || ms1FrameIt.value().isEmpty()) {
+        const Ms1FrameTIMS *ms1FrameTims = msReaderPointerAcc->ptr->legacyMs1FramePntr(ms1ScanNumberClosest);
+        if (ms1FrameTims == nullptr || ms1FrameTims->isEmpty()) {
             continue;
         }
 
         std::shared_ptr<IonMobilityFrameCache> frameCache = frameCacheByScanNumber.value(ms1ScanNumberClosest);
         if (!frameCache) {
             frameCache = std::make_shared<IonMobilityFrameCache>();
-            frameCache->ms1FrameTims = &ms1FrameIt.value();
+            frameCache->ms1FrameTims = ms1FrameTims;
             frameCacheByScanNumber.insert(ms1ScanNumberClosest, frameCache);
         }
 

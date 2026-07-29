@@ -94,11 +94,19 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     ScanPoints* scanPointsRead = scanPointsResult.second;
     QCOMPARE(*scanPointsRead, scanPoints);
 
-    MzTargetKeyVsMs2FrameTIMS *ms2FrameTims = msReaderParquet.mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
-    QVERIFY(ms2FrameTims->contains(msScanInfo.targetKey()));
-    QVERIFY(ms2FrameTims->value(msScanInfo.targetKey()).contains(msScanInfo.scanNumber));
-    QVERIFY(ms2FrameTims->value(msScanInfo.targetKey()).value(msScanInfo.scanNumber).contains(ms2IonMobilityIndex));
-    QCOMPARE(ms2FrameTims->value(msScanInfo.targetKey()).value(msScanInfo.scanNumber).value(ms2IonMobilityIndex), scanPoints);
+    const QVector<MzTargetKey> ms2TargetKeys = msReaderParquet.legacyMs2TargetKeys();
+    QVERIFY(ms2TargetKeys.contains(msScanInfo.targetKey()));
+
+    const QVector<FrameNumberTIMS> frameNumbers = msReaderParquet.legacyMs2FrameNumbers(msScanInfo.targetKey());
+    QVERIFY(frameNumbers.contains(msScanInfo.scanNumber));
+
+    const Ms2FrameTIMS *ms2FrameTims = msReaderParquet.legacyMs2FramePntr(
+        msScanInfo.targetKey(),
+        msScanInfo.scanNumber
+        );
+    QVERIFY(ms2FrameTims != nullptr);
+    QVERIFY(ms2FrameTims->contains(ms2IonMobilityIndex));
+    QCOMPARE(ms2FrameTims->value(ms2IonMobilityIndex), scanPoints);
 
     QFile::remove(msParquetFilePath);
     QFileInfo checkFile2(msParquetFilePath);

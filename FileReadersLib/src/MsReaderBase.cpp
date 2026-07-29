@@ -652,16 +652,51 @@ float MsReaderBase::mzMs2Max() const {
     return m_mzMs2Max;
 }
 
-QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
-    return &m_frameNumberVsMS1FrameTIMS;
+QVector<FrameNumberTIMS> MsReaderBase::legacyMs1FrameNumbers() const {
+    return m_frameNumberVsMS1FrameTIMS.keys().toVector();
 }
 
-MzTargetKeyVsMs2FrameTIMS* MsReaderBase::mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr() {
-    return &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS;
+const Ms1FrameTIMS *MsReaderBase::legacyMs1FramePntr(FrameNumberTIMS frameNumber) const {
+    const auto frameIt = m_frameNumberVsMS1FrameTIMS.constFind(frameNumber);
+    if (frameIt == m_frameNumberVsMS1FrameTIMS.constEnd()) {
+        return nullptr;
+    }
+
+    return &frameIt.value();
 }
 
-const QMap<FrameIndex, double>* MsReaderBase::frameIndexVsDriftTimePntr() const {
-    return &m_frameIndexVsDriftTime;
+QVector<MzTargetKey> MsReaderBase::legacyMs2TargetKeys() const {
+    return m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.keys().toVector();
+}
+
+QVector<FrameNumberTIMS> MsReaderBase::legacyMs2FrameNumbers(const MzTargetKey &targetKey) const {
+    const auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constFind(targetKey);
+    if (targetIt == m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd()) {
+        return {};
+    }
+
+    return targetIt.value().keys().toVector();
+}
+
+const Ms2FrameTIMS *MsReaderBase::legacyMs2FramePntr(
+    const MzTargetKey &targetKey,
+    FrameNumberTIMS frameNumber
+    ) const {
+    const auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constFind(targetKey);
+    if (targetIt == m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd()) {
+        return nullptr;
+    }
+
+    const auto frameIt = targetIt.value().constFind(frameNumber);
+    if (frameIt == targetIt.value().constEnd()) {
+        return nullptr;
+    }
+
+    return &frameIt.value();
+}
+
+QMap<FrameIndex, double> MsReaderBase::ionMobilityIndexVsDriftTime() const {
+    return m_frameIndexVsDriftTime;
 }
 
 const TimsbukAlignedPointData *MsReaderBase::alignedPointDataPntr(ScanNumber scanNumber) const {

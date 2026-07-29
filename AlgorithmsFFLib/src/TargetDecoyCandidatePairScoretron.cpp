@@ -324,24 +324,31 @@ namespace {
         e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eValueError); ree;
         e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eValueError); ree;
 
-        MzTargetKeyVsMs2FrameTIMS *ms2FrameTims
-            = pi.msReaderPointerAcc->ptr->mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr();
-        const QMap<FrameIndex, double> *ionMobilityIndexVsDriftTime
-            = pi.msReaderPointerAcc->ptr->frameIndexVsDriftTimePntr();
+        const QVector<FrameNumberTIMS> frameNumbers
+            = pi.msReaderPointerAcc->ptr->legacyMs2FrameNumbers(pi.targetKey);
+        const QMap<FrameIndex, double> ionMobilityIndexVsDriftTime
+            = pi.msReaderPointerAcc->ptr->ionMobilityIndexVsDriftTime();
 
-        if (ms2FrameTims == nullptr || ionMobilityIndexVsDriftTime == nullptr) {
+        if (frameNumbers.isEmpty() || ionMobilityIndexVsDriftTime.isEmpty()) {
             ERR_RETURN
         }
 
-        const auto targetIt = ms2FrameTims->constFind(pi.targetKey);
-        if (targetIt == ms2FrameTims->constEnd()) {
-            ERR_RETURN
+        QMap<FrameNumberTIMS, Ms2FrameTIMS> frameNumberVsMs2FrameTIMS;
+        for (FrameNumberTIMS frameNumber : frameNumbers) {
+            const Ms2FrameTIMS *ms2FrameTIMS = pi.msReaderPointerAcc->ptr->legacyMs2FramePntr(
+                pi.targetKey,
+                frameNumber
+                );
+            if (ms2FrameTIMS == nullptr || ms2FrameTIMS->isEmpty()) {
+                continue;
+            }
+            frameNumberVsMs2FrameTIMS.insert(frameNumber, *ms2FrameTIMS);
         }
 
         e = indexStorage->legacyIndex.init(
-            targetIt.value(),
+            frameNumberVsMs2FrameTIMS,
             msFrameMzTarget,
-            *ionMobilityIndexVsDriftTime
+            ionMobilityIndexVsDriftTime
             ); ree;
 
         if (indexStorage->legacyIndex.isInit()) {
