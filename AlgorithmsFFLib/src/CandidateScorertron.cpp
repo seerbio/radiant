@@ -11,11 +11,11 @@
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
 #include "IsotopicDistributionBuilder.h"
+#include "Ms2IonMobilityIndexBase.h"
 #include "MsUtils.h"
 #include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TimsbukIndexTypes.h"
-#include "TimsMs2IonMobilityIndex.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
 

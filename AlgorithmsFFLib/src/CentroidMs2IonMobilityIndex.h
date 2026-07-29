@@ -7,8 +7,8 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 #include "Error.h"
+#include "Ms2IonMobilityIndexBase.h"
 #include "TimsbukIndexTypes.h"
-#include "TimsMs2IonMobilityIndex.h"
 
 #include <QHash>
 #include <QMap>

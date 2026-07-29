@@ -9,8 +9,8 @@
 #include "CentroidMs2IonMobilityIndex.h"
 #include "IsotopicDistributionBuilder.h"
 #include "MsCalibratomatic.h"
+#include "Ms2IonMobilityIndexBase.h"
 #include "ParallelUtils.h"
-#include "TimsMs2IonMobilityIndex.h"
 #include "XICPeakManager.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -21,12 +21,6 @@
 class TargetDecoyPairParallelInput;
 
 namespace {
-
-    bool usesLegacyTimsWorkflow(const MsReaderPointerAcc *msReaderPointerAcc) {
-        return msReaderPointerAcc != nullptr
-            && !msReaderPointerAcc->ptr.isNull()
-            && msReaderPointerAcc->ptr->usesLegacyTimsFrameMaps();
-    }
 
     bool readerHasIonMobility(const MsReaderPointerAcc *msReaderPointerAcc) {
         return msReaderPointerAcc != nullptr
@@ -41,7 +35,6 @@ namespace {
     }
 
     struct Ms2IonMobilityIndexStorage {
-        TimsMs2IonMobilityIndex legacyIndex;
         CentroidMs2IonMobilityIndex centroidIndex;
         Ms2IonMobilityIndexBase *indexPntr = nullptr;
     };
@@ -57,12 +50,6 @@ namespace {
         MsFrame *msFrameMzTarget
         );
 
-    Err buildLegacyMs2IonMobilityIndex(
-        const TargetDecoyPairParallelInput &pi,
-        const MsFrame &msFrameMzTarget,
-        Ms2IonMobilityIndexStorage *indexStorage
-        );
-
     Err buildCentroidMs2IonMobilityIndex(
         const TargetDecoyPairParallelInput &pi,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
@@ -72,7 +59,6 @@ namespace {
 
     Err buildMs2IonMobilityIndex(
         const TargetDecoyPairParallelInput &pi,
-        bool hasLegacyTimsFrameMaps,
         bool needsMs2IonMobilityIndex,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
         const MsFrame *msFrameMzTarget,
@@ -313,51 +299,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err buildLegacyMs2IonMobilityIndex(
-        const TargetDecoyPairParallelInput &pi,
-        const MsFrame &msFrameMzTarget,
-        Ms2IonMobilityIndexStorage *indexStorage
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(pi.msReaderPointerAcc != nullptr, eValueError); ree;
-        e = ErrorUtils::isTrue(!pi.msReaderPointerAcc->ptr.isNull(), eValueError); ree;
-
-        const QVector<FrameNumberTIMS> frameNumbers
-            = pi.msReaderPointerAcc->ptr->legacyMs2FrameNumbers(pi.targetKey);
-        const QMap<FrameIndex, double> ionMobilityIndexVsDriftTime
-            = pi.msReaderPointerAcc->ptr->ionMobilityIndexVsDriftTime();
-
-        if (frameNumbers.isEmpty() || ionMobilityIndexVsDriftTime.isEmpty()) {
-            ERR_RETURN
-        }
-
-        QMap<FrameNumberTIMS, Ms2FrameTIMS> frameNumberVsMs2FrameTIMS;
-        for (FrameNumberTIMS frameNumber : frameNumbers) {
-            const Ms2FrameTIMS *ms2FrameTIMS = pi.msReaderPointerAcc->ptr->legacyMs2FramePntr(
-                pi.targetKey,
-                frameNumber
-                );
-            if (ms2FrameTIMS == nullptr || ms2FrameTIMS->isEmpty()) {
-                continue;
-            }
-            frameNumberVsMs2FrameTIMS.insert(frameNumber, *ms2FrameTIMS);
-        }
-
-        e = indexStorage->legacyIndex.init(
-            frameNumberVsMs2FrameTIMS,
-            msFrameMzTarget,
-            ionMobilityIndexVsDriftTime
-            ); ree;
-
-        if (indexStorage->legacyIndex.isInit()) {
-            indexStorage->indexPntr = &indexStorage->legacyIndex;
-        }
-
-        ERR_RETURN
-    }
-
     Err buildCentroidMs2IonMobilityIndex(
         const TargetDecoyPairParallelInput &pi,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
@@ -393,7 +334,6 @@ namespace {
 
     Err buildMs2IonMobilityIndex(
         const TargetDecoyPairParallelInput &pi,
-        bool hasLegacyTimsFrameMaps,
         bool needsMs2IonMobilityIndex,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
         const MsFrame *msFrameMzTarget,
@@ -405,15 +345,6 @@ namespace {
         if (!needsMs2IonMobilityIndex
             || msFrameMzTarget == nullptr
             || !msFrameMzTarget->isValid()) {
-            ERR_RETURN
-        }
-
-        if (hasLegacyTimsFrameMaps) {
-            e = buildLegacyMs2IonMobilityIndex(
-                pi,
-                *msFrameMzTarget,
-                indexStorage
-                ); ree;
             ERR_RETURN
         }
 
@@ -539,8 +470,6 @@ namespace {
                                     : targetDecoyPointers.mid(midPoint, targetDecoyPointers.size() - midPoint);
             }
 
-            const bool hasLegacyTimsFrameMaps = usesLegacyTimsWorkflow(pi.msReaderPointerAcc);
-
             QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
             MsFrame msFrameMzTarget;
             const bool shouldLoadLocalMs2Frame = pi.msFrameMzTarget == nullptr
@@ -620,7 +549,6 @@ namespace {
                 timsMs2IndexTimer.start();
                 e = buildMs2IonMobilityIndex(
                     pi,
-                    hasLegacyTimsFrameMaps,
                     needsMs2IonMobilityIndex,
                     &scanNumberVsScanPoints,
                     msFrameMzTargetPntr,
@@ -633,7 +561,6 @@ namespace {
                              << "target_key" << pi.targetKey
                              << "needed" << needsMs2IonMobilityIndex
                              << "points" << (ms2IonMobilityIndexStorage.indexPntr != nullptr ? ms2IonMobilityIndexStorage.indexPntr->pointCount() : 0)
-                             << "legacy_frame_maps" << hasLegacyTimsFrameMaps
                              << "msec" << timsMs2IndexTimer.elapsed();
                 }
             }
