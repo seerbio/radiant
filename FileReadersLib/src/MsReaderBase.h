@@ -16,12 +16,6 @@
 
 using namespace Error;
 
-using FrameNumberTIMS = int;
-using Ms1FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
-using Ms1FrameTIMSPntrs = QMap<IonMobilityIndex, ScanPoints*>;
-using Ms2FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
-using MzTargetKeyVsMs2FrameTIMS = QMap<MzTargetKey, QMap<FrameNumberTIMS, Ms2FrameTIMS>>;
-
 struct TimsbukAlignedPointData;
 
 enum class ScanPointsSort {
@@ -510,44 +504,28 @@ public:
     void printSize() const;
 
     Err printFileInfo();
-    [[nodiscard]] bool isTIMS() const;
     [[nodiscard]] bool hasIonMobility() const;
-    [[nodiscard]] bool hasLegacyTIMSFrameMaps() const;
-    [[nodiscard]] bool usesLegacyTimsFrameMaps() const;
     [[nodiscard]] bool usesCentroidIonMobility() const;
     virtual Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax);
 
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
-    QVector<FrameNumberTIMS> legacyMs1FrameNumbers() const;
-    const Ms1FrameTIMS *legacyMs1FramePntr(FrameNumberTIMS frameNumber) const;
-    QVector<MzTargetKey> legacyMs2TargetKeys() const;
-    QVector<FrameNumberTIMS> legacyMs2FrameNumbers(const MzTargetKey &targetKey) const;
-    const Ms2FrameTIMS *legacyMs2FramePntr(const MzTargetKey &targetKey, FrameNumberTIMS frameNumber) const;
-    QMap<FrameIndex, double> ionMobilityIndexVsDriftTime() const;
     virtual const TimsbukAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const;
 
 
 protected:
 
-    void setTIMS(bool isTIMS);
     void setHasIonMobility(bool hasIonMobility);
-    void setHasLegacyTIMSFrameMaps(bool hasLegacyTIMSFrameMaps);
-    void resetTIMSCapabilityState();
 
     bool m_fileIsCalibrated;
-    bool m_isTIMS;
     bool m_hasIonMobility;
-    bool m_hasLegacyTIMSFrameMaps;
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetVsScanInfosPntrs;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
-    MzTargetKeyVsMs2FrameTIMS m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS;
     QMap<FrameIndex, double> m_frameIndexVsDriftTime;
 
 

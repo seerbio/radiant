@@ -146,9 +146,7 @@ void verifyFilteredTimsbukReaderState(MsReaderPointerAcc *msReaderPointerAcc) {
     QVERIFY(msReaderPointerAcc != nullptr);
     QVERIFY(msReaderPointerAcc->ptr);
 
-    QCOMPARE(msReaderPointerAcc->ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc->ptr->hasIonMobility(), true);
-    QCOMPARE(msReaderPointerAcc->ptr->hasLegacyTIMSFrameMaps(), false);
 
     const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos();
     QCOMPARE(msScanInfos.size(), 3);
@@ -318,7 +316,6 @@ void MsReaderPointerAccTests::openFileTest5() {
         msReaderPointerAcc.ptr->filePath(),
         QDir(temporaryDir.path()).filePath("run.d")
         );
-    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->hasIonMobility(), true);
 
     const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
@@ -395,7 +392,6 @@ void MsReaderPointerAccTests::openFileTest6() {
     QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
-    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
 }
 
@@ -417,7 +413,6 @@ void MsReaderPointerAccTests::openFileTest7() {
         msReaderPointerAcc.ptr->filePath(),
         QDir(temporaryDir.path()).filePath("run.d")
         );
-    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
 }
 
@@ -439,7 +434,6 @@ void MsReaderPointerAccTests::openFileTest8() {
     QCOMPARE(e, eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
-    QCOMPARE(msReaderPointerAcc.ptr->isTIMS(), false);
     QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
 }
 

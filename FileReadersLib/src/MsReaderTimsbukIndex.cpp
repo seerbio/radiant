@@ -1553,9 +1553,7 @@ Err MsReaderTimsbukIndex::openFile(const QString &filePath) {
     m_filePath = m_sourceBrukerDirectoryPath.isEmpty()
         ? m_sidecarRootPath
         : m_sourceBrukerDirectoryPath;
-    setTIMS(false);
     setHasIonMobility(false);
-    setHasLegacyTIMSFrameMaps(false);
 
     e = populateOrdinaryScansFromSidecar(
         m_sidecarRootPath,

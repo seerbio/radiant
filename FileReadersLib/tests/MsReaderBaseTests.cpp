@@ -94,32 +94,17 @@ void MsReaderBaseTests::capabilityStateTest() {
 
     MsReaderBase msReaderBase;
 
-    QCOMPARE(msReaderBase.isTIMS(), false);
     QCOMPARE(msReaderBase.hasIonMobility(), false);
-    QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), false);
-    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), false);
     QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
 
-    msReaderBase.m_isTIMS = true;
     msReaderBase.m_hasIonMobility = true;
-    msReaderBase.m_hasLegacyTIMSFrameMaps = true;
 
-    QCOMPARE(msReaderBase.isTIMS(), true);
     QCOMPARE(msReaderBase.hasIonMobility(), true);
-    QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), true);
-    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), true);
-    QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
-
-    msReaderBase.m_isTIMS = false;
-    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), false);
     QCOMPARE(msReaderBase.usesCentroidIonMobility(), true);
 
-    msReaderBase.resetTIMSCapabilityState();
+    msReaderBase.reset();
 
-    QCOMPARE(msReaderBase.isTIMS(), false);
     QCOMPARE(msReaderBase.hasIonMobility(), false);
-    QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), false);
-    QCOMPARE(msReaderBase.usesLegacyTimsFrameMaps(), false);
     QCOMPARE(msReaderBase.usesCentroidIonMobility(), false);
 }
 
@@ -140,9 +125,7 @@ void MsReaderBaseTests::resetTest() {
     MsReaderBase msReaderBase;
     msReaderBase.setMsScanInfo(msScanInfos);
     msReaderBase.setScanPoints(scanPoints);
-    msReaderBase.m_isTIMS = true;
     msReaderBase.m_hasIonMobility = true;
-    msReaderBase.m_hasLegacyTIMSFrameMaps = true;
 
     QCOMPARE(msReaderBase.getScanPoints().size(), scanPoints.size());
     QCOMPARE(msReaderBase.getMsScanInfos().size(), msScanInfos.size());
@@ -150,9 +133,7 @@ void MsReaderBaseTests::resetTest() {
     msReaderBase.reset();
     QCOMPARE(msReaderBase.getScanPoints().size(), 0);
     QCOMPARE(msReaderBase.getMsScanInfos().size(), 0);
-    QCOMPARE(msReaderBase.isTIMS(), false);
     QCOMPARE(msReaderBase.hasIonMobility(), false);
-    QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), false);
 
 }
 
@@ -173,9 +154,7 @@ void MsReaderBaseTests::closeFileTest() {
     MsReaderBase msReaderBase;
     msReaderBase.setMsScanInfo(msScanInfos);
     msReaderBase.setScanPoints(scanPoints);
-    msReaderBase.m_isTIMS = true;
     msReaderBase.m_hasIonMobility = true;
-    msReaderBase.m_hasLegacyTIMSFrameMaps = true;
 
     QCOMPARE(msReaderBase.getScanPoints().size(), scanPoints.size());
     QCOMPARE(msReaderBase.getMsScanInfos().size(), msScanInfos.size());
@@ -183,9 +162,7 @@ void MsReaderBaseTests::closeFileTest() {
     msReaderBase.closeFile();
     QCOMPARE(msReaderBase.getScanPoints().size(), 0);
     QCOMPARE(msReaderBase.getMsScanInfos().size(), 0);
-    QCOMPARE(msReaderBase.isTIMS(), false);
     QCOMPARE(msReaderBase.hasIonMobility(), false);
-    QCOMPARE(msReaderBase.hasLegacyTIMSFrameMaps(), false);
 
 }
 

@@ -15,9 +15,7 @@
 
 MsReaderBase::MsReaderBase()
 : m_fileIsCalibrated(false)
-, m_isTIMS(false)
 , m_hasIonMobility(false)
-, m_hasLegacyTIMSFrameMaps(false)
 , m_mzMs1Min(std::numeric_limits<float>::max())
 , m_mzMs1Max(-1.0)
 , m_mzMs2Min(std::numeric_limits<float>::max())
@@ -43,9 +41,10 @@ Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) 
 void MsReaderBase::reset() {
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
-    QMap<FrameNumberTIMS, Ms1FrameTIMS>().swap(m_frameNumberVsMS1FrameTIMS);
-    MzTargetKeyVsMs2FrameTIMS().swap(m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS);
-    resetTIMSCapabilityState();
+    QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
+    QMap<MzTargetKey, QVector<MsScanInfo*>>().swap(m_mzTargetVsScanInfosPntrs);
+    QMap<FrameIndex, double>().swap(m_frameIndexVsDriftTime);
+    m_hasIonMobility = false;
 }
 
 Err MsReaderBase::openFile(const QString &filePath) {
@@ -71,9 +70,9 @@ Err MsReaderBase::closeFile() {
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
     QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
-    QMap<FrameNumberTIMS, Ms1FrameTIMS>().swap(m_frameNumberVsMS1FrameTIMS);
-    MzTargetKeyVsMs2FrameTIMS().swap(m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS);
-    resetTIMSCapabilityState();
+    QMap<MzTargetKey, QVector<MsScanInfo*>>().swap(m_mzTargetVsScanInfosPntrs);
+    QMap<FrameIndex, double>().swap(m_frameIndexVsDriftTime);
+    m_hasIonMobility = false;
     return Error::eNoError;
 }
 
@@ -399,14 +398,6 @@ Err MsReaderBase::restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeM
 
     const int originalScanInfoCount = m_msScanInfo.size();
     const int originalScanPointCount = m_scanPoints.size();
-    const int originalMs1TimsFrameCount = m_frameNumberVsMS1FrameTIMS.size();
-    int originalMs2TimsFrameCount = 0;
-    for (auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constBegin();
-         targetIt != m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd();
-         ++targetIt) {
-        originalMs2TimsFrameCount += targetIt.value().size();
-    }
-
     m_msScanInfo = filteredScanInfo;
 
     for (auto it = m_scanPoints.begin(); it != m_scanPoints.end();) {
@@ -415,36 +406,6 @@ Err MsReaderBase::restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeM
         }
         else {
             it = m_scanPoints.erase(it);
-        }
-    }
-
-    for (auto it = m_frameNumberVsMS1FrameTIMS.begin(); it != m_frameNumberVsMS1FrameTIMS.end();) {
-        if (keptScanNumbers.contains(it.key())) {
-            ++it;
-        }
-        else {
-            it = m_frameNumberVsMS1FrameTIMS.erase(it);
-        }
-    }
-
-    for (auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.begin();
-         targetIt != m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.end();) {
-        auto &frameNumberVsMs2FrameTIMS = targetIt.value();
-        for (auto frameIt = frameNumberVsMs2FrameTIMS.begin();
-             frameIt != frameNumberVsMs2FrameTIMS.end();) {
-            if (keptScanNumbers.contains(frameIt.key())) {
-                ++frameIt;
-            }
-            else {
-                frameIt = frameNumberVsMs2FrameTIMS.erase(frameIt);
-            }
-        }
-
-        if (frameNumberVsMs2FrameTIMS.isEmpty()) {
-            targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.erase(targetIt);
-        }
-        else {
-            ++targetIt;
         }
     }
 
@@ -460,21 +421,12 @@ Err MsReaderBase::restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeM
         }
     }
 
-    int filteredMs2TimsFrameCount = 0;
-    for (auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constBegin();
-         targetIt != m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd();
-         ++targetIt) {
-        filteredMs2TimsFrameCount += targetIt.value().size();
-    }
-
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "Restricted analysis scan-time range"
              << scanTimeMin
              << scanTimeMax
              << "scan_infos" << originalScanInfoCount << "->" << m_msScanInfo.size()
-             << "scan_points" << originalScanPointCount << "->" << m_scanPoints.size()
-             << "tims_ms1_frames" << originalMs1TimsFrameCount << "->" << m_frameNumberVsMS1FrameTIMS.size()
-             << "tims_ms2_frames" << originalMs2TimsFrameCount << "->" << filteredMs2TimsFrameCount;
+             << "scan_points" << originalScanPointCount << "->" << m_scanPoints.size();
 
     ERR_RETURN
 }
@@ -624,24 +576,12 @@ Err MsReaderBase::printFileInfo() {
     ERR_RETURN
 }
 
-bool MsReaderBase::isTIMS() const {
-    return m_isTIMS;
-}
-
 bool MsReaderBase::hasIonMobility() const {
     return m_hasIonMobility;
 }
 
-bool MsReaderBase::hasLegacyTIMSFrameMaps() const {
-    return m_hasLegacyTIMSFrameMaps;
-}
-
-bool MsReaderBase::usesLegacyTimsFrameMaps() const {
-    return isTIMS() && hasLegacyTIMSFrameMaps();
-}
-
 bool MsReaderBase::usesCentroidIonMobility() const {
-    return hasIonMobility() && !usesLegacyTimsFrameMaps();
+    return hasIonMobility();
 }
 
 float MsReaderBase::mzMs2Min() const {
@@ -652,72 +592,11 @@ float MsReaderBase::mzMs2Max() const {
     return m_mzMs2Max;
 }
 
-QVector<FrameNumberTIMS> MsReaderBase::legacyMs1FrameNumbers() const {
-    return m_frameNumberVsMS1FrameTIMS.keys().toVector();
-}
-
-const Ms1FrameTIMS *MsReaderBase::legacyMs1FramePntr(FrameNumberTIMS frameNumber) const {
-    const auto frameIt = m_frameNumberVsMS1FrameTIMS.constFind(frameNumber);
-    if (frameIt == m_frameNumberVsMS1FrameTIMS.constEnd()) {
-        return nullptr;
-    }
-
-    return &frameIt.value();
-}
-
-QVector<MzTargetKey> MsReaderBase::legacyMs2TargetKeys() const {
-    return m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.keys().toVector();
-}
-
-QVector<FrameNumberTIMS> MsReaderBase::legacyMs2FrameNumbers(const MzTargetKey &targetKey) const {
-    const auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constFind(targetKey);
-    if (targetIt == m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd()) {
-        return {};
-    }
-
-    return targetIt.value().keys().toVector();
-}
-
-const Ms2FrameTIMS *MsReaderBase::legacyMs2FramePntr(
-    const MzTargetKey &targetKey,
-    FrameNumberTIMS frameNumber
-    ) const {
-    const auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constFind(targetKey);
-    if (targetIt == m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd()) {
-        return nullptr;
-    }
-
-    const auto frameIt = targetIt.value().constFind(frameNumber);
-    if (frameIt == targetIt.value().constEnd()) {
-        return nullptr;
-    }
-
-    return &frameIt.value();
-}
-
-QMap<FrameIndex, double> MsReaderBase::ionMobilityIndexVsDriftTime() const {
-    return m_frameIndexVsDriftTime;
-}
-
 const TimsbukAlignedPointData *MsReaderBase::alignedPointDataPntr(ScanNumber scanNumber) const {
     Q_UNUSED(scanNumber)
     return nullptr;
 }
 
-void MsReaderBase::setTIMS(bool isTIMS) {
-    m_isTIMS = isTIMS;
-}
-
 void MsReaderBase::setHasIonMobility(bool hasIonMobility) {
     m_hasIonMobility = hasIonMobility;
-}
-
-void MsReaderBase::setHasLegacyTIMSFrameMaps(bool hasLegacyTIMSFrameMaps) {
-    m_hasLegacyTIMSFrameMaps = hasLegacyTIMSFrameMaps;
-}
-
-void MsReaderBase::resetTIMSCapabilityState() {
-    m_isTIMS = false;
-    m_hasIonMobility = false;
-    m_hasLegacyTIMSFrameMaps = false;
 }

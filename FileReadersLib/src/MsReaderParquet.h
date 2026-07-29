@@ -39,9 +39,6 @@ namespace MsParquetReaderNamespace {
     const QString NATIVE_SCAN_NUMBER = QStringLiteral("nativeScanNumber");
 
     const QString ROW_TYPE_SPECTRUM = QStringLiteral("spectrum");
-    const QString ROW_TYPE_TIMS_MS1_SCAN = QStringLiteral("tims_ms1_scan");
-    const QString ROW_TYPE_TIMS_MS2_SCAN = QStringLiteral("tims_ms2_scan");
-
     const QStringList keysToCheck = {
         MS_LEVEL,
         SCAN_NUMBER ,

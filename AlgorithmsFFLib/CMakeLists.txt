@@ -33,7 +33,6 @@ SET(SOURCE_FILES
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/IdLevelQValueAnnotator.cpp
-        src/IonMobilitron.cpp
         src/InterferingCandidatesEliminatomatic.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
@@ -70,7 +69,6 @@ SET(HEADER_FILES
         src/FeatureFinderHillBuilder.h
         src/IdLevelQValueAnnotator.h
         src/InterferingCandidatesEliminatomatic.h
-        src/IonMobilitron.h
         src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
         src/Ms2IonMobilityIndexBase.h

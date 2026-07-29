@@ -431,8 +431,8 @@ namespace {
     }
 
     int closestMs1FrameIndexAtOrBefore(
-        const QVector<FrameNumberTIMS> &frameNumbers,
-        FrameNumberTIMS scanNumber
+        const QVector<ScanNumber> &frameNumbers,
+        ScanNumber scanNumber
         ) {
 
         if (frameNumbers.isEmpty()) {
@@ -449,8 +449,8 @@ namespace {
 
         const int lowerIndex = static_cast<int>(lower - frameNumbers.constBegin());
         const int previousIndex = lowerIndex - 1;
-        const FrameNumberTIMS lowerFrameNumber = frameNumbers.at(lowerIndex);
-        const FrameNumberTIMS previousFrameNumber = frameNumbers.at(previousIndex);
+        const ScanNumber lowerFrameNumber = frameNumbers.at(lowerIndex);
+        const ScanNumber previousFrameNumber = frameNumbers.at(previousIndex);
 
         if (std::abs(previousFrameNumber - scanNumber) <= std::abs(lowerFrameNumber - scanNumber)) {
             return previousIndex;

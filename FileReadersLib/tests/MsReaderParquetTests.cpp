@@ -45,14 +45,10 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     MsReaderBase msReaderBase;
     msReaderBase.m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
     msReaderBase.m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
-    msReaderBase.m_isTIMS = true;
+    msReaderBase.m_hasIonMobility = true;
 
     constexpr IonMobilityIndex ms2IonMobilityIndex = 123;
     msReaderBase.m_frameIndexVsDriftTime.insert(ms2IonMobilityIndex, 1.23);
-    msReaderBase.m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS[msScanInfo.targetKey()][msScanInfo.scanNumber].insert(
-        ms2IonMobilityIndex,
-        scanPoints
-        );
 
     ERR_INIT
 
@@ -85,6 +81,7 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     QCOMPARE(readMsScanInfo.isoWindowUpper, msScanInfo.isoWindowUpper);
     QCOMPARE(readMsScanInfo.ionMobilityDriftTime, msScanInfo.ionMobilityDriftTime);
     QCOMPARE(readMsScanInfo.ionMobilityIndex, msScanInfo.ionMobilityIndex);
+    QCOMPARE(msReaderParquet.hasIonMobility(), true);
 
 
     QPair<Err, ScanPoints*> scanPointsResult = msReaderParquet.getScanPoints(readMsScanInfo.scanNumber);
@@ -93,20 +90,6 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
 
     ScanPoints* scanPointsRead = scanPointsResult.second;
     QCOMPARE(*scanPointsRead, scanPoints);
-
-    const QVector<MzTargetKey> ms2TargetKeys = msReaderParquet.legacyMs2TargetKeys();
-    QVERIFY(ms2TargetKeys.contains(msScanInfo.targetKey()));
-
-    const QVector<FrameNumberTIMS> frameNumbers = msReaderParquet.legacyMs2FrameNumbers(msScanInfo.targetKey());
-    QVERIFY(frameNumbers.contains(msScanInfo.scanNumber));
-
-    const Ms2FrameTIMS *ms2FrameTims = msReaderParquet.legacyMs2FramePntr(
-        msScanInfo.targetKey(),
-        msScanInfo.scanNumber
-        );
-    QVERIFY(ms2FrameTims != nullptr);
-    QVERIFY(ms2FrameTims->contains(ms2IonMobilityIndex));
-    QCOMPARE(ms2FrameTims->value(ms2IonMobilityIndex), scanPoints);
 
     QFile::remove(msParquetFilePath);
     QFileInfo checkFile2(msParquetFilePath);

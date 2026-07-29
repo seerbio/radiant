@@ -13,12 +13,8 @@ namespace {
             const QVector<MsParquetReaderRow> &msParquetReaderRows,
             QMap<ScanNumber, MsScanInfo> *memberMsScanInfo,
             QMap<ScanNumber, ScanPoints>  *memberScanPoints,
-            QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMS1FrameTIMS,
-            MzTargetKeyVsMs2FrameTIMS *mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             QMap<FrameIndex, double> *frameIndexVsDriftTime,
-            bool *hasIonMobility,
-            bool *hasLegacyTIMSFrameMaps,
-            bool *isTIMS
+            bool *hasIonMobility
             ) {
 
         ERR_INIT
@@ -57,52 +53,16 @@ namespace {
 
             memberMsScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             memberScanPoints->insert(msScanInfo.scanNumber, scanPoints);
-        }
-
-        for (const MsParquetReaderRow &row : msParquetReaderRows) {
-
-            if (row.rowType != MsParquetReaderNamespace::ROW_TYPE_TIMS_MS1_SCAN) {
-                continue;
-            }
-
-            ScanPoints scanPoints;
-            e = MsReaderBase::zipScanPoints(
-                    row.mzVals,
-                    row.intensityVals,
-                    &scanPoints
-                    ); ree;
-
-            (*frameNumberVsMS1FrameTIMS)[row.scanNumber].insert(row.ionMobilityIndex, scanPoints);
-
             if (row.ionMobilityIndex >= 0 && row.ionMobilityDriftTime >= 0) {
                 frameIndexVsDriftTime->insert(row.ionMobilityIndex, row.ionMobilityDriftTime);
             }
-        }
-
-        for (const MsParquetReaderRow &row : msParquetReaderRows) {
-
-            if (row.rowType != MsParquetReaderNamespace::ROW_TYPE_TIMS_MS2_SCAN) {
-                continue;
-            }
-
-            ScanPoints scanPoints;
-            e = MsReaderBase::zipScanPoints(
-                    row.mzVals,
-                    row.intensityVals,
-                    &scanPoints
-                    ); ree;
-
-            (*mzTargetKeyVsFrameNumberVsMS2FrameTIMS)[row.targetKey][row.scanNumber].insert(row.ionMobilityIndex, scanPoints);
-
-            if (row.ionMobilityIndex >= 0 && row.ionMobilityDriftTime >= 0) {
-                frameIndexVsDriftTime->insert(row.ionMobilityIndex, row.ionMobilityDriftTime);
+            if (row.ionMobilityIndex >= 0
+                || row.ionMobilityDriftTime >= 0.0f
+                || row.ionMobilityWindowLower >= 0.0f
+                || row.ionMobilityWindowUpper >= 0.0f) {
+                *hasIonMobility = true;
             }
         }
-
-        *hasLegacyTIMSFrameMaps = !frameNumberVsMS1FrameTIMS->isEmpty()
-            || !mzTargetKeyVsFrameNumberVsMS2FrameTIMS->isEmpty();
-        *hasIonMobility = *hasLegacyTIMSFrameMaps || !frameIndexVsDriftTime->isEmpty();
-        *isTIMS = *hasLegacyTIMSFrameMaps;
 
         ERR_RETURN
     }
@@ -124,6 +84,11 @@ Err MsReaderParquet::openFile(const QString &filePath) {
             eFileIncorrectTypeError
     ); ree;
 
+    m_msScanInfo.clear();
+    m_scanPoints.clear();
+    m_frameIndexVsDriftTime.clear();
+    m_hasIonMobility = false;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
             filePath,
@@ -134,12 +99,8 @@ Err MsReaderParquet::openFile(const QString &filePath) {
             msParquetReaderRows,
             &m_msScanInfo,
             &m_scanPoints,
-            &m_frameNumberVsMS1FrameTIMS,
-            &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             &m_frameIndexVsDriftTime,
-            &m_hasIonMobility,
-            &m_hasLegacyTIMSFrameMaps,
-            &m_isTIMS
+            &m_hasIonMobility
             ); ree;
 
     e = printFileInfo(); ree;
@@ -168,6 +129,11 @@ Err MsReaderParquet::openFile(
             eFileIncorrectTypeError
     ); ree;
 
+    m_msScanInfo.clear();
+    m_scanPoints.clear();
+    m_frameIndexVsDriftTime.clear();
+    m_hasIonMobility = false;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
             filePath,
@@ -180,12 +146,8 @@ Err MsReaderParquet::openFile(
             msParquetReaderRows,
             &m_msScanInfo,
             &m_scanPoints,
-            &m_frameNumberVsMS1FrameTIMS,
-            &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             &m_frameIndexVsDriftTime,
-            &m_hasIonMobility,
-            &m_hasLegacyTIMSFrameMaps,
-            &m_isTIMS
+            &m_hasIonMobility
     ); ree;
 
     QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
@@ -211,6 +173,11 @@ Err MsReaderParquet::openFile(
             eFileIncorrectTypeError
     ); ree;
 
+    m_msScanInfo.clear();
+    m_scanPoints.clear();
+    m_frameIndexVsDriftTime.clear();
+    m_hasIonMobility = false;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
             filePath,
@@ -222,12 +189,8 @@ Err MsReaderParquet::openFile(
             msParquetReaderRows,
             &m_msScanInfo,
             &m_scanPoints,
-            &m_frameNumberVsMS1FrameTIMS,
-            &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS,
             &m_frameIndexVsDriftTime,
-            &m_hasIonMobility,
-            &m_hasLegacyTIMSFrameMaps,
-            &m_isTIMS
+            &m_hasIonMobility
     ); ree;
 
     QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
@@ -241,10 +204,8 @@ Err MsReaderParquet::closeFile() {
 
     m_msScanInfo.clear();
     m_scanPoints.clear();
-    m_frameNumberVsMS1FrameTIMS.clear();
-    m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.clear();
     m_frameIndexVsDriftTime.clear();
-    resetTIMSCapabilityState();
+    m_hasIonMobility = false;
 
     e = ErrorUtils::isTrue(m_msScanInfo.isEmpty()); ree;
     e = ErrorUtils::isTrue(m_scanPoints.isEmpty()); ree;
@@ -320,100 +281,6 @@ Err MsReaderParquet::writeMsReaderToParquet(
             sharedMsReaderBase->getScanPointsPntrs(),
             &ptrs
             ); ree;
-
-    if (sharedMsReaderBase->isTIMS()) {
-        for (FrameNumberTIMS frameNumber : sharedMsReaderBase->legacyMs1FrameNumbers()) {
-            const Ms1FrameTIMS *ms1FrameTims = sharedMsReaderBase->legacyMs1FramePntr(frameNumber);
-            if (ms1FrameTims == nullptr || ms1FrameTims->isEmpty()) {
-                continue;
-            }
-
-            MsScanInfo msScanInfo;
-            e = sharedMsReaderBase->getMsScanInfo(frameNumber, &msScanInfo); ree;
-
-            for (auto mobilityIt = ms1FrameTims->constBegin(); mobilityIt != ms1FrameTims->constEnd(); ++mobilityIt) {
-
-                QVector<float> mzVals;
-                QVector<float> intensityVals;
-                e = MsReaderBase::splitScanPoints(
-                    mobilityIt.value(),
-                    &mzVals,
-                    &intensityVals
-                    ); ree;
-
-                double driftTime = -1.0;
-                e = sharedMsReaderBase->driftTimeFromIonMobilityIndex(
-                    mobilityIt.key(),
-                    &driftTime
-                    ); eee_absorb;
-
-                MsParquetReaderRow row;
-                row.rowType = MsParquetReaderNamespace::ROW_TYPE_TIMS_MS1_SCAN;
-                row.msLevel = 1;
-                row.scanNumber = frameNumber;
-                row.scanTime = msScanInfo.scanTime;
-                row.ionMobilityIndex = mobilityIt.key();
-                row.ionMobilityDriftTime = static_cast<float>(driftTime);
-                row.nativeFrameNumber = msScanInfo.nativeFrameNumber;
-                row.nativeScanNumber = mobilityIt.key();
-                row.mzVals = mzVals;
-                row.intensityVals = intensityVals;
-                row.targetKey = S_GLOBAL_SETTINGS.MS1Key;
-
-                ptrs.push_back(QSharedPointer<ParquetReaderInputBase>(new MsParquetReaderRow(row)));
-            }
-        }
-
-        for (const MzTargetKey &targetKey : sharedMsReaderBase->legacyMs2TargetKeys()) {
-            for (FrameNumberTIMS frameNumber : sharedMsReaderBase->legacyMs2FrameNumbers(targetKey)) {
-                const Ms2FrameTIMS *ms2FrameTims = sharedMsReaderBase->legacyMs2FramePntr(targetKey, frameNumber);
-                if (ms2FrameTims == nullptr || ms2FrameTims->isEmpty()) {
-                    continue;
-                }
-
-                MsScanInfo msScanInfo;
-                e = sharedMsReaderBase->getMsScanInfo(frameNumber, &msScanInfo); ree;
-
-                for (auto mobilityIt = ms2FrameTims->constBegin(); mobilityIt != ms2FrameTims->constEnd(); ++mobilityIt) {
-
-                    QVector<float> mzVals;
-                    QVector<float> intensityVals;
-                    e = MsReaderBase::splitScanPoints(
-                        mobilityIt.value(),
-                        &mzVals,
-                        &intensityVals
-                        ); ree;
-
-                    double driftTime = -1.0;
-                    e = sharedMsReaderBase->driftTimeFromIonMobilityIndex(
-                        mobilityIt.key(),
-                        &driftTime
-                        ); eee_absorb;
-
-                    MsParquetReaderRow row;
-                    row.rowType = MsParquetReaderNamespace::ROW_TYPE_TIMS_MS2_SCAN;
-                    row.msLevel = 2;
-                    row.scanNumber = frameNumber;
-                    row.scanTime = msScanInfo.scanTime;
-                    row.collisionEnergy = msScanInfo.collisionEnergy;
-                    row.precursorTargetMz = msScanInfo.precursorTargetMz;
-                    row.isoWindowLower = msScanInfo.isoWindowLower;
-                    row.isoWindowUpper = msScanInfo.isoWindowUpper;
-                    row.ionMobilityIndex = mobilityIt.key();
-                    row.ionMobilityDriftTime = static_cast<float>(driftTime);
-                    row.ionMobilityWindowLower = msScanInfo.ionMobilityWindowLower;
-                    row.ionMobilityWindowUpper = msScanInfo.ionMobilityWindowUpper;
-                    row.nativeFrameNumber = msScanInfo.nativeFrameNumber;
-                    row.nativeScanNumber = mobilityIt.key();
-                    row.mzVals = mzVals;
-                    row.intensityVals = intensityVals;
-                    row.targetKey = targetKey;
-
-                    ptrs.push_back(QSharedPointer<ParquetReaderInputBase>(new MsParquetReaderRow(row)));
-                }
-            }
-        }
-    }
 
     e = ErrorUtils::isNotEmpty(ptrs); ree;
 
