@@ -422,12 +422,6 @@ QVector<float> DiscriminantScoretron::defaultWeights(const QVector<Features> &fe
     if (features.contains(Ms2IonMobilityMatchedIonFraction)) {
         cs.featuresArray[Ms2IonMobilityMatchedIonFraction] = 1.0f;
     }
-    if (features.contains(Ms2IonMobilityRtCosineMean)) {
-        cs.featuresArray[Ms2IonMobilityRtCosineMean] = 1.5f;
-    }
-    if (features.contains(Ms2IonMobilityRtCosineStDev)) {
-        cs.featuresArray[Ms2IonMobilityRtCosineStDev] = -0.75f;
-    }
     if (features.contains(Ms2IonMobilityRtApexAgreementFraction)) {
         cs.featuresArray[Ms2IonMobilityRtApexAgreementFraction] = 1.0f;
     }

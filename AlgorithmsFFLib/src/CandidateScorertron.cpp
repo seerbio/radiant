@@ -338,67 +338,11 @@ namespace {
         double intensity = 0.0;
     };
 
-    struct SymmetricProfileLimits {
-        int startIndex = -1;
-        int stopIndex = -1;
-    };
-
-    SymmetricProfileLimits alphaDiaStyleSymmetricLimits1d(
-        const QVector<double> &profile,
-        int centerIndex,
-        double f = 0.95,
-        double centerFraction = 0.01,
-        int minSize = 3,
-        int maxSize = 20
-        ) {
-
-        SymmetricProfileLimits limits;
-
-        if (profile.isEmpty() || centerIndex < 0 || centerIndex >= profile.size()) {
-            return limits;
-        }
-
-        if (profile.size() <= 1) {
-            limits.startIndex = centerIndex;
-            limits.stopIndex = centerIndex;
-            return limits;
-        }
-
-        const double centerIntensity = profile.at(centerIndex);
-        double trailingIntensity = centerIntensity;
-        int limit = std::min(minSize, std::max(centerIndex, profile.size() - centerIndex - 1));
-
-        for (int s = minSize + 1; s < maxSize; ++s) {
-            const int lowerIndex = std::max(centerIndex - s, 0);
-            const int upperIndex = std::min(centerIndex + s, profile.size() - 1);
-            const double intensity = (profile.at(lowerIndex) + profile.at(upperIndex)) / 2.0;
-
-            if (intensity < f * trailingIntensity) {
-                if (intensity > centerIntensity * centerFraction) {
-                    limit = s;
-                    trailingIntensity = intensity;
-                }
-                else {
-                    break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-
-        limits.startIndex = std::max(centerIndex - limit, 0);
-        limits.stopIndex = std::min(centerIndex + limit, profile.size() - 1);
-        return limits;
-    }
-
     bool containsMs2IonMobilityFeature(const QVector<Features> &features) {
         return features.contains(Ms2IonMobilityWeightedDelta)
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
-            || features.contains(Ms2IonMobilityRtCosineMean)
-            || features.contains(Ms2IonMobilityRtCosineStDev)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 
@@ -1202,115 +1146,6 @@ namespace {
 
         peak.minDriftTime = peak.centerDriftTime - static_cast<float>(ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0);
         peak.maxDriftTime = peak.centerDriftTime + static_cast<float>(ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0);
-
-        return peak;
-    }
-
-    LocalIonMobilityPeak selectMobilityProfilePeakForTimsMs2(
-        const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
-        const QVector<MS2Ion> &ms2Ions,
-        float libraryIonMobility,
-        float ppmTol,
-        FrameIndex frameIndexPredictedMin,
-        FrameIndex frameIndexPredictedMax
-        ) {
-
-        LocalIonMobilityPeak peak;
-
-        if (ms2IonMobilityIndex == nullptr
-            || !ms2IonMobilityIndex->isInit()
-            || ms2Ions.isEmpty()
-            || libraryIonMobility <= 0.0f) {
-            return peak;
-        }
-
-        constexpr int maxProfileFragments = 6;
-        constexpr double mobilityPriorSigmaOneOverK0 = 0.04;
-        constexpr double minWeightedProfileIntensity = 1.0;
-        constexpr double adaptiveExtractionHalfWidthOneOverK0 = ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0;
-
-        const int ionCount = std::min(maxProfileFragments, ms2Ions.size());
-        const float broadIonMobilityMin = libraryIonMobility - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-        const float broadIonMobilityMax = libraryIonMobility + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-
-        QMap<IonMobilityIndex, double> summedMobilityProfile;
-        for (int i = 0; i < ionCount; ++i) {
-            const MS2Ion &ms2Ion = ms2Ions.at(i);
-            const float massTol = MathUtils::calculatePPM(ms2Ion.mz, ppmTol);
-
-            QMap<IonMobilityIndex, double> fragmentProfile;
-            float apexIntensity = 0.0f;
-            float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-            if (!ms2IonMobilityIndex->extractMobilityProfile(
-                    ms2Ion.mz - massTol,
-                    ms2Ion.mz + massTol,
-                    frameIndexPredictedMin,
-                    frameIndexPredictedMax,
-                    broadIonMobilityMin,
-                    broadIonMobilityMax,
-                    libraryIonMobility,
-                    &fragmentProfile,
-                    &apexIntensity,
-                    &apexDeltaAbs
-                    )) {
-                continue;
-            }
-
-            for (auto it = fragmentProfile.constBegin(); it != fragmentProfile.constEnd(); ++it) {
-                summedMobilityProfile[it.key()] += it.value();
-            }
-        }
-
-        if (summedMobilityProfile.isEmpty()) {
-            return peak;
-        }
-
-        const double mobilitySigma = ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 / 2.3548;
-        const double twoMobilitySigmaSquared = 2.0 * mobilitySigma * mobilitySigma;
-        const double twoPriorSigmaSquared = 2.0 * mobilityPriorSigmaOneOverK0 * mobilityPriorSigmaOneOverK0;
-        double bestWeightedIntensity = 0.0;
-
-        for (auto centerIt = summedMobilityProfile.constBegin(); centerIt != summedMobilityProfile.constEnd(); ++centerIt) {
-            float centerDriftTime = -1.0f;
-            if (!ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(centerIt.key(), &centerDriftTime)) {
-                continue;
-            }
-
-            double smoothedIntensity = 0.0;
-            for (auto profileIt = summedMobilityProfile.constBegin(); profileIt != summedMobilityProfile.constEnd(); ++profileIt) {
-                float driftTime = -1.0f;
-                if (!ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(profileIt.key(), &driftTime)) {
-                    continue;
-                }
-
-                const double mobilityDelta = driftTime - centerDriftTime;
-                if (std::abs(mobilityDelta) > (3.0 * mobilitySigma)) {
-                    continue;
-                }
-
-                const double mobilityWeight = std::exp(-(mobilityDelta * mobilityDelta) / twoMobilitySigmaSquared);
-                smoothedIntensity += profileIt.value() * mobilityWeight;
-            }
-
-            const double libraryDelta = centerDriftTime - libraryIonMobility;
-            const double priorWeight = std::exp(-(libraryDelta * libraryDelta) / twoPriorSigmaSquared);
-            const double weightedIntensity = smoothedIntensity * priorWeight;
-            if (weightedIntensity <= bestWeightedIntensity) {
-                continue;
-            }
-
-            bestWeightedIntensity = weightedIntensity;
-            peak.isValid = true;
-            peak.centerDriftTime = centerDriftTime;
-            peak.centerIonMobilityIndex = centerIt.key();
-        }
-
-        if (!peak.isValid || bestWeightedIntensity < minWeightedProfileIntensity) {
-            return LocalIonMobilityPeak();
-        }
-
-        peak.minDriftTime = peak.centerDriftTime - static_cast<float>(adaptiveExtractionHalfWidthOneOverK0);
-        peak.maxDriftTime = peak.centerDriftTime + static_cast<float>(adaptiveExtractionHalfWidthOneOverK0);
 
         return peak;
     }
@@ -3520,9 +3355,6 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
             = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
     }
-
-    candidateScores->featuresArray[Ms2IonMobilityRtCosineMean] = 0.0f;
-    candidateScores->featuresArray[Ms2IonMobilityRtCosineStDev] = 0.0f;
 
     if (fragmentApexKeys.size() > 1) {
         QMap<RtMobilityKey, int> apexKeyVsCounts;

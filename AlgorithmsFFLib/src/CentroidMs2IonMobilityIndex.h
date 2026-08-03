@@ -44,19 +44,6 @@ public:
         float ionMobilityMax
         ) const override;
 
-    bool extractMobilityProfile(
-        float mzMin,
-        float mzMax,
-        FrameIndex frameIndexMin,
-        FrameIndex frameIndexMax,
-        float ionMobilityMin,
-        float ionMobilityMax,
-        float ionMobilityCenter,
-        QMap<IonMobilityIndex, double> *mobilityProfile,
-        float *apexIntensity,
-        float *apexDeltaAbs
-        ) const override;
-
 private:
 
     struct SliceRef {

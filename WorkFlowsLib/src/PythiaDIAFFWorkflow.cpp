@@ -452,8 +452,7 @@ namespace {
             << "CosineSimSum100\tCosineSimSum45\tCosineSimSpectrumOverTimeCubed\tCosineSim100MS1\t"
             << "IonMobilityLibrary\tIonMobilityFound\tIonMobilityIndex\tIonMobilityIndexStart\tIonMobilityIndexEnd\t"
             << "IonMobilityDeltaAbs\tMs2IonMobilityWeightedDeltaAbs\tMs2IonMobilityApexDeltaAbsMean\t"
-            << "Ms2IonMobilityMatchedIonFraction\tMs2IonMobilityRtCosineMean\tMs2IonMobilityRtCosineStDev\t"
-            << "Ms2IonMobilityRtApexAgreementFraction\tScanTime\tScanTimeDeltaAbs\t"
+            << "Ms2IonMobilityMatchedIonFraction\tMs2IonMobilityRtApexAgreementFraction\tScanTime\tScanTimeDeltaAbs\t"
             << "TotalIntensityLog\tProteinGroup";
         for (int i = 1; i <= 12; ++i) {
             out << "\tMzSearched" << i;
@@ -504,8 +503,6 @@ namespace {
                 << cs->featuresArray[Ms2IonMobilityWeightedDeltaAbs] << '\t'
                 << cs->featuresArray[Ms2IonMobilityApexDeltaAbsMean] << '\t'
                 << cs->featuresArray[Ms2IonMobilityMatchedIonFraction] << '\t'
-                << cs->featuresArray[Ms2IonMobilityRtCosineMean] << '\t'
-                << cs->featuresArray[Ms2IonMobilityRtCosineStDev] << '\t'
                 << cs->featuresArray[Ms2IonMobilityRtApexAgreementFraction] << '\t'
                 << cs->scanTime << '\t'
                 << cs->featuresArray[ScanTimeDeltaAbs] << '\t'
@@ -544,8 +541,6 @@ namespace {
         case Ms2IonMobilityWeightedDeltaAbs:
         case Ms2IonMobilityApexDeltaAbsMean:
         case Ms2IonMobilityMatchedIonFraction:
-        case Ms2IonMobilityRtCosineMean:
-        case Ms2IonMobilityRtCosineStDev:
         case Ms2IonMobilityRtApexAgreementFraction:
             return true;
         default:

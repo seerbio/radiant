@@ -471,8 +471,6 @@ namespace {
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
-            || features.contains(Ms2IonMobilityRtCosineMean)
-            || features.contains(Ms2IonMobilityRtCosineStDev)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 
@@ -602,7 +600,7 @@ namespace {
             }
             else {
                 e = xicPeakManager.init(
-                    msFrameMzTarget.isValid() ? msFrameMzTarget : *pi.msFrameMzTarget,
+                    *msFrameMzTargetPntr,
                     targetDecoyPointers,
                     scoringTopNMs2Ions,
                     static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
