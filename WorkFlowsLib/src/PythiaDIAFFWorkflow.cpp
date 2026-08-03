@@ -452,8 +452,7 @@ namespace {
             << "CosineSimSum100\tCosineSimSum45\tCosineSimSpectrumOverTimeCubed\tCosineSim100MS1\t"
             << "IonMobilityLibrary\tIonMobilityFound\tIonMobilityIndex\tIonMobilityIndexStart\tIonMobilityIndexEnd\t"
             << "IonMobilityDeltaAbs\tMs2IonMobilityWeightedDeltaAbs\tMs2IonMobilityApexDeltaAbsMean\t"
-            << "Ms2IonMobilityMatchedIonFraction\tMs2IonMobilityFwhmMean\t"
-            << "Ms2IonMobilityRtCosineMean\tMs2IonMobilityRtCosineStDev\t"
+            << "Ms2IonMobilityMatchedIonFraction\tMs2IonMobilityRtCosineMean\tMs2IonMobilityRtCosineStDev\t"
             << "Ms2IonMobilityRtApexAgreementFraction\tScanTime\tScanTimeDeltaAbs\t"
             << "TotalIntensityLog\tProteinGroup";
         for (int i = 1; i <= 12; ++i) {
@@ -505,7 +504,6 @@ namespace {
                 << cs->featuresArray[Ms2IonMobilityWeightedDeltaAbs] << '\t'
                 << cs->featuresArray[Ms2IonMobilityApexDeltaAbsMean] << '\t'
                 << cs->featuresArray[Ms2IonMobilityMatchedIonFraction] << '\t'
-                << cs->featuresArray[Ms2IonMobilityFwhmMean] << '\t'
                 << cs->featuresArray[Ms2IonMobilityRtCosineMean] << '\t'
                 << cs->featuresArray[Ms2IonMobilityRtCosineStDev] << '\t'
                 << cs->featuresArray[Ms2IonMobilityRtApexAgreementFraction] << '\t'
@@ -545,10 +543,7 @@ namespace {
         case Ms2IonMobilityWeightedDelta:
         case Ms2IonMobilityWeightedDeltaAbs:
         case Ms2IonMobilityApexDeltaAbsMean:
-        case Ms2IonMobilityApexDeltaAbsStDev:
         case Ms2IonMobilityMatchedIonFraction:
-        case Ms2IonMobilityFwhmMean:
-        case Ms2IonMobilityFwhmStDev:
         case Ms2IonMobilityRtCosineMean:
         case Ms2IonMobilityRtCosineStDev:
         case Ms2IonMobilityRtApexAgreementFraction:
@@ -603,6 +598,7 @@ namespace {
         appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityDeltaAbs);
         appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityPdAbs);
         appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityWeightedDeltaAbs);
+        appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityApexDeltaAbsMean);
         appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityMatchedIonFraction);
         appendFeatureIfMissing(ppmOptimizationFeatures, Ms2IonMobilityRtApexAgreementFraction);
 
@@ -612,6 +608,7 @@ namespace {
         appendFeatureIfMissing(neuralNetFeatures, IonMobilityPdAbs);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityWeightedDelta);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityWeightedDeltaAbs);
+        appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityApexDeltaAbsMean);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityMatchedIonFraction);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtApexAgreementFraction);
     }

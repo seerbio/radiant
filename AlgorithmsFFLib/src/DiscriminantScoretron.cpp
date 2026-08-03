@@ -90,10 +90,7 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         IonMobilityPdAbs,
         Ms2IonMobilityWeightedDeltaAbs,
         Ms2IonMobilityApexDeltaAbsMean,
-        Ms2IonMobilityApexDeltaAbsStDev,
         Ms2IonMobilityMatchedIonFraction,
-        Ms2IonMobilityFwhmMean,
-        Ms2IonMobilityFwhmStDev,
     	MzPeakLengthsStd
         };
 
@@ -216,10 +213,7 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 Ms2IonMobilityWeightedDelta,
                 Ms2IonMobilityWeightedDeltaAbs,
                 Ms2IonMobilityApexDeltaAbsMean,
-                Ms2IonMobilityApexDeltaAbsStDev,
                 Ms2IonMobilityMatchedIonFraction,
-                Ms2IonMobilityFwhmMean,
-                Ms2IonMobilityFwhmStDev,
                 DiscriminantScore,
                 MatrixZeroPercentage,
                 DiscScore1stRunnerUpDiff,
@@ -425,17 +419,8 @@ QVector<float> DiscriminantScoretron::defaultWeights(const QVector<Features> &fe
     if (features.contains(Ms2IonMobilityApexDeltaAbsMean)) {
         cs.featuresArray[Ms2IonMobilityApexDeltaAbsMean] = -1.0f;
     }
-    if (features.contains(Ms2IonMobilityApexDeltaAbsStDev)) {
-        cs.featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = -0.25f;
-    }
     if (features.contains(Ms2IonMobilityMatchedIonFraction)) {
         cs.featuresArray[Ms2IonMobilityMatchedIonFraction] = 1.0f;
-    }
-    if (features.contains(Ms2IonMobilityFwhmMean)) {
-        cs.featuresArray[Ms2IonMobilityFwhmMean] = -1.0f;
-    }
-    if (features.contains(Ms2IonMobilityFwhmStDev)) {
-        cs.featuresArray[Ms2IonMobilityFwhmStDev] = -0.25f;
     }
     if (features.contains(Ms2IonMobilityRtCosineMean)) {
         cs.featuresArray[Ms2IonMobilityRtCosineMean] = 1.5f;

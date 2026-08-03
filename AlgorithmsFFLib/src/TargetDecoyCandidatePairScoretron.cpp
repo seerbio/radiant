@@ -470,10 +470,7 @@ namespace {
         return features.contains(Ms2IonMobilityWeightedDelta)
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
-            || features.contains(Ms2IonMobilityApexDeltaAbsStDev)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
-            || features.contains(Ms2IonMobilityFwhmMean)
-            || features.contains(Ms2IonMobilityFwhmStDev)
             || features.contains(Ms2IonMobilityRtCosineMean)
             || features.contains(Ms2IonMobilityRtCosineStDev)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);

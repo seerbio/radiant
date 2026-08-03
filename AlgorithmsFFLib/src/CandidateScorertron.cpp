@@ -396,10 +396,7 @@ namespace {
         return features.contains(Ms2IonMobilityWeightedDelta)
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
-            || features.contains(Ms2IonMobilityApexDeltaAbsStDev)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
-            || features.contains(Ms2IonMobilityFwhmMean)
-            || features.contains(Ms2IonMobilityFwhmStDev)
             || features.contains(Ms2IonMobilityRtCosineMean)
             || features.contains(Ms2IonMobilityRtCosineStDev)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
@@ -3518,17 +3515,12 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     if (!apexDeltaAbsValues.isEmpty()) {
         candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
             = MathUtils::mean(apexDeltaAbsValues);
-        candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev]
-            = MathUtils::stDev(apexDeltaAbsValues);
     }
     else {
         candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
             = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-        candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = 0.0f;
     }
 
-    candidateScores->featuresArray[Ms2IonMobilityFwhmMean] = 0.0f;
-    candidateScores->featuresArray[Ms2IonMobilityFwhmStDev] = 0.0f;
     candidateScores->featuresArray[Ms2IonMobilityRtCosineMean] = 0.0f;
     candidateScores->featuresArray[Ms2IonMobilityRtCosineStDev] = 0.0f;
 
