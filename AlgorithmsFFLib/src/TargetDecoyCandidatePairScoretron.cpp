@@ -119,7 +119,6 @@ public:
     bool useTopNIntegrationsParameter = false;
     bool useAdaptiveIonMobilityCentering = false;
     MsReaderPointerAcc *msReaderPointerAcc = nullptr;
-    QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePointersAllPntr = nullptr;
     bool splitMzTargetKey = false;
     bool isBottomSplit = false;
     const TargetKeyScoringContext *targetKeyContext = nullptr;
@@ -509,6 +508,42 @@ namespace {
         return windowLower <= libraryIonMobility && libraryIonMobility <= windowUpper;
     }
 
+    QVector<TargetDecoyCandidatePair*> filterCandidatesForMsScanInfo(
+        const QVector<TargetDecoyCandidatePair*> &allCandidates,
+        const MsScanInfo &msScanInfo,
+        const PythiaParameters &pythiaParameters
+        ) {
+
+        const float mzMin = msScanInfo.precursorTargetMz
+                          - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+        const float mzMax = msScanInfo.precursorTargetMz
+                          + (msScanInfo.isoWindowUpper + pythiaParameters.precursorExtractionWindowThomsons);
+        const bool useIonMobilityFilter = msScanInfo.ionMobilityDriftTime > 0.0f;
+
+        QVector<TargetDecoyCandidatePair*> filteredCandidates;
+        filteredCandidates.reserve(allCandidates.size());
+
+        for (TargetDecoyCandidatePair *candidate : allCandidates) {
+            if (candidate == nullptr) {
+                continue;
+            }
+
+            const float precursorMz = candidate->mz(false);
+            if (!(mzMin <= precursorMz && precursorMz <= mzMax)) {
+                continue;
+            }
+
+            if (useIonMobilityFilter
+                && !isLibraryIonMobilityInAcquisitionWindow(candidate, msScanInfo)) {
+                continue;
+            }
+
+            filteredCandidates.push_back(candidate);
+        }
+
+        return filteredCandidates;
+    }
+
     QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> parallelScoreLogic(
             const QVector<TargetDecoyPairParallelInput> &inputs
             ) {
@@ -529,46 +564,6 @@ namespace {
         	}
 
             QVector<TargetDecoyCandidatePair*> targetDecoyPointers = pi.targetDecoyPointers;
-            bool builtTargetDecoyPointersFromAllCandidates = false;
-
-            if (targetDecoyPointers.isEmpty()) {
-                if (pi.targetDecoyCandidatePointersAllPntr == nullptr) {
-                    continue;
-                }
-
-                const float mzMin
-                    = pi.msScanInfo.precursorTargetMz - (pi.msScanInfo.isoWindowLower + pi.pythiaParameters.precursorExtractionWindowThomsons);
-
-                const float mzMax
-                    = pi.msScanInfo.precursorTargetMz + (pi.msScanInfo.isoWindowUpper + pi.pythiaParameters.precursorExtractionWindowThomsons);
-
-                const bool useIonMobilityFilter = pi.msScanInfo.ionMobilityDriftTime > 0.0f;
-                const auto terminatorLogic = [
-                    mzMin,
-                    mzMax,
-                    useIonMobilityFilter,
-                    &pi
-                ](const TargetDecoyCandidatePair *tdcp) {
-                    const float mzPrecursorTargetDecoyPair = tdcp->mz(false);
-                    if (!(mzMin <= mzPrecursorTargetDecoyPair && mzPrecursorTargetDecoyPair <= mzMax)) {
-                        return true;
-                    }
-                    if (useIonMobilityFilter && !isLibraryIonMobilityInAcquisitionWindow(tdcp, pi.msScanInfo)) {
-                        return true;
-                    }
-                    return false;
-                };
-
-                targetDecoyPointers = *pi.targetDecoyCandidatePointersAllPntr;
-                builtTargetDecoyPointersFromAllCandidates = true;
-                const auto terminator = std::remove_if(
-                    targetDecoyPointers.begin(),
-                    targetDecoyPointers.end(),
-                    terminatorLogic
-                    );
-
-                targetDecoyPointers.erase(terminator, targetDecoyPointers.end());
-            }
 
             if (pi.splitMzTargetKey) {
                 const int midPoint = targetDecoyPointers.size() / 2;
@@ -1062,7 +1057,11 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.useAdaptiveIonMobilityCentering = m_useAdaptiveIonMobilityCentering;
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
-        tdppi1.targetDecoyCandidatePointersAllPntr = targetDecoyCandidateAllPntrs;
+        tdppi1.targetDecoyPointers = filterCandidatesForMsScanInfo(
+            *targetDecoyCandidateAllPntrs,
+            msi,
+            m_pythiaParameters
+            );
         tdppi1.splitMzTargetKey = splitMzTargetKey;
 
         if (!m_msReaderPointerAcc->useLazyLoading()) {
