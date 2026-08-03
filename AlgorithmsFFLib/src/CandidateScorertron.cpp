@@ -1350,8 +1350,9 @@ namespace {
         localIonMobilityPeak.maxDriftTime = ionMobilityCenter + targetedIonMobilityWindowHalfWidth;
 
         if (useAdaptiveIonMobilityCentering) {
-            const LocalIonMobilityPeak observedMobilityPeak = selectMobilityProfilePeakForTimsMs2(
+            const LocalIonMobilityPeak observedMobilityPeak = selectLocalIonMobilityPeakForTimsMs2(
                 ms2IonMobilityIndex,
+                msFrameMzTarget,
                 ms2Ions,
                 ionMobilityCenter,
                 ppmTol,
@@ -3377,411 +3378,136 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     const FrameIndex frameIndexMin = std::max(0, candidateScores->frameIndexStart - 1);
     const FrameIndex frameIndexMax = candidateScores->frameIndexEnd + 1;
-    const float targetedIonMobilityWindowHalfWidth
-        = static_cast<float>(m_pythiaParameters.timsTargetedMs2IonMobilityWindow);
     const float ionMobilityMin = mobilityCenter - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
     const float ionMobilityMax = mobilityCenter + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-    const IonMobilityIndex broadIonMobilityIndexStart = candidateScores->ionMobilityIndexStart;
-    const IonMobilityIndex broadIonMobilityIndexEnd = candidateScores->ionMobilityIndexEnd;
+    using RtMobilityKey = quint64;
+    constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
+    const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
+        return (static_cast<RtMobilityKey>(static_cast<quint32>(frameIndex)) << 32)
+               | static_cast<quint32>(ionMobilityIndex);
+    };
+    const auto keyFrameIndex = [](RtMobilityKey key) {
+        return static_cast<FrameIndex>(key >> 32);
+    };
+    const auto keyIonMobilityIndex = [](RtMobilityKey key) {
+        return static_cast<IonMobilityIndex>(key & 0xffffffffu);
+    };
 
-    QMap<IonMobilityIndex, double> summedMobilityProfile;
+    struct FragmentCentroidObservation {
+        bool hasApex = false;
+        float apexIntensity = 0.0f;
+        float apexDriftTime = -1.0f;
+        IonMobilityIndex apexIonMobilityIndex = -1;
+        FrameIndex apexFrameIndex = -1;
+        double totalIntensity = 0.0;
+    };
+
     int matchedIonCount = 0;
     QVector<float> apexDeltaAbsValues;
-    QVector<float> mobilityFwhmValues;
-    QVector<float> mobilityFwhmWeights;
-    QVector<QMap<IonMobilityIndex, double>> fragmentMobilityProfiles;
+    QVector<float> weightedDeltas;
+    QVector<float> weightedDeltaAbsValues;
+    QVector<float> weights;
+    QVector<RtMobilityKey> fragmentApexKeys;
+    float bestObservedApexIntensity = -1.0f;
     apexDeltaAbsValues.reserve(topIonCount);
-    mobilityFwhmValues.reserve(topIonCount);
-    mobilityFwhmWeights.reserve(topIonCount);
-    fragmentMobilityProfiles.reserve(topIonCount);
+    weightedDeltas.reserve(topIonCount);
+    weightedDeltaAbsValues.reserve(topIonCount);
+    weights.reserve(topIonCount);
+    fragmentApexKeys.reserve(topIonCount);
 
-    constexpr float timsRtMobilityCoelutionMinSpectrumOverTime = 0.08f;
-    constexpr float timsRtMobilityCoelutionMinTotalIntensityLog = 8.0f;
-    const bool computeRtMobilityCoelutionFeatures
-        = (m_features.contains(Ms2IonMobilityRtCosineMean)
-           || m_features.contains(Ms2IonMobilityRtCosineStDev)
-           || m_features.contains(Ms2IonMobilityRtApexAgreementFraction))
-          && candidateScores->featuresArray[CosineSimSpectrumOverTimeCubed]
-             >= timsRtMobilityCoelutionMinSpectrumOverTime
-          && candidateScores->featuresArray[TotalIntensityLog]
-             >= timsRtMobilityCoelutionMinTotalIntensityLog;
+    for (int i = 0; i < topIonCount; ++i) {
+        const MS2Ion &ms2Ion = ms2Ions.at(i);
+        const float massTol = MathUtils::calculatePPM(
+            ms2Ion.mz,
+            static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+            );
 
-    if (!computeRtMobilityCoelutionFeatures) {
-        for (int i = 0; i < topIonCount; ++i) {
-            const MS2Ion &ms2Ion = ms2Ions.at(i);
-            const float massTol = MathUtils::calculatePPM(
-                ms2Ion.mz,
-                static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
-                );
+        const XICPoints xicPoints = m_ms2IonMobilityIndex->extractPointsXIC(
+            ms2Ion.mz - massTol,
+            ms2Ion.mz + massTol,
+            frameIndexMin,
+            frameIndexMax,
+            ionMobilityMin,
+            ionMobilityMax
+            );
 
-            float apexIntensity = 0.0f;
-            float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-            QMap<IonMobilityIndex, double> fragmentMobilityProfile;
-            const bool hasMobilityProfile = m_ms2IonMobilityIndex->extractMobilityProfile(
-                ms2Ion.mz - massTol,
-                ms2Ion.mz + massTol,
-                frameIndexMin,
-                frameIndexMax,
-                ionMobilityMin,
-                ionMobilityMax,
-                mobilityCenter,
-                &fragmentMobilityProfile,
-                &apexIntensity,
-                &apexDeltaAbs
-                );
-
-            if (!hasMobilityProfile) {
+        FragmentCentroidObservation observation;
+        for (const XICPoint &xicPoint : xicPoints) {
+            if (xicPoint.intensity <= 0.0f || xicPoint.ionMobilityIndex < 0) {
                 continue;
             }
 
-            matchedIonCount++;
-
-            for (auto profileIt = fragmentMobilityProfile.constBegin();
-                 profileIt != fragmentMobilityProfile.constEnd();
-                 ++profileIt) {
-                summedMobilityProfile[profileIt.key()] += profileIt.value();
-            }
-
-            apexDeltaAbsValues.push_back(apexDeltaAbs);
-            fragmentMobilityProfiles.push_back(fragmentMobilityProfile);
-            mobilityFwhmWeights.push_back(std::max(ms2Ion.intensity, 0.0f));
-        }
-    }
-    else {
-        using RtMobilityKey = quint64;
-        constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
-        const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
-            return (static_cast<RtMobilityKey>(static_cast<quint32>(frameIndex)) << 32)
-                   | static_cast<quint32>(ionMobilityIndex);
-        };
-        const auto keyFrameIndex = [](RtMobilityKey key) {
-            return static_cast<FrameIndex>(key >> 32);
-        };
-        const auto keyIonMobilityIndex = [](RtMobilityKey key) {
-            return static_cast<IonMobilityIndex>(key & 0xffffffffu);
-        };
-
-        std::unordered_map<RtMobilityKey, double> summedRtMobilityProfile;
-        QVector<std::unordered_map<RtMobilityKey, double>> fragmentRtMobilityProfiles;
-        QVector<RtMobilityKey> fragmentRtMobilityApexes;
-        fragmentRtMobilityProfiles.reserve(topIonCount);
-        fragmentRtMobilityApexes.reserve(topIonCount);
-
-        for (int i = 0; i < topIonCount; ++i) {
-            const MS2Ion &ms2Ion = ms2Ions.at(i);
-            const float massTol = MathUtils::calculatePPM(
-                ms2Ion.mz,
-                static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
-                );
-
-            float apexIntensity = 0.0f;
-            float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-            QMap<IonMobilityIndex, double> fragmentMobilityProfile;
-            std::unordered_map<RtMobilityKey, double> fragmentRtMobilityProfile;
-            RtMobilityKey fragmentApexKey = invalidRtMobilityKey;
-
-            const XICPoints xicPoints = m_ms2IonMobilityIndex->extractPointsXIC(
-                ms2Ion.mz - massTol,
-                ms2Ion.mz + massTol,
-                frameIndexMin,
-                frameIndexMax,
-                ionMobilityMin,
-                ionMobilityMax
-                );
-            fragmentRtMobilityProfile.reserve(static_cast<size_t>(xicPoints.size()));
-
-            for (const XICPoint &xicPoint : xicPoints) {
-                if (xicPoint.intensity <= 0.0f || xicPoint.ionMobilityIndex < 0) {
-                    continue;
-                }
-
-                float driftTime = -1.0f;
-                if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
-                        xicPoint.ionMobilityIndex,
-                        &driftTime
-                        )) {
-                    continue;
-                }
-
-                const double intensity = std::max(0.0f, xicPoint.intensity);
-                fragmentMobilityProfile[xicPoint.ionMobilityIndex] += intensity;
-
-                const RtMobilityKey rtMobilityKey = makeRtMobilityKey(
-                    xicPoint.scanNumber,
-                    xicPoint.ionMobilityIndex
-                    );
-                fragmentRtMobilityProfile[rtMobilityKey] += intensity;
-
-                if (xicPoint.intensity > apexIntensity) {
-                    apexIntensity = xicPoint.intensity;
-                    apexDeltaAbs = std::abs(driftTime - mobilityCenter);
-                    fragmentApexKey = rtMobilityKey;
-                }
-            }
-
-            if (fragmentMobilityProfile.isEmpty() || fragmentRtMobilityProfile.empty()) {
+            float driftTime = -1.0f;
+            if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                    xicPoint.ionMobilityIndex,
+                    &driftTime
+                    )) {
                 continue;
             }
 
-            matchedIonCount++;
-
-            for (auto profileIt = fragmentMobilityProfile.constBegin();
-                 profileIt != fragmentMobilityProfile.constEnd();
-                 ++profileIt) {
-                summedMobilityProfile[profileIt.key()] += profileIt.value();
+            observation.totalIntensity += xicPoint.intensity;
+            if (xicPoint.intensity <= observation.apexIntensity) {
+                continue;
             }
 
-            apexDeltaAbsValues.push_back(apexDeltaAbs);
-            fragmentMobilityProfiles.push_back(fragmentMobilityProfile);
-            mobilityFwhmWeights.push_back(std::max(ms2Ion.intensity, 0.0f));
-            fragmentRtMobilityProfiles.push_back(fragmentRtMobilityProfile);
-            fragmentRtMobilityApexes.push_back(fragmentApexKey);
-
-            for (const auto &profileEntry : fragmentRtMobilityProfile) {
-                summedRtMobilityProfile[profileEntry.first] += profileEntry.second;
-            }
+            observation.hasApex = true;
+            observation.apexIntensity = xicPoint.intensity;
+            observation.apexDriftTime = driftTime;
+            observation.apexIonMobilityIndex = xicPoint.ionMobilityIndex;
+            observation.apexFrameIndex = xicPoint.scanNumber;
         }
 
-        if (!summedRtMobilityProfile.empty() && fragmentRtMobilityProfiles.size() > 1) {
-            RtMobilityKey consensusApex = invalidRtMobilityKey;
-            double consensusApexIntensity = 0.0;
-            for (const auto &profileEntry : summedRtMobilityProfile) {
-                if (profileEntry.second > consensusApexIntensity) {
-                    consensusApexIntensity = profileEntry.second;
-                    consensusApex = profileEntry.first;
-                }
-            }
+        if (!observation.hasApex) {
+            continue;
+        }
 
-            if (consensusApex != invalidRtMobilityKey && !fragmentRtMobilityApexes.isEmpty()) {
-                if (computeRtMobilityCoelutionFeatures) {
-                    QVector<float> rtMobilityCosines;
-                    rtMobilityCosines.reserve(fragmentRtMobilityProfiles.size());
+        matchedIonCount++;
 
-                    double totalNormSquared = 0.0;
-                    for (const auto &totalEntry : summedRtMobilityProfile) {
-                        totalNormSquared += totalEntry.second * totalEntry.second;
-                    }
+        const float delta = observation.apexDriftTime - mobilityCenter;
+        apexDeltaAbsValues.push_back(std::abs(delta));
+        weightedDeltas.push_back(delta);
+        weightedDeltaAbsValues.push_back(std::abs(delta));
+        weights.push_back(std::max(static_cast<float>(observation.totalIntensity), observation.apexIntensity));
+        fragmentApexKeys.push_back(makeRtMobilityKey(
+            observation.apexFrameIndex,
+            observation.apexIonMobilityIndex
+            ));
 
-                    for (const std::unordered_map<RtMobilityKey, double> &fragmentProfile : fragmentRtMobilityProfiles) {
-                        if (fragmentProfile.empty()) {
-                            continue;
-                        }
+        if (observation.apexIntensity > bestObservedApexIntensity) {
+            bestObservedApexIntensity = observation.apexIntensity;
+            candidateScores->ionMobilityIndex = observation.apexIonMobilityIndex;
+            candidateScores->imDriftTime = observation.apexDriftTime;
+        }
 
-                        double fragmentTotalDotProduct = 0.0;
-                        double fragmentNormSquared = 0.0;
-
-                        for (const auto &fragmentEntry : fragmentProfile) {
-                            const double fragmentIntensity = fragmentEntry.second;
-                            const auto totalIt = summedRtMobilityProfile.find(fragmentEntry.first);
-                            const double totalIntensity = totalIt == summedRtMobilityProfile.end()
-                                                              ? 0.0
-                                                              : totalIt->second;
-                            fragmentTotalDotProduct += fragmentIntensity * totalIntensity;
-                            fragmentNormSquared += fragmentIntensity * fragmentIntensity;
-                        }
-
-                        const double dotProduct = fragmentTotalDotProduct - fragmentNormSquared;
-                        const double consensusNormSquared = totalNormSquared
-                                                            - (2.0 * fragmentTotalDotProduct)
-                                                            + fragmentNormSquared;
-                        if (fragmentNormSquared <= 0.0 || consensusNormSquared <= 0.0) {
-                            continue;
-                        }
-
-                        const double cosine = dotProduct / std::sqrt(fragmentNormSquared * consensusNormSquared);
-                        rtMobilityCosines.push_back(static_cast<float>(std::clamp(cosine, 0.0, 1.0)));
-                    }
-
-                    if (!rtMobilityCosines.isEmpty()) {
-                        candidateScores->featuresArray[Ms2IonMobilityRtCosineMean] = MathUtils::mean(rtMobilityCosines);
-                        candidateScores->featuresArray[Ms2IonMobilityRtCosineStDev] = MathUtils::stDev(rtMobilityCosines);
-                    }
-                }
-
-                int agreeingApexCount = 0;
-                const FrameIndex consensusFrameIndex = keyFrameIndex(consensusApex);
-                const IonMobilityIndex consensusIonMobilityIndex = keyIonMobilityIndex(consensusApex);
-                for (const RtMobilityKey &fragmentApex : fragmentRtMobilityApexes) {
-                    if (fragmentApex == invalidRtMobilityKey) {
-                        continue;
-                    }
-
-                    if (std::abs(keyFrameIndex(fragmentApex) - consensusFrameIndex) <= 1
-                        && std::abs(keyIonMobilityIndex(fragmentApex) - consensusIonMobilityIndex) <= 2) {
-                        agreeingApexCount++;
-                    }
-                }
-
-                candidateScores->featuresArray[Ms2IonMobilityRtApexAgreementFraction]
-                    = agreeingApexCount / static_cast<float>(fragmentRtMobilityApexes.size());
-
-            }
+        if (candidateScores->ionMobilityIndexStart < 0 || observation.apexIonMobilityIndex < candidateScores->ionMobilityIndexStart) {
+            candidateScores->ionMobilityIndexStart = observation.apexIonMobilityIndex;
+        }
+        if (candidateScores->ionMobilityIndexEnd < 0 || observation.apexIonMobilityIndex > candidateScores->ionMobilityIndexEnd) {
+            candidateScores->ionMobilityIndexEnd = observation.apexIonMobilityIndex;
         }
     }
 
     candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction]
         = matchedIonCount / static_cast<float>(topIonCount);
 
-    double intensitySum = 0.0;
-    double weightedDelta = 0.0;
-    double weightedDeltaAbs = 0.0;
-    if (!summedMobilityProfile.isEmpty()) {
-        QVector<IonMobilityIndex> mobilityIndices = summedMobilityProfile.keys().toVector();
-        std::sort(mobilityIndices.begin(), mobilityIndices.end());
-
-        QVector<double> summedProfile;
-        summedProfile.reserve(mobilityIndices.size());
-        double bestIntensity = -1.0;
-        int bestIndex = -1;
-
-        for (int i = 0; i < mobilityIndices.size(); ++i) {
-            const IonMobilityIndex ionMobilityIndex = mobilityIndices.at(i);
-            const double intensity = summedMobilityProfile.value(ionMobilityIndex);
-            summedProfile.push_back(intensity);
-
-            float driftTime = -1.0f;
-            if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
-                continue;
-            }
-
-            const double delta = driftTime - mobilityCenter;
-            intensitySum += intensity;
-            weightedDelta += intensity * delta;
-            weightedDeltaAbs += intensity * std::abs(delta);
-
-            if (intensity > bestIntensity) {
-                bestIntensity = intensity;
-                bestIndex = i;
-            }
+    if (!weights.isEmpty()) {
+        double weightSum = std::accumulate(weights.begin(), weights.end(), 0.0);
+        if (weightSum <= 0.0) {
+            weightSum = weights.size();
+            weights.fill(1.0f);
         }
 
-        SymmetricProfileLimits limits;
-        float observedMobilityForWindow = -1.0f;
-        if (bestIndex >= 0) {
-            const IonMobilityIndex observedIonMobilityIndex = mobilityIndices.at(bestIndex);
-            float observedDriftTime = -1.0f;
-            if (m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
-                    observedIonMobilityIndex,
-                    &observedDriftTime
-                    )) {
-
-                candidateScores->ionMobilityIndex = observedIonMobilityIndex;
-                candidateScores->imDriftTime = observedDriftTime;
-                observedMobilityForWindow = observedDriftTime;
-
-                const float ionMobilityDelta = observedDriftTime - mobilityCenter;
-                candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
-                candidateScores->featuresArray[IonMobilityDeltaAbs] = std::abs(ionMobilityDelta);
-                candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
-                    std::min(
-                        static_cast<double>(std::abs(ionMobilityDelta)),
-                        ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
-                        ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
-                    );
-            }
-
-            limits = alphaDiaStyleSymmetricLimits1d(summedProfile, bestIndex);
-            if (limits.startIndex >= 0
-                && limits.stopIndex >= limits.startIndex
-                && limits.stopIndex < mobilityIndices.size()) {
-                candidateScores->ionMobilityIndexStart = mobilityIndices.at(limits.startIndex);
-                candidateScores->ionMobilityIndexEnd = mobilityIndices.at(limits.stopIndex);
-            }
+        double weightedDeltaSum = 0.0;
+        double weightedDeltaAbsSum = 0.0;
+        for (int i = 0; i < weights.size(); ++i) {
+            weightedDeltaSum += weights.at(i) * weightedDeltas.at(i);
+            weightedDeltaAbsSum += weights.at(i) * weightedDeltaAbsValues.at(i);
         }
 
-        QVector<IonMobilityIndex> fwhmMobilityIndices;
-        if (observedMobilityForWindow > 0.0f) {
-            const IonMobilityIndex indexStart = broadIonMobilityIndexStart >= 0 && broadIonMobilityIndexEnd >= 0
-                                                    ? std::min(broadIonMobilityIndexStart, broadIonMobilityIndexEnd)
-                                                    : mobilityIndices.front();
-            const IonMobilityIndex indexEnd = broadIonMobilityIndexStart >= 0 && broadIonMobilityIndexEnd >= 0
-                                                  ? std::max(broadIonMobilityIndexStart, broadIonMobilityIndexEnd)
-                                                  : mobilityIndices.back();
-
-            for (IonMobilityIndex ionMobilityIndex = indexStart; ionMobilityIndex <= indexEnd; ++ionMobilityIndex) {
-                float driftTime = -1.0f;
-                if (!m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
-                    continue;
-                }
-
-                if (std::abs(driftTime - observedMobilityForWindow)
-                    <= targetedIonMobilityWindowHalfWidth) {
-                    fwhmMobilityIndices.push_back(ionMobilityIndex);
-                }
-            }
-        }
-
-        if (fwhmMobilityIndices.isEmpty()
-            && limits.startIndex >= 0
-            && limits.stopIndex >= limits.startIndex
-            && limits.stopIndex < mobilityIndices.size()) {
-            for (int i = limits.startIndex; i <= limits.stopIndex; ++i) {
-                fwhmMobilityIndices.push_back(mobilityIndices.at(i));
-            }
-        }
-
-        if (!fwhmMobilityIndices.isEmpty()) {
-
-            float mobilityStart = -1.0f;
-            float mobilityStop = -1.0f;
-            if (m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
-                    fwhmMobilityIndices.front(),
-                    &mobilityStart
-                    )
-                && m_ms2IonMobilityIndex->driftTimeFromIonMobilityIndex(
-                    fwhmMobilityIndices.back(),
-                    &mobilityStop
-                    )) {
-
-                candidateScores->ionMobilityIndexStart = fwhmMobilityIndices.front();
-                candidateScores->ionMobilityIndexEnd = fwhmMobilityIndices.back();
-
-                const float mobilityWidth = std::abs(mobilityStop - mobilityStart);
-                const int mobilityWindowBinCount = std::max(1, fwhmMobilityIndices.size());
-                const QVector<float> fragmentMobilityProfileWeights = mobilityFwhmWeights;
-                mobilityFwhmWeights.clear();
-                for (int fragmentIndex = 0; fragmentIndex < fragmentMobilityProfiles.size(); ++fragmentIndex) {
-                    const QMap<IonMobilityIndex, double> &fragmentMobilityProfile
-                        = fragmentMobilityProfiles.at(fragmentIndex);
-                    if (fragmentMobilityProfile.isEmpty()) {
-                        continue;
-                    }
-
-                    double apexIntensity = 0.0;
-                    for (IonMobilityIndex ionMobilityIndex : fwhmMobilityIndices) {
-                        apexIntensity = std::max(
-                            apexIntensity,
-                            fragmentMobilityProfile.value(ionMobilityIndex, 0.0)
-                            );
-                    }
-
-                    if (apexIntensity <= 0.0) {
-                        continue;
-                    }
-
-                    const double halfMaxIntensity = apexIntensity / 2.0;
-                    int valuesAboveHalfMax = 0;
-                    for (IonMobilityIndex ionMobilityIndex : fwhmMobilityIndices) {
-                        if (fragmentMobilityProfile.value(ionMobilityIndex, 0.0) > halfMaxIntensity) {
-                            valuesAboveHalfMax++;
-                        }
-                    }
-
-                    const float fractionAboveHalfMax = valuesAboveHalfMax
-                                                       / static_cast<float>(mobilityWindowBinCount);
-                    mobilityFwhmValues.push_back(fractionAboveHalfMax * mobilityWidth);
-                    mobilityFwhmWeights.push_back(fragmentMobilityProfileWeights.at(fragmentIndex));
-                }
-            }
-        }
-
-    }
-
-    if (intensitySum > 0.0) {
         candidateScores->featuresArray[Ms2IonMobilityWeightedDelta]
-            = static_cast<float>(weightedDelta / intensitySum);
+            = static_cast<float>(weightedDeltaSum / weightSum);
         candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs]
-            = static_cast<float>(weightedDeltaAbs / intensitySum);
+            = static_cast<float>(weightedDeltaAbsSum / weightSum);
     }
     else {
         candidateScores->featuresArray[Ms2IonMobilityWeightedDelta] = 0.0f;
@@ -3801,36 +3527,54 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = 0.0f;
     }
 
-    if (!mobilityFwhmValues.isEmpty()) {
-        double fwhmWeightSum = std::accumulate(
-            mobilityFwhmWeights.begin(),
-            mobilityFwhmWeights.end(),
-            0.0
-            );
+    candidateScores->featuresArray[Ms2IonMobilityFwhmMean] = 0.0f;
+    candidateScores->featuresArray[Ms2IonMobilityFwhmStDev] = 0.0f;
+    candidateScores->featuresArray[Ms2IonMobilityRtCosineMean] = 0.0f;
+    candidateScores->featuresArray[Ms2IonMobilityRtCosineStDev] = 0.0f;
 
-        if (fwhmWeightSum <= 0.0) {
-            fwhmWeightSum = mobilityFwhmValues.size();
-            mobilityFwhmWeights.fill(1.0f);
+    if (fragmentApexKeys.size() > 1) {
+        QMap<RtMobilityKey, int> apexKeyVsCounts;
+        for (const RtMobilityKey fragmentApexKey : fragmentApexKeys) {
+            apexKeyVsCounts[fragmentApexKey] += 1;
         }
 
-        double weightedFwhmSum = 0.0;
-        for (int i = 0; i < mobilityFwhmValues.size(); ++i) {
-            weightedFwhmSum += mobilityFwhmValues.at(i) * mobilityFwhmWeights.at(i);
+        RtMobilityKey consensusApex = invalidRtMobilityKey;
+        int consensusCount = 0;
+        for (auto it = apexKeyVsCounts.constBegin(); it != apexKeyVsCounts.constEnd(); ++it) {
+            if (it.value() > consensusCount) {
+                consensusCount = it.value();
+                consensusApex = it.key();
+            }
         }
 
-        const float weightedFwhmMean = static_cast<float>(weightedFwhmSum / fwhmWeightSum);
-        QVector<float> fwhmResiduals;
-        fwhmResiduals.reserve(mobilityFwhmValues.size());
-        for (const float mobilityFwhmValue : mobilityFwhmValues) {
-            fwhmResiduals.push_back(mobilityFwhmValue - weightedFwhmMean);
+        int agreeingApexCount = 0;
+        const FrameIndex consensusFrameIndex = keyFrameIndex(consensusApex);
+        const IonMobilityIndex consensusIonMobilityIndex = keyIonMobilityIndex(consensusApex);
+        for (const RtMobilityKey fragmentApexKey : fragmentApexKeys) {
+            if (std::abs(keyFrameIndex(fragmentApexKey) - consensusFrameIndex) <= 1
+                && std::abs(keyIonMobilityIndex(fragmentApexKey) - consensusIonMobilityIndex) <= 2) {
+                agreeingApexCount++;
+            }
         }
 
-        candidateScores->featuresArray[Ms2IonMobilityFwhmMean] = weightedFwhmMean;
-        candidateScores->featuresArray[Ms2IonMobilityFwhmStDev] = MathUtils::stDev(fwhmResiduals);
+        candidateScores->featuresArray[Ms2IonMobilityRtApexAgreementFraction]
+            = agreeingApexCount / static_cast<float>(fragmentApexKeys.size());
     }
     else {
-        candidateScores->featuresArray[Ms2IonMobilityFwhmMean] = 0.0f;
-        candidateScores->featuresArray[Ms2IonMobilityFwhmStDev] = 0.0f;
+        candidateScores->featuresArray[Ms2IonMobilityRtApexAgreementFraction]
+            = fragmentApexKeys.isEmpty() ? 0.0f : 1.0f;
+    }
+
+    if (candidateScores->ionMobilityIndex >= 0 && candidateScores->imDriftTime > 0.0f) {
+        const float ionMobilityDelta = candidateScores->imDriftTime - mobilityCenter;
+        candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
+        candidateScores->featuresArray[IonMobilityDeltaAbs] = std::abs(ionMobilityDelta);
+        candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
+            std::min(
+                static_cast<double>(std::abs(ionMobilityDelta)),
+                ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+            );
     }
 
     ERR_RETURN
