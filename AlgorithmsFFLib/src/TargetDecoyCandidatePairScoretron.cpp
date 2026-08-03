@@ -14,6 +14,7 @@
 #include "XICPeakManager.h"
 
 #include <QtConcurrent/QtConcurrent>
+#include <QSharedPointer>
 
 #include <algorithm>
 #include <cmath>
@@ -21,6 +22,16 @@
 class TargetDecoyPairParallelInput;
 
 namespace {
+
+    struct TargetKeyScoringContext {
+        QMap<ScanNumber, ScanPoints> ownedScanPoints;
+        QSharedPointer<MsFrame> ownedMsFrameMzTarget;
+        QSharedPointer<TurboXIC> ownedTurboXicMS2;
+        QSharedPointer<CentroidMs2IonMobilityIndex> ownedMs2IonMobilityIndex;
+        MsFrame *msFrameMzTarget = nullptr;
+        TurboXIC *turboXicMS2 = nullptr;
+        Ms2IonMobilityIndexBase *ms2IonMobilityIndex = nullptr;
+    };
 
     bool readerHasIonMobility(const MsReaderPointerAcc *msReaderPointerAcc) {
         return msReaderPointerAcc != nullptr
@@ -57,6 +68,13 @@ namespace {
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
         const MsFrame *msFrameMzTarget,
         Ms2IonMobilityIndexStorage *indexStorage
+        );
+
+    bool containsMs2IonMobilityFeature(const QVector<Features> &features);
+
+    Err buildTargetKeyScoringContext(
+        const TargetDecoyPairParallelInput &pi,
+        TargetKeyScoringContext *context
         );
 
 }
@@ -104,6 +122,7 @@ public:
     QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePointersAllPntr = nullptr;
     bool splitMzTargetKey = false;
     bool isBottomSplit = false;
+    const TargetKeyScoringContext *targetKeyContext = nullptr;
 };
 
 
@@ -358,6 +377,96 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildTargetKeyScoringContext(
+        const TargetDecoyPairParallelInput &pi,
+        TargetKeyScoringContext *context
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(context != nullptr, eValueError); ree;
+
+        context->ownedScanPoints.clear();
+        context->ownedMsFrameMzTarget.clear();
+        context->ownedTurboXicMS2.clear();
+        context->ownedMs2IonMobilityIndex.clear();
+        context->msFrameMzTarget = pi.msFrameMzTarget;
+        context->turboXicMS2 = pi.turboXicMS2;
+        context->ms2IonMobilityIndex = nullptr;
+
+        const bool needsMs2IonMobilityIndex = readerHasIonMobility(pi.msReaderPointerAcc)
+            && containsMs2IonMobilityFeature(pi.features);
+        const bool needsOwnedScanPoints = context->msFrameMzTarget == nullptr
+            || context->turboXicMS2 == nullptr
+            || needsMs2IonMobilityIndex;
+
+        if (needsOwnedScanPoints) {
+            if (!pi.diaTargetFrame.isEmpty()) {
+                for (auto it = pi.diaTargetFrame.constBegin(); it != pi.diaTargetFrame.constEnd(); ++it) {
+                    if (it.value() != nullptr) {
+                        context->ownedScanPoints.insert(it.key(), *it.value());
+                    }
+                }
+            }
+            else if (pi.msReaderPointerAcc != nullptr && !pi.msReaderPointerAcc->ptr.isNull()) {
+                e = ensureTargetScanPointsLoaded(
+                    pi,
+                    &context->ownedScanPoints
+                    ); ree;
+            }
+        }
+
+        if (context->msFrameMzTarget == nullptr) {
+            if (context->ownedScanPoints.isEmpty()) {
+                ERR_RETURN
+            }
+
+            QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsPntrs;
+            for (auto it = context->ownedScanPoints.begin(); it != context->ownedScanPoints.end(); ++it) {
+                scanNumberVsScanPointsPntrs.insert(it.key(), &it.value());
+            }
+
+            context->ownedMsFrameMzTarget.reset(new MsFrame);
+            e = context->ownedMsFrameMzTarget->init(
+                scanNumberVsScanPointsPntrs,
+                pi.scanNumberVsScanTime
+                ); ree;
+            context->msFrameMzTarget = context->ownedMsFrameMzTarget.data();
+        }
+
+        if (context->turboXicMS2 == nullptr
+            && context->msFrameMzTarget != nullptr
+            && context->msFrameMzTarget->isValid()) {
+            context->ownedTurboXicMS2.reset(new TurboXIC);
+            e = context->ownedTurboXicMS2->init(context->msFrameMzTarget->frameIndexVsScanPoints()); ree;
+            context->turboXicMS2 = context->ownedTurboXicMS2.data();
+        }
+
+        if (needsMs2IonMobilityIndex
+            && context->msFrameMzTarget != nullptr
+            && context->msFrameMzTarget->isValid()
+            && !context->ownedScanPoints.isEmpty()) {
+            QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
+            e = pi.msReaderPointerAcc->ptr->getMzTargetAlignedPointData(
+                pi.targetKey,
+                &scanNumberVsAlignedPointData
+                ); ree;
+
+            context->ownedMs2IonMobilityIndex.reset(new CentroidMs2IonMobilityIndex);
+            e = context->ownedMs2IonMobilityIndex->init(
+                context->ownedScanPoints,
+                scanNumberVsAlignedPointData,
+                *context->msFrameMzTarget
+                ); ree;
+
+            if (context->ownedMs2IonMobilityIndex->isInit()) {
+                context->ms2IonMobilityIndex = context->ownedMs2IonMobilityIndex.data();
+            }
+        }
+
+        ERR_RETURN
+    }
+
     bool containsMs2IonMobilityFeature(const QVector<Features> &features) {
         return features.contains(Ms2IonMobilityWeightedDelta)
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
@@ -468,31 +577,13 @@ namespace {
                                     : targetDecoyPointers.mid(midPoint, targetDecoyPointers.size() - midPoint);
             }
 
-            QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
-            MsFrame msFrameMzTarget;
-            const bool shouldLoadLocalMs2Frame = pi.msFrameMzTarget == nullptr
-                && pi.msReaderPointerAcc != nullptr
-                && !pi.msReaderPointerAcc->ptr.isNull();
-
-            if (shouldLoadLocalMs2Frame) {
-                e = initLocalMs2Frame(
-                    pi,
-                    &scanNumberVsScanPoints,
-                    &msFrameMzTarget
-                    ); rtee;
-            }
-
-            MsFrame *msFrameMzTargetPntr = msFrameMzTarget.isValid()
-                                         ? &msFrameMzTarget
-                                         : pi.msFrameMzTarget;
-
-            TurboXIC turboXicMS2Local;
+            MsFrame *msFrameMzTargetPntr = pi.msFrameMzTarget;
             TurboXIC *turboXicMS2Pntr = pi.turboXicMS2;
-            if (turboXicMS2Pntr == nullptr
-                && msFrameMzTargetPntr != nullptr
-                && msFrameMzTargetPntr->isValid()) {
-                e = turboXicMS2Local.init(msFrameMzTargetPntr->frameIndexVsScanPoints()); rree;
-                turboXicMS2Pntr = &turboXicMS2Local;
+            Ms2IonMobilityIndexBase *ms2IonMobilityIndexPntr = nullptr;
+            if (pi.targetKeyContext != nullptr) {
+                msFrameMzTargetPntr = pi.targetKeyContext->msFrameMzTarget;
+                turboXicMS2Pntr = pi.targetKeyContext->turboXicMS2;
+                ms2IonMobilityIndexPntr = pi.targetKeyContext->ms2IonMobilityIndex;
             }
 
             if (targetDecoyPointers.isEmpty()) {
@@ -526,8 +617,6 @@ namespace {
                     ); rree;
             }
 
-            Ms2IonMobilityIndexStorage ms2IonMobilityIndexStorage;
-
             const bool hasReaderIonMobility = readerHasIonMobility(pi.msReaderPointerAcc);
             const bool hasLibraryIonMobility = hasReaderIonMobility
                 && std::any_of(
@@ -537,30 +626,8 @@ namespace {
                         return tdcp != nullptr && tdcp->iIM() > 0.0f;
                     }
                     );
-            const bool needsMs2IonMobilityIndex = hasLibraryIonMobility
-                && containsMs2IonMobilityFeature(pi.features);
-
-            if (needsMs2IonMobilityIndex
-                && msFrameMzTargetPntr != nullptr
-                && msFrameMzTargetPntr->isValid()) {
-                QElapsedTimer ms2IonMobilityIndexTimer;
-                ms2IonMobilityIndexTimer.start();
-                e = buildMs2IonMobilityIndex(
-                    pi,
-                    needsMs2IonMobilityIndex,
-                    &scanNumberVsScanPoints,
-                    msFrameMzTargetPntr,
-                    &ms2IonMobilityIndexStorage
-                    ); rree;
-
-                if (builtTargetDecoyPointersFromAllCandidates) {
-                    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                             << "MS2 mobility index"
-                             << "target_key" << pi.targetKey
-                             << "needed" << needsMs2IonMobilityIndex
-                             << "points" << (ms2IonMobilityIndexStorage.indexPntr != nullptr ? ms2IonMobilityIndexStorage.indexPntr->pointCount() : 0)
-                             << "msec" << ms2IonMobilityIndexTimer.elapsed();
-                }
+            if (!hasLibraryIonMobility) {
+                ms2IonMobilityIndexPntr = nullptr;
             }
 
             const float scanTimeRange = pi.scanTimeMinMax.second - pi.scanTimeMinMax.first;
@@ -580,7 +647,7 @@ namespace {
                 pi.turboXicMS1,
                 pi.msFrameMS1,
                 pi.msReaderPointerAcc,
-                ms2IonMobilityIndexStorage.indexPntr
+                ms2IonMobilityIndexPntr
                 ); rree;
             candidateScorertron.setUseAdaptiveIonMobilityCentering(
                 pi.useAdaptiveIonMobilityCentering
@@ -693,6 +760,17 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputs
             ); ree;
 
+    QMap<MzTargetKey, QSharedPointer<TargetKeyScoringContext>> targetKeyContexts;
+    for (TargetDecoyPairParallelInput &parallelInput : parallelInputs) {
+        if (!targetKeyContexts.contains(parallelInput.targetKey)) {
+            auto context = QSharedPointer<TargetKeyScoringContext>::create();
+            e = buildTargetKeyScoringContext(parallelInput, context.data()); ree;
+            targetKeyContexts.insert(parallelInput.targetKey, context);
+        }
+
+        parallelInput.targetKeyContext = targetKeyContexts.value(parallelInput.targetKey).data();
+    }
+
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
@@ -782,6 +860,17 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             targetDecoyCandidateAllPntrs,
             &parallelInputs
             ); ree;
+
+    QMap<MzTargetKey, QSharedPointer<TargetKeyScoringContext>> targetKeyContexts;
+    for (TargetDecoyPairParallelInput &parallelInput : parallelInputs) {
+        if (!targetKeyContexts.contains(parallelInput.targetKey)) {
+            auto context = QSharedPointer<TargetKeyScoringContext>::create();
+            e = buildTargetKeyScoringContext(parallelInput, context.data()); ree;
+            targetKeyContexts.insert(parallelInput.targetKey, context);
+        }
+
+        parallelInput.targetKeyContext = targetKeyContexts.value(parallelInput.targetKey).data();
+    }
 
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
