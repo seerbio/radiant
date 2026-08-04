@@ -321,11 +321,11 @@ public:
 
 namespace {
 
-    constexpr double ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
-    constexpr double ALPHADIA_MS1_TARGET_MOBILITY_TOLERANCE_MIN_ONE_OVER_K0 = 0.03;
-    constexpr double ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.06;
-    constexpr double ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 = 0.01;
-    constexpr double ALPHADIA_RT_FWHM_SECONDS = 5.0;
+    constexpr double DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
+    constexpr double MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.03;
+    constexpr double TARGET_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.06;
+    constexpr double DEFAULT_ION_MOBILITY_FWHM_ONE_OVER_K0 = 0.01;
+    constexpr double DEFAULT_RT_FWHM_SECONDS = 5.0;
 
     struct LocalIonMobilityPeak {
         bool isValid = false;
@@ -359,21 +359,21 @@ namespace {
         ) {
 
         if (!msCalibratomatic.isInitIM()) {
-            return static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            return static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
         }
 
         const float calibratedHalfWidth = msCalibratomatic.ionMobilityStDev(
             pythiaParameters.scanTimeWindowStDevs
             );
         if (calibratedHalfWidth <= 0.0f) {
-            return static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            return static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
         }
 
         return std::max(
-            static_cast<float>(ALPHADIA_MS1_TARGET_MOBILITY_TOLERANCE_MIN_ONE_OVER_K0),
+            static_cast<float>(MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0),
             std::min(
                 calibratedHalfWidth,
-                static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0)
+                static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
                 )
             );
     }
@@ -1034,8 +1034,8 @@ namespace {
         candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
             std::min(
                 static_cast<double>(std::abs(ionMobilityDelta)),
-                ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
-                ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+                ) / DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
             );
     }
 
@@ -1059,8 +1059,10 @@ namespace {
             return peak;
         }
 
-        const float initialIonMobilityMin = libraryIonMobility - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-        const float initialIonMobilityMax = libraryIonMobility + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        const float initialIonMobilityMin
+            = libraryIonMobility - static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        const float initialIonMobilityMax
+            = libraryIonMobility + static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
 
         QMap<QPair<IonMobilityIndex, FrameIndex>, double> mobilityFrameVsIntensity;
         for (const MS2Ion &ms2Ion : ms2Ions) {
@@ -1109,8 +1111,8 @@ namespace {
             return peak;
         }
 
-        const double mobilitySigma = ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 / 2.3548;
-        const double rtSigma = ALPHADIA_RT_FWHM_SECONDS / 2.3548;
+        const double mobilitySigma = DEFAULT_ION_MOBILITY_FWHM_ONE_OVER_K0 / 2.3548;
+        const double rtSigma = DEFAULT_RT_FWHM_SECONDS / 2.3548;
         const double twoMobilitySigmaSquared = 2.0 * mobilitySigma * mobilitySigma;
         const double twoRtSigmaSquared = 2.0 * rtSigma * rtSigma;
         double bestSmoothedIntensity = 0.0;
@@ -1151,8 +1153,10 @@ namespace {
             return peak;
         }
 
-        peak.minDriftTime = peak.centerDriftTime - static_cast<float>(ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0);
-        peak.maxDriftTime = peak.centerDriftTime + static_cast<float>(ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        peak.minDriftTime
+            = peak.centerDriftTime - static_cast<float>(TARGET_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        peak.maxDriftTime
+            = peak.centerDriftTime + static_cast<float>(TARGET_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
 
         return peak;
     }
@@ -3219,8 +3223,10 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     const FrameIndex frameIndexMin = std::max(0, candidateScores->frameIndexStart - 1);
     const FrameIndex frameIndexMax = candidateScores->frameIndexEnd + 1;
-    const float ionMobilityMin = mobilityCenter - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
-    const float ionMobilityMax = mobilityCenter + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+    const float ionMobilityMin
+        = mobilityCenter - static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+    const float ionMobilityMax
+        = mobilityCenter + static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
     using RtMobilityKey = quint64;
     constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
     const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
@@ -3353,7 +3359,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     else {
         candidateScores->featuresArray[Ms2IonMobilityWeightedDelta] = 0.0f;
         candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs]
-            = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
     }
 
     if (!apexDeltaAbsValues.isEmpty()) {
@@ -3362,7 +3368,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     }
     else {
         candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
-            = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
     }
 
     if (fragmentApexKeys.size() > 1) {
@@ -3405,9 +3411,9 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
             std::min(
                 static_cast<double>(std::abs(ionMobilityDelta)),
-                ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
-                ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
-            );
+                DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+                ) / DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+                );
     }
 
     ERR_RETURN

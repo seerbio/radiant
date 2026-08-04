@@ -62,6 +62,8 @@ Err MsCalibratomaticSettertron::init(
 
 namespace {
 
+    constexpr double DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
+
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
 
         constexpr double cosineSimSumMS1Min = 0.9;
@@ -565,7 +567,8 @@ Err MsCalibratomaticSettertron::annotateCentroidIonMobilityForCalibrationCandida
             );
         const float mzMin = monoIsotopeMz - massTol;
         const float mzMax = monoIsotopeMz + massTol;
-        constexpr float maxCalibrationCentroidImDelta = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        constexpr float maxCalibrationCentroidImDelta
+            = static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
 
         float bestIntensity = -1.0f;
         float bestDriftTime = -1.0f;
@@ -609,9 +612,9 @@ Err MsCalibratomaticSettertron::annotateCentroidIonMobilityForCalibrationCandida
             = std::sqrt(
                 std::min(
                     static_cast<double>(std::abs(bestDriftTime - libraryIonMobility)),
-                    ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                    DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
                     )
-                / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                / DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
                 );
     }
 
