@@ -51,6 +51,14 @@ private:
         int topCandidatesMass
     );
 
+    Err buildIonMobilityCalibrationFromCentroidApex(
+        const QVector<CandidateScores*> &candidateScores
+        );
+
+    Err annotateCentroidIonMobilityForCalibrationCandidates(
+        QVector<CandidateScores*> *candidateScores
+        ) const;
+
     Err setMsCalibratomaticMetrics();
 
     Err recalibrateMzVals(

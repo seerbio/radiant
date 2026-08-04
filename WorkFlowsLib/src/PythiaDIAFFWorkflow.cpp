@@ -585,10 +585,6 @@ namespace {
         removeIonMobilityOnlyFeatures(ppmOptimizationFeatures);
         removeIonMobilityOnlyFeatures(neuralNetFeatures);
 
-        appendFeatureIfMissing(calibratomaticFeatures, Ms1IntensityFoundApex100IM);
-        appendFeatureIfMissing(calibratomaticFeatures, IonMobilityDeltaAbs);
-        appendFeatureIfMissing(calibratomaticFeatures, IonMobilityPdAbs);
-
         appendFeatureIfMissing(ppmOptimizationFeatures, Ms1IntensityFoundApex100IM);
         appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityDeltaAbs);
         appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityPdAbs);

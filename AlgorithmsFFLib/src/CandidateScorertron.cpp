@@ -39,6 +39,13 @@ namespace {
         return static_cast<IonMobilityIndex>(std::lround(driftTime * centroidIonMobilityIndexScale));
     }
 
+    bool containsMs1IonMobilityFeature(const QVector<Features> &features) {
+        return features.contains(Ms1IntensityFoundApex100IM)
+            || features.contains(IonMobilityDelta)
+            || features.contains(IonMobilityDeltaAbs)
+            || features.contains(IonMobilityPdAbs);
+    }
+
 }
 
 class Q_DECL_HIDDEN CandidateScorertron::Private {
@@ -2814,10 +2821,12 @@ Err CandidateScorertron::setCandidateScores(
 			); ree;
 	}
 
-    e = setLibraryIonMobilityRelatedScores(
-        targetDecoyCandidatePair,
-        candidateScores
-        ); ree;
+    if (containsMs1IonMobilityFeature(m_features)) {
+        e = setLibraryIonMobilityRelatedScores(
+            targetDecoyCandidatePair,
+            candidateScores
+            ); ree;
+    }
 
     const bool needsMs2IonMobilityScores = containsMs2IonMobilityFeature(m_features);
     if (needsMs2IonMobilityScores) {
