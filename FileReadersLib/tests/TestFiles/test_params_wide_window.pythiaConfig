@@ -17,6 +17,7 @@ trancheSizeMax = 1e4
 [MS1Params]
 precursorExtractionWindowThomsons = 0.5
 ms1ExtractionWidthPPM = 20.0
+ms1IntensityMinForScoring = 12345.0
 
 [MS2Params]
 filterLengthIntegration = 6

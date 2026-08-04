@@ -20,6 +20,7 @@ trancheSizeMax = 2e4
 [MS1Params]
 precursorExtractionWindowThomsons = 0.0
 ms1ExtractionWidthPPM = 20.0
+ms1IntensityMinForScoring = 1e4
 #ms1ExtractionWidthPPMOverride = -1.0
 
 [MS2Params]

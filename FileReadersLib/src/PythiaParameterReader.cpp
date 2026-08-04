@@ -40,6 +40,7 @@ namespace PythiaParameterReaderConstants {
     const QString kPrecursorExtractionWindowThomsons = QStringLiteral("precursorExtractionWindowThomsons");
     const QString kMS1ExtractionWidthPPM = QStringLiteral("ms1ExtractionWidthPPM");
     const QString kMS1ExtractionWidthPPMOverride = QStringLiteral("ms1ExtractionWidthPPMOverride");
+    const QString kMS1IntensityMinForScoring = QStringLiteral("ms1IntensityMinForScoring");
 
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kFilterLengthIntegration = QStringLiteral("filterLengthIntegration");
@@ -158,6 +159,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
     pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms1ExtractionWidthPPM);
     pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
+    pythiaParameters->ms1IntensityMinForScoring = ms1ParamsNode[kMS1IntensityMinForScoring.toStdString()].value_or(pythiaParameters->ms1IntensityMinForScoring);
     pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(pythiaParameters->precursorExtractionWindowThomsons);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];

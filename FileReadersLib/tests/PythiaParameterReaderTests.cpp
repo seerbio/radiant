@@ -48,6 +48,7 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.useAlternativeDecoys, false);
     QCOMPARE(pythiaParameters.precursorExtractionWindowThomsons, 0.5);
     QCOMPARE(pythiaParameters.ms1ExtractionWidthPPM, 20.0);
+    QCOMPARE(pythiaParameters.ms1IntensityMinForScoring, 12345.0);
     QCOMPARE(pythiaParameters.filterLengthIntegration, 6);
     QCOMPARE(pythiaParameters.filterLengthMS2, 4);
     QCOMPARE(pythiaParameters.ionsSharedToReject, 2);

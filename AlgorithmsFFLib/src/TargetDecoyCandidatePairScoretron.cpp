@@ -23,6 +23,30 @@ class TargetDecoyPairParallelInput;
 
 namespace {
 
+    void filterMs1ScanPointsByIntensityThreshold(
+        float minIntensity,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+        ) {
+
+        if (scanNumberVsScanPoints == nullptr || minIntensity <= 0.0f) {
+            return;
+        }
+
+        for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); ++it) {
+            ScanPoints &scanPoints = it.value();
+            scanPoints.erase(
+                std::remove_if(
+                    scanPoints.begin(),
+                    scanPoints.end(),
+                    [minIntensity](const ScanPoint &point) {
+                        return point.y() < minIntensity;
+                    }
+                    ),
+                scanPoints.end()
+                );
+        }
+    }
+
     struct TargetKeyScoringContext {
         QMap<ScanNumber, ScanPoints> ownedScanPoints;
         QSharedPointer<MsFrame> ownedMsFrameMzTarget;
@@ -159,6 +183,10 @@ Err TargetDecoyCandidatePairScoretron2::init(
     }
 
 	if (!m_ms1ScanNumberVsScanPoints.isEmpty()) {
+        filterMs1ScanPointsByIntensityThreshold(
+            static_cast<float>(m_pythiaParameters.ms1IntensityMinForScoring),
+            &m_ms1ScanNumberVsScanPoints
+            );
 
 		QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
 
@@ -241,6 +269,11 @@ Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
 
     delete m_turboXICMS1;
     delete m_msFrameMS1;
+
+    filterMs1ScanPointsByIntensityThreshold(
+        static_cast<float>(m_pythiaParameters.ms1IntensityMinForScoring),
+        &m_ms1ScanNumberVsScanPoints
+        );
 
     QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
     for (auto it = m_ms1ScanNumberVsScanPoints.begin(); it != m_ms1ScanNumberVsScanPoints.end(); ++it) {
