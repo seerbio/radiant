@@ -64,6 +64,20 @@ namespace {
 
     constexpr double DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
 
+    void appendIonMobilityStDevIfValid(
+        const MsCalibratomatic &msCalibratomatic,
+        QVector<float> *ionMobilityStDevs
+        ) {
+        if (ionMobilityStDevs == nullptr || !msCalibratomatic.isInitIM()) {
+            return;
+        }
+
+        const float ionMobilityStDev = msCalibratomatic.ionMobilityStDev();
+        if (ionMobilityStDev > 0.0f) {
+            ionMobilityStDevs->push_back(ionMobilityStDev);
+        }
+    }
+
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
 
         constexpr double cosineSimSumMS1Min = 0.9;
@@ -247,7 +261,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             ); ree;
 
         m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-        m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
+        appendIonMobilityStDevIfValid(m_msCalibratomatic, &m_ionMobilityStDevs);
         m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
         QString fdrString;
@@ -305,7 +319,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             e = m_msCalibratomatic.setCalibrationCoeffsUsingAllMeans(); ree;
 
             m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-            m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
+            appendIonMobilityStDevIfValid(m_msCalibratomatic, &m_ionMobilityStDevs);
             m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
             e = setMsCalibratomaticMetrics(); ree;
@@ -661,22 +675,31 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
     }
 
     if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
-        std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
-        if (m_ionMobilityStDevs.size() >= minVecSize) {
-            m_ionMobilityStDevs.pop_front();
-            m_ionMobilityStDevs.pop_back();
+        QVector<float> validIonMobilityStDevs = m_ionMobilityStDevs;
+        std::sort(validIonMobilityStDevs.begin(), validIonMobilityStDevs.end());
+        if (validIonMobilityStDevs.size() >= minVecSize) {
+            validIonMobilityStDevs.pop_front();
+            validIonMobilityStDevs.pop_back();
         }
 
-        if (m_pythiaParameters->verbosity >= 0) {
+        if (!validIonMobilityStDevs.isEmpty()) {
+            if (m_pythiaParameters->verbosity >= 0) {
+                qDebug()
+                << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "IonMobilityWindow Mean|Median|Min"
+                << MathUtils::mean(validIonMobilityStDevs)
+                << MathUtils::median(validIonMobilityStDevs)
+                << *std::min({validIonMobilityStDevs.begin(), validIonMobilityStDevs.end()});
+            }
+
+            m_msCalibratomatic.setIonMobilityStDev(validIonMobilityStDevs.front());
+        } else if (m_pythiaParameters->verbosity >= 0) {
             qDebug()
             << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "IonMobilityWindow Mean|Median|Min"
-            << MathUtils::mean(m_ionMobilityStDevs)
-            << MathUtils::median(m_ionMobilityStDevs)
-            << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+            << "IonMobilityWindow calibration unavailable; using fallback width"
+            << DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+            << "1/K0";
         }
-
-        m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
     }
 
     m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());

@@ -353,28 +353,73 @@ namespace {
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 
+    float resolvedIonMobilityCenter(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const MsCalibratomatic &msCalibratomatic,
+        const MsReaderPointerAcc *msReaderPointerAcc
+        ) {
+
+        if (targetDecoyCandidatePair == nullptr) {
+            return -1.0f;
+        }
+
+        const float libraryIonMobility = targetDecoyCandidatePair->iIM();
+        if (libraryIonMobility <= 0.0f) {
+            return libraryIonMobility;
+        }
+
+        if (!readerHasIonMobility(msReaderPointerAcc) || !msCalibratomatic.isInitIM()) {
+            return libraryIonMobility;
+        }
+
+        float calibratedIonMobility = -1.0f;
+        const Err e = msCalibratomatic.predictIonMobility(
+            libraryIonMobility,
+            &calibratedIonMobility
+            );
+        if (e != eNoError || calibratedIonMobility <= 0.0f) {
+            return libraryIonMobility;
+        }
+
+        return calibratedIonMobility;
+    }
+
+    float resolvedIonMobilityTolerance(
+        const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic &msCalibratomatic,
+        float fallbackTolerance,
+        float minTolerance = 0.0f
+        ) {
+
+        if (!msCalibratomatic.isInitIM()) {
+            return fallbackTolerance;
+        }
+
+        const float calibratedTolerance = msCalibratomatic.ionMobilityStDev(
+            pythiaParameters.scanTimeWindowStDevs
+            );
+        if (calibratedTolerance <= 0.0f) {
+            return fallbackTolerance;
+        }
+
+        return std::max(
+            minTolerance,
+            std::min(
+                calibratedTolerance,
+                fallbackTolerance
+                )
+            );
+    }
+
     float timsMs1MobilityHalfWidth(
         const PythiaParameters &pythiaParameters,
         const MsCalibratomatic &msCalibratomatic
         ) {
-
-        if (!msCalibratomatic.isInitIM()) {
-            return static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
-        }
-
-        const float calibratedHalfWidth = msCalibratomatic.ionMobilityStDev(
-            pythiaParameters.scanTimeWindowStDevs
-            );
-        if (calibratedHalfWidth <= 0.0f) {
-            return static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
-        }
-
-        return std::max(
-            static_cast<float>(MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0),
-            std::min(
-                calibratedHalfWidth,
-                static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
-                )
+        return resolvedIonMobilityTolerance(
+            pythiaParameters,
+            msCalibratomatic,
+            static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0),
+            static_cast<float>(MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
             );
     }
 
@@ -1044,6 +1089,7 @@ namespace {
         const MsFrame *msFrameMzTarget,
         const QVector<MS2Ion> &ms2Ions,
         float libraryIonMobility,
+        float ionMobilityTolerance,
         float ppmTol,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax
@@ -1060,9 +1106,9 @@ namespace {
         }
 
         const float initialIonMobilityMin
-            = libraryIonMobility - static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = libraryIonMobility - ionMobilityTolerance;
         const float initialIonMobilityMax
-            = libraryIonMobility + static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = libraryIonMobility + ionMobilityTolerance;
 
         QMap<QPair<IonMobilityIndex, FrameIndex>, double> mobilityFrameVsIntensity;
         for (const MS2Ion &ms2Ion : ms2Ions) {
@@ -1193,11 +1239,17 @@ namespace {
         localIonMobilityPeak.maxDriftTime = ionMobilityCenter + targetedIonMobilityWindowHalfWidth;
 
         if (useAdaptiveIonMobilityCentering) {
+            const float initialIonMobilityTolerance = resolvedIonMobilityTolerance(
+                pythiaParameters,
+                msCalibratomatic,
+                static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
+                );
             const LocalIonMobilityPeak observedMobilityPeak = selectLocalIonMobilityPeakForTimsMs2(
                 ms2IonMobilityIndex,
                 msFrameMzTarget,
                 ms2Ions,
                 ionMobilityCenter,
+                initialIonMobilityTolerance,
                 ppmTol,
                 frameIndexPredictedMin,
                 frameIndexPredictedMax
@@ -1673,34 +1725,11 @@ Err CandidateScorertron::setPredictedFrameIndexes(
 float CandidateScorertron::ionMobilityCenter(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair
     ) const {
-
-    if (targetDecoyCandidatePair == nullptr) {
-        return -1.0f;
-    }
-
-    const float libraryIonMobility = targetDecoyCandidatePair->iIM();
-    if (libraryIonMobility <= 0.0f) {
-        return libraryIonMobility;
-    }
-
-    if (!readerHasIonMobility(m_msReaderPointerAcc)) {
-        return libraryIonMobility;
-    }
-
-    if (!m_msCalibratomatic.isInitIM()) {
-        return libraryIonMobility;
-    }
-
-    float calibratedIonMobility = -1.0f;
-    const Err e = m_msCalibratomatic.predictIonMobility(
-        libraryIonMobility,
-        &calibratedIonMobility
+    return resolvedIonMobilityCenter(
+        targetDecoyCandidatePair,
+        m_msCalibratomatic,
+        m_msReaderPointerAcc
         );
-    if (e != eNoError || calibratedIonMobility <= 0.0f) {
-        return libraryIonMobility;
-    }
-
-    return calibratedIonMobility;
 }
 
 namespace {
@@ -3223,10 +3252,15 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     const FrameIndex frameIndexMin = std::max(0, candidateScores->frameIndexStart - 1);
     const FrameIndex frameIndexMax = candidateScores->frameIndexEnd + 1;
+    const float ionMobilityTolerance = resolvedIonMobilityTolerance(
+        m_pythiaParameters,
+        m_msCalibratomatic,
+        static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
+        );
     const float ionMobilityMin
-        = mobilityCenter - static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        = mobilityCenter - ionMobilityTolerance;
     const float ionMobilityMax
-        = mobilityCenter + static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        = mobilityCenter + ionMobilityTolerance;
     using RtMobilityKey = quint64;
     constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
     const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
