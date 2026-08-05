@@ -24,6 +24,23 @@ using namespace Error;
 class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
 
+namespace TargetDecoyCandidatePairScoretronUtils {
+
+ALGORITHMSFFLIB_EXPORTS int calculateTargetChunkSize(int totalCandidatesInBatch, int threadCount);
+ALGORITHMSFFLIB_EXPORTS int calculateMinChunkSize(int targetChunkSize);
+ALGORITHMSFFLIB_EXPORTS int calculateSliceCount(
+    int candidateCount,
+    int targetChunkSize,
+    int minChunkSize
+    );
+ALGORITHMSFFLIB_EXPORTS QPair<int, int> calculateSliceBounds(
+    int itemCount,
+    int sliceIndex,
+    int sliceCount
+    );
+
+}
+
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron2 {
 
 public:

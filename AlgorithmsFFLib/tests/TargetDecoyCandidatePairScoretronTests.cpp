@@ -7,6 +7,7 @@
 #include <QtTest/QtTest>
 
 #include <iostream>
+#include <set>
 
 class TargetDecoyCandidatePairScoretronTests : public QObject
 {
@@ -17,10 +18,67 @@ public:
     ~TargetDecoyCandidatePairScoretronTests() override = default;
 
 private Q_SLOTS:
+    void calculateChunkSizingTest();
+    void calculateSliceCountTest();
+    void calculateSliceBoundsCoverageTest();
     void loadModelTest();
 
 
 };
+
+void TargetDecoyCandidatePairScoretronTests::calculateChunkSizingTest() {
+    const int targetChunkSize
+        = TargetDecoyCandidatePairScoretronUtils::calculateTargetChunkSize(100, 5);
+    QCOMPARE(targetChunkSize, 5);
+
+    const int minChunkSize
+        = TargetDecoyCandidatePairScoretronUtils::calculateMinChunkSize(targetChunkSize);
+    QCOMPARE(minChunkSize, 3);
+}
+
+void TargetDecoyCandidatePairScoretronTests::calculateSliceCountTest() {
+    QCOMPARE(
+        TargetDecoyCandidatePairScoretronUtils::calculateSliceCount(2, 5, 3),
+        1
+        );
+    QCOMPARE(
+        TargetDecoyCandidatePairScoretronUtils::calculateSliceCount(20, 5, 3),
+        4
+        );
+    QCOMPARE(
+        TargetDecoyCandidatePairScoretronUtils::calculateSliceCount(11, 3, 2),
+        4
+        );
+}
+
+void TargetDecoyCandidatePairScoretronTests::calculateSliceBoundsCoverageTest() {
+    std::set<int> coveredIndexes;
+
+    for (int sliceIndex = 0; sliceIndex < 4; ++sliceIndex) {
+        const QPair<int, int> sliceBounds
+            = TargetDecoyCandidatePairScoretronUtils::calculateSliceBounds(10, sliceIndex, 4);
+        for (int itemIndex = sliceBounds.first;
+             itemIndex < sliceBounds.first + sliceBounds.second;
+             ++itemIndex) {
+            const bool inserted = coveredIndexes.insert(itemIndex).second;
+            QVERIFY(inserted);
+        }
+    }
+
+    QCOMPARE(static_cast<int>(coveredIndexes.size()), 10);
+    for (int itemIndex = 0; itemIndex < 10; ++itemIndex) {
+        QVERIFY(coveredIndexes.find(itemIndex) != coveredIndexes.end());
+    }
+
+    const QPair<int, int> firstOddSlice
+        = TargetDecoyCandidatePairScoretronUtils::calculateSliceBounds(5, 0, 2);
+    const QPair<int, int> secondOddSlice
+        = TargetDecoyCandidatePairScoretronUtils::calculateSliceBounds(5, 1, 2);
+    QCOMPARE(firstOddSlice.first, 0);
+    QCOMPARE(firstOddSlice.second, 2);
+    QCOMPARE(secondOddSlice.first, 2);
+    QCOMPARE(secondOddSlice.second, 3);
+}
 
 void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
 

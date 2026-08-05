@@ -23,6 +23,9 @@ class TargetDecoyPairParallelInput;
 
 namespace {
 
+    constexpr int kChunkOversubscription = 4;
+    constexpr int kMinChunkSizeRatio = 2;
+
     void filterMs1ScanPointsByIntensityThreshold(
         float minIntensity,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
@@ -101,6 +104,95 @@ namespace {
         TargetKeyScoringContext *context
         );
 
+    QVector<TargetDecoyCandidatePair*> sliceTargetDecoyPointers(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+        int sliceIndex,
+        int sliceCount
+        ) {
+
+        const QPair<int, int> sliceBounds
+            = TargetDecoyCandidatePairScoretronUtils::calculateSliceBounds(
+                targetDecoyPointers.size(),
+                sliceIndex,
+                sliceCount
+                );
+        return targetDecoyPointers.mid(sliceBounds.first, sliceBounds.second);
+    }
+
+}
+
+namespace TargetDecoyCandidatePairScoretronUtils {
+
+int calculateTargetChunkSize(int totalCandidatesInBatch, int threadCount) {
+    if (totalCandidatesInBatch <= 0 || threadCount <= 0) {
+        return 0;
+    }
+
+    const int targetChunkCount = kChunkOversubscription * threadCount;
+    return static_cast<int>(std::ceil(
+        static_cast<double>(totalCandidatesInBatch) / targetChunkCount
+        ));
+}
+
+int calculateMinChunkSize(int targetChunkSize) {
+    if (targetChunkSize <= 0) {
+        return 0;
+    }
+
+    return static_cast<int>(std::ceil(
+        static_cast<double>(targetChunkSize) / kMinChunkSizeRatio
+        ));
+}
+
+int calculateSliceCount(
+    int candidateCount,
+    int targetChunkSize,
+    int minChunkSize
+    ) {
+    if (candidateCount <= 0
+        || targetChunkSize <= 0
+        || minChunkSize <= 0
+        || candidateCount <= minChunkSize) {
+        return 1;
+    }
+
+    int sliceCount = static_cast<int>(std::ceil(
+        static_cast<double>(candidateCount) / targetChunkSize
+        ));
+    sliceCount = std::max(1, sliceCount);
+
+    while (sliceCount > 1) {
+        const int smallestChunk = candidateCount / sliceCount;
+        if (smallestChunk >= minChunkSize) {
+            break;
+        }
+        --sliceCount;
+    }
+
+    return std::max(1, sliceCount);
+}
+
+QPair<int, int> calculateSliceBounds(int itemCount, int sliceIndex, int sliceCount) {
+    if (itemCount <= 0) {
+        return qMakePair(0, 0);
+    }
+
+    if (sliceCount <= 1) {
+        return qMakePair(0, itemCount);
+    }
+
+    const int boundedSliceIndex = std::clamp(sliceIndex, 0, sliceCount - 1);
+    const int baseChunkSize = itemCount / sliceCount;
+    const int remainder = itemCount % sliceCount;
+    const int smallerChunkCount = sliceCount - remainder;
+    const int isLargerChunk = boundedSliceIndex >= smallerChunkCount ? 1 : 0;
+    const int startIndex = boundedSliceIndex * baseChunkSize
+                         + std::max(0, boundedSliceIndex - smallerChunkCount);
+    const int chunkSize = baseChunkSize + isLargerChunk;
+
+    return qMakePair(startIndex, chunkSize);
+}
+
 }
 
 
@@ -143,8 +235,8 @@ public:
     bool useTopNIntegrationsParameter = false;
     bool useAdaptiveIonMobilityCentering = false;
     MsReaderPointerAcc *msReaderPointerAcc = nullptr;
-    bool splitMzTargetKey = false;
-    bool isBottomSplit = false;
+    int candidateSliceIndex = 0;
+    int candidateSliceCount = 1;
     const TargetKeyScoringContext *targetKeyContext = nullptr;
 };
 
@@ -591,14 +683,11 @@ namespace {
         		e = ErrorUtils::isTrue(pi.turboXicMS1->isInit()); rree;
         	}
 
-            QVector<TargetDecoyCandidatePair*> targetDecoyPointers = pi.targetDecoyPointers;
-
-            if (pi.splitMzTargetKey) {
-                const int midPoint = targetDecoyPointers.size() / 2;
-                targetDecoyPointers = pi.isBottomSplit
-                                    ? targetDecoyPointers.mid(0, midPoint)
-                                    : targetDecoyPointers.mid(midPoint, targetDecoyPointers.size() - midPoint);
-            }
+            QVector<TargetDecoyCandidatePair*> targetDecoyPointers = sliceTargetDecoyPointers(
+                pi.targetDecoyPointers,
+                pi.candidateSliceIndex,
+                pi.candidateSliceCount
+                );
 
             MsFrame *msFrameMzTargetPntr = pi.msFrameMzTarget;
             TurboXIC *turboXicMS2Pntr = pi.turboXicMS2;
@@ -989,16 +1078,12 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         const QVector<TargetDecoyCandidatePair*> &tdcpPntrs
                             = mzTargetKeyVsTargetDecoyCandidatePointers->value(mzTargetKey);
 
-        const int bufferOddEvenSize = tdcpPntrs.size() % 2 == 1 ? 1 : 0;
-
-        const int midSize = tdcpPntrs.size() / 2;
-
         TargetDecoyPairParallelInput tdppi1;
         tdppi1.topNMs2Ions = topNMS2Ions;
         tdppi1.targetKey = mzTargetKey;
         tdppi1.msCalibratomatic = msCalibratomatic;
         tdppi1.pythiaParameters = m_pythiaParameters;
-        tdppi1.targetDecoyPointers = tdcpPntrs.mid(0, midSize);
+        tdppi1.targetDecoyPointers = tdcpPntrs;
         tdppi1.scanTimeMinMax = scanTimeMinMax;
         tdppi1.diaTargetFrame = m_diaTargetFrames.value(tdppi1.targetKey);
         tdppi1.turboXicMS1 = m_turboXICMS1;
@@ -1025,7 +1110,9 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         }
 
         TargetDecoyPairParallelInput tdppi2 = tdppi1;
-        tdppi2.targetDecoyPointers = tdcpPntrs.mid(midSize, midSize + bufferOddEvenSize);
+        tdppi1.candidateSliceCount = 2;
+        tdppi2.candidateSliceCount = 2;
+        tdppi2.candidateSliceIndex = 1;
 
         input->push_back(tdppi1);
         input->push_back(tdppi2);
@@ -1090,7 +1177,6 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
             msi,
             m_pythiaParameters
             );
-        tdppi1.splitMzTargetKey = splitMzTargetKey;
 
         if (!m_msReaderPointerAcc->useLazyLoading()) {
             e = ErrorUtils::contains(tdppi1.targetKey, m_mzTargetKeyVsMsFramePntr); ree;
@@ -1100,7 +1186,9 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         input->push_back(tdppi1);
 
         if (splitMzTargetKey) {
-            tdppi1.isBottomSplit = true;
+            tdppi1.candidateSliceCount = 2;
+            tdppi1.candidateSliceIndex = 1;
+            input->back().candidateSliceCount = 2;
             input->push_back(tdppi1);
         }
 
