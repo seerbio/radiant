@@ -20,6 +20,7 @@ public:
 private Q_SLOTS:
     void calculateChunkSizingTest();
     void calculateSliceCountTest();
+    void calculateAdaptiveSliceCountsTest();
     void calculateSliceBoundsCoverageTest();
     void loadModelTest();
 
@@ -49,6 +50,30 @@ void TargetDecoyCandidatePairScoretronTests::calculateSliceCountTest() {
         TargetDecoyCandidatePairScoretronUtils::calculateSliceCount(11, 3, 2),
         4
         );
+}
+
+void TargetDecoyCandidatePairScoretronTests::calculateAdaptiveSliceCountsTest() {
+    const QVector<int> heavyAndLightCounts { 40, 8, 2 };
+    const QVector<int> adaptiveSliceCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            heavyAndLightCounts,
+            2
+            );
+    QCOMPARE(adaptiveSliceCounts.size(), heavyAndLightCounts.size());
+    QCOMPARE(adaptiveSliceCounts.at(0), 4);
+    QCOMPARE(adaptiveSliceCounts.at(1), 1);
+    QCOMPARE(adaptiveSliceCounts.at(2), 1);
+
+    const QVector<int> alreadyOversubscribedCounts { 10, 10, 10, 10, 10, 10, 10, 10 };
+    const QVector<int> noExtraSplitCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            alreadyOversubscribedCounts,
+            2
+            );
+    QCOMPARE(noExtraSplitCounts.size(), alreadyOversubscribedCounts.size());
+    for (int sliceCount : noExtraSplitCounts) {
+        QCOMPARE(sliceCount, 1);
+    }
 }
 
 void TargetDecoyCandidatePairScoretronTests::calculateSliceBoundsCoverageTest() {

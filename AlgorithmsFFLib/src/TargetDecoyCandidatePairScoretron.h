@@ -33,6 +33,10 @@ ALGORITHMSFFLIB_EXPORTS int calculateSliceCount(
     int targetChunkSize,
     int minChunkSize
     );
+ALGORITHMSFFLIB_EXPORTS QVector<int> calculateAdaptiveSliceCounts(
+    const QVector<int> &candidateCounts,
+    int threadCount
+    );
 ALGORITHMSFFLIB_EXPORTS QPair<int, int> calculateSliceBounds(
     int itemCount,
     int sliceIndex,

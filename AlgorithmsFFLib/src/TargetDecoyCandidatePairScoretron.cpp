@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 class TargetDecoyPairParallelInput;
 
@@ -170,6 +171,43 @@ int calculateSliceCount(
     }
 
     return std::max(1, sliceCount);
+}
+
+QVector<int> calculateAdaptiveSliceCounts(
+    const QVector<int> &candidateCounts,
+    int threadCount
+    ) {
+    QVector<int> sliceCounts;
+    sliceCounts.reserve(candidateCounts.size());
+
+    if (candidateCounts.isEmpty()) {
+        return sliceCounts;
+    }
+
+    const int targetChunkCount = kChunkOversubscription * threadCount;
+    const int totalCandidatesInBatch = std::accumulate(
+        candidateCounts.begin(),
+        candidateCounts.end(),
+        0
+        );
+
+    const int targetChunkSize = calculateTargetChunkSize(totalCandidatesInBatch, threadCount);
+    const int minChunkSize = calculateMinChunkSize(targetChunkSize);
+
+    if (targetChunkCount <= 0 || candidateCounts.size() >= targetChunkCount) {
+        sliceCounts.fill(1, candidateCounts.size());
+        return sliceCounts;
+    }
+
+    for (int candidateCount : candidateCounts) {
+        sliceCounts.push_back(calculateSliceCount(
+            candidateCount,
+            targetChunkSize,
+            minChunkSize
+            ));
+    }
+
+    return sliceCounts;
 }
 
 QPair<int, int> calculateSliceBounds(int itemCount, int sliceIndex, int sliceCount) {
@@ -1073,10 +1111,27 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
 
     input->reserve(mzTargetKeyVsTargetDecoyCandidatePointers->size());
 
-    for (const MzTargetKey &mzTargetKey : mzTargetKeyVsTargetDecoyCandidatePointers->keys()) {
+    QVector<MzTargetKey> mzTargetKeys = mzTargetKeyVsTargetDecoyCandidatePointers->keys().toVector();
+    QVector<int> candidateCounts;
+    candidateCounts.reserve(mzTargetKeys.size());
+    for (const MzTargetKey &mzTargetKey : mzTargetKeys) {
+        candidateCounts.push_back(
+            mzTargetKeyVsTargetDecoyCandidatePointers->value(mzTargetKey).size()
+            );
+    }
+
+    const QVector<int> adaptiveSliceCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            candidateCounts,
+            m_pythiaParameters.threadCount
+            );
+
+    for (int keyIndex = 0; keyIndex < mzTargetKeys.size(); ++keyIndex) {
+        const MzTargetKey &mzTargetKey = mzTargetKeys.at(keyIndex);
 
         const QVector<TargetDecoyCandidatePair*> &tdcpPntrs
                             = mzTargetKeyVsTargetDecoyCandidatePointers->value(mzTargetKey);
+        const int candidateSliceCount = adaptiveSliceCounts.value(keyIndex, 1);
 
         TargetDecoyPairParallelInput tdppi1;
         tdppi1.topNMs2Ions = topNMS2Ions;
@@ -1109,13 +1164,12 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
             tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
         }
 
-        TargetDecoyPairParallelInput tdppi2 = tdppi1;
-        tdppi1.candidateSliceCount = 2;
-        tdppi2.candidateSliceCount = 2;
-        tdppi2.candidateSliceIndex = 1;
-
-        input->push_back(tdppi1);
-        input->push_back(tdppi2);
+        for (int sliceIndex = 0; sliceIndex < candidateSliceCount; ++sliceIndex) {
+            TargetDecoyPairParallelInput tdppi = tdppi1;
+            tdppi.candidateSliceCount = candidateSliceCount;
+            tdppi.candidateSliceIndex = sliceIndex;
+            input->push_back(tdppi);
+        }
     }
 
     ERR_RETURN
