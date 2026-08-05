@@ -7,6 +7,7 @@
 #include <QtTest/QtTest>
 
 #include <iostream>
+#include <numeric>
 #include <set>
 
 class TargetDecoyCandidatePairScoretronTests : public QObject
@@ -22,6 +23,9 @@ private Q_SLOTS:
     void calculateSliceCountTest();
     void calculateAdaptiveSliceCountsTest();
     void calculateSliceBoundsCoverageTest();
+    void adaptiveSliceCountsRespectMinimumChunkSizeTest();
+    void adaptiveSliceCountsReachOversubscriptionTargetTest();
+    void sliceBoundsReconstructOriginalOrderingTest();
     void loadModelTest();
 
 
@@ -113,6 +117,73 @@ void TargetDecoyCandidatePairScoretronTests::calculateSliceBoundsCoverageTest() 
     QCOMPARE(firstOddSlice.second, 2);
     QCOMPARE(secondOddSlice.first, 2);
     QCOMPARE(secondOddSlice.second, 3);
+}
+
+void TargetDecoyCandidatePairScoretronTests::adaptiveSliceCountsRespectMinimumChunkSizeTest() {
+    const QVector<int> candidateCounts { 41, 9, 3 };
+    const QVector<int> adaptiveSliceCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            candidateCounts,
+            2
+            );
+    QCOMPARE(adaptiveSliceCounts.size(), candidateCounts.size());
+
+    const int totalCandidates = std::accumulate(
+        candidateCounts.begin(),
+        candidateCounts.end(),
+        0
+        );
+    const int targetChunkSize
+        = TargetDecoyCandidatePairScoretronUtils::calculateTargetChunkSize(totalCandidates, 2);
+    const int minChunkSize
+        = TargetDecoyCandidatePairScoretronUtils::calculateMinChunkSize(targetChunkSize);
+
+    for (int index = 0; index < candidateCounts.size(); ++index) {
+        const int candidateCount = candidateCounts.at(index);
+        const int sliceCount = adaptiveSliceCounts.at(index);
+        if (sliceCount == 1) {
+            continue;
+        }
+
+        const int smallestChunkSize = candidateCount / sliceCount;
+        QVERIFY(smallestChunkSize >= minChunkSize);
+    }
+}
+
+void TargetDecoyCandidatePairScoretronTests::adaptiveSliceCountsReachOversubscriptionTargetTest() {
+    const QVector<int> candidateCounts { 30, 30, 30, 30 };
+    const QVector<int> adaptiveSliceCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            candidateCounts,
+            2
+            );
+    QCOMPARE(adaptiveSliceCounts.size(), candidateCounts.size());
+
+    const int emittedChunkCount = std::accumulate(
+        adaptiveSliceCounts.begin(),
+        adaptiveSliceCounts.end(),
+        0
+        );
+    QCOMPARE(emittedChunkCount, 8);
+}
+
+void TargetDecoyCandidatePairScoretronTests::sliceBoundsReconstructOriginalOrderingTest() {
+    QVector<int> reconstructedIndexes;
+
+    for (int sliceIndex = 0; sliceIndex < 4; ++sliceIndex) {
+        const QPair<int, int> sliceBounds
+            = TargetDecoyCandidatePairScoretronUtils::calculateSliceBounds(11, sliceIndex, 4);
+        for (int itemIndex = sliceBounds.first;
+             itemIndex < sliceBounds.first + sliceBounds.second;
+             ++itemIndex) {
+            reconstructedIndexes.push_back(itemIndex);
+        }
+    }
+
+    QCOMPARE(reconstructedIndexes.size(), 11);
+    for (int itemIndex = 0; itemIndex < reconstructedIndexes.size(); ++itemIndex) {
+        QCOMPARE(reconstructedIndexes.at(itemIndex), itemIndex);
+    }
 }
 
 void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
