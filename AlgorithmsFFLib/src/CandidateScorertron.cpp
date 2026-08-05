@@ -1141,8 +1141,13 @@ namespace {
         }
 
         candidateScores->featuresArray[Ms1IntensityFoundApex100IM] = observation.apexIntensity;
-        candidateScores->ionMobilityIndex = observation.apexIonMobilityIndex;
-        candidateScores->imDriftTime = static_cast<float>(observation.apexDriftTime);
+
+        const bool hasObservedIonMobility
+            = candidateScores->ionMobilityIndex >= 0 && candidateScores->imDriftTime > 0.0f;
+        if (!hasObservedIonMobility) {
+            candidateScores->ionMobilityIndex = observation.apexIonMobilityIndex;
+            candidateScores->imDriftTime = static_cast<float>(observation.apexDriftTime);
+        }
 
         const float ionMobilityDelta = candidateScores->imDriftTime - mobilityCenter;
         candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
