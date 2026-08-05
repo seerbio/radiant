@@ -588,8 +588,6 @@ Err MsCalibratomaticSettertron::annotateCentroidIonMobilityForCalibrationCandida
             );
         const float mzMin = monoIsotopeMz - massTol;
         const float mzMax = monoIsotopeMz + massTol;
-        constexpr float maxCalibrationCentroidImDelta
-            = static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
 
         float bestIntensity = -1.0f;
         float bestDriftTime = -1.0f;
@@ -604,7 +602,7 @@ Err MsCalibratomaticSettertron::annotateCentroidIonMobilityForCalibrationCandida
             }
 
             const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
-            if (driftTime <= 0.0f || std::abs(driftTime - libraryIonMobility) > maxCalibrationCentroidImDelta) {
+            if (driftTime <= 0.0f) {
                 continue;
             }
 
