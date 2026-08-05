@@ -670,7 +670,7 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         if (m_pythiaParameters->verbosity >= 0) {
             qDebug()
             << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "ScanTimeWindow Mean|Median|Min"
+            << "IonMobilityWindow Mean|Median|Min"
             << MathUtils::mean(m_ionMobilityStDevs)
             << MathUtils::median(m_ionMobilityStDevs)
             << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
