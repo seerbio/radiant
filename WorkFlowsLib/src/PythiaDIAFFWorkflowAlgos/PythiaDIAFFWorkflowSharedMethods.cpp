@@ -28,7 +28,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
-    e = ErrorUtils::isAboveThreshold(numberOfUniqueScanInfosForPurpose, 8, ErrorUtilsParam::IncludeThreshold); ree;
+    e = ErrorUtils::isAboveThreshold(numberOfUniqueScanInfosForPurpose, 4, ErrorUtilsParam::IncludeThreshold); ree;
 
     const double halfSizeScanInfos = uniqueMsScanInfos.size() / 2.0;
     const int incrementSize = std::max(1, static_cast<int>(halfSizeScanInfos / numberOfUniqueScanInfosForPurpose));

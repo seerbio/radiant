@@ -122,12 +122,19 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
     const QVector<MsScanInfo> uniqueMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
+    constexpr double calibrationScanInfoFraction = 0.10;
+    constexpr int minUniqueScanInfosTrainingCount = 4;
     constexpr int maxUniqueScanInfosTrainingCount = 16;
+    const int uniqueScanInfosTrainingCount = std::clamp(
+        static_cast<int>(std::ceil(uniqueMsScanInfos.size() * calibrationScanInfoFraction)),
+        minUniqueScanInfosTrainingCount,
+        maxUniqueScanInfosTrainingCount
+        );
     constexpr int offset = 0;
     QVector<MsScanInfo> uniqueMsScanInfosCalibration;
     e = PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
         uniqueMsScanInfos,
-        maxUniqueScanInfosTrainingCount,
+        uniqueScanInfosTrainingCount,
         offset,
         &uniqueMsScanInfosCalibration
         ); ree;
