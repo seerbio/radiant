@@ -423,6 +423,77 @@ namespace {
             );
     }
 
+    struct WeightedDriftTimePoint {
+        float driftTime = -1.0f;
+        float weight = 0.0f;
+        IonMobilityIndex ionMobilityIndex = -1;
+        FrameIndex frameIndex = -1;
+        float apexIntensity = 0.0f;
+    };
+
+    float weightedMedianDriftTime(const QVector<WeightedDriftTimePoint> &points) {
+        if (points.isEmpty()) {
+            return -1.0f;
+        }
+
+        QVector<WeightedDriftTimePoint> sortedPoints = points;
+        std::sort(
+            sortedPoints.begin(),
+            sortedPoints.end(),
+            [](const WeightedDriftTimePoint &left, const WeightedDriftTimePoint &right) {
+                return left.driftTime < right.driftTime;
+            }
+            );
+
+        double totalWeight = 0.0;
+        for (const WeightedDriftTimePoint &point : sortedPoints) {
+            totalWeight += std::max(0.0f, point.weight);
+        }
+
+        if (totalWeight <= 0.0) {
+            QVector<float> driftTimes;
+            driftTimes.reserve(sortedPoints.size());
+            for (const WeightedDriftTimePoint &point : sortedPoints) {
+                driftTimes.push_back(point.driftTime);
+            }
+            return static_cast<float>(MathUtils::median(driftTimes));
+        }
+
+        const double halfWeight = totalWeight / 2.0;
+        double cumulativeWeight = 0.0;
+        for (const WeightedDriftTimePoint &point : sortedPoints) {
+            cumulativeWeight += std::max(0.0f, point.weight);
+            if (cumulativeWeight >= halfWeight) {
+                return point.driftTime;
+            }
+        }
+
+        return sortedPoints.last().driftTime;
+    }
+
+    WeightedDriftTimePoint representativeDriftTimePoint(
+        const QVector<WeightedDriftTimePoint> &points,
+        float targetDriftTime
+        ) {
+        WeightedDriftTimePoint representativePoint;
+        if (points.isEmpty() || targetDriftTime <= 0.0f) {
+            return representativePoint;
+        }
+
+        float bestDistance = std::numeric_limits<float>::max();
+        for (const WeightedDriftTimePoint &point : points) {
+            const float distance = std::abs(point.driftTime - targetDriftTime);
+            if (distance < bestDistance
+                || (MathUtils::tSame(distance, bestDistance)
+                    && point.apexIntensity > representativePoint.apexIntensity)) {
+                representativePoint = point;
+                bestDistance = distance;
+            }
+        }
+
+        return representativePoint;
+    }
+
     int closestMs1FrameIndexAtOrBefore(
         const QVector<ScanNumber> &frameNumbers,
         ScanNumber scanNumber
@@ -3288,12 +3359,13 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     QVector<float> weightedDeltas;
     QVector<float> weightedDeltaAbsValues;
     QVector<float> weights;
+    QVector<WeightedDriftTimePoint> driftTimePoints;
     QVector<RtMobilityKey> fragmentApexKeys;
-    float bestObservedApexIntensity = -1.0f;
     apexDeltaAbsValues.reserve(topIonCount);
     weightedDeltas.reserve(topIonCount);
     weightedDeltaAbsValues.reserve(topIonCount);
     weights.reserve(topIonCount);
+    driftTimePoints.reserve(topIonCount);
     fragmentApexKeys.reserve(topIonCount);
 
     for (int i = 0; i < topIonCount; ++i) {
@@ -3348,17 +3420,20 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         apexDeltaAbsValues.push_back(std::abs(delta));
         weightedDeltas.push_back(delta);
         weightedDeltaAbsValues.push_back(std::abs(delta));
-        weights.push_back(std::max(static_cast<float>(observation.totalIntensity), observation.apexIntensity));
+        const float observationWeight
+            = std::max(static_cast<float>(observation.totalIntensity), observation.apexIntensity);
+        weights.push_back(observationWeight);
+        driftTimePoints.push_back({
+            observation.apexDriftTime,
+            observationWeight,
+            observation.apexIonMobilityIndex,
+            observation.apexFrameIndex,
+            observation.apexIntensity
+            });
         fragmentApexKeys.push_back(makeRtMobilityKey(
             observation.apexFrameIndex,
             observation.apexIonMobilityIndex
             ));
-
-        if (observation.apexIntensity > bestObservedApexIntensity) {
-            bestObservedApexIntensity = observation.apexIntensity;
-            candidateScores->ionMobilityIndex = observation.apexIonMobilityIndex;
-            candidateScores->imDriftTime = observation.apexDriftTime;
-        }
 
         if (candidateScores->ionMobilityIndexStart < 0 || observation.apexIonMobilityIndex < candidateScores->ionMobilityIndexStart) {
             candidateScores->ionMobilityIndexStart = observation.apexIonMobilityIndex;
@@ -3366,6 +3441,14 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         if (candidateScores->ionMobilityIndexEnd < 0 || observation.apexIonMobilityIndex > candidateScores->ionMobilityIndexEnd) {
             candidateScores->ionMobilityIndexEnd = observation.apexIonMobilityIndex;
         }
+    }
+
+    const float observedImDriftTime = weightedMedianDriftTime(driftTimePoints);
+    const WeightedDriftTimePoint representativePoint
+        = representativeDriftTimePoint(driftTimePoints, observedImDriftTime);
+    if (representativePoint.ionMobilityIndex >= 0 && observedImDriftTime > 0.0f) {
+        candidateScores->ionMobilityIndex = representativePoint.ionMobilityIndex;
+        candidateScores->imDriftTime = observedImDriftTime;
     }
 
     candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction]
