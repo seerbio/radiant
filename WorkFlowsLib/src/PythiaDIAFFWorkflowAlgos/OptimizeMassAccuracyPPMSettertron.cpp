@@ -5,6 +5,7 @@
 #include "OptimizeMassAccuracyPPMSettertron.h"
 
 #include <boost/math/distributions/normal.hpp>
+#include <cmath>
 
 #include "EigenUtils.h"
 #include "FDRCLassifierNeuralNet.h"
@@ -64,10 +65,23 @@ namespace {
     constexpr int OPTIMIZATION_SUPPORT_FDR_KEY = 5;
     constexpr int OPTIMIZATION_SUPPORT_FDR_COUNT_MIN = 100;
     constexpr int OPTIMIZATION_SUPPORT_TRANCHE_CAP = 5;
+    constexpr int PPM_FIT_POLYNOMIAL_ORDER = 2;
+    constexpr double PPM_FIT_SAMPLE_INCREMENT = 0.25;
 
     struct DOEResult {
         double ppm = -1.0;
         double fdrCount = -1;
+    };
+
+    struct PpmFitSummary {
+        QVector<double> coeffs;
+        QVector<double> xPoints;
+        QVector<double> yPoints;
+        double apexPpm = -1.0;
+        double sampledBestPpm = -1.0;
+        double evaluatedPpmMin = -1.0;
+        double evaluatedPpmMax = -1.0;
+        bool hasUsableApex = false;
     };
 
     QString ppmCacheKey(double ppm) {
@@ -119,14 +133,24 @@ namespace {
         ERR_RETURN
     }
 
-    Err getTopFrequencyParameters(
+    Err buildPpmFitSummary(
             const QVector<DOEResult> &results,
             int verbosity,
-            double *ppmSetting
+            PpmFitSummary *fitSummary
             ) {
 
         ERR_INIT
         e = ErrorUtils::isNotEmpty(results); ree;
+        e = ErrorUtils::isTrue(fitSummary != nullptr, eValueError); ree;
+
+        fitSummary->coeffs.clear();
+        fitSummary->xPoints.clear();
+        fitSummary->yPoints.clear();
+        fitSummary->apexPpm = -1.0;
+        fitSummary->sampledBestPpm = -1.0;
+        fitSummary->evaluatedPpmMin = results.first().ppm;
+        fitSummary->evaluatedPpmMax = results.back().ppm;
+        fitSummary->hasUsableApex = false;
 
         Eigen::MatrixX<double> xyMat(results.size() + 1, 2);
         xyMat.setZero();
@@ -140,33 +164,53 @@ namespace {
             }
         }
 
-        constexpr int polynomialOrder = 2;
+        EigenUtils::fitPolynomialQRDecomposition(xyMat, PPM_FIT_POLYNOMIAL_ORDER, &fitSummary->coeffs);
 
-        QVector<double> coeffs;
-        EigenUtils::fitPolynomialQRDecomposition(xyMat, polynomialOrder, &coeffs);
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << coeffs;
-
-        QVector<double> xPoints = {results.first().ppm};
-        while (xPoints.back() < results.back().ppm) {
-            constexpr double incrementVal = 0.25;
-            xPoints.push_back(xPoints.back() + incrementVal);
+        fitSummary->xPoints = {results.first().ppm};
+        while (fitSummary->xPoints.back() < results.back().ppm) {
+            fitSummary->xPoints.push_back(fitSummary->xPoints.back() + PPM_FIT_SAMPLE_INCREMENT);
         }
 
-        QVector<double> yPoints;
-        for (double x : xPoints) {
+        for (double x : fitSummary->xPoints) {
             double y = 0.0;
-            for (int i = 0; i < coeffs.size(); i++) {
-                y += coeffs.at(i) * std::pow(x, i);
+            for (int i = 0; i < fitSummary->coeffs.size(); i++) {
+                y += fitSummary->coeffs.at(i) * std::pow(x, i);
             }
             if (verbosity > 0) {
                 qDebug() << x << y;
 
             }
-            yPoints.push_back(y);
+            fitSummary->yPoints.push_back(y);
         }
 
-        *ppmSetting = xPoints.at(std::max_element(yPoints.begin(), yPoints.end()) - yPoints.begin());
+        const auto maxIt = std::max_element(fitSummary->yPoints.begin(), fitSummary->yPoints.end());
+        fitSummary->sampledBestPpm
+            = fitSummary->xPoints.at(maxIt - fitSummary->yPoints.begin());
+
+        if (fitSummary->coeffs.size() > 2 && !MathUtils::tZero(fitSummary->coeffs.at(2))) {
+            fitSummary->apexPpm = -fitSummary->coeffs.at(1) / (2.0 * fitSummary->coeffs.at(2));
+            fitSummary->hasUsableApex = std::isfinite(fitSummary->apexPpm);
+        }
+
+        ERR_RETURN
+    }
+
+    Err getTopFrequencyParameters(
+            const QVector<DOEResult> &results,
+            int verbosity,
+            double *ppmSetting
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(results); ree;
+        e = ErrorUtils::isTrue(ppmSetting != nullptr, eValueError); ree;
+
+        PpmFitSummary fitSummary;
+        e = buildPpmFitSummary(results, verbosity, &fitSummary); ree;
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << fitSummary.coeffs;
+
+        *ppmSetting = fitSummary.sampledBestPpm;
 
         ERR_RETURN
     }
