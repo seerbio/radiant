@@ -62,8 +62,6 @@ Err MsCalibratomaticSettertron::init(
 
 namespace {
 
-    constexpr double DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
-
     void appendIonMobilityStDevIfValid(
         const MsCalibratomatic &msCalibratomatic,
         QVector<float> *ionMobilityStDevs
@@ -92,34 +90,6 @@ namespace {
                 );
 
         candidateScoresMS1Cal->erase(terminator, candidateScoresMS1Cal->end());
-    }
-
-    ScanNumber nearestScanNumberAtOrBefore(
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        ScanTime scanTime
-        ) {
-
-        if (scanNumberVsScanTime.isEmpty()) {
-            return -1;
-        }
-
-        ScanNumber nearestScanNumber = -1;
-        ScanTime nearestScanTime = -1.0f;
-        for (auto it = scanNumberVsScanTime.constBegin(); it != scanNumberVsScanTime.constEnd(); ++it) {
-            const ScanTime currentScanTime = it.value();
-            if (currentScanTime > scanTime) {
-                break;
-            }
-
-            nearestScanNumber = it.key();
-            nearestScanTime = currentScanTime;
-        }
-
-        if (nearestScanNumber >= 0) {
-            return nearestScanNumber;
-        }
-
-        return scanNumberVsScanTime.constBegin().key();
     }
 
 }//namespace
@@ -486,7 +456,7 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
     if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
-        e = buildIonMobilityCalibrationFromCentroidApex(candidateScoresVecBatchPntrsResized); ree;
+        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
     }
 
     if (m_pythiaParameters->verbosity > 0) {
@@ -507,144 +477,12 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     ERR_RETURN
 }
-
-Err MsCalibratomaticSettertron::buildIonMobilityCalibrationFromCentroidApex(
-    const QVector<CandidateScores*> &candidateScores
-    ) {
-
-    ERR_INIT
-
-    QVector<CandidateScores*> annotatedCandidateScores = candidateScores;
-    e = annotateCentroidIonMobilityForCalibrationCandidates(&annotatedCandidateScores); ree;
-
-    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-    e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
-        MSLevelEnum::MS2,
-        annotatedCandidateScores,
-        m_pythiaParameters->verbosity,
-        &msCalibrationReaderRows
-        ); ree;
-
-    e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
-
-    ERR_RETURN
-}
-
-Err MsCalibratomaticSettertron::annotateCentroidIonMobilityForCalibrationCandidates(
-    QVector<CandidateScores*> *candidateScores
-    ) const {
-
-    ERR_INIT
-
-    if (candidateScores == nullptr || candidateScores->isEmpty()) {
-        ERR_RETURN
-    }
-
-    if (m_msReaderPointerAcc == nullptr
-        || m_msReaderPointerAcc->ptr.isNull()
-        || !m_msReaderPointerAcc->ptr->hasIonMobility()) {
-        ERR_RETURN
-    }
-
-    QMap<ScanNumber, ScanPoints> *ms1ScanNumberVsScanPoints = m_targetDecoyCandidatePairScoretron->ms1ScanNumberVsScanPoints();
-    e = ErrorUtils::isTrue(ms1ScanNumberVsScanPoints != nullptr); ree;
-    e = ErrorUtils::isFalse(ms1ScanNumberVsScanPoints->isEmpty()); ree;
-
-    const QMap<ScanNumber, ScanTime> scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
-    e = ErrorUtils::isFalse(scanNumberVsScanTime.isEmpty()); ree;
-
-    for (CandidateScores *candidateScoresPntr : *candidateScores) {
-        if (candidateScoresPntr == nullptr || candidateScoresPntr->targetDecoyCandidatePair == nullptr) {
-            continue;
-        }
-
-        const float libraryIonMobility = candidateScoresPntr->targetDecoyCandidatePair->iIM();
-        if (libraryIonMobility <= 0.0f) {
-            continue;
-        }
-
-        const ScanNumber scanNumber = nearestScanNumberAtOrBefore(
-            scanNumberVsScanTime,
-            candidateScoresPntr->scanTime
-            );
-        if (scanNumber < 0) {
-            continue;
-        }
-
-        const auto scanPointsIt = ms1ScanNumberVsScanPoints->constFind(scanNumber);
-        if (scanPointsIt == ms1ScanNumberVsScanPoints->constEnd()) {
-            continue;
-        }
-
-        const TimsbukAlignedPointData *alignedPointData = m_msReaderPointerAcc->ptr->alignedPointDataPntr(scanNumber);
-        if (alignedPointData == nullptr || !alignedPointData->isAlignedWith(scanPointsIt.value())) {
-            continue;
-        }
-
-        const float monoIsotopeMz = candidateScoresPntr->targetDecoyCandidatePair->mz(false);
-        const float massTol = MathUtils::calculatePPM(
-            monoIsotopeMz,
-            static_cast<float>(m_pythiaParameters->ms1ExtractionWidthPPM)
-            );
-        const float mzMin = monoIsotopeMz - massTol;
-        const float mzMax = monoIsotopeMz + massTol;
-
-        float bestIntensity = -1.0f;
-        float bestDriftTime = -1.0f;
-        IonMobilityIndex bestIonMobilityIndex = -1;
-
-        const ScanPoints &scanPoints = scanPointsIt.value();
-        for (int pointIndex = 0; pointIndex < scanPoints.size(); ++pointIndex) {
-            const ScanPoint &scanPoint = scanPoints.at(pointIndex);
-            const float mz = timsbukMzOf(scanPoint);
-            if (mz < mzMin || mz > mzMax) {
-                continue;
-            }
-
-            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
-            if (driftTime <= 0.0f) {
-                continue;
-            }
-
-            const float intensity = timsbukIntensityOf(scanPoint);
-            if (intensity <= bestIntensity) {
-                continue;
-            }
-
-            bestIntensity = intensity;
-            bestDriftTime = driftTime;
-            bestIonMobilityIndex = static_cast<IonMobilityIndex>(std::lround(driftTime * 10000.0f));
-        }
-
-        if (bestIonMobilityIndex < 0) {
-            continue;
-        }
-
-        candidateScoresPntr->imDriftTime = bestDriftTime;
-        candidateScoresPntr->ionMobilityIndex = bestIonMobilityIndex;
-        candidateScoresPntr->ionMobilityIndexStart = bestIonMobilityIndex;
-        candidateScoresPntr->ionMobilityIndexEnd = bestIonMobilityIndex;
-        candidateScoresPntr->featuresArray[Ms1IntensityFoundApex100IM] = bestIntensity;
-        candidateScoresPntr->featuresArray[IonMobilityDelta] = bestDriftTime - libraryIonMobility;
-        candidateScoresPntr->featuresArray[IonMobilityDeltaAbs] = std::abs(bestDriftTime - libraryIonMobility);
-        candidateScoresPntr->featuresArray[IonMobilityPdAbs]
-            = std::sqrt(
-                std::min(
-                    static_cast<double>(std::abs(bestDriftTime - libraryIonMobility)),
-                    DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
-                    )
-                / DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
-                );
-    }
-
-    ERR_RETURN
-}
-
 Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
 
     ERR_INIT
 
     constexpr int minVecSize = 3;
+    constexpr double defaultIonMobilityToleranceOneOverK0 = 0.1;
     std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
     if (m_scanTimeStDevs.size() >= minVecSize) {
         m_scanTimeStDevs.pop_front();
@@ -695,7 +533,7 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
             qDebug()
             << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "IonMobilityWindow calibration unavailable; using fallback width"
-            << DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+            << defaultIonMobilityToleranceOneOverK0
             << "1/K0";
         }
     }
