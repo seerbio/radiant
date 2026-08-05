@@ -120,6 +120,71 @@ namespace {
         return targetDecoyPointers.mid(sliceBounds.first, sliceBounds.second);
     }
 
+    QVector<int> emittedChunkSizes(
+        const QVector<int> &candidateCounts,
+        const QVector<int> &sliceCounts
+        ) {
+        QVector<int> chunkSizes;
+        for (int itemIndex = 0; itemIndex < candidateCounts.size(); ++itemIndex) {
+            const int candidateCount = candidateCounts.at(itemIndex);
+            const int sliceCount = sliceCounts.value(itemIndex, 1);
+            for (int sliceIndex = 0; sliceIndex < sliceCount; ++sliceIndex) {
+                const QPair<int, int> sliceBounds
+                    = TargetDecoyCandidatePairScoretronUtils::calculateSliceBounds(
+                        candidateCount,
+                        sliceIndex,
+                        sliceCount
+                        );
+                chunkSizes.push_back(sliceBounds.second);
+            }
+        }
+        return chunkSizes;
+    }
+
+    void logAdaptiveChunkingIfVerbose(
+        int verbosity,
+        const char *label,
+        int threadCount,
+        const QVector<int> &candidateCounts,
+        const QVector<int> &sliceCounts
+        ) {
+        if (verbosity <= 0 || candidateCounts.isEmpty()) {
+            return;
+        }
+
+        const int totalCandidates = std::accumulate(
+            candidateCounts.begin(),
+            candidateCounts.end(),
+            0
+            );
+        const int targetChunkCount = kChunkOversubscription * threadCount;
+        const int targetChunkSize
+            = TargetDecoyCandidatePairScoretronUtils::calculateTargetChunkSize(
+                totalCandidates,
+                threadCount
+                );
+        const int minChunkSize
+            = TargetDecoyCandidatePairScoretronUtils::calculateMinChunkSize(targetChunkSize);
+        QVector<int> chunkSizes = emittedChunkSizes(candidateCounts, sliceCounts);
+        std::sort(chunkSizes.begin(), chunkSizes.end());
+        const int emittedChunkCount = chunkSizes.size();
+        const int minEmittedChunkSize = chunkSizes.first();
+        const int medianEmittedChunkSize = chunkSizes.at(chunkSizes.size() / 2);
+        const int maxEmittedChunkSize = chunkSizes.last();
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << label
+                 << "total_candidates=" << totalCandidates
+                 << "thread_count=" << threadCount
+                 << "target_chunk_count=" << targetChunkCount
+                 << "target_chunk_size=" << targetChunkSize
+                 << "min_chunk_size=" << minChunkSize
+                 << "emitted_chunk_count=" << emittedChunkCount
+                 << "min_emitted_chunk_size=" << minEmittedChunkSize
+                 << "median_emitted_chunk_size=" << medianEmittedChunkSize
+                 << "max_emitted_chunk_size=" << maxEmittedChunkSize;
+    }
+
 }
 
 namespace TargetDecoyCandidatePairScoretronUtils {
@@ -1125,6 +1190,13 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
             candidateCounts,
             m_pythiaParameters.threadCount
             );
+    logAdaptiveChunkingIfVerbose(
+        m_pythiaParameters.verbosity,
+        "Calibration chunking",
+        m_pythiaParameters.threadCount,
+        candidateCounts,
+        adaptiveSliceCounts
+        );
 
     for (int keyIndex = 0; keyIndex < mzTargetKeys.size(); ++keyIndex) {
         const MzTargetKey &mzTargetKey = mzTargetKeys.at(keyIndex);
@@ -1224,6 +1296,13 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
             candidateCounts,
             m_pythiaParameters.threadCount
             );
+    logAdaptiveChunkingIfVerbose(
+        m_pythiaParameters.verbosity,
+        "Main scoring chunking",
+        m_pythiaParameters.threadCount,
+        candidateCounts,
+        adaptiveSliceCounts
+        );
 
     for (int scanInfoIndex = 0; scanInfoIndex < msScanInfos.size(); ++scanInfoIndex) {
         const MsScanInfo &msi = msScanInfos.at(scanInfoIndex);
