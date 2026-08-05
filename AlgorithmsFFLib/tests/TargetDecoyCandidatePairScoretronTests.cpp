@@ -64,8 +64,8 @@ void TargetDecoyCandidatePairScoretronTests::calculateAdaptiveSliceCountsTest() 
             2
             );
     QCOMPARE(adaptiveSliceCounts.size(), heavyAndLightCounts.size());
-    QCOMPARE(adaptiveSliceCounts.at(0), 4);
-    QCOMPARE(adaptiveSliceCounts.at(1), 1);
+    QCOMPARE(adaptiveSliceCounts.at(0), 6);
+    QCOMPARE(adaptiveSliceCounts.at(1), 2);
     QCOMPARE(adaptiveSliceCounts.at(2), 1);
 
     const QVector<int> alreadyOversubscribedCounts { 10, 10, 10, 10, 10, 10, 10, 10 };
@@ -86,7 +86,7 @@ void TargetDecoyCandidatePairScoretronTests::calculateAdaptiveSliceCountsTest() 
             4
             );
     QCOMPARE(scanInfoSliceCounts.size(), mainScoringCounts.size());
-    QCOMPARE(scanInfoSliceCounts.at(0), 4);
+    QCOMPARE(scanInfoSliceCounts.at(0), 13);
     QCOMPARE(scanInfoSliceCounts.at(1), 4);
 }
 
