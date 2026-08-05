@@ -1204,9 +1204,30 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isNotEmpty(features); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
-    const bool splitMzTargetKey = m_pythiaParameters.threadCount > msScanInfos.size();
+    QVector<QVector<TargetDecoyCandidatePair*>> filteredCandidatesByScanInfo;
+    filteredCandidatesByScanInfo.reserve(msScanInfos.size());
+    QVector<int> candidateCounts;
+    candidateCounts.reserve(msScanInfos.size());
 
     for (const MsScanInfo &msi : msScanInfos) {
+        QVector<TargetDecoyCandidatePair*> filteredCandidates = filterCandidatesForMsScanInfo(
+            *targetDecoyCandidateAllPntrs,
+            msi,
+            m_pythiaParameters
+            );
+        candidateCounts.push_back(filteredCandidates.size());
+        filteredCandidatesByScanInfo.push_back(filteredCandidates);
+    }
+
+    const QVector<int> adaptiveSliceCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            candidateCounts,
+            m_pythiaParameters.threadCount
+            );
+
+    for (int scanInfoIndex = 0; scanInfoIndex < msScanInfos.size(); ++scanInfoIndex) {
+        const MsScanInfo &msi = msScanInfos.at(scanInfoIndex);
+        const int candidateSliceCount = adaptiveSliceCounts.value(scanInfoIndex, 1);
 
         TargetDecoyPairParallelInput tdppi1;
         tdppi1.topNMs2Ions = topNMS2Ions;
@@ -1226,26 +1247,19 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.useAdaptiveIonMobilityCentering = m_useAdaptiveIonMobilityCentering;
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
-        tdppi1.targetDecoyPointers = filterCandidatesForMsScanInfo(
-            *targetDecoyCandidateAllPntrs,
-            msi,
-            m_pythiaParameters
-            );
+        tdppi1.targetDecoyPointers = filteredCandidatesByScanInfo.at(scanInfoIndex);
 
         if (!m_msReaderPointerAcc->useLazyLoading()) {
             e = ErrorUtils::contains(tdppi1.targetKey, m_mzTargetKeyVsMsFramePntr); ree;
             tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
         }
 
-        input->push_back(tdppi1);
-
-        if (splitMzTargetKey) {
-            tdppi1.candidateSliceCount = 2;
-            tdppi1.candidateSliceIndex = 1;
-            input->back().candidateSliceCount = 2;
-            input->push_back(tdppi1);
+        for (int sliceIndex = 0; sliceIndex < candidateSliceCount; ++sliceIndex) {
+            TargetDecoyPairParallelInput tdppi = tdppi1;
+            tdppi.candidateSliceCount = candidateSliceCount;
+            tdppi.candidateSliceIndex = sliceIndex;
+            input->push_back(tdppi);
         }
-
     }
 
     ERR_RETURN

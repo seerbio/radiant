@@ -74,6 +74,16 @@ void TargetDecoyCandidatePairScoretronTests::calculateAdaptiveSliceCountsTest() 
     for (int sliceCount : noExtraSplitCounts) {
         QCOMPARE(sliceCount, 1);
     }
+
+    const QVector<int> mainScoringCounts { 50, 14 };
+    const QVector<int> scanInfoSliceCounts
+        = TargetDecoyCandidatePairScoretronUtils::calculateAdaptiveSliceCounts(
+            mainScoringCounts,
+            4
+            );
+    QCOMPARE(scanInfoSliceCounts.size(), mainScoringCounts.size());
+    QCOMPARE(scanInfoSliceCounts.at(0), 4);
+    QCOMPARE(scanInfoSliceCounts.at(1), 4);
 }
 
 void TargetDecoyCandidatePairScoretronTests::calculateSliceBoundsCoverageTest() {
