@@ -216,6 +216,21 @@ namespace {
     }
 
     Err getTopFrequencyParameters(
+            const PpmFitSummary &fitSummary,
+            double *ppmSetting
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isTrue(ppmSetting != nullptr, eValueError); ree;
+        e = ErrorUtils::isFalse(fitSummary.coeffs.isEmpty(), eValueError); ree;
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << fitSummary.coeffs;
+        *ppmSetting = fitSummary.sampledBestPpm;
+
+        ERR_RETURN
+    }
+
+    Err getTopFrequencyParameters(
             const QVector<DOEResult> &results,
             int verbosity,
             double *ppmSetting
@@ -227,10 +242,7 @@ namespace {
 
         PpmFitSummary fitSummary;
         e = buildPpmFitSummary(results, verbosity, &fitSummary); ree;
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << fitSummary.coeffs;
-
-        *ppmSetting = fitSummary.sampledBestPpm;
+        e = getTopFrequencyParameters(fitSummary, ppmSetting); ree;
 
         ERR_RETURN
     }
@@ -359,7 +371,6 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         ERR_INIT
 
         const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
-        double bestResultCount = -1.0;
         const QString cacheKey = ppmCacheKey(pythiaParams.ms2ExtractionWidthPPM);
 
         candidateScorePairsForBatch->clear();
@@ -395,6 +406,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         int trancheCountToUse,
         QMap<QString, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> *firstTrancheScorePairsByPpm,
         QVector<DOEResult> *resultsOut,
+        PpmFitSummary *lastFitSummaryOut,
         QVector<float> *bestWeightsOut,
         int *bestIdsAtFivePercent,
         QMap<int, int> *bestFdrVsCountsOut
@@ -403,10 +415,14 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         ERR_INIT
 
         resultsOut->clear();
+        if (lastFitSummaryOut != nullptr) {
+            *lastFitSummaryOut = PpmFitSummary();
+        }
         bestWeightsOut->clear();
         *bestIdsAtFivePercent = 0;
         bestFdrVsCountsOut->clear();
 
+        double bestResultCount = -1.0;
         const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
 
         for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
@@ -467,6 +483,9 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
             PpmFitSummary fitSummary;
             e = buildPpmFitSummary(*resultsOut, 0, &fitSummary); ree;
+            if (lastFitSummaryOut != nullptr) {
+                *lastFitSummaryOut = fitSummary;
+            }
 
             if (!fitSummary.hasUsableApex
                 || fitSummary.coeffs.size() <= 2
@@ -492,6 +511,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
     QMap<QString, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> firstTrancheScorePairsByPpm;
     QVector<DOEResult> results;
+    PpmFitSummary finalFitSummary;
     QVector<float> bestWeights;
     int bestIdsAtFivePercent = 0;
     QMap<int, int> bestFdrVsCounts;
@@ -499,6 +519,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         1,
         &firstTrancheScorePairsByPpm,
         &results,
+        &finalFitSummary,
         &bestWeights,
         &bestIdsAtFivePercent,
         &bestFdrVsCounts
@@ -556,6 +577,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             expandedTrancheCount,
             &firstTrancheScorePairsByPpm,
             &results,
+            &finalFitSummary,
             &bestWeights,
             &bestIdsAtFivePercent,
             &bestFdrVsCounts
@@ -565,11 +587,15 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
     m_weights = bestWeights;
 
-    e = getTopFrequencyParameters(
-            results,
-            m_pythiaParameters->verbosity,
-            &m_pythiaParameters->ms2ExtractionWidthPPM
-            ); ree;
+    if (finalFitSummary.coeffs.isEmpty()) {
+        e = buildPpmFitSummary(
+                results,
+                m_pythiaParameters->verbosity,
+                &finalFitSummary
+                ); ree;
+    }
+
+    e = getTopFrequencyParameters(finalFitSummary, &m_pythiaParameters->ms2ExtractionWidthPPM); ree;
 
     m_pythiaParameters->ms1ExtractionWidthPPM = m_pythiaParameters->ms2ExtractionWidthPPM;
     e = m_targetDecoyCandidatePairScoretron->setPythiaParameters(*m_pythiaParameters); ree;
