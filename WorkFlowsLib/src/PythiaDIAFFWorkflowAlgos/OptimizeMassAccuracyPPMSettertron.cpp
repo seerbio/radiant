@@ -67,6 +67,8 @@ namespace {
     constexpr int OPTIMIZATION_SUPPORT_TRANCHE_CAP = 5;
     constexpr int PPM_FIT_POLYNOMIAL_ORDER = 2;
     constexpr double PPM_FIT_SAMPLE_INCREMENT = 0.25;
+    constexpr int PPM_FIT_EARLY_STOP_PAST_APEX_POINTS = 3;
+    constexpr int PPM_FIT_MIN_RESULTS_FOR_EARLY_STOP = 5;
 
     struct DOEResult {
         double ppm = -1.0;
@@ -86,6 +88,24 @@ namespace {
 
     QString ppmCacheKey(double ppm) {
         return QString::number(ppm, 'f', 4);
+    }
+
+    int nearestEvaluatedPpmIndex(const QVector<DOEResult> &results, double ppm) {
+        if (results.isEmpty()) {
+            return -1;
+        }
+
+        int bestIndex = 0;
+        double bestDistance = std::abs(results.first().ppm - ppm);
+        for (int i = 1; i < results.size(); ++i) {
+            const double distance = std::abs(results.at(i).ppm - ppm);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
     }
 
     int fallbackOptimizationSupportFdrKey(const QMap<int, int> &fdrVsCounts) {
@@ -339,6 +359,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         ERR_INIT
 
         const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
+        double bestResultCount = -1.0;
         const QString cacheKey = ppmCacheKey(pythiaParams.ms2ExtractionWidthPPM);
 
         candidateScorePairsForBatch->clear();
@@ -386,8 +407,6 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         *bestIdsAtFivePercent = 0;
         bestFdrVsCountsOut->clear();
 
-        double bestResultCount = 0;
-        int countSinceLastHigh = 0;
         const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
 
         for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
@@ -437,15 +456,33 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
             if (res.fdrCount >= bestResultCount) {
                 bestResultCount = res.fdrCount;
-                countSinceLastHigh = 0;
                 *bestWeightsOut = weights;
                 *bestIdsAtFivePercent = fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY);
                 *bestFdrVsCountsOut = fdrVsCounts;
+            }
+
+            if (resultsOut->size() < PPM_FIT_MIN_RESULTS_FOR_EARLY_STOP) {
                 continue;
             }
 
-            constexpr int maxCountsSinceLastHigh = 3;
-            if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
+            PpmFitSummary fitSummary;
+            e = buildPpmFitSummary(*resultsOut, 0, &fitSummary); ree;
+
+            if (!fitSummary.hasUsableApex
+                || fitSummary.coeffs.size() <= 2
+                || fitSummary.coeffs.at(2) >= 0.0
+                || fitSummary.apexPpm < fitSummary.evaluatedPpmMin
+                || fitSummary.apexPpm > fitSummary.evaluatedPpmMax) {
+                continue;
+            }
+
+            const int apexEvaluatedIndex = nearestEvaluatedPpmIndex(*resultsOut, fitSummary.apexPpm);
+            if (apexEvaluatedIndex < 0) {
+                continue;
+            }
+
+            const int pointsPastApex = resultsOut->size() - 1 - apexEvaluatedIndex;
+            if (pointsPastApex >= PPM_FIT_EARLY_STOP_PAST_APEX_POINTS) {
                 break;
             }
         }
