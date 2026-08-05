@@ -106,7 +106,7 @@ namespace {
         }
 
         const float calibratedPad = msCalibratomatic->ionMobilityStDev(
-            pythiaParameters.scanTimeWindowStDevs
+            pythiaParameters.imWindowStdDevs
             );
         if (calibratedPad <= 0.0f) {
             return TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;

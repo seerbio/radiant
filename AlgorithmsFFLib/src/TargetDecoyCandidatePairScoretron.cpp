@@ -26,6 +26,7 @@ namespace {
 
     constexpr int kChunkOversubscription = 4;
     constexpr int kMinChunkSizeRatio = 2;
+    constexpr float kCalibrationIonMobilityToleranceOneOverK0 = 0.5f;
 
     void filterMs1ScanPointsByIntensityThreshold(
         float minIntensity,
@@ -338,6 +339,7 @@ public:
     bool useTopNIntegrationsParameter = false;
     bool useAdaptiveIonMobilityCentering = false;
     MsReaderPointerAcc *msReaderPointerAcc = nullptr;
+    float ionMobilityToleranceOverride = -1.0f;
     int candidateSliceIndex = 0;
     int candidateSliceCount = 1;
     const TargetKeyScoringContext *targetKeyContext = nullptr;
@@ -867,6 +869,9 @@ namespace {
             candidateScorertron.setUseAdaptiveIonMobilityCentering(
                 pi.useAdaptiveIonMobilityCentering
                 );
+            candidateScorertron.setIonMobilityToleranceOverride(
+                pi.ionMobilityToleranceOverride
+                );
 
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
                 QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
@@ -1222,6 +1227,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.useTopNIntegrationsParameter = useTopNIntegrationsParameter;
         tdppi1.useAdaptiveIonMobilityCentering = m_useAdaptiveIonMobilityCentering;
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
+        tdppi1.ionMobilityToleranceOverride = kCalibrationIonMobilityToleranceOneOverK0;
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
 
         if (!m_msReaderPointerAcc->useLazyLoading()) {

@@ -50,6 +50,7 @@ namespace PythiaParameterReaderConstants {
     const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
+    const QString kImWindowStdDevs = QStringLiteral("imWindowStdDevs");
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
     const QString kStopThresholdFractionMS2 = QStringLiteral("stopThresholdFractionMS2");
@@ -170,6 +171,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
+    pythiaParameters->imWindowStdDevs = ms2ParamsNode[kImWindowStdDevs.toStdString()].value_or(pythiaParameters->imWindowStdDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(pythiaParameters->smoothCountMS2);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(pythiaParameters->stopThresholdFractionMS2);

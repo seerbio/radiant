@@ -180,6 +180,10 @@ void CandidateScorertron::setUseAdaptiveIonMobilityCentering(
     m_useAdaptiveIonMobilityCentering = useAdaptiveIonMobilityCentering;
 }
 
+void CandidateScorertron::setIonMobilityToleranceOverride(float ionMobilityTolerance) {
+    m_ionMobilityToleranceOverride = ionMobilityTolerance;
+}
+
 QString CandidateScorertron::scoringDiagnosticsSummary() const {
     return d_ptr->scoringDiagnosticsSummary(m_mzTargetKey);
 }
@@ -396,7 +400,7 @@ namespace {
         }
 
         const float calibratedTolerance = msCalibratomatic.ionMobilityStDev(
-            pythiaParameters.scanTimeWindowStDevs
+            pythiaParameters.imWindowStdDevs
             );
         if (calibratedTolerance <= 0.0f) {
             return fallbackTolerance;
@@ -408,18 +412,6 @@ namespace {
                 calibratedTolerance,
                 fallbackTolerance
                 )
-            );
-    }
-
-    float timsMs1MobilityHalfWidth(
-        const PythiaParameters &pythiaParameters,
-        const MsCalibratomatic &msCalibratomatic
-        ) {
-        return resolvedIonMobilityTolerance(
-            pythiaParameters,
-            msCalibratomatic,
-            static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0),
-            static_cast<float>(MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
             );
     }
 
@@ -1127,6 +1119,7 @@ namespace {
 
     void applyMs1IonMobilityObservation(
         float mobilityCenter,
+        float ionMobilityTolerance,
         const Ms1IonMobilityObservation &observation,
         CandidateScores *candidateScores
         ) {
@@ -1155,8 +1148,8 @@ namespace {
         candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
             std::min(
                 static_cast<double>(std::abs(ionMobilityDelta)),
-                DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
-                ) / DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+                static_cast<double>(ionMobilityTolerance)
+                ) / static_cast<double>(ionMobilityTolerance)
             );
     }
 
@@ -1315,17 +1308,12 @@ namespace {
         localIonMobilityPeak.maxDriftTime = ionMobilityCenter + targetedIonMobilityWindowHalfWidth;
 
         if (useAdaptiveIonMobilityCentering) {
-            const float initialIonMobilityTolerance = resolvedIonMobilityTolerance(
-                pythiaParameters,
-                msCalibratomatic,
-                static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
-                );
             const LocalIonMobilityPeak observedMobilityPeak = selectLocalIonMobilityPeakForTimsMs2(
                 ms2IonMobilityIndex,
                 msFrameMzTarget,
                 ms2Ions,
                 ionMobilityCenter,
-                initialIonMobilityTolerance,
+                targetedIonMobilityWindowHalfWidth,
                 ppmTol,
                 frameIndexPredictedMin,
                 frameIndexPredictedMax
@@ -1805,6 +1793,22 @@ float CandidateScorertron::ionMobilityCenter(
         targetDecoyCandidatePair,
         m_msCalibratomatic,
         m_msReaderPointerAcc
+        );
+}
+
+float CandidateScorertron::ionMobilityTolerance(
+    float fallbackTolerance,
+    float minTolerance
+    ) const {
+    if (m_ionMobilityToleranceOverride > 0.0f) {
+        return std::max(minTolerance, m_ionMobilityToleranceOverride);
+    }
+
+    return resolvedIonMobilityTolerance(
+        m_pythiaParameters,
+        m_msCalibratomatic,
+        fallbackTolerance,
+        minTolerance
         );
 }
 
@@ -3258,9 +3262,9 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
     }
 
     const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
-    const float mobilityHalfWidth = timsMs1MobilityHalfWidth(
-        m_pythiaParameters,
-        m_msCalibratomatic
+    const float mobilityHalfWidth = ionMobilityTolerance(
+        static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0),
+        static_cast<float>(MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
         );
     const float massTol = MathUtils::calculatePPM(
         monoIsotopeMz,
@@ -3292,6 +3296,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
 
     applyMs1IonMobilityObservation(
         mobilityCenter,
+        mobilityHalfWidth,
         observation,
         candidateScores
         );
@@ -3328,15 +3333,13 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     const FrameIndex frameIndexMin = std::max(0, candidateScores->frameIndexStart - 1);
     const FrameIndex frameIndexMax = candidateScores->frameIndexEnd + 1;
-    const float ionMobilityTolerance = resolvedIonMobilityTolerance(
-        m_pythiaParameters,
-        m_msCalibratomatic,
+    const float ionMobilityToleranceUsed = ionMobilityTolerance(
         static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
         );
     const float ionMobilityMin
-        = mobilityCenter - ionMobilityTolerance;
+        = mobilityCenter - ionMobilityToleranceUsed;
     const float ionMobilityMax
-        = mobilityCenter + ionMobilityTolerance;
+        = mobilityCenter + ionMobilityToleranceUsed;
     using RtMobilityKey = quint64;
     constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
     const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
@@ -3481,7 +3484,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     else {
         candidateScores->featuresArray[Ms2IonMobilityWeightedDelta] = 0.0f;
         candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs]
-            = static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = ionMobilityToleranceUsed;
     }
 
     if (!apexDeltaAbsValues.isEmpty()) {
@@ -3490,7 +3493,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     }
     else {
         candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
-            = static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = ionMobilityToleranceUsed;
     }
 
     if (fragmentApexKeys.size() > 1) {
@@ -3533,8 +3536,8 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
             std::min(
                 static_cast<double>(std::abs(ionMobilityDelta)),
-                DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
-                ) / DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0
+                static_cast<double>(ionMobilityToleranceUsed)
+                ) / static_cast<double>(ionMobilityToleranceUsed)
                 );
     }
 

@@ -612,7 +612,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
     if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
         constexpr float DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1f;
         const float calibratedIonMobilityWindow
-            = m_msCalibratomatic->ionMobilityStDev(m_pythiaParameters->scanTimeWindowStDevs);
+            = m_msCalibratomatic->ionMobilityStDev(m_pythiaParameters->imWindowStdDevs);
         const float ionMobilityWindowSetting
             = (m_msCalibratomatic->isInitIM() && calibratedIonMobilityWindow > 0.0f)
             ? calibratedIonMobilityWindow

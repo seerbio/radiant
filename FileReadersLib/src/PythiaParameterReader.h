@@ -49,6 +49,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPMOverride;
     extern const QString FILEREADERSLIB_EXPORTS kMinMs2FragCount;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
+    extern const QString FILEREADERSLIB_EXPORTS kImWindowStdDevs;
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
@@ -140,6 +141,7 @@ struct PythiaParameters{
     int minMs2FragCount = 2;
     int rtBinning = 20;
     float scanTimeWindowStDevs = 3;
+    float imWindowStdDevs = 3;
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
@@ -278,6 +280,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kRtBinning) << rtBinning;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kImWindowStdDevs) << imWindowStdDevs;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakDifferenceThresholdFraction) << peakDifferenceFractionThreshold;

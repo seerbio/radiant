@@ -739,7 +739,9 @@ void MsCalibratomatic::setScanTimeStDev(double val) {
 
         qDebug()
         << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "ScanTimeStDev x 3:"
+        << "ScanTimeStDev x"
+        << m_params.scanTimeWindowStDevs
+        << ":"
         << scanTimeStDev(m_params.scanTimeWindowStDevs)
         << "seconds";
     }
@@ -755,8 +757,10 @@ void MsCalibratomatic::setIonMobilityStDev(double val) {
 
     qDebug()
     << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "IonMobilityStDev x 3:"
-    << ionMobilityStDev(m_params.scanTimeWindowStDevs)
+    << "IonMobilityStDev x"
+    << m_params.imWindowStdDevs
+    << ":"
+    << ionMobilityStDev(m_params.imWindowStdDevs)
     << "mSec";
 }
 

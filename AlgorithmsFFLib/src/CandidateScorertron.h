@@ -69,6 +69,7 @@ public:
     [[nodiscard]] QString scoringDiagnosticsSummary() const;
     void printScoringDiagnosticsIfEnabled() const;
     void setUseAdaptiveIonMobilityCentering(bool useAdaptiveIonMobilityCentering);
+    void setIonMobilityToleranceOverride(float ionMobilityTolerance);
 
 
 private:
@@ -90,6 +91,10 @@ private:
 
     [[nodiscard]] float ionMobilityCenter(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair
+        ) const;
+    [[nodiscard]] float ionMobilityTolerance(
+        float fallbackTolerance,
+        float minTolerance = 0.0f
         ) const;
 
     Err processIntegrationVectorPeakIntegrations(
@@ -147,6 +152,7 @@ private:
     QVector<Features> m_features;
     bool m_useTopNIntegrationsParam;
     bool m_useAdaptiveIonMobilityCentering;
+    float m_ionMobilityToleranceOverride = -1.0f;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;
