@@ -482,7 +482,8 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
     ERR_INIT
 
     constexpr int minVecSize = 3;
-    constexpr double defaultIonMobilityToleranceOneOverK0 = 0.1;
+    const double defaultIonMobilityToleranceOneOverK0
+        = m_pythiaParameters->timsTargetedMs2IonMobilityWindow;
     std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
     if (m_scanTimeStDevs.size() >= minVecSize) {
         m_scanTimeStDevs.pop_front();

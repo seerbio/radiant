@@ -26,7 +26,6 @@ namespace {
 
     constexpr int kChunkOversubscription = 4;
     constexpr int kMinChunkSizeRatio = 2;
-    constexpr float kCalibrationIonMobilityToleranceOneOverK0 = 0.5f;
 
     void filterMs1ScanPointsByIntensityThreshold(
         float minIntensity,
@@ -1227,7 +1226,8 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.useTopNIntegrationsParameter = useTopNIntegrationsParameter;
         tdppi1.useAdaptiveIonMobilityCentering = m_useAdaptiveIonMobilityCentering;
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
-        tdppi1.ionMobilityToleranceOverride = kCalibrationIonMobilityToleranceOneOverK0;
+        tdppi1.ionMobilityToleranceOverride
+            = static_cast<float>(m_pythiaParameters.timsTargetedMs2IonMobilityWindow);
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
 
         if (!m_msReaderPointerAcc->useLazyLoading()) {

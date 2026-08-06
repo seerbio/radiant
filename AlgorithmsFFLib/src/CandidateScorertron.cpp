@@ -325,9 +325,7 @@ public:
 
 namespace {
 
-    constexpr double DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
     constexpr double MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.03;
-    constexpr double TARGET_ION_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.06;
     constexpr double DEFAULT_ION_MOBILITY_FWHM_ONE_OVER_K0 = 0.01;
     constexpr double DEFAULT_RT_FWHM_SECONDS = 5.0;
 
@@ -406,13 +404,13 @@ namespace {
             return fallbackTolerance;
         }
 
-        return std::max(
-            minTolerance,
-            std::min(
-                calibratedTolerance,
-                fallbackTolerance
-                )
-            );
+        return std::max(minTolerance, calibratedTolerance);
+    }
+
+    float fallbackIonMobilityTolerance(
+        const PythiaParameters &pythiaParameters
+        ) {
+        return static_cast<float>(pythiaParameters.timsTargetedMs2IonMobilityWindow);
     }
 
     struct WeightedDriftTimePoint {
@@ -1269,9 +1267,9 @@ namespace {
         }
 
         peak.minDriftTime
-            = peak.centerDriftTime - static_cast<float>(TARGET_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = peak.centerDriftTime - ionMobilityTolerance;
         peak.maxDriftTime
-            = peak.centerDriftTime + static_cast<float>(TARGET_ION_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            = peak.centerDriftTime + ionMobilityTolerance;
 
         return peak;
     }
@@ -3263,7 +3261,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
 
     const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
     const float mobilityHalfWidth = ionMobilityTolerance(
-        static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0),
+        fallbackIonMobilityTolerance(m_pythiaParameters),
         static_cast<float>(MIN_MS1_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
         );
     const float massTol = MathUtils::calculatePPM(
@@ -3334,7 +3332,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     const FrameIndex frameIndexMin = std::max(0, candidateScores->frameIndexStart - 1);
     const FrameIndex frameIndexMax = candidateScores->frameIndexEnd + 1;
     const float ionMobilityToleranceUsed = ionMobilityTolerance(
-        static_cast<float>(DEFAULT_ION_MOBILITY_TOLERANCE_ONE_OVER_K0)
+        fallbackIonMobilityTolerance(m_pythiaParameters)
         );
     const float ionMobilityMin
         = mobilityCenter - ionMobilityToleranceUsed;
