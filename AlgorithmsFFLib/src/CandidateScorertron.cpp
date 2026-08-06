@@ -1306,6 +1306,8 @@ namespace {
         localIonMobilityPeak.maxDriftTime = ionMobilityCenter + targetedIonMobilityWindowHalfWidth;
 
         if (useAdaptiveIonMobilityCentering) {
+// #define ENABLE_ADAPTIVE_ION_MOBILITY_CENTERING
+#ifdef ENABLE_ADAPTIVE_ION_MOBILITY_CENTERING
             const LocalIonMobilityPeak observedMobilityPeak = selectLocalIonMobilityPeakForTimsMs2(
                 ms2IonMobilityIndex,
                 msFrameMzTarget,
@@ -1326,6 +1328,9 @@ namespace {
                 localIonMobilityPeak.minDriftTime = observedMobilityPeak.centerDriftTime - targetedIonMobilityWindowHalfWidth;
                 localIonMobilityPeak.maxDriftTime = observedMobilityPeak.centerDriftTime + targetedIonMobilityWindowHalfWidth;
             }
+#else
+            Q_UNUSED(useAdaptiveIonMobilityCentering);
+#endif
         }
 
         for (const MS2Ion &ms2Ion : ms2Ions) {
