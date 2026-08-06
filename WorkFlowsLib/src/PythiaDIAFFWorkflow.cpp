@@ -585,6 +585,14 @@ namespace {
         removeIonMobilityOnlyFeatures(ppmOptimizationFeatures);
         removeIonMobilityOnlyFeatures(neuralNetFeatures);
 
+        appendFeatureIfMissing(calibratomaticFeatures, Ms1IntensityFoundApex100IM);
+        appendFeatureIfMissing(calibratomaticFeatures, IonMobilityDeltaAbs);
+        appendFeatureIfMissing(calibratomaticFeatures, IonMobilityPdAbs);
+        appendFeatureIfMissing(calibratomaticFeatures, Ms2IonMobilityWeightedDeltaAbs);
+        appendFeatureIfMissing(calibratomaticFeatures, Ms2IonMobilityApexDeltaAbsMean);
+        appendFeatureIfMissing(calibratomaticFeatures, Ms2IonMobilityMatchedIonFraction);
+        appendFeatureIfMissing(calibratomaticFeatures, Ms2IonMobilityRtApexAgreementFraction);
+
         appendFeatureIfMissing(ppmOptimizationFeatures, Ms1IntensityFoundApex100IM);
         appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityDeltaAbs);
         appendFeatureIfMissing(ppmOptimizationFeatures, IonMobilityPdAbs);
