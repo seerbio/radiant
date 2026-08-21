@@ -22,42 +22,6 @@ namespace {
         return static_cast<IonMobilityIndex>(std::lround(driftTime * CENTROID_MS2_IM_INDEX_SCALE));
     }
 
-    template<typename PointIterator, typename FrameIndexExtractor>
-    void frameRestrictedRange(
-        PointIterator pointsBegin,
-        PointIterator pointsEnd,
-        FrameIndex frameIndexMin,
-        FrameIndex frameIndexMax,
-        FrameIndexExtractor frameIndexForPoint,
-        PointIterator *beginIt,
-        PointIterator *endIt
-        ) {
-
-        *beginIt = pointsBegin;
-        *endIt = pointsEnd;
-
-        if (frameIndexMax <= 0) {
-            return;
-        }
-
-        *beginIt = std::lower_bound(
-            pointsBegin,
-            pointsEnd,
-            frameIndexMin + 1,
-            [&](const auto &point, FrameIndex frameIndex) {
-                return frameIndexForPoint(point) < frameIndex;
-            }
-            );
-
-        *endIt = std::lower_bound(
-            *beginIt,
-            pointsEnd,
-            frameIndexMax,
-            [&](const auto &point, FrameIndex frameIndex) {
-                return frameIndexForPoint(point) < frameIndex;
-            }
-            );
-    }
 }
 
 Err CentroidMs2IonMobilityIndex::init(
@@ -73,13 +37,13 @@ Err CentroidMs2IonMobilityIndex::init(
     e = ErrorUtils::isTrue(msFrame.isValid()); ree;
 
     m_mzBinVsPoints.clear();
-    m_sliceRefs.clear();
     m_ionMobilityIndexVsDriftTime.clear();
     m_pointCount = 0;
     m_isInit = false;
 
-    m_sliceRefs.reserve(scanNumberVsAlignedPointData.size());
-
+    // Count only points that can actually enter the IM index.  The old code
+    // reserved capacity for invalid-IM points even though it discarded them in
+    // the population pass.
     QHash<int, int> mzBinVsCounts;
     for (auto alignedIt = scanNumberVsAlignedPointData.constBegin();
          alignedIt != scanNumberVsAlignedPointData.constEnd();
@@ -100,63 +64,79 @@ Err CentroidMs2IonMobilityIndex::init(
             continue;
         }
 
-        SliceRef sliceRef;
-        sliceRef.scanPoints = &scanPoints;
-        sliceRef.alignedPointData = alignedPointData;
-        sliceRef.frameIndex = msFrame.frameIndexFromScanNumber(alignedIt.key());
-        m_sliceRefs.push_back(sliceRef);
-
         m_pointCount += scanPoints.size();
         for (int pointIndex = 0; pointIndex < scanPoints.size(); ++pointIndex) {
-            ++mzBinVsCounts[mzBin(scanPoints.at(pointIndex).x())];
-
             const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
             if (driftTime <= 0.0f) {
                 continue;
             }
-            m_ionMobilityIndexVsDriftTime.insert(ionMobilityIndexForDriftTime(driftTime), driftTime);
+
+            ++mzBinVsCounts[mzBin(scanPoints.at(pointIndex).x())];
+            m_ionMobilityIndexVsDriftTime.insert(
+                ionMobilityIndexForDriftTime(driftTime),
+                driftTime
+                );
         }
     }
 
+    m_mzBinVsPoints.reserve(mzBinVsCounts.size());
     for (auto countIt = mzBinVsCounts.constBegin(); countIt != mzBinVsCounts.constEnd(); ++countIt) {
         m_mzBinVsPoints[countIt.key()].reserve(countIt.value());
     }
 
-    for (quint32 sliceIndex = 0; sliceIndex < static_cast<quint32>(m_sliceRefs.size()); ++sliceIndex) {
-        const SliceRef &sliceRef = m_sliceRefs.at(static_cast<int>(sliceIndex));
-        for (quint32 pointIndex = 0; pointIndex < static_cast<quint32>(sliceRef.scanPoints->size()); ++pointIndex) {
-            const float driftTime = timsbukIonMobilityOf(*sliceRef.alignedPointData, static_cast<int>(pointIndex));
+    for (auto alignedIt = scanNumberVsAlignedPointData.constBegin();
+         alignedIt != scanNumberVsAlignedPointData.constEnd();
+         ++alignedIt) {
+
+        const auto scanPointIt = scanNumberVsScanPoints.constFind(alignedIt.key());
+        if (scanPointIt == scanNumberVsScanPoints.constEnd()) {
+            continue;
+        }
+
+        const TimsbukAlignedPointData *alignedPointData = alignedIt.value();
+        if (alignedPointData == nullptr || !alignedPointData->isAlignedWith(scanPointIt.value())) {
+            continue;
+        }
+
+        const ScanPoints &scanPoints = scanPointIt.value();
+        if (scanPoints.isEmpty()) {
+            continue;
+        }
+
+        const FrameIndex frameIndex = msFrame.frameIndexFromScanNumber(alignedIt.key());
+        for (int pointIndex = 0; pointIndex < scanPoints.size(); ++pointIndex) {
+            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
             if (driftTime <= 0.0f) {
                 continue;
             }
 
-            IndexedPointRef pointRef;
-            pointRef.sliceIndex = sliceIndex;
-            pointRef.pointIndex = pointIndex;
-            pointRef.ionMobilityIndex = ionMobilityIndexForDriftTime(driftTime);
-            m_mzBinVsPoints[mzBin(sliceRef.scanPoints->at(static_cast<int>(pointIndex)).x())].push_back(pointRef);
+            const ScanPoint &scanPoint = scanPoints.at(pointIndex);
+            IndexedPoint indexedPoint;
+            indexedPoint.mz = scanPoint.x();
+            indexedPoint.intensity = scanPoint.y();
+            indexedPoint.driftTime = driftTime;
+            indexedPoint.frameIndex = frameIndex;
+            indexedPoint.ionMobilityIndex = ionMobilityIndexForDriftTime(driftTime);
+            m_mzBinVsPoints[mzBin(indexedPoint.mz)].push_back(indexedPoint);
         }
     }
 
     for (auto binIt = m_mzBinVsPoints.begin(); binIt != m_mzBinVsPoints.end(); ++binIt) {
-        std::sort(
+        // MsFrame assigns a unique frame index to each scan in scan-number
+        // order, and points are inserted in their original point-index order.
+        // stable_sort therefore preserves the old final pointIndex tie-break
+        // without storing pointIndex in every hot IndexedPoint.
+        std::stable_sort(
             binIt.value().begin(),
             binIt.value().end(),
-            [this](const IndexedPointRef &left, const IndexedPointRef &right) {
-                const SliceRef &leftSlice = sliceRefForPoint(left);
-                const SliceRef &rightSlice = sliceRefForPoint(right);
-                if (leftSlice.frameIndex != rightSlice.frameIndex) {
-                    return leftSlice.frameIndex < rightSlice.frameIndex;
+            [](const IndexedPoint &left, const IndexedPoint &right) {
+                if (left.frameIndex != right.frameIndex) {
+                    return left.frameIndex < right.frameIndex;
                 }
                 if (left.ionMobilityIndex != right.ionMobilityIndex) {
                     return left.ionMobilityIndex < right.ionMobilityIndex;
                 }
-                const float leftMz = scanPointForRef(left).x();
-                const float rightMz = scanPointForRef(right).x();
-                if (leftMz != rightMz) {
-                    return leftMz < rightMz;
-                }
-                return left.pointIndex < right.pointIndex;
+                return left.mz < right.mz;
             }
             );
     }
@@ -172,26 +152,6 @@ bool CentroidMs2IonMobilityIndex::isInit() const {
 
 int CentroidMs2IonMobilityIndex::pointCount() const {
     return m_pointCount;
-}
-
-const CentroidMs2IonMobilityIndex::SliceRef& CentroidMs2IonMobilityIndex::sliceRefForPoint(
-    const IndexedPointRef &pointRef
-    ) const {
-
-    return m_sliceRefs.at(static_cast<int>(pointRef.sliceIndex));
-}
-
-const ScanPoint& CentroidMs2IonMobilityIndex::scanPointForRef(
-    const IndexedPointRef &pointRef
-    ) const {
-
-    const SliceRef &sliceRef = sliceRefForPoint(pointRef);
-    return sliceRef.scanPoints->at(static_cast<int>(pointRef.pointIndex));
-}
-
-float CentroidMs2IonMobilityIndex::driftTimeForRef(const IndexedPointRef &pointRef) const {
-    const SliceRef &sliceRef = sliceRefForPoint(pointRef);
-    return timsbukIonMobilityOf(*sliceRef.alignedPointData, static_cast<int>(pointRef.pointIndex));
 }
 
 bool CentroidMs2IonMobilityIndex::driftTimeFromIonMobilityIndex(
@@ -235,39 +195,42 @@ XICPoints CentroidMs2IonMobilityIndex::extractPointsXIC(
             continue;
         }
 
-        const QVector<IndexedPointRef> &points = binIt.value();
-        QVector<IndexedPointRef>::const_iterator beginIt;
-        QVector<IndexedPointRef>::const_iterator endIt;
-        frameRestrictedRange(
-            points.constBegin(),
-            points.constEnd(),
-            frameIndexMin,
-            frameIndexMax,
-            [this](const IndexedPointRef &pointRef) {
-                return sliceRefForPoint(pointRef).frameIndex;
-            },
-            &beginIt,
-            &endIt
-            );
+        const QVector<IndexedPoint> &points = binIt.value();
+        auto beginIt = points.constBegin();
+        auto endIt = points.constEnd();
+        if (frameIndexMax > 0) {
+            beginIt = std::lower_bound(
+                points.constBegin(),
+                points.constEnd(),
+                frameIndexMin + 1,
+                [](const IndexedPoint &point, FrameIndex frameIndex) {
+                    return point.frameIndex < frameIndex;
+                }
+                );
+            endIt = std::lower_bound(
+                beginIt,
+                points.constEnd(),
+                frameIndexMax,
+                [](const IndexedPoint &point, FrameIndex frameIndex) {
+                    return point.frameIndex < frameIndex;
+                }
+                );
+        }
 
         for (auto pointIt = beginIt; pointIt != endIt; ++pointIt) {
-            const IndexedPointRef &pointRef = *pointIt;
-            const ScanPoint &scanPoint = scanPointForRef(pointRef);
-            const float mz = scanPoint.x();
-            if (mz < mzMin || mz > mzMax) {
+            const IndexedPoint &point = *pointIt;
+            if (point.mz < mzMin || point.mz > mzMax) {
                 continue;
             }
-
-            const float driftTime = driftTimeForRef(pointRef);
-            if (!(ionMobilityMin <= driftTime && driftTime <= ionMobilityMax)) {
+            if (!(ionMobilityMin <= point.driftTime && point.driftTime <= ionMobilityMax)) {
                 continue;
             }
 
             XICPoint xicPoint;
-            xicPoint.mz = mz;
-            xicPoint.intensity = scanPoint.y();
-            xicPoint.scanNumber = sliceRefForPoint(pointRef).frameIndex;
-            xicPoint.ionMobilityIndex = pointRef.ionMobilityIndex;
+            xicPoint.mz = point.mz;
+            xicPoint.intensity = point.intensity;
+            xicPoint.scanNumber = point.frameIndex;
+            xicPoint.ionMobilityIndex = point.ionMobilityIndex;
             xicPoints.push_back(xicPoint);
         }
     }

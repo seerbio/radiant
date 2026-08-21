@@ -46,24 +46,19 @@ public:
 
 private:
 
-    struct SliceRef {
-        const ScanPoints *scanPoints = nullptr;
-        const TimsbukAlignedPointData *alignedPointData = nullptr;
+    // Keep the values touched by extractPointsXIC() contiguous.  The previous
+    // representation stored only indexes back into ScanPoints and aligned IM
+    // vectors, which made every candidate query chase several unrelated
+    // allocations for each point inspected.
+    struct IndexedPoint {
+        float mz = -1.0f;
+        float intensity = -1.0f;
+        float driftTime = -1.0f;
         FrameIndex frameIndex = -1;
-    };
-
-    struct IndexedPointRef {
-        quint32 sliceIndex = 0;
-        quint32 pointIndex = 0;
         IonMobilityIndex ionMobilityIndex = -1;
     };
 
-    [[nodiscard]] const SliceRef& sliceRefForPoint(const IndexedPointRef &pointRef) const;
-    [[nodiscard]] const ScanPoint& scanPointForRef(const IndexedPointRef &pointRef) const;
-    [[nodiscard]] float driftTimeForRef(const IndexedPointRef &pointRef) const;
-
-    QHash<int, QVector<IndexedPointRef>> m_mzBinVsPoints;
-    QVector<SliceRef> m_sliceRefs;
+    QHash<int, QVector<IndexedPoint>> m_mzBinVsPoints;
     QMap<IonMobilityIndex, float> m_ionMobilityIndexVsDriftTime;
     int m_pointCount = 0;
     bool m_isInit = false;
