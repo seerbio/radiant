@@ -525,7 +525,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         &bestFdrVsCounts
         ); ree;
 
-    // #define ENABLE_SECOND_STAGE_PPM_OPTIMIZATION
+    #define ENABLE_SECOND_STAGE_PPM_OPTIMIZATION
     #ifdef ENABLE_SECOND_STAGE_PPM_OPTIMIZATION
     if (bestIdsAtFivePercent < OPTIMIZATION_SUPPORT_FDR_COUNT_MIN
         && targetDecoyCandidatePointersTranched.size() > 1) {
