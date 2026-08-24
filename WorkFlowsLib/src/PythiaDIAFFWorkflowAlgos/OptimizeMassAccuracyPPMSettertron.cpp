@@ -422,7 +422,8 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         *bestIdsAtFivePercent = 0;
         bestFdrVsCountsOut->clear();
 
-        double bestResultCount = -1.0;
+        double bestResultCount = 0;
+        int countSinceLastHigh = 0;
         const int trancheCountBounded = std::max(1, std::min(trancheCountToUse, targetDecoyCandidatePointersTranched.size()));
 
         for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
@@ -472,36 +473,15 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
             if (res.fdrCount >= bestResultCount) {
                 bestResultCount = res.fdrCount;
+                countSinceLastHigh = 0;
                 *bestWeightsOut = weights;
                 *bestIdsAtFivePercent = fdrVsCounts.value(OPTIMIZATION_SUPPORT_FDR_KEY);
                 *bestFdrVsCountsOut = fdrVsCounts;
-            }
-
-            if (resultsOut->size() < PPM_FIT_MIN_RESULTS_FOR_EARLY_STOP) {
                 continue;
             }
 
-            PpmFitSummary fitSummary;
-            e = buildPpmFitSummary(*resultsOut, 0, &fitSummary); ree;
-            if (lastFitSummaryOut != nullptr) {
-                *lastFitSummaryOut = fitSummary;
-            }
-
-            if (!fitSummary.hasUsableApex
-                || fitSummary.coeffs.size() <= 2
-                || fitSummary.coeffs.at(2) >= 0.0
-                || fitSummary.apexPpm < fitSummary.evaluatedPpmMin
-                || fitSummary.apexPpm > fitSummary.evaluatedPpmMax) {
-                continue;
-            }
-
-            const int apexEvaluatedIndex = nearestEvaluatedPpmIndex(*resultsOut, fitSummary.apexPpm);
-            if (apexEvaluatedIndex < 0) {
-                continue;
-            }
-
-            const int pointsPastApex = resultsOut->size() - 1 - apexEvaluatedIndex;
-            if (pointsPastApex >= PPM_FIT_EARLY_STOP_PAST_APEX_POINTS) {
+            constexpr int maxCountsSinceLastHigh = 3;
+            if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
                 break;
             }
         }
