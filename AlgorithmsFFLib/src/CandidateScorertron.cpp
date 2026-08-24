@@ -25,6 +25,7 @@
 #include <cmath>
 #include <numeric>
 #include <unordered_map>
+#include <utility>
 
 namespace {
 
@@ -280,6 +281,12 @@ public:
     Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
     Eigen::VectorX<float> productVec;
+    QVector<XICPoints> ms2IonMobilityFilteredXicPoints100;
+    bool hasMs2IonMobilityFilteredXicPoints = false;
+    FrameIndex ms2IonMobilityExtractionFrameIndexMin = -1;
+    FrameIndex ms2IonMobilityExtractionFrameIndexMax = -1;
+    float ms2IonMobilityExtractionDriftTimeMin = -1.0f;
+    float ms2IonMobilityExtractionDriftTimeMax = -1.0f;
 
     [[nodiscard]] bool intensityMatriciesAreValid() const {
         return intensityMatrix100.size() > 0 && mzMatrix100.size() > 0;
@@ -729,6 +736,7 @@ Err CandidateScorertron::calculateScores(
         targetDecoyCandidatePair,
         ms2Ions,
         bestCorrelationResults,
+        matriciesAndVecs,
         ms1Averagine,
         candidateScores
         ); ree;
@@ -749,6 +757,7 @@ Err CandidateScorertron::calculateScores(
             targetDecoyCandidatePair,
             ms2Ions,
             {bcr},
+            matriciesAndVecs,
             ms1Averagine,
             &cs
             ); ree;
@@ -1287,7 +1296,9 @@ namespace {
         bool useAdaptiveIonMobilityCentering,
         QVector<XICPoints> *xicPointsVec100,
         QVector<XICPoints> *xicPointsVec100Shadows,
-        QVector<XICPoints> *xicPointsVec45
+        QVector<XICPoints> *xicPointsVec45,
+        float *usedIonMobilityMin = nullptr,
+        float *usedIonMobilityMax = nullptr
         ) {
 
         ERR_INIT
@@ -1331,6 +1342,13 @@ namespace {
 #else
             Q_UNUSED(useAdaptiveIonMobilityCentering);
 #endif
+        }
+
+        if (usedIonMobilityMin != nullptr) {
+            *usedIonMobilityMin = localIonMobilityPeak.minDriftTime;
+        }
+        if (usedIonMobilityMax != nullptr) {
+            *usedIonMobilityMax = localIonMobilityPeak.maxDriftTime;
         }
 
         for (const MS2Ion &ms2Ion : ms2Ions) {
@@ -1388,7 +1406,10 @@ namespace {
         bool useAdaptiveIonMobilityCentering,
         QVector<XICPoints> *xicPointsVec100,
         QVector<XICPoints> *xicPointsVec100Shadows,
-        QVector<XICPoints> *xicPointsVec45
+        QVector<XICPoints> *xicPointsVec45,
+        bool *usedLibraryIonMobilityFilteredMs2 = nullptr,
+        float *usedIonMobilityMin = nullptr,
+        float *usedIonMobilityMax = nullptr
         ) {
 
         ERR_INIT
@@ -1400,6 +1421,9 @@ namespace {
                 ms2IonMobilityIndex,
                 ionMobilityCenter
                 )) {
+            if (usedLibraryIonMobilityFilteredMs2 != nullptr) {
+                *usedLibraryIonMobilityFilteredMs2 = true;
+            }
 
             e = getLibraryIonMobilityFilteredTimsMs2XICs(
                 targetDecoyCandidatePair,
@@ -1414,10 +1438,16 @@ namespace {
                 useAdaptiveIonMobilityCentering,
                 xicPointsVec100,
                 xicPointsVec100Shadows,
-                xicPointsVec45
+                xicPointsVec45,
+                usedIonMobilityMin,
+                usedIonMobilityMax
                 ); ree;
 
             ERR_RETURN
+        }
+
+        if (usedLibraryIonMobilityFilteredMs2 != nullptr) {
+            *usedLibraryIonMobilityFilteredMs2 = false;
         }
 
         xicPointsVec100->reserve(ms2Ions.size());
@@ -1658,6 +1688,9 @@ Err CandidateScorertron::initMatricesdAndVecs(
         QVector<XICPoints> xicPointsVec100;
         QVector<XICPoints> xicPointsVec100Shadow;
         QVector<XICPoints> xicPointsVec45;
+        bool usedLibraryIonMobilityFilteredMs2 = false;
+        float usedIonMobilityMin = -1.0f;
+        float usedIonMobilityMax = -1.0f;
         const float calibratedIonMobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
         e = getXICs(
             targetDecoyCandidatePair,
@@ -1673,7 +1706,10 @@ Err CandidateScorertron::initMatricesdAndVecs(
             m_useAdaptiveIonMobilityCentering,
             &xicPointsVec100,
             &xicPointsVec100Shadow,
-            &xicPointsVec45
+            &xicPointsVec45,
+            &usedLibraryIonMobilityFilteredMs2,
+            &usedIonMobilityMin,
+            &usedIonMobilityMax
             ); ree;
 
         e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec45.size()); ree;
@@ -1747,6 +1783,13 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->intensityMatrix45,
             &unused
             ); ree;
+
+        matriciesAndVecs->hasMs2IonMobilityFilteredXicPoints = usedLibraryIonMobilityFilteredMs2;
+        matriciesAndVecs->ms2IonMobilityExtractionFrameIndexMin = frameIndexPredictedMin;
+        matriciesAndVecs->ms2IonMobilityExtractionFrameIndexMax = frameIndexPredictedMax;
+        matriciesAndVecs->ms2IonMobilityExtractionDriftTimeMin = usedIonMobilityMin;
+        matriciesAndVecs->ms2IonMobilityExtractionDriftTimeMax = usedIonMobilityMax;
+        matriciesAndVecs->ms2IonMobilityFilteredXicPoints100 = std::move(xicPointsVec100);
 
         ERR_RETURN
     }
@@ -2794,6 +2837,7 @@ Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
     const QVector<MS2Ion> &ms2Ions,
     const QVector<BestCorrelationResult> &bestCorrelationResults,
+    const MatriciesAndVecs &matriciesAndVecs,
     const QVector<float> &ms1Averagine,
     CandidateScores *candidateScores
     ) const {
@@ -2949,6 +2993,7 @@ Err CandidateScorertron::setCandidateScores(
         e = setMs2IonMobilityRelatedScores(
             targetDecoyCandidatePair,
             ms2Ions,
+            matriciesAndVecs,
             candidateScores
             ); ree;
     }
@@ -3310,6 +3355,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
 Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
     const QVector<MS2Ion> &ms2Ions,
+    const MatriciesAndVecs &matriciesAndVecs,
     CandidateScores *candidateScores
     ) const {
 
@@ -3343,6 +3389,12 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         = mobilityCenter - ionMobilityToleranceUsed;
     const float ionMobilityMax
         = mobilityCenter + ionMobilityToleranceUsed;
+    const bool canReuseCachedNativeXics
+        = matriciesAndVecs.hasMs2IonMobilityFilteredXicPoints
+        && frameIndexMin >= matriciesAndVecs.ms2IonMobilityExtractionFrameIndexMin
+        && frameIndexMax <= matriciesAndVecs.ms2IonMobilityExtractionFrameIndexMax
+        && ionMobilityMin >= matriciesAndVecs.ms2IonMobilityExtractionDriftTimeMin
+        && ionMobilityMax <= matriciesAndVecs.ms2IonMobilityExtractionDriftTimeMax;
     using RtMobilityKey = quint64;
     constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
     const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
@@ -3381,23 +3433,38 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     for (int i = 0; i < topIonCount; ++i) {
         const MS2Ion &ms2Ion = ms2Ions.at(i);
-        const float massTol = MathUtils::calculatePPM(
-            ms2Ion.mz,
-            static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
-            );
+        XICPoints extractedXicPoints;
+        const XICPoints *xicPoints = nullptr;
+        bool reusedCachedXicPoints = false;
+        if (canReuseCachedNativeXics && i < matriciesAndVecs.ms2IonMobilityFilteredXicPoints100.size()) {
+            xicPoints = &matriciesAndVecs.ms2IonMobilityFilteredXicPoints100.at(i);
+            reusedCachedXicPoints = true;
+        }
+        else {
+            const float massTol = MathUtils::calculatePPM(
+                ms2Ion.mz,
+                static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+                );
 
-        const XICPoints xicPoints = m_ms2IonMobilityIndex->extractPointsXIC(
-            ms2Ion.mz - massTol,
-            ms2Ion.mz + massTol,
-            frameIndexMin,
-            frameIndexMax,
-            ionMobilityMin,
-            ionMobilityMax
-            );
+            extractedXicPoints = m_ms2IonMobilityIndex->extractPointsXIC(
+                ms2Ion.mz - massTol,
+                ms2Ion.mz + massTol,
+                frameIndexMin,
+                frameIndexMax,
+                ionMobilityMin,
+                ionMobilityMax
+                );
+            xicPoints = &extractedXicPoints;
+        }
 
         FragmentCentroidObservation observation;
-        for (const XICPoint &xicPoint : xicPoints) {
+        for (const XICPoint &xicPoint : *xicPoints) {
             if (xicPoint.intensity <= 0.0f || xicPoint.ionMobilityIndex < 0) {
+                continue;
+            }
+            if (reusedCachedXicPoints
+                && frameIndexMax > 0
+                && !(frameIndexMin < xicPoint.scanNumber && xicPoint.scanNumber < frameIndexMax)) {
                 continue;
             }
 
@@ -3406,6 +3473,10 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
                     xicPoint.ionMobilityIndex,
                     &driftTime
                     )) {
+                continue;
+            }
+            if (reusedCachedXicPoints
+                && !(ionMobilityMin <= driftTime && driftTime <= ionMobilityMax)) {
                 continue;
             }
 

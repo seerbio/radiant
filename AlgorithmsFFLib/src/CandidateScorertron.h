@@ -107,6 +107,7 @@ private:
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
         const QVector<BestCorrelationResult> &bestCorrelationResults,
+        const MatriciesAndVecs &matriciesAndVecs,
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores
         ) const;
@@ -126,6 +127,7 @@ private:
     Err setMs2IonMobilityRelatedScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
+        const MatriciesAndVecs &matriciesAndVecs,
         CandidateScores *candidateScores
         ) const;
 

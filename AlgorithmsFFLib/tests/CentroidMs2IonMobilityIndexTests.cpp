@@ -19,6 +19,7 @@ public:
 
 private Q_SLOTS:
     static void extractFiltersMzFrameAndIonMobilityTest();
+    static void extractRespectsFrameWindowEdgeExclusionTest();
 };
 
 void CentroidMs2IonMobilityIndexTests::extractFiltersMzFrameAndIonMobilityTest() {
@@ -98,6 +99,58 @@ void CentroidMs2IonMobilityIndexTests::extractFiltersMzFrameAndIonMobilityTest()
     QCOMPARE(narrowMobilityPoints.at(0).scanNumber, 0);
     QCOMPARE(narrowMobilityPoints.at(0).ionMobilityIndex, 11500);
     QVERIFY(MathUtils::tSame(narrowMobilityPoints.at(0).intensity, 999.0f));
+}
+
+void CentroidMs2IonMobilityIndexTests::extractRespectsFrameWindowEdgeExclusionTest() {
+    ERR_INIT
+
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
+    scanNumberVsScanPoints.insert(100, {{500.000f, 100.0f}});
+    scanNumberVsScanPoints.insert(200, {{500.000f, 200.0f}});
+    scanNumberVsScanPoints.insert(300, {{500.000f, 300.0f}});
+
+    QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsPntrs;
+    for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); ++it) {
+        scanNumberVsScanPointsPntrs.insert(it.key(), &it.value());
+    }
+
+    QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+    scanNumberVsScanTime.insert(100, 10.0f);
+    scanNumberVsScanTime.insert(200, 20.0f);
+    scanNumberVsScanTime.insert(300, 30.0f);
+
+    MsFrame msFrame;
+    e = msFrame.init(scanNumberVsScanPointsPntrs, scanNumberVsScanTime);
+    QCOMPARE(e, eNoError);
+
+    QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
+    const TimsbukAlignedPointData alignedScan100{{1.00f}};
+    const TimsbukAlignedPointData alignedScan200{{1.00f}};
+    const TimsbukAlignedPointData alignedScan300{{1.00f}};
+    scanNumberVsAlignedPointData.insert(100, &alignedScan100);
+    scanNumberVsAlignedPointData.insert(200, &alignedScan200);
+    scanNumberVsAlignedPointData.insert(300, &alignedScan300);
+
+    CentroidMs2IonMobilityIndex index;
+    e = index.init(
+        scanNumberVsScanPoints,
+        scanNumberVsAlignedPointData,
+        msFrame
+        );
+    QCOMPARE(e, eNoError);
+
+    const XICPoints xicPoints = index.extractPointsXIC(
+        499.99f,
+        500.01f,
+        0,
+        2,
+        0.95f,
+        1.05f
+        );
+
+    QCOMPARE(xicPoints.size(), 1);
+    QCOMPARE(xicPoints.at(0).scanNumber, 1);
+    QVERIFY(MathUtils::tSame(xicPoints.at(0).intensity, 200.0f));
 }
 
 QTEST_MAIN(CentroidMs2IonMobilityIndexTests)
