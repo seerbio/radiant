@@ -283,6 +283,7 @@ enum Features {
     Ms2IonMobilityApexDeltaAbsMean,
     Ms2IonMobilityApexDeltaAbsStDev,
     Ms2IonMobilityMatchedIonFraction,
+    Ms2IonMobilityMatchedIonFractionWeighted,
     Ms2IonMobilityFwhmMean,
     Ms2IonMobilityFwhmStDev,
     Ms2IonMobilityRtCosineMean,
@@ -414,6 +415,8 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN = QStringLiteral("Ms2IonMobilityApexDeltaAbsMean");
     const QString MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV = QStringLiteral("Ms2IonMobilityApexDeltaAbsStDev");
     const QString MS2_ION_MOBILITY_MATCHED_ION_FRACTION = QStringLiteral("Ms2IonMobilityMatchedIonFraction");
+    const QString MS2_ION_MOBILITY_MATCHED_ION_FRACTION_WEIGHTED
+        = QStringLiteral("Ms2IonMobilityMatchedIonFractionWeighted");
     const QString MS2_ION_MOBILITY_FWHM_MEAN = QStringLiteral("Ms2IonMobilityFwhmMean");
     const QString MS2_ION_MOBILITY_FWHM_STDEV = QStringLiteral("Ms2IonMobilityFwhmStDev");
     const QString COS_SIM_ANCH_1 = QStringLiteral("CosineSimToAnchor1");
@@ -894,6 +897,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float ms2IonMobilityApexDeltaAbsMean = 0.0;
     float ms2IonMobilityApexDeltaAbsStDev = 0.0;
     float ms2IonMobilityMatchedIonFraction = 0.0;
+    float ms2IonMobilityMatchedIonFractionWeighted = 0.0;
     float ms2IonMobilityFwhmMean = 0.0;
     float ms2IonMobilityFwhmStDev = 0.0;
     float cosineSimToAnchor1 = -1.0;
@@ -1163,6 +1167,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         ms2IonMobilityApexDeltaAbsMean = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN).toFloat();
         ms2IonMobilityApexDeltaAbsStDev = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV).toFloat();
         ms2IonMobilityMatchedIonFraction = dataMap.value(MS2_ION_MOBILITY_MATCHED_ION_FRACTION).toFloat();
+        ms2IonMobilityMatchedIonFractionWeighted
+            = dataMap.value(MS2_ION_MOBILITY_MATCHED_ION_FRACTION_WEIGHTED).toFloat();
         ms2IonMobilityFwhmMean = dataMap.value(MS2_ION_MOBILITY_FWHM_MEAN).toFloat();
         ms2IonMobilityFwhmStDev = dataMap.value(MS2_ION_MOBILITY_FWHM_STDEV).toFloat();
         cosineSimToAnchor1 = dataMap.value(COS_SIM_ANCH_1).toFloat();
@@ -1384,6 +1390,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN, QVariant(ms2IonMobilityApexDeltaAbsMean)},
                 {MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV, QVariant(ms2IonMobilityApexDeltaAbsStDev)},
                 {MS2_ION_MOBILITY_MATCHED_ION_FRACTION, QVariant(ms2IonMobilityMatchedIonFraction)},
+                {MS2_ION_MOBILITY_MATCHED_ION_FRACTION_WEIGHTED,
+                    QVariant(ms2IonMobilityMatchedIonFractionWeighted)},
                 {MS2_ION_MOBILITY_FWHM_MEAN, QVariant(ms2IonMobilityFwhmMean)},
                 {MS2_ION_MOBILITY_FWHM_STDEV, QVariant(ms2IonMobilityFwhmStDev)},
                 {COS_SIM_ANCH_1, QVariant(cosineSimToAnchor1)},
@@ -1609,6 +1617,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.ms2IonMobilityApexDeltaAbsMean = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean];
         row.ms2IonMobilityApexDeltaAbsStDev = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev];
         row.ms2IonMobilityMatchedIonFraction = candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction];
+        row.ms2IonMobilityMatchedIonFractionWeighted
+            = candidateScores->featuresArray[Ms2IonMobilityMatchedIonFractionWeighted];
         row.ms2IonMobilityFwhmMean = candidateScores->featuresArray[Ms2IonMobilityFwhmMean];
         row.ms2IonMobilityFwhmStDev = candidateScores->featuresArray[Ms2IonMobilityFwhmStDev];
         row.cosineSimSum100 = candidateScores->featuresArray[Features::CosineSimSum100];
@@ -2070,6 +2080,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Ms2IonMobilityApexDeltaAbsMean] = candidateScoresReaderRow.ms2IonMobilityApexDeltaAbsMean;
         featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = candidateScoresReaderRow.ms2IonMobilityApexDeltaAbsStDev;
         featuresArray[Ms2IonMobilityMatchedIonFraction] = candidateScoresReaderRow.ms2IonMobilityMatchedIonFraction;
+        featuresArray[Ms2IonMobilityMatchedIonFractionWeighted]
+            = candidateScoresReaderRow.ms2IonMobilityMatchedIonFractionWeighted;
         featuresArray[Ms2IonMobilityFwhmMean] = candidateScoresReaderRow.ms2IonMobilityFwhmMean;
         featuresArray[Ms2IonMobilityFwhmStDev] = candidateScoresReaderRow.ms2IonMobilityFwhmStDev;
 
@@ -2123,6 +2135,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
     float ms2IonMobilityApexDeltaAbsMean = 0.0;
     float ms2IonMobilityApexDeltaAbsStDev = 0.0;
     float ms2IonMobilityMatchedIonFraction = 0.0;
+    float ms2IonMobilityMatchedIonFractionWeighted = 0.0;
     float ms2IonMobilityFwhmMean = 0.0;
     float ms2IonMobilityFwhmStDev = 0.0;
 
@@ -2224,6 +2237,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         ms2IonMobilityApexDeltaAbsMean = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN).toFloat();
         ms2IonMobilityApexDeltaAbsStDev = dataMap.value(MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV).toFloat();
         ms2IonMobilityMatchedIonFraction = dataMap.value(MS2_ION_MOBILITY_MATCHED_ION_FRACTION).toFloat();
+        ms2IonMobilityMatchedIonFractionWeighted
+            = dataMap.value(MS2_ION_MOBILITY_MATCHED_ION_FRACTION_WEIGHTED).toFloat();
         ms2IonMobilityFwhmMean = dataMap.value(MS2_ION_MOBILITY_FWHM_MEAN).toFloat();
         ms2IonMobilityFwhmStDev = dataMap.value(MS2_ION_MOBILITY_FWHM_STDEV).toFloat();
 
@@ -2300,6 +2315,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 {MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN, QVariant(ms2IonMobilityApexDeltaAbsMean)},
                 {MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV, QVariant(ms2IonMobilityApexDeltaAbsStDev)},
                 {MS2_ION_MOBILITY_MATCHED_ION_FRACTION, QVariant(ms2IonMobilityMatchedIonFraction)},
+                {MS2_ION_MOBILITY_MATCHED_ION_FRACTION_WEIGHTED,
+                    QVariant(ms2IonMobilityMatchedIonFractionWeighted)},
                 {MS2_ION_MOBILITY_FWHM_MEAN, QVariant(ms2IonMobilityFwhmMean)},
                 {MS2_ION_MOBILITY_FWHM_STDEV, QVariant(ms2IonMobilityFwhmStDev)},
         };
@@ -2367,6 +2384,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.ms2IonMobilityApexDeltaAbsMean = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean];
         row.ms2IonMobilityApexDeltaAbsStDev = candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev];
         row.ms2IonMobilityMatchedIonFraction = candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction];
+        row.ms2IonMobilityMatchedIonFractionWeighted
+            = candidateScores->featuresArray[Ms2IonMobilityMatchedIonFractionWeighted];
         row.ms2IonMobilityFwhmMean = candidateScores->featuresArray[Ms2IonMobilityFwhmMean];
         row.ms2IonMobilityFwhmStDev = candidateScores->featuresArray[Ms2IonMobilityFwhmStDev];
 

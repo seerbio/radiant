@@ -214,6 +214,7 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 Ms2IonMobilityWeightedDeltaAbs,
                 Ms2IonMobilityApexDeltaAbsMean,
                 Ms2IonMobilityMatchedIonFraction,
+                Ms2IonMobilityMatchedIonFractionWeighted,
                 DiscriminantScore,
                 MatrixZeroPercentage,
                 DiscScore1stRunnerUpDiff,

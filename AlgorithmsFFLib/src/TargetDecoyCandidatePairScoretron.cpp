@@ -737,6 +737,7 @@ namespace {
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
+            || features.contains(Ms2IonMobilityMatchedIonFractionWeighted)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 

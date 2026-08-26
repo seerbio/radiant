@@ -359,6 +359,7 @@ namespace {
             || features.contains(Ms2IonMobilityWeightedDeltaAbs)
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
+            || features.contains(Ms2IonMobilityMatchedIonFractionWeighted)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 
@@ -3422,12 +3423,14 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     QVector<float> weightedDeltas;
     QVector<float> weightedDeltaAbsValues;
     QVector<float> weights;
+    QVector<float> fragmentDriftTimes;
     QVector<WeightedDriftTimePoint> driftTimePoints;
     QVector<RtMobilityKey> fragmentApexKeys;
     apexDeltaAbsValues.reserve(topIonCount);
     weightedDeltas.reserve(topIonCount);
     weightedDeltaAbsValues.reserve(topIonCount);
     weights.reserve(topIonCount);
+    fragmentDriftTimes.reserve(topIonCount);
     driftTimePoints.reserve(topIonCount);
     fragmentApexKeys.reserve(topIonCount);
 
@@ -3505,6 +3508,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         const float observationWeight
             = std::max(static_cast<float>(observation.totalIntensity), observation.apexIntensity);
         weights.push_back(observationWeight);
+        fragmentDriftTimes.push_back(observation.apexDriftTime);
         driftTimePoints.push_back({
             observation.apexDriftTime,
             observationWeight,
@@ -3535,6 +3539,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
 
     candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction]
         = matchedIonCount / static_cast<float>(topIonCount);
+    candidateScores->featuresArray[Ms2IonMobilityMatchedIonFractionWeighted] = 0.0f;
 
     if (!weights.isEmpty()) {
         double weightSum = std::accumulate(weights.begin(), weights.end(), 0.0);
@@ -3554,6 +3559,18 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
             = static_cast<float>(weightedDeltaSum / weightSum);
         candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs]
             = static_cast<float>(weightedDeltaAbsSum / weightSum);
+
+        if (observedImDriftTime > 0.0f && !fragmentDriftTimes.isEmpty()) {
+            const float agreementTolerance = 0.5f * ionMobilityToleranceUsed;
+            double agreeingWeightSum = 0.0;
+            for (int i = 0; i < fragmentDriftTimes.size(); ++i) {
+                if (std::abs(fragmentDriftTimes.at(i) - observedImDriftTime) <= agreementTolerance) {
+                    agreeingWeightSum += weights.at(i);
+                }
+            }
+            candidateScores->featuresArray[Ms2IonMobilityMatchedIonFractionWeighted]
+                = static_cast<float>(agreeingWeightSum / weightSum);
+        }
     }
     else {
         candidateScores->featuresArray[Ms2IonMobilityWeightedDelta] = 0.0f;
