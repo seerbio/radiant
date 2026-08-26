@@ -22,6 +22,16 @@
 
 class TargetDecoyPairParallelInput;
 
+struct TargetKeyScoringContext {
+    QMap<ScanNumber, ScanPoints> ownedScanPoints;
+    QSharedPointer<MsFrame> ownedMsFrameMzTarget;
+    QSharedPointer<TurboXIC> ownedTurboXicMS2;
+    QSharedPointer<CentroidMs2IonMobilityIndex> ownedMs2IonMobilityIndex;
+    MsFrame *msFrameMzTarget = nullptr;
+    TurboXIC *turboXicMS2 = nullptr;
+    Ms2IonMobilityIndexBase *ms2IonMobilityIndex = nullptr;
+};
+
 namespace {
 
     constexpr int kChunkOversubscription = 4;
@@ -50,16 +60,6 @@ namespace {
                 );
         }
     }
-
-    struct TargetKeyScoringContext {
-        QMap<ScanNumber, ScanPoints> ownedScanPoints;
-        QSharedPointer<MsFrame> ownedMsFrameMzTarget;
-        QSharedPointer<TurboXIC> ownedTurboXicMS2;
-        QSharedPointer<CentroidMs2IonMobilityIndex> ownedMs2IonMobilityIndex;
-        MsFrame *msFrameMzTarget = nullptr;
-        TurboXIC *turboXicMS2 = nullptr;
-        Ms2IonMobilityIndexBase *ms2IonMobilityIndex = nullptr;
-    };
 
     bool readerHasIonMobility(const MsReaderPointerAcc *msReaderPointerAcc) {
         return msReaderPointerAcc != nullptr
@@ -104,6 +104,35 @@ namespace {
         const TargetDecoyPairParallelInput &pi,
         TargetKeyScoringContext *context
         );
+
+    bool cachedTargetKeyContextIsCompatible(
+        const MsFrame *msFrameMzTarget,
+        const TurboXIC *turboXicMS2,
+        const TargetKeyScoringContext *context
+        ) {
+        if (context == nullptr) {
+            return false;
+        }
+
+        // If the caller provides concrete frame/XIC bindings, a cached context
+        // must reference the same objects. Otherwise we can dereference stale
+        // borrowed pointers after those owners are replaced.
+        if (msFrameMzTarget != nullptr
+            && context->msFrameMzTarget != msFrameMzTarget) {
+            return false;
+        }
+        if (turboXicMS2 != nullptr
+            && context->turboXicMS2 != turboXicMS2) {
+            return false;
+        }
+        if (turboXicMS2 == nullptr
+            && msFrameMzTarget != nullptr
+            && context->ownedTurboXicMS2.isNull()) {
+            return false;
+        }
+
+        return true;
+    }
 
     QVector<TargetDecoyCandidatePair*> sliceTargetDecoyPointers(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
@@ -355,6 +384,8 @@ Err TargetDecoyCandidatePairScoretron2::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
 
+    clearTargetKeyScoringContextCache();
+
     m_msReaderPointerAcc = msReaderPointerAcc;
     m_pythiaParameters = pythiaParameters;
 
@@ -414,6 +445,8 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
     e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
 
+    clearTargetKeyScoringContextCache();
+
     for (auto it = m_mzTargetKeyVsMsFramePntr.begin(); it != m_mzTargetKeyVsMsFramePntr.end(); ++it) {
         delete it.value();
         m_mzTargetKeyVsMsFramePntr[it.key()] = nullptr;
@@ -455,6 +488,10 @@ QMap<ScanNumber, ScanPoints>* TargetDecoyCandidatePairScoretron2::ms1ScanNumberV
 
 QMap<MzTargetKey, MsFrame*> TargetDecoyCandidatePairScoretron2::mzTargetKeyVsMsFramePntr() {
     return m_mzTargetKeyVsMsFramePntr;
+}
+
+void TargetDecoyCandidatePairScoretron2::clearTargetKeyScoringContextCache() const {
+    m_targetKeyScoringContextCache.clear();
 }
 
 Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
@@ -965,6 +1002,13 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 
     candidateScoresPairsVec->clear();
 
+    if (m_msReaderPointerAcc->useLazyLoading() && msCalibratomatic.isInitCalMS2()) {
+        // Lazy target scan points are recalibrated during context build.  Since
+        // coefficients can change between scoreTargetDecoyPairs invocations,
+        // force rebuild to avoid reusing stale recalibrated point sets.
+        clearTargetKeyScoringContextCache();
+    }
+
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
             features,
@@ -979,15 +1023,32 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputs
             ); ree;
 
-    QMap<MzTargetKey, QSharedPointer<TargetKeyScoringContext>> targetKeyContexts;
     for (TargetDecoyPairParallelInput &parallelInput : parallelInputs) {
-        if (!targetKeyContexts.contains(parallelInput.targetKey)) {
+        const bool cachedContextExists
+            = m_targetKeyScoringContextCache.contains(parallelInput.targetKey);
+        const TargetKeyScoringContext *cachedContext = cachedContextExists
+            ? m_targetKeyScoringContextCache.value(parallelInput.targetKey).data()
+            : nullptr;
+        const bool needsMs2IonMobilityIndex = readerHasIonMobility(parallelInput.msReaderPointerAcc)
+            && containsMs2IonMobilityFeature(parallelInput.features);
+        const bool missingRequiredMs2IonMobilityIndex = cachedContext != nullptr
+            && needsMs2IonMobilityIndex
+            && cachedContext->ms2IonMobilityIndex == nullptr;
+        const bool incompatibleCachedContext = cachedContextExists
+            && !cachedTargetKeyContextIsCompatible(
+                parallelInput.msFrameMzTarget,
+                parallelInput.turboXicMS2,
+                cachedContext
+                );
+        if (!cachedContextExists
+            || incompatibleCachedContext
+            || missingRequiredMs2IonMobilityIndex) {
             auto context = QSharedPointer<TargetKeyScoringContext>::create();
             e = buildTargetKeyScoringContext(parallelInput, context.data()); ree;
-            targetKeyContexts.insert(parallelInput.targetKey, context);
+            m_targetKeyScoringContextCache.insert(parallelInput.targetKey, context);
         }
 
-        parallelInput.targetKeyContext = targetKeyContexts.value(parallelInput.targetKey).data();
+        parallelInput.targetKeyContext = m_targetKeyScoringContextCache.value(parallelInput.targetKey).data();
     }
 
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
@@ -1066,6 +1127,13 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 
     candidateScoresPairsVec->clear();
 
+    if (m_msReaderPointerAcc->useLazyLoading() && msCalibratomatic.isInitCalMS2()) {
+        // Lazy target scan points are recalibrated during context build.  Since
+        // coefficients can change between scoreTargetDecoyPairs invocations,
+        // force rebuild to avoid reusing stale recalibrated point sets.
+        clearTargetKeyScoringContextCache();
+    }
+
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
             features,
@@ -1080,15 +1148,32 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputs
             ); ree;
 
-    QMap<MzTargetKey, QSharedPointer<TargetKeyScoringContext>> targetKeyContexts;
     for (TargetDecoyPairParallelInput &parallelInput : parallelInputs) {
-        if (!targetKeyContexts.contains(parallelInput.targetKey)) {
+        const bool cachedContextExists
+            = m_targetKeyScoringContextCache.contains(parallelInput.targetKey);
+        const TargetKeyScoringContext *cachedContext = cachedContextExists
+            ? m_targetKeyScoringContextCache.value(parallelInput.targetKey).data()
+            : nullptr;
+        const bool needsMs2IonMobilityIndex = readerHasIonMobility(parallelInput.msReaderPointerAcc)
+            && containsMs2IonMobilityFeature(parallelInput.features);
+        const bool missingRequiredMs2IonMobilityIndex = cachedContext != nullptr
+            && needsMs2IonMobilityIndex
+            && cachedContext->ms2IonMobilityIndex == nullptr;
+        const bool incompatibleCachedContext = cachedContextExists
+            && !cachedTargetKeyContextIsCompatible(
+                parallelInput.msFrameMzTarget,
+                parallelInput.turboXicMS2,
+                cachedContext
+                );
+        if (!cachedContextExists
+            || incompatibleCachedContext
+            || missingRequiredMs2IonMobilityIndex) {
             auto context = QSharedPointer<TargetKeyScoringContext>::create();
             e = buildTargetKeyScoringContext(parallelInput, context.data()); ree;
-            targetKeyContexts.insert(parallelInput.targetKey, context);
+            m_targetKeyScoringContextCache.insert(parallelInput.targetKey, context);
         }
 
-        parallelInput.targetKeyContext = targetKeyContexts.value(parallelInput.targetKey).data();
+        parallelInput.targetKeyContext = m_targetKeyScoringContextCache.value(parallelInput.targetKey).data();
     }
 
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;

@@ -18,11 +18,14 @@
 #include "TurboXIC.h"
 #include "TurboXIC2D.h"
 
+#include <QSharedPointer>
+
 using namespace Error;
 
 
 class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
+struct TargetKeyScoringContext;
 
 namespace TargetDecoyCandidatePairScoretronUtils {
 
@@ -170,6 +173,7 @@ private:
 
     Err buildAveragineTable();
 
+    void clearTargetKeyScoringContextCache() const;
 
 private:
 
@@ -189,6 +193,7 @@ private:
     QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFramePntr;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
     bool m_useAdaptiveIonMobilityCentering = false;
+    mutable QMap<MzTargetKey, QSharedPointer<TargetKeyScoringContext>> m_targetKeyScoringContextCache;
 
 };
 
