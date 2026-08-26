@@ -360,6 +360,7 @@ namespace {
             || features.contains(Ms2IonMobilityApexDeltaAbsMean)
             || features.contains(Ms2IonMobilityMatchedIonFraction)
             || features.contains(Ms2IonMobilityMatchedIonFractionWeighted)
+            || features.contains(Ms2IonMobilityMatchedTop3IonFraction)
             || features.contains(Ms2IonMobilityRtApexAgreementFraction);
     }
 
@@ -3540,6 +3541,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
     candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction]
         = matchedIonCount / static_cast<float>(topIonCount);
     candidateScores->featuresArray[Ms2IonMobilityMatchedIonFractionWeighted] = 0.0f;
+    candidateScores->featuresArray[Ms2IonMobilityMatchedTop3IonFraction] = 0.0f;
 
     if (!weights.isEmpty()) {
         double weightSum = std::accumulate(weights.begin(), weights.end(), 0.0);
@@ -3570,6 +3572,25 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
             }
             candidateScores->featuresArray[Ms2IonMobilityMatchedIonFractionWeighted]
                 = static_cast<float>(agreeingWeightSum / weightSum);
+
+            QVector<int> fragmentIndexes(weights.size());
+            std::iota(fragmentIndexes.begin(), fragmentIndexes.end(), 0);
+            std::sort(fragmentIndexes.begin(), fragmentIndexes.end(), [&weights](int lhs, int rhs) {
+                return weights.at(lhs) > weights.at(rhs);
+            });
+
+            const int topCount = std::min(3, fragmentIndexes.size());
+            int agreeingTopCount = 0;
+            for (int rank = 0; rank < topCount; ++rank) {
+                const int idx = fragmentIndexes.at(rank);
+                if (std::abs(fragmentDriftTimes.at(idx) - observedImDriftTime) <= agreementTolerance) {
+                    agreeingTopCount++;
+                }
+            }
+            if (topCount > 0) {
+                candidateScores->featuresArray[Ms2IonMobilityMatchedTop3IonFraction]
+                    = agreeingTopCount / static_cast<float>(topCount);
+            }
         }
     }
     else {

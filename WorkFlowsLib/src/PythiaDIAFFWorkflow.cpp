@@ -542,6 +542,7 @@ namespace {
         case Ms2IonMobilityApexDeltaAbsMean:
         case Ms2IonMobilityMatchedIonFraction:
         case Ms2IonMobilityMatchedIonFractionWeighted:
+        case Ms2IonMobilityMatchedTop3IonFraction:
         case Ms2IonMobilityRtApexAgreementFraction:
             return true;
         default:
@@ -611,6 +612,7 @@ namespace {
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityApexDeltaAbsMean);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityMatchedIonFraction);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityMatchedIonFractionWeighted);
+        appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityMatchedTop3IonFraction);
         appendFeatureIfMissing(neuralNetFeatures, Ms2IonMobilityRtApexAgreementFraction);
     }
 
