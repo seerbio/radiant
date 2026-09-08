@@ -436,7 +436,9 @@ public:
 
             ScanPoints scanPoints;
             appendScanPointsFromLists(massesArray, intensitiesArray, rowIndex, &scanPoints);
-            e = ErrorUtils::isNotEmpty(scanPoints, eFileError); ree;
+            if (scanPoints.isEmpty()) {
+                continue;
+            }
 
             e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, q->m_msScanInfo, eFileError); ree;
             e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, q->m_scanPoints, eFileError); ree;
