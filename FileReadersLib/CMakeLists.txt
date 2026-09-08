@@ -11,6 +11,28 @@ SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
 
+SET(TIMSREADER_ROOT "/home/sethjust/src/timsbuktoolkit" CACHE PATH "Path to the timsbuktoolkit checkout")
+SET(TIMSREADER_INCLUDE_DIR "${TIMSREADER_ROOT}/include" CACHE PATH "Path to timsreader headers")
+SET(TIMSREADER_LIBRARY "" CACHE FILEPATH "Path to the timsreader C API library")
+
+IF(TIMSREADER_LIBRARY STREQUAL "")
+    FOREACH(TIMSREADER_LIBRARY_CANDIDATE
+            "${TIMSREADER_ROOT}/target/release/libtimsreader_capi.so"
+            "${TIMSREADER_ROOT}/target/release/libtimsreader_capi.a"
+            "${TIMSREADER_ROOT}/target/debug/libtimsreader_capi.so"
+            "${TIMSREADER_ROOT}/target/debug/libtimsreader_capi.a")
+        IF(EXISTS "${TIMSREADER_LIBRARY_CANDIDATE}")
+            SET(TIMSREADER_LIBRARY "${TIMSREADER_LIBRARY_CANDIDATE}" CACHE FILEPATH "Path to the timsreader C API library" FORCE)
+            BREAK()
+        ENDIF()
+    ENDFOREACH()
+ENDIF()
+
+SET(PYTHIA_HAVE_TIMSREADER OFF)
+IF(EXISTS "${TIMSREADER_INCLUDE_DIR}/timsreader.hpp" AND EXISTS "${TIMSREADER_LIBRARY}")
+    SET(PYTHIA_HAVE_TIMSREADER ON)
+ENDIF()
+
 SET(CMAKE_AUTOMOC_MACRO_NAMES
         "Q_OBJECT"
         "Q_GADGET"
@@ -42,6 +64,7 @@ SET(SOURCE_FILES
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
         src/SpecLibReader.cpp
+        src/TimsreaderRunCatalog.cpp
         )
 
 SET(HEADER_FILES
@@ -70,6 +93,7 @@ SET(HEADER_FILES
         src/ParquetReader.h
         src/PythiaParameterReader.h
         src/SpecLibReader.h
+        src/TimsreaderRunCatalog.h
         src/toml.hpp
         )
 
@@ -109,6 +133,15 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Parquet::parquet_static
         ${LIBXML2_LIBRARIES}
         )
+
+IF(PYTHIA_HAVE_TIMSREADER)
+    TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE "${TIMSREADER_INCLUDE_DIR}")
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} "${TIMSREADER_LIBRARY}")
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE PYTHIA_HAVE_TIMSREADER=1)
+    MESSAGE(STATUS "FileReadersLib: timsreader enabled")
+ELSE()
+    MESSAGE(STATUS "FileReadersLib: timsreader disabled")
+ENDIF()
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES
