@@ -58,6 +58,7 @@ SET(HEADER_FILES
         src/FragLibReader.h
         src/FragLibReaderRow.h
         src/FragLibTsvReader.h
+        src/ImHandlingMode.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderTimsbukIndex.h

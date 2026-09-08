@@ -7,6 +7,7 @@
 
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
+#include "ImHandlingMode.h"
 #include "MsReaderBase.h"
 
 #include <QSharedPointer>
@@ -84,10 +85,12 @@ public:
     bool isInit();
 
     void setUseLazyLoading(bool useLazyLoading);
+    void setImHandlingMode(ImHandlingMode imHandlingMode);
 
     QSharedPointer<MsReaderBase> ptr;
 
     bool useLazyLoading() const;
+    ImHandlingMode imHandlingMode() const;
 
 
 private:
@@ -99,6 +102,7 @@ private:
     QString m_cachedFilePath;
     QMap<MzTargetKey, FilePath> m_mzTargetKeyVsFilePathCache;
     bool m_useLazyLoading;
+    ImHandlingMode m_imHandlingMode;
 
 };
 

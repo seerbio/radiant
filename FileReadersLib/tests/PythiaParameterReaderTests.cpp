@@ -37,6 +37,7 @@ void PythiaParameterReaderTests::readFileTest() {
 
     QCOMPARE(pythiaParameters.threadCount, 16);
     QCOMPARE(pythiaParameters.verbosity, 1);
+    QCOMPARE(pythiaParameters.imHandlingMode, ImHandlingMode::Centroid);
     QCOMPARE(pythiaParameters.writeRadiantDIA, true);
     QCOMPARE(pythiaParameters.chargeStateMin, 1);
     QCOMPARE(pythiaParameters.chargeStateMax, 4);

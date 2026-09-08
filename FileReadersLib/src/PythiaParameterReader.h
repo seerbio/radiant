@@ -8,6 +8,7 @@
 #include "AminoAcids.h"
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
+#include "ImHandlingMode.h"
 
 
 using namespace Error;
@@ -98,6 +99,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kTimsNeuralNetInferenceCandidateLimit;
     extern const QString FILEREADERSLIB_EXPORTS kNormalizeNeuralNetPredictions;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
+    extern const QString FILEREADERSLIB_EXPORTS kImHandlingMode;
 
 
 }
@@ -111,6 +113,7 @@ struct PythiaParameters{
     bool writeFullCandidateDebug = false;
     bool reannotate = false;
     bool useLazyLoading = false;
+    ImHandlingMode imHandlingMode = ImHandlingMode::Centroid;
     bool optimizeMode = false;
     bool shortReport = false;
     double analysisScanTimeMin = -1.0;
@@ -248,6 +251,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kWriteRadiantDIA) << writeRadiantDIA;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kWriteFullCandidateDebug) << writeFullCandidateDebug;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kUseLazyLoading) << useLazyLoading;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kImHandlingMode) << imHandlingModeToString(imHandlingMode);
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kReannotate) << reannotate;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kShortReport) << shortReport;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kAnalysisScanTimeMin) << analysisScanTimeMin;

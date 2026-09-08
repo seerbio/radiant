@@ -4,6 +4,7 @@
 threadCount = 16
 verbosity = 0
 useLazyLoading = false
+imHandlingMode = "centroid"
 writePythiaDIA = true
 reannotate = false
 shortReport = false

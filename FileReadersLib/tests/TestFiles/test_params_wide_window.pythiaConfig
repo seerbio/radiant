@@ -3,6 +3,7 @@
 [General]
 threadCount = 16
 verbosity = 1
+imHandlingMode = "centroid"
 writePythiaDIA = true
 
 [LibraryParams]

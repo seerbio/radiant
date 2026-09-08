@@ -21,6 +21,7 @@ namespace PythiaParameterReaderConstants {
     const QString kWriteRadiantDIA = QStringLiteral("writeRadiantDIA");
     const QString kWriteFullCandidateDebug = QStringLiteral("writeFullCandidateDebug");
     const QString kUseLazyLoading = QStringLiteral("useLazyLoading");
+    const QString kImHandlingMode = QStringLiteral("imHandlingMode");
     const QString kReannotate = QStringLiteral("reannotate");
     const QString kShortReport = QStringLiteral("shortReport");
     const QString kAnalysisScanTimeMin = QStringLiteral("analysisScanTimeMin");
@@ -102,6 +103,47 @@ namespace PythiaParameterReaderConstants {
 
 }
 
+QString imHandlingModeToString(ImHandlingMode mode) {
+    switch (mode) {
+    case ImHandlingMode::Centroid:
+        return QStringLiteral("centroid");
+    case ImHandlingMode::Summed:
+        return QStringLiteral("summed");
+    case ImHandlingMode::Raw4D:
+        return QStringLiteral("raw4d");
+    }
+
+    return QStringLiteral("centroid");
+}
+
+bool imHandlingModeFromString(
+    const QString &text,
+    ImHandlingMode *mode
+    ) {
+
+    if (mode == nullptr) {
+        return false;
+    }
+
+    const QString normalized = text.trimmed().toLower();
+    if (normalized == QStringLiteral("centroid")) {
+        *mode = ImHandlingMode::Centroid;
+        return true;
+    }
+    if (normalized == QStringLiteral("summed")) {
+        *mode = ImHandlingMode::Summed;
+        return true;
+    }
+    if (normalized == QStringLiteral("raw4d")
+        || normalized == QStringLiteral("raw")
+        || normalized == QStringLiteral("4d")) {
+        *mode = ImHandlingMode::Raw4D;
+        return true;
+    }
+
+    return false;
+}
+
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     PythiaParameters pythiaParameters;
@@ -140,6 +182,14 @@ Err PythiaParameterReader::buildPythiaParameters(
     if (pythiaParameters->threadCount <= 0) pythiaParameters->threadCount = ParallelUtils::numberOfAvailableSystemProcessors();
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
     pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
+    if (const auto imHandlingMode
+        = generalNode[kImHandlingMode.toStdString()].value<std::string>()) {
+        const QString imHandlingModeText = QString::fromStdString(*imHandlingMode);
+        if (!imHandlingModeFromString(imHandlingModeText, &pythiaParameters->imHandlingMode)) {
+            qDebug() << "Unsupported imHandlingMode value" << imHandlingModeText
+                     << "defaulting to" << imHandlingModeToString(pythiaParameters->imHandlingMode);
+        }
+    }
     pythiaParameters->writeRadiantDIA = parser[kGeneral.toStdString()][kWriteRadiantDIA.toStdString()].value_or(true);
     pythiaParameters->writeFullCandidateDebug = parser[kGeneral.toStdString()][kWriteFullCandidateDebug.toStdString()].value_or(false);
     pythiaParameters->reannotate = parser[kGeneral.toStdString()][kReannotate.toStdString()].value_or(false);

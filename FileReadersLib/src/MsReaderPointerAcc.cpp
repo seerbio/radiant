@@ -38,7 +38,9 @@ namespace {
 
 }//namespace
 
-MsReaderPointerAcc::MsReaderPointerAcc() : m_useLazyLoading(false) {}
+MsReaderPointerAcc::MsReaderPointerAcc()
+    : m_useLazyLoading(false)
+    , m_imHandlingMode(ImHandlingMode::Centroid) {}
 
 void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
     m_useLazyLoading = useLazyLoading;
@@ -46,6 +48,14 @@ void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
 
 bool MsReaderPointerAcc::useLazyLoading() const {
     return m_useLazyLoading;
+}
+
+void MsReaderPointerAcc::setImHandlingMode(ImHandlingMode imHandlingMode) {
+    m_imHandlingMode = imHandlingMode;
+}
+
+ImHandlingMode MsReaderPointerAcc::imHandlingMode() const {
+    return m_imHandlingMode;
 }
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
