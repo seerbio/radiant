@@ -61,6 +61,7 @@ SET(SOURCE_FILES
         src/MsReaderMzMLLazyLoad.cpp
         src/MsReaderMzMLMapped.cpp
         src/MsReaderPointerAcc.cpp
+        src/MsReaderTimsreader.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
         src/SpecLibReader.cpp
@@ -90,6 +91,7 @@ SET(HEADER_FILES
         src/MsReaderMzMLLazyLoad.h
         src/MsReaderMzMLMapped.h
         src/MsReaderPointerAcc.h
+        src/MsReaderTimsreader.h
         src/ParquetReader.h
         src/PythiaParameterReader.h
         src/SpecLibReader.h
