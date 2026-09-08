@@ -50,6 +50,26 @@ enum class TimsreaderTransformedColumn : int {
 constexpr int kFlattenedColumnCount = 18;
 constexpr int kCentroidColumnCount = 20;
 
+#ifdef PYTHIA_HAVE_TIMSREADER
+constexpr size_t kLegacySidecarCentroidMaxPeaks = 20'000;
+constexpr double kLegacySidecarCentroidMzTolerancePpm = 5.0;
+constexpr double kLegacySidecarCentroidImPctTolerance = 3.0;
+constexpr uint32_t kLegacySidecarCentroidEarlyStopIterations = 200;
+
+tr_stream_config_t legacySidecarCentroidStreamConfig(const timsreader::Plan &plan) {
+    tr_stream_config_t config = plan.default_stream_config();
+    config.centroid_max_peaks = kLegacySidecarCentroidMaxPeaks;
+    config.centroid_mz_tolerance_kind = TR_MZ_TOLERANCE_PPM;
+    config.centroid_mz_tolerance_value = kLegacySidecarCentroidMzTolerancePpm;
+    config.centroid_im_pct_tol = kLegacySidecarCentroidImPctTolerance;
+    config.centroid_early_stop_iterations = kLegacySidecarCentroidEarlyStopIterations;
+    config.centroid_window_cap_enabled = false;
+    config.centroid_window_cap_max_peaks = 0;
+    config.centroid_window_cap_window_da = 0.0f;
+    return config;
+}
+#endif
+
 int columnIndex(TimsreaderTransformedColumn column) {
     return static_cast<int>(column);
 }
@@ -450,7 +470,9 @@ public:
 
         ERR_INIT
 
-        timsreader::Stream stream = plan.open_stream();
+        timsreader::Stream stream = m_imHandlingMode == ImHandlingMode::Centroid
+            ? plan.open_stream(legacySidecarCentroidStreamConfig(plan))
+            : plan.open_stream();
         while (true) {
             std::optional<timsreader::OwnedBatch> ownedBatch = stream.next_owned();
             if (!ownedBatch.has_value()) {
