@@ -208,6 +208,7 @@ private Q_SLOTS:
     static void openFileTest8();
     static void openFileTest9();
     static void openFileTest10();
+    static void openFileTest11();
 
 };
 
@@ -483,6 +484,26 @@ void MsReaderPointerAccTests::openFileTest10() {
         QCOMPARE(e, eNoError);
         verifyFilteredTimsbukReaderState(&msReaderPointerAcc);
     }
+}
+
+void MsReaderPointerAccTests::openFileTest11() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const TestTimsbukInputPaths paths = createMinimalTimsbukInputPaths(temporaryDir.path());
+    QVERIFY(createMinimalTimsbukSidecar(paths.sidecarRootPath));
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    msReaderPointerAcc.setUseLazyLoading(true);
+    msReaderPointerAcc.setImHandlingMode(ImHandlingMode::Summed);
+    e = msReaderPointerAcc.openFile(paths.brukerPath);
+    QCOMPARE(e, eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
+    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(paths.brukerPath));
+    QCOMPARE(msReaderPointerAcc.useLazyLoading(), false);
 }
 
 
