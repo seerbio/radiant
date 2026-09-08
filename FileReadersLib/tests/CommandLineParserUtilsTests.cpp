@@ -52,8 +52,8 @@ void CommandLineParserUtilsTests::checkFileNameExtensionTest() {
 void CommandLineParserUtilsTests::isMassSpectrometryDataPathTest() {
 
     const QString sidecarPathBySuffix = QStringLiteral("/tmp/example_run.d.idx");
-    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix), true);
-    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix + QStringLiteral("/")), true);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix), false);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix + QStringLiteral("/")), false);
 
     const QString brukerPathBySuffix = QStringLiteral("/tmp/example_run.d");
     QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(brukerPathBySuffix), true);
@@ -70,7 +70,7 @@ void CommandLineParserUtilsTests::isMassSpectrometryDataPathTest() {
     metadataFile.write("{}");
     metadataFile.close();
 
-    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(metadataSidecarRoot), true);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(metadataSidecarRoot), false);
 
     const QString plainDirectoryPath = QDir(temporaryDir.path()).filePath("plain_directory");
     QVERIFY(QDir().mkpath(plainDirectoryPath));

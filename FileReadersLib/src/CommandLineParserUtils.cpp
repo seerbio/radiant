@@ -4,7 +4,6 @@
 
 #include "CommandLineParserUtils.h"
 
-#include "MsReaderTimsbukIndex.h"
 #include "StringUtils.h"
 
 #include <QDir>
@@ -35,11 +34,9 @@ bool CommandLineParserUtils::isMassSpectrometryDataPath(const QString &filePath)
                {
                    S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION,
                    S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION,
-                   S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION,
-                   QStringLiteral("idx")
+                   S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION
                }
-               )
-        || MsReaderTimsbukIndex::isDirectIndexRootPath(filePath);
+               );
 }
 
 Err CommandLineParserUtils::getDataFilesFromDirectory(

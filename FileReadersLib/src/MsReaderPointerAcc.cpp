@@ -7,7 +7,6 @@
 #include "GlobalSettings.h"
 #include "MsReaderParquet.h"
 #include "MsReaderTimsreader.h"
-#include "MsReaderTimsbukIndex.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
@@ -35,46 +34,6 @@ namespace {
             );
     }
 
-    bool isTimsbukIndexInputPath(const QString &filePath) {
-        const QString normalizedPath = QDir::cleanPath(filePath);
-        const QFileInfo fileInfo(normalizedPath);
-        if (!fileInfo.isDir()) {
-            return false;
-        }
-
-        return StringUtils::stringsMatch(fileInfo.suffix(), QStringLiteral("idx"), false)
-            || MsReaderTimsbukIndex::isDirectIndexRootPath(normalizedPath);
-    }
-
-    bool shouldPreferTimsreader(ImHandlingMode imHandlingMode) {
-        return imHandlingMode == ImHandlingMode::Centroid
-            || imHandlingMode == ImHandlingMode::Summed;
-    }
-
-    Err openTimsbukIndexReader(
-        const QString &filePath,
-        const QString &columnToFilterBy,
-        const QPair<double, double> *filterRange,
-        MsReaderPointerAcc *msReaderPointerAcc
-        ) {
-
-        ERR_INIT
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsbuktoolkit index inputs";
-        msReaderPointerAcc->setUseLazyLoading(false);
-
-        QSharedPointer<MsReaderBase> msReader(new MsReaderTimsbukIndex);
-        msReaderPointerAcc->ptr = msReader;
-        if (filterRange == nullptr) {
-            e = msReaderPointerAcc->ptr->openFile(filePath); ree;
-        }
-        else {
-            e = msReaderPointerAcc->ptr->openFile(filePath, columnToFilterBy, *filterRange); ree;
-        }
-
-        ERR_RETURN
-    }
-
     Err openBrukerDirectoryReader(
         const QString &filePath,
         const QString &columnToFilterBy,
@@ -84,36 +43,18 @@ namespace {
 
         ERR_INIT
 
-        if (shouldPreferTimsreader(msReaderPointerAcc->imHandlingMode())) {
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsreader Bruker inputs";
-            msReaderPointerAcc->setUseLazyLoading(false);
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsreader Bruker inputs";
+        msReaderPointerAcc->setUseLazyLoading(false);
 
-            QSharedPointer<MsReaderBase> msReader(new MsReaderTimsreader(msReaderPointerAcc->imHandlingMode()));
-            msReaderPointerAcc->ptr = msReader;
+        QSharedPointer<MsReaderBase> msReader(new MsReaderTimsreader(msReaderPointerAcc->imHandlingMode()));
+        msReaderPointerAcc->ptr = msReader;
 
-            if (filterRange == nullptr) {
-                e = msReaderPointerAcc->ptr->openFile(filePath);
-            }
-            else {
-                e = msReaderPointerAcc->ptr->openFile(filePath, columnToFilterBy, *filterRange);
-            }
-
-            if (e == eNoError) {
-                return eNoError;
-            }
-
-            const QString sidecarRootPath = QDir::cleanPath(filePath) + QStringLiteral(".idx");
-            if (!QFileInfo::exists(sidecarRootPath)) {
-                ree;
-            }
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "timsreader Bruker open failed, falling back to timsbuktoolkit index"
-                     << filePath
-                     << errorMap.value(e);
+        if (filterRange == nullptr) {
+            e = msReaderPointerAcc->ptr->openFile(filePath); ree;
         }
-
-        e = openTimsbukIndexReader(filePath, columnToFilterBy, filterRange, msReaderPointerAcc); ree;
+        else {
+            e = msReaderPointerAcc->ptr->openFile(filePath, columnToFilterBy, *filterRange); ree;
+        }
         ERR_RETURN
     }
 
@@ -180,10 +121,6 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
         e = ptr->openFile(filePath); ree;
     }
 
-    else if (isTimsbukIndexInputPath(filePath)) {
-        e = openTimsbukIndexReader(filePath, QString(), nullptr, this); ree;
-    }
-
     else if (isBrukerDirectoryInputPath(filePath)) {
         e = openBrukerDirectoryReader(filePath, QString(), nullptr, this); ree;
     }
@@ -229,10 +166,6 @@ Err MsReaderPointerAcc::openFile(
         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
-    }
-
-    else if (isTimsbukIndexInputPath(filePath)) {
-        e = openTimsbukIndexReader(filePath, columnToFilterBy, &filterRange, this); ree;
     }
 
     else if (isBrukerDirectoryInputPath(filePath)) {

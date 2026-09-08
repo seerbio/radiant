@@ -56,7 +56,6 @@ SET(SOURCE_FILES
         src/FragLibTsvReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
-        src/MsReaderTimsbukIndex.cpp
         src/MsReaderMzML.cpp
         src/MsReaderMzMLLazyLoad.cpp
         src/MsReaderMzMLMapped.cpp
@@ -85,7 +84,6 @@ SET(HEADER_FILES
         src/ImHandlingMode.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
-        src/MsReaderTimsbukIndex.h
         src/TimsbukIndexTypes.h
         src/MsReaderMzML.h
         src/MsReaderMzMLLazyLoad.h

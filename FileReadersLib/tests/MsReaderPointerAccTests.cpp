@@ -3,130 +3,14 @@
 //
 
 #include "MsReaderPointerAcc.h"
-#include "MsReaderTimsbukIndex.h"
-#include "ParquetReader.h"
+#include "MsReaderTimsreader.h"
 
 #include <QDir>
-#include <QFile>
 #include <QTemporaryDir>
 #include <QString>
 #include <QtTest/QtTest>
 
 namespace {
-
-struct TestTimsbukPeakRow : public ParquetReaderInputBase {
-    float mz = -1.0f;
-    float intensity = -1.0f;
-    float mobilityOok0 = -1.0f;
-    int cycleIndex = -1;
-
-    QMap<QString, QVariant> map() override {
-        return {
-            {QStringLiteral("mz"), QVariant(mz)},
-            {QStringLiteral("intensity"), QVariant(intensity)},
-            {QStringLiteral("mobility_ook0"), QVariant(mobilityOok0)},
-            {QStringLiteral("cycle_index"), QVariant(cycleIndex)}
-        };
-    }
-};
-
-TestTimsbukPeakRow makeTestTimsbukPeakRow(
-    float mz,
-    float intensity,
-    float mobilityOok0,
-    int cycleIndex
-    ) {
-
-    TestTimsbukPeakRow row;
-    row.mz = mz;
-    row.intensity = intensity;
-    row.mobilityOok0 = mobilityOok0;
-    row.cycleIndex = cycleIndex;
-    return row;
-}
-
-bool writeFile(const QString &filePath, const QByteArray &content = {}) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        return false;
-    }
-
-    if (!content.isEmpty() && file.write(content) != content.size()) {
-        return false;
-    }
-
-    file.close();
-    return true;
-}
-
-bool createMinimalTimsbukSidecar(const QString &sidecarRootPath) {
-    if (!QDir().mkpath(sidecarRootPath)) {
-        return false;
-    }
-
-    const QString ms2DirectoryPath = QDir(sidecarRootPath).filePath("ms2");
-    if (!QDir().mkpath(ms2DirectoryPath)) {
-        return false;
-    }
-
-    const QVector<TestTimsbukPeakRow> ms1Rows = {
-        makeTestTimsbukPeakRow(100.0f, 5.0f, 0.50f, 1),
-        makeTestTimsbukPeakRow(101.0f, 6.0f, 0.55f, 1),
-        makeTestTimsbukPeakRow(102.0f, 7.0f, 0.50f, 2),
-        makeTestTimsbukPeakRow(103.0f, 8.0f, 0.55f, 2)
-    };
-    if (ParquetReader::write(ms1Rows, QDir(sidecarRootPath).filePath("ms1.parquet")) != eNoError) {
-        return false;
-    }
-
-    const QVector<TestTimsbukPeakRow> ms2Rows = {
-        makeTestTimsbukPeakRow(150.0f, 10.0f, 0.90f, 1),
-        makeTestTimsbukPeakRow(151.0f, 11.0f, 0.70f, 1),
-        makeTestTimsbukPeakRow(152.0f, 12.0f, 0.90f, 2),
-        makeTestTimsbukPeakRow(153.0f, 13.0f, 0.70f, 2)
-    };
-    if (ParquetReader::write(ms2Rows, QDir(ms2DirectoryPath).filePath("group_0.parquet")) != eNoError) {
-        return false;
-    }
-
-    static const QByteArray metadataJson = R"json(
-{
-  "version": "2.0",
-  "created_at": "2026-07-13T22:44:50.135679776+00:00",
-  "ms1_peaks": {
-    "relative_path": "ms1.parquet",
-    "cycle_to_rt_ms": [0, 811, 1770],
-    "bucket_size": 4096
-  },
-  "ms2_window_groups": [
-    {
-      "id": 0,
-      "quadrupole_isolation": [
-        {
-          "Aabb": {
-            "mz": [600.0, 625.0],
-            "im": [0.830315627111824, 1.0103231398002852]
-          }
-        },
-        {
-          "Aabb": {
-            "mz": [400.0, 425.0],
-            "im": [0.6408845279309161, 0.830315627111824]
-          }
-        }
-      ],
-      "group_info": {
-        "relative_path": "ms2/group_0.parquet",
-        "cycle_to_rt_ms": [0, 918, 1877],
-        "bucket_size": 4096
-      }
-    }
-  ]
-}
-)json";
-
-    return writeFile(QDir(sidecarRootPath).filePath("metadata.json"), metadataJson);
-}
 
 struct TestTimsbukInputPaths {
     QString brukerPath;
@@ -140,48 +24,6 @@ TestTimsbukInputPaths createMinimalTimsbukInputPaths(const QString &temporaryPat
 
     QDir().mkpath(paths.brukerPath);
     return paths;
-}
-
-void verifyFilteredTimsbukReaderState(MsReaderPointerAcc *msReaderPointerAcc) {
-    QVERIFY(msReaderPointerAcc != nullptr);
-    QVERIFY(msReaderPointerAcc->ptr);
-
-    QCOMPARE(msReaderPointerAcc->ptr->hasIonMobility(), true);
-
-    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos();
-    QCOMPARE(msScanInfos.size(), 3);
-    QCOMPARE(msScanInfos.keys(), QList<ScanNumber>({1, 2, 3}));
-
-    const QMap<ScanNumber, ScanPoints> scanPoints = msReaderPointerAcc->ptr->getScanPoints();
-    QCOMPARE(scanPoints.size(), 3);
-    QVERIFY(scanPoints.contains(1));
-    QVERIFY(scanPoints.contains(2));
-    QVERIFY(scanPoints.contains(3));
-    QVERIFY(!scanPoints.contains(4));
-    QVERIFY(!scanPoints.contains(5));
-    QVERIFY(!scanPoints.contains(6));
-
-    const TimsbukAlignedPointData *ms1AlignedPointData = msReaderPointerAcc->ptr->alignedPointDataPntr(1);
-    QVERIFY(ms1AlignedPointData != nullptr);
-    QCOMPARE(ms1AlignedPointData->isAlignedWith(scanPoints.value(1)), true);
-
-    QVERIFY(msReaderPointerAcc->ptr->alignedPointDataPntr(5) == nullptr);
-
-    const MzTargetKey highTargetKey = MsScanInfo::targetKey(600.0f, 625.0f);
-    QMap<ScanNumber, ScanPoints> highTargetScanPoints;
-    Err e = msReaderPointerAcc->ptr->getMzTargetScanPoints(highTargetKey, &highTargetScanPoints);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(highTargetScanPoints.size(), 1);
-    QCOMPARE(highTargetScanPoints.firstKey(), 2);
-    QCOMPARE(highTargetScanPoints.first().first().x(), 150.0f);
-
-    QMap<ScanNumber, const TimsbukAlignedPointData*> highTargetAlignedPointData;
-    e = msReaderPointerAcc->ptr->getMzTargetAlignedPointData(highTargetKey, &highTargetAlignedPointData);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(highTargetAlignedPointData.size(), 1);
-    QVERIFY(highTargetAlignedPointData.contains(2));
-    QCOMPARE(highTargetAlignedPointData.value(2)->ionMobilityByPoint.size(), 1);
-    QCOMPARE(highTargetAlignedPointData.value(2)->ionMobilityByPoint.first(), 0.90f);
 }
 
 } // namespace
@@ -307,72 +149,10 @@ void MsReaderPointerAccTests::openFileTest5() {
     QVERIFY(temporaryDir.isValid());
 
     const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
-    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(sidecarRootPath);
-    QCOMPARE(e, eNoError);
-    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(
-        msReaderPointerAcc.ptr->filePath(),
-        QDir(temporaryDir.path()).filePath("run.d")
-        );
-    QCOMPARE(msReaderPointerAcc.ptr->hasIonMobility(), true);
-
-    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
-    QCOMPARE(msScanInfos.size(), 6);
-    QCOMPARE(msScanInfos.value(1).msLevel, 1);
-    QCOMPARE(msScanInfos.value(1).nativeFrameNumber, 1);
-    QCOMPARE(msScanInfos.value(2).msLevel, 2);
-    QCOMPARE(msScanInfos.value(3).msLevel, 2);
-    QCOMPARE(msScanInfos.value(4).msLevel, 1);
-    QCOMPARE(msScanInfos.value(4).nativeFrameNumber, 2);
-
-    const QMap<ScanNumber, ScanPoints> scanPoints = msReaderPointerAcc.ptr->getScanPoints();
-    QCOMPARE(scanPoints.size(), 6);
-
-    QMap<ScanNumber, ScanPoints> ms1ScanPoints;
-    e = msReaderPointerAcc.ptr->getScanPoints(1, &ms1ScanPoints);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(ms1ScanPoints.size(), 2);
-    QCOMPARE(ms1ScanPoints.first().size(), 2);
-    QCOMPARE(ms1ScanPoints.first().first().x(), 100.0f);
-    QCOMPARE(ms1ScanPoints.last().last().x(), 103.0f);
-
-    const MzTargetKey lowTargetKey = MsScanInfo::targetKey(400.0f, 425.0f);
-    const MzTargetKey highTargetKey = MsScanInfo::targetKey(600.0f, 625.0f);
-
-    QMap<ScanNumber, ScanPoints> lowTargetScanPoints;
-    e = msReaderPointerAcc.ptr->getMzTargetScanPoints(lowTargetKey, &lowTargetScanPoints);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(lowTargetScanPoints.size(), 2);
-    QCOMPARE(lowTargetScanPoints.first().size(), 1);
-    QCOMPARE(lowTargetScanPoints.first().first().x(), 151.0f);
-    QCOMPARE(lowTargetScanPoints.last().first().x(), 153.0f);
-
-    QMap<ScanNumber, ScanPoints> highTargetScanPoints;
-    e = msReaderPointerAcc.ptr->getMzTargetScanPoints(highTargetKey, &highTargetScanPoints);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(highTargetScanPoints.size(), 2);
-    QCOMPARE(highTargetScanPoints.first().first().x(), 150.0f);
-    QCOMPARE(highTargetScanPoints.last().first().x(), 152.0f);
-
-    const TimsbukAlignedPointData *ms1AlignedPointData = msReaderPointerAcc.ptr->alignedPointDataPntr(1);
-    QVERIFY(ms1AlignedPointData != nullptr);
-    QCOMPARE(ms1AlignedPointData->isAlignedWith(scanPoints.value(1)), true);
-    QCOMPARE(ms1AlignedPointData->ionMobilityByPoint.size(), 2);
-    QCOMPARE(ms1AlignedPointData->ionMobilityByPoint.at(0), 0.50f);
-    QCOMPARE(ms1AlignedPointData->ionMobilityByPoint.at(1), 0.55f);
-
-    QMap<ScanNumber, const TimsbukAlignedPointData*> highTargetAlignedPointData;
-    e = msReaderPointerAcc.ptr->getMzTargetAlignedPointData(highTargetKey, &highTargetAlignedPointData);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(highTargetAlignedPointData.size(), 2);
-    QVERIFY(highTargetAlignedPointData.contains(2));
-    QVERIFY(highTargetAlignedPointData.contains(5));
-    QCOMPARE(highTargetAlignedPointData.value(2)->ionMobilityByPoint.size(), 1);
-    QCOMPARE(highTargetAlignedPointData.value(2)->ionMobilityByPoint.first(), 0.90f);
-    QCOMPARE(highTargetAlignedPointData.value(5)->ionMobilityByPoint.first(), 0.90f);
+    QCOMPARE(e, eFileIncorrectTypeError);
 }
 
 void MsReaderPointerAccTests::openFileTest6() {
@@ -386,14 +166,12 @@ void MsReaderPointerAccTests::openFileTest6() {
     QVERIFY(QDir().mkpath(brukerPath));
 
     const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
-    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
+    QVERIFY(QDir().mkpath(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(brukerPath);
-    QCOMPARE(e, eNoError);
-    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
-    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
+    QVERIFY(e != eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
 }
 
 void MsReaderPointerAccTests::openFileTest7() {
@@ -404,17 +182,10 @@ void MsReaderPointerAccTests::openFileTest7() {
     QVERIFY(temporaryDir.isValid());
 
     const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
-    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(sidecarRootPath + QStringLiteral("/"));
-    QCOMPARE(e, eNoError);
-    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(
-        msReaderPointerAcc.ptr->filePath(),
-        QDir(temporaryDir.path()).filePath("run.d")
-        );
-    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
+    QCOMPARE(e, eFileIncorrectTypeError);
 }
 
 void MsReaderPointerAccTests::openFileTest8() {
@@ -428,14 +199,12 @@ void MsReaderPointerAccTests::openFileTest8() {
     QVERIFY(QDir().mkpath(brukerPath));
 
     const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
-    QVERIFY(createMinimalTimsbukSidecar(sidecarRootPath));
+    QVERIFY(QDir().mkpath(sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(brukerPath + QStringLiteral("/"));
-    QCOMPARE(e, eNoError);
-    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(brukerPath));
-    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 6);
+    QVERIFY(e != eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
 }
 
 void MsReaderPointerAccTests::openFileTest9() {
@@ -445,16 +214,14 @@ void MsReaderPointerAccTests::openFileTest9() {
     QTemporaryDir temporaryDir;
     QVERIFY(temporaryDir.isValid());
 
-    const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
-    QVERIFY(QDir().mkpath(sidecarRootPath));
-    QVERIFY(writeFile(QDir(sidecarRootPath).filePath("ms1.parquet")));
-    QVERIFY(QDir().mkpath(QDir(sidecarRootPath).filePath("ms2")));
-    QVERIFY(writeFile(QDir(sidecarRootPath).filePath("ms2/group_0.parquet")));
-    QVERIFY(writeFile(QDir(sidecarRootPath).filePath("metadata.json"), QByteArrayLiteral("{}")));
+    const QString brukerPath = QDir(temporaryDir.path()).filePath("run.d");
+    QVERIFY(QDir().mkpath(brukerPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
-    e = msReaderPointerAcc.openFile(sidecarRootPath);
-    QCOMPARE(e, eFileError);
+    msReaderPointerAcc.setImHandlingMode(ImHandlingMode::Raw4D);
+    e = msReaderPointerAcc.openFile(brukerPath);
+    QCOMPARE(e, eFunctionNotImplemented);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
 }
 
 void MsReaderPointerAccTests::openFileTest10() {
@@ -465,13 +232,11 @@ void MsReaderPointerAccTests::openFileTest10() {
     QVERIFY(temporaryDir.isValid());
 
     const TestTimsbukInputPaths paths = createMinimalTimsbukInputPaths(temporaryDir.path());
-    QVERIFY(createMinimalTimsbukSidecar(paths.sidecarRootPath));
+    QVERIFY(QDir().mkpath(paths.sidecarRootPath));
 
     const QStringList inputPaths = {
         paths.brukerPath,
-        paths.brukerPath + QStringLiteral("/"),
-        paths.sidecarRootPath,
-        paths.sidecarRootPath + QStringLiteral("/")
+        paths.brukerPath + QStringLiteral("/")
     };
 
     for (const QString &inputPath : inputPaths) {
@@ -481,8 +246,8 @@ void MsReaderPointerAccTests::openFileTest10() {
             QStringLiteral("scanTime"),
             {0.0, 0.02}
             );
-        QCOMPARE(e, eNoError);
-        verifyFilteredTimsbukReaderState(&msReaderPointerAcc);
+        QVERIFY(e != eNoError);
+        QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
     }
 }
 
@@ -494,15 +259,14 @@ void MsReaderPointerAccTests::openFileTest11() {
     QVERIFY(temporaryDir.isValid());
 
     const TestTimsbukInputPaths paths = createMinimalTimsbukInputPaths(temporaryDir.path());
-    QVERIFY(createMinimalTimsbukSidecar(paths.sidecarRootPath));
+    QVERIFY(QDir().mkpath(paths.sidecarRootPath));
 
     MsReaderPointerAcc msReaderPointerAcc;
     msReaderPointerAcc.setUseLazyLoading(true);
     msReaderPointerAcc.setImHandlingMode(ImHandlingMode::Summed);
     e = msReaderPointerAcc.openFile(paths.brukerPath);
-    QCOMPARE(e, eNoError);
-    QVERIFY(dynamic_cast<MsReaderTimsbukIndex*>(msReaderPointerAcc.ptr.data()) != nullptr);
-    QCOMPARE(msReaderPointerAcc.ptr->filePath(), QDir::cleanPath(paths.brukerPath));
+    QVERIFY(e != eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
     QCOMPARE(msReaderPointerAcc.useLazyLoading(), false);
 }
 
