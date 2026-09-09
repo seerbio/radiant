@@ -504,15 +504,10 @@ public:
                 q
                 ); ree;
 
-            for (const TimsreaderIsolationWindowInfo &window : runCatalog.isolationWindows()) {
-                e = loadPlan(
-                    run.make_plan(
-                        representation(),
-                        timsreader::Selector::ms2_window(window.isolationWindowId)
-                        ),
-                    q
-                    ); ree;
-            }
+            e = loadPlan(
+                run.make_plan(representation(), timsreader::Selector::ms2()),
+                q
+                ); ree;
         }
         catch (const std::exception &ex) {
             qDebug() << "timsreader failed to materialize Bruker run" << filePath << ex.what();
