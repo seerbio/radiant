@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <future>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -293,8 +294,24 @@ float maxMz(const ScanPoints &scanPoints) {
 
 class Q_DECL_HIDDEN MsReaderTimsreader::Private {
 public:
-    explicit Private(ImHandlingMode imHandlingMode)
-        : m_imHandlingMode(imHandlingMode) {}
+#ifdef PYTHIA_HAVE_TIMSREADER
+    struct MaterializedPartition {
+        QMap<ScanNumber, MsScanInfo> msScanInfoByScanNumber;
+        QMap<ScanNumber, ScanPoints> scanPointsByScanNumber;
+        QMap<ScanNumber, TimsbukAlignedPointData> alignedPointDataByScanNumber;
+        std::vector<timsreader::OwnedBatch> ownedBatches;
+    };
+
+    struct PartitionLoadResult {
+        Err err = eNoError;
+        QString exceptionMessage;
+        MaterializedPartition partition;
+    };
+#endif
+
+    explicit Private(ImHandlingMode imHandlingMode, int threadCount)
+        : m_imHandlingMode(imHandlingMode)
+        , m_threadCount(std::max(1, threadCount)) {}
 
     void resetMaterializedState(MsReaderTimsreader *q) {
         runCatalog.close();
@@ -369,7 +386,7 @@ public:
 
     Err ingestOwnedBatch(
         const timsreader::OwnedBatch &ownedBatch,
-        MsReaderTimsreader *q
+        MaterializedPartition *partition
         ) {
 
         ERR_INIT
@@ -377,6 +394,7 @@ public:
         const timsreader::BorrowedBatchView view = ownedBatch.export_view();
         const ArrowArray *recordBatch = view.array;
         e = ErrorUtils::isTrue(recordBatch != nullptr, eFileError); ree;
+        e = ErrorUtils::isTrue(partition != nullptr, eInvalidPointer); ree;
 
         const int expectedColumns = m_imHandlingMode == ImHandlingMode::Centroid
             ? kCentroidColumnCount
@@ -440,10 +458,18 @@ public:
                 continue;
             }
 
-            e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, q->m_msScanInfo, eFileError); ree;
-            e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, q->m_scanPoints, eFileError); ree;
-            q->m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
-            q->m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
+            e = ErrorUtils::doesNotContain(
+                msScanInfo.scanNumber,
+                partition->msScanInfoByScanNumber,
+                eFileError
+                ); ree;
+            e = ErrorUtils::doesNotContain(
+                msScanInfo.scanNumber,
+                partition->scanPointsByScanNumber,
+                eFileError
+                ); ree;
+            partition->msScanInfoByScanNumber.insert(msScanInfo.scanNumber, msScanInfo);
+            partition->scanPointsByScanNumber.insert(msScanInfo.scanNumber, scanPoints);
 
             if (m_imHandlingMode == ImHandlingMode::Centroid) {
                 TimsbukAlignedPointData alignedPointData;
@@ -454,15 +480,94 @@ public:
                     );
                 if (alignedPointData.hasIonMobility()) {
                     e = ErrorUtils::isTrue(
-                        alignedPointData.isAlignedWith(q->m_scanPoints.value(msScanInfo.scanNumber)),
+                        alignedPointData.isAlignedWith(
+                            partition->scanPointsByScanNumber.value(msScanInfo.scanNumber)
+                            ),
                         eFileError
                         ); ree;
-                    alignedPointDataByScanNumber.insert(msScanInfo.scanNumber, alignedPointData);
+                    partition->alignedPointDataByScanNumber.insert(
+                        msScanInfo.scanNumber,
+                        alignedPointData
+                        );
                 }
             }
         }
 
         ERR_RETURN
+    }
+
+    Err mergeMaterializedPartition(
+        MaterializedPartition *partition,
+        MsReaderTimsreader *q
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(partition != nullptr, eInvalidPointer); ree;
+
+        for (auto it = partition->msScanInfoByScanNumber.cbegin();
+             it != partition->msScanInfoByScanNumber.cend();
+             ++it) {
+            e = ErrorUtils::doesNotContain(it.key(), q->m_msScanInfo, eFileError); ree;
+            q->m_msScanInfo.insert(it.key(), it.value());
+        }
+
+        for (auto it = partition->scanPointsByScanNumber.cbegin();
+             it != partition->scanPointsByScanNumber.cend();
+             ++it) {
+            e = ErrorUtils::doesNotContain(it.key(), q->m_scanPoints, eFileError); ree;
+            q->m_scanPoints.insert(it.key(), it.value());
+        }
+
+        for (auto it = partition->alignedPointDataByScanNumber.cbegin();
+             it != partition->alignedPointDataByScanNumber.cend();
+             ++it) {
+            e = ErrorUtils::doesNotContain(
+                it.key(),
+                alignedPointDataByScanNumber,
+                eFileError
+                ); ree;
+            alignedPointDataByScanNumber.insert(it.key(), it.value());
+        }
+
+        ownedBatches.reserve(ownedBatches.size() + partition->ownedBatches.size());
+        for (timsreader::OwnedBatch &ownedBatch : partition->ownedBatches) {
+            ownedBatches.push_back(std::move(ownedBatch));
+        }
+
+        ERR_RETURN
+    }
+
+    PartitionLoadResult loadPartition(const timsreader::Plan &plan) {
+        PartitionLoadResult result;
+
+        try {
+            timsreader::Stream stream = m_imHandlingMode == ImHandlingMode::Centroid
+                ? plan.open_stream(legacySidecarCentroidStreamConfig(plan))
+                : plan.open_stream();
+            while (true) {
+                std::optional<timsreader::OwnedBatch> ownedBatch = stream.next_owned();
+                if (!ownedBatch.has_value()) {
+                    break;
+                }
+
+                const Err e = ingestOwnedBatch(
+                    *ownedBatch,
+                    &result.partition
+                    );
+                if (e != eNoError) {
+                    result.err = e;
+                    return result;
+                }
+                result.partition.ownedBatches.push_back(std::move(*ownedBatch));
+            }
+        }
+        catch (const std::exception &ex) {
+            result.err = eFileError;
+            result.exceptionMessage = QString::fromUtf8(ex.what());
+        }
+
+        return result;
     }
 
     Err loadPlan(
@@ -472,17 +577,37 @@ public:
 
         ERR_INIT
 
-        timsreader::Stream stream = m_imHandlingMode == ImHandlingMode::Centroid
-            ? plan.open_stream(legacySidecarCentroidStreamConfig(plan))
-            : plan.open_stream();
-        while (true) {
-            std::optional<timsreader::OwnedBatch> ownedBatch = stream.next_owned();
-            if (!ownedBatch.has_value()) {
-                break;
-            }
+        const size_t requestedPartitionCount = static_cast<size_t>(std::max(1, m_threadCount));
+        std::vector<timsreader::Plan> partitions = plan.split(requestedPartitionCount);
 
-            e = ingestOwnedBatch(*ownedBatch, q); ree;
-            ownedBatches.push_back(std::move(*ownedBatch));
+        if (partitions.size() == 1) {
+            PartitionLoadResult result = loadPartition(partitions.front());
+            if (!result.exceptionMessage.isEmpty()) {
+                qDebug() << "timsreader failed to load Bruker partition" << result.exceptionMessage;
+            }
+            e = result.err; ree;
+            e = mergeMaterializedPartition(&result.partition, q); ree;
+            ERR_RETURN
+        }
+
+        std::vector<std::future<PartitionLoadResult>> futures;
+        futures.reserve(partitions.size());
+        for (size_t partitionIndex = 0; partitionIndex < partitions.size(); ++partitionIndex) {
+            futures.push_back(std::async(
+                std::launch::async,
+                [this, &partitions, partitionIndex]() {
+                    return loadPartition(partitions[partitionIndex]);
+                }
+                ));
+        }
+
+        for (std::future<PartitionLoadResult> &future : futures) {
+            PartitionLoadResult result = future.get();
+            if (!result.exceptionMessage.isEmpty()) {
+                qDebug() << "timsreader failed to load Bruker partition" << result.exceptionMessage;
+            }
+            e = result.err; ree;
+            e = mergeMaterializedPartition(&result.partition, q); ree;
         }
 
         ERR_RETURN
@@ -523,6 +648,7 @@ public:
 #endif
 
     ImHandlingMode m_imHandlingMode = ImHandlingMode::Centroid;
+    int m_threadCount = 1;
     TimsreaderRunCatalog runCatalog;
     QMap<ScanNumber, TimsbukAlignedPointData> alignedPointDataByScanNumber;
 
@@ -531,8 +657,8 @@ public:
 #endif
 };
 
-MsReaderTimsreader::MsReaderTimsreader(ImHandlingMode imHandlingMode)
-    : d_ptr(new Private(imHandlingMode)) {}
+MsReaderTimsreader::MsReaderTimsreader(ImHandlingMode imHandlingMode, int threadCount)
+    : d_ptr(new Private(imHandlingMode, threadCount)) {}
 
 MsReaderTimsreader::~MsReaderTimsreader() = default;
 

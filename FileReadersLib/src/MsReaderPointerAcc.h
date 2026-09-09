@@ -86,11 +86,13 @@ public:
 
     void setUseLazyLoading(bool useLazyLoading);
     void setImHandlingMode(ImHandlingMode imHandlingMode);
+    void setThreadCount(int threadCount);
 
     QSharedPointer<MsReaderBase> ptr;
 
     bool useLazyLoading() const;
     ImHandlingMode imHandlingMode() const;
+    int threadCount() const;
 
 
 private:
@@ -103,6 +105,7 @@ private:
     QMap<MzTargetKey, FilePath> m_mzTargetKeyVsFilePathCache;
     bool m_useLazyLoading;
     ImHandlingMode m_imHandlingMode;
+    int m_threadCount;
 
 };
 

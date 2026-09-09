@@ -18,6 +18,8 @@
 #include <QFile>
 #include <QFileInfo>
 
+#include <algorithm>
+
 namespace {
 
     bool isBrukerDirectoryInputPath(const QString &filePath) {
@@ -46,7 +48,12 @@ namespace {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsreader Bruker inputs";
         msReaderPointerAcc->setUseLazyLoading(false);
 
-        QSharedPointer<MsReaderBase> msReader(new MsReaderTimsreader(msReaderPointerAcc->imHandlingMode()));
+        QSharedPointer<MsReaderBase> msReader(
+            new MsReaderTimsreader(
+                msReaderPointerAcc->imHandlingMode(),
+                msReaderPointerAcc->threadCount()
+                )
+            );
         msReaderPointerAcc->ptr = msReader;
 
         if (filterRange == nullptr) {
@@ -62,7 +69,8 @@ namespace {
 
 MsReaderPointerAcc::MsReaderPointerAcc()
     : m_useLazyLoading(false)
-    , m_imHandlingMode(ImHandlingMode::Centroid) {}
+    , m_imHandlingMode(ImHandlingMode::Centroid)
+    , m_threadCount(1) {}
 
 void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
     m_useLazyLoading = useLazyLoading;
@@ -78,6 +86,14 @@ void MsReaderPointerAcc::setImHandlingMode(ImHandlingMode imHandlingMode) {
 
 ImHandlingMode MsReaderPointerAcc::imHandlingMode() const {
     return m_imHandlingMode;
+}
+
+void MsReaderPointerAcc::setThreadCount(int threadCount) {
+    m_threadCount = std::max(1, threadCount);
+}
+
+int MsReaderPointerAcc::threadCount() const {
+    return m_threadCount;
 }
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {

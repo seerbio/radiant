@@ -15,7 +15,10 @@
 
 class FILEREADERSLIB_EXPORTS MsReaderTimsreader : public MsReaderBase {
 public:
-    explicit MsReaderTimsreader(ImHandlingMode imHandlingMode = ImHandlingMode::Centroid);
+    explicit MsReaderTimsreader(
+        ImHandlingMode imHandlingMode = ImHandlingMode::Centroid,
+        int threadCount = 1
+        );
     ~MsReaderTimsreader() override;
 
     Err openFile(const QString &filePath) override;

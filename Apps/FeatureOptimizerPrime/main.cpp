@@ -562,6 +562,9 @@ int main(int argc, char *argv[]) {
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
+    msReaderPointerAcc.setUseLazyLoading(pythiaParameters.useLazyLoading);
+    msReaderPointerAcc.setImHandlingMode(pythiaParameters.imHandlingMode);
+    msReaderPointerAcc.setThreadCount(pythiaParameters.threadCount);
     e = msReaderPointerAcc.openFile(msDataFilePath);
     if (e != eNoError) {
         qDebug() << "Error reading msDataFilePath";

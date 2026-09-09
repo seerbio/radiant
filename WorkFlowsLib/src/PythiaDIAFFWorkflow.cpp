@@ -626,6 +626,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
     msReaderPointerAcc.setImHandlingMode(m_pythiaParameters.imHandlingMode);
+    msReaderPointerAcc.setThreadCount(m_pythiaParameters.threadCount);
 
     const bool hasAnalysisScanTimeRange
         = m_pythiaParameters.analysisScanTimeMin >= 0.0
