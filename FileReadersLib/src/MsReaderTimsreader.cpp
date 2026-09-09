@@ -394,7 +394,7 @@ public:
         const timsreader::BorrowedBatchView view = ownedBatch.export_view();
         const ArrowArray *recordBatch = view.array;
         e = ErrorUtils::isTrue(recordBatch != nullptr, eFileError); ree;
-        e = ErrorUtils::isTrue(partition != nullptr, eInvalidPointer); ree;
+        e = ErrorUtils::isTrue(partition != nullptr, eError); ree;
 
         const int expectedColumns = m_imHandlingMode == ImHandlingMode::Centroid
             ? kCentroidColumnCount
@@ -503,7 +503,7 @@ public:
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(partition != nullptr, eInvalidPointer); ree;
+        e = ErrorUtils::isTrue(partition != nullptr, eError); ree;
 
         for (auto it = partition->msScanInfoByScanNumber.cbegin();
              it != partition->msScanInfoByScanNumber.cend();
