@@ -367,14 +367,15 @@ namespace {
     float resolvedIonMobilityCenter(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const MsCalibratomatic &msCalibratomatic,
-        const MsReaderPointerAcc *msReaderPointerAcc
+        const MsReaderPointerAcc *msReaderPointerAcc,
+        bool isDecoy
         ) {
 
         if (targetDecoyCandidatePair == nullptr) {
             return -1.0f;
         }
 
-        const float libraryIonMobility = targetDecoyCandidatePair->iIM();
+        const float libraryIonMobility = targetDecoyCandidatePair->iIM(isDecoy);
         if (libraryIonMobility <= 0.0f) {
             return libraryIonMobility;
         }
@@ -645,7 +646,7 @@ Err CandidateScorertron::calculateScores(
         if (m_ms2IonMobilityIndex != nullptr
             && m_ms2IonMobilityIndex->isInit()
             && targetDecoyCandidatePair != nullptr
-            && targetDecoyCandidatePair->iIM() > 0.0f) {
+            && targetDecoyCandidatePair->iIM(candidateScores->isDecoy) > 0.0f) {
             d_ptr->m_scoringDiagnostics.ionMobilityCalls++;
         }
     }
@@ -673,6 +674,7 @@ Err CandidateScorertron::calculateScores(
         ms2Ions,
         frameIndexPredictedMin,
         frameIndexPredictedMax,
+        candidateScores->isDecoy,
         &matriciesAndVecs
         ); ree;
 
@@ -1665,12 +1667,13 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::initMatricesdAndVecs(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
-        const QVector<MS2Ion> &ms2Ions,
-        FrameIndex frameIndexPredictedMin,
-        FrameIndex frameIndexPredictedMax,
-        MatriciesAndVecs *matriciesAndVecs
-        ) const {
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    const QVector<MS2Ion> &ms2Ions,
+    FrameIndex frameIndexPredictedMin,
+    FrameIndex frameIndexPredictedMax,
+    bool isDecoy,
+    MatriciesAndVecs *matriciesAndVecs
+    ) const {
 
         ERR_INIT
 
@@ -1693,7 +1696,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
         bool usedLibraryIonMobilityFilteredMs2 = false;
         float usedIonMobilityMin = -1.0f;
         float usedIonMobilityMax = -1.0f;
-        const float calibratedIonMobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
+        const float calibratedIonMobilityCenter = ionMobilityCenter(targetDecoyCandidatePair, isDecoy);
         e = getXICs(
             targetDecoyCandidatePair,
             ms2IonsResized,
@@ -1835,12 +1838,14 @@ Err CandidateScorertron::setPredictedFrameIndexes(
 }
 
 float CandidateScorertron::ionMobilityCenter(
-    const TargetDecoyCandidatePair *targetDecoyCandidatePair
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    bool isDecoy
     ) const {
     return resolvedIonMobilityCenter(
         targetDecoyCandidatePair,
         m_msCalibratomatic,
-        m_msReaderPointerAcc
+        m_msReaderPointerAcc,
+        isDecoy
         );
 }
 
@@ -3306,7 +3311,7 @@ Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
         ERR_RETURN
     }
 
-    const float mobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
+    const float mobilityCenter = ionMobilityCenter(targetDecoyCandidatePair, candidateScores->isDecoy);
     if (mobilityCenter <= 0.0f) {
         ERR_RETURN
     }
@@ -3371,7 +3376,7 @@ Err CandidateScorertron::setMs2IonMobilityRelatedScores(
         ERR_RETURN
     }
 
-    const float mobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
+    const float mobilityCenter = ionMobilityCenter(targetDecoyCandidatePair, candidateScores->isDecoy);
     if (mobilityCenter <= 0.0f || ms2Ions.isEmpty()) {
         ERR_RETURN
     }

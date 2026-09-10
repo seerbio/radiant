@@ -494,7 +494,7 @@ namespace {
                 << cs->featuresArray[CosineSimSum45] << '\t'
                 << cs->featuresArray[CosineSimSpectrumOverTimeCubed] << '\t'
                 << cs->featuresArray[CosineSim100MS1] << '\t'
-                << cs->targetDecoyCandidatePair->iIM() << '\t'
+                << cs->targetDecoyCandidatePair->iIM(cs->isDecoy) << '\t'
                 << cs->imDriftTime << '\t'
                 << cs->ionMobilityIndex << '\t'
                 << cs->ionMobilityIndexStart << '\t'

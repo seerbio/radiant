@@ -1612,7 +1612,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         CandidateScoresReaderRow row;
     	row.iRtEmpirical = candidateScores->empiricalIRT;
-        row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM();
+        row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM(candidateScores->isDecoy);
         row.ionMobilityFound = candidateScores->imDriftTime;
         row.ionMobilityIndex = candidateScores->ionMobilityIndex;
         row.ionMobilityIndexStart = candidateScores->ionMobilityIndexStart;
@@ -2388,7 +2388,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
             0.0f
             );
         row.ms1IntensityFoundApex100IM = candidateScores->featuresArray[Ms1IntensityFoundApex100IM];
-        row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM();
+        row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM(candidateScores->isDecoy);
         row.ionMobilityFound = candidateScores->imDriftTime;
         row.ionMobilityIndex = candidateScores->ionMobilityIndex;
         row.ionMobilityIndexStart = candidateScores->ionMobilityIndexStart;

@@ -120,7 +120,7 @@ public:
     * @return float representing the iRT value.
     */
     [[nodiscard]] float iRt(bool isDecoy) const;
-    [[nodiscard]] float iIM() const;
+    [[nodiscard]] float iIM(bool isDecoy) const;
 
 
     /**

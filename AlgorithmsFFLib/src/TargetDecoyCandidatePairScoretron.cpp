@@ -754,7 +754,7 @@ namespace {
             return false;
         }
 
-        const float libraryIonMobility = candidate->iIM();
+        const float libraryIonMobility = candidate->iIM(false);
         if (libraryIonMobility <= 0.0f || msScanInfo.ionMobilityDriftTime <= 0.0f) {
             return true;
         }
@@ -878,7 +878,7 @@ namespace {
                     targetDecoyPointers.constBegin(),
                     targetDecoyPointers.constEnd(),
                     [](const TargetDecoyCandidatePair *tdcp) {
-                        return tdcp != nullptr && tdcp->iIM() > 0.0f;
+                        return tdcp != nullptr && tdcp->iIM(false) > 0.0f;
                     }
                     );
             if (!hasLibraryIonMobility) {

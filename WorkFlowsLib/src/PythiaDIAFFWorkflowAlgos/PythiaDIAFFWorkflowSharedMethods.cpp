@@ -76,7 +76,7 @@ namespace {
             return -1.0f;
         }
 
-        const float libraryIonMobility = candidate->iIM();
+        const float libraryIonMobility = candidate->iIM(false);
         if (libraryIonMobility <= 0.0f
             || msCalibratomatic == nullptr
             || !msCalibratomatic->isInitIM()) {
@@ -733,7 +733,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
             row.driftTime = cs->imDriftTime;
-            row.iMPredicted = cs->targetDecoyCandidatePair->iIM();
+            row.iMPredicted = cs->targetDecoyCandidatePair->iIM(cs->isDecoy);
 
             if (msLevel == MSLevelEnum::MS2) {
 

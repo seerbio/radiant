@@ -39,6 +39,31 @@ namespace UniModNamespace {
 		{'D', 0.25}
 	};
 
+    const QHash<QChar, float> iImAdjustments = {
+        {'G', 0.00220f},
+        {'A', 0.00165f},
+        {'V', 0.00110f},
+        {'L', -0.00110f},
+        {'X', 0.00000f},
+        {'I', -0.00055f},
+        {'F', -0.00165f},
+        {'M', -0.00110f},
+        {'P', 0.00110f},
+        {'W', -0.00220f},
+        {'S', 0.00110f},
+        {'C', -0.00110f},
+        {'U', -0.00220f},
+        {'T', -0.00110f},
+        {'Y', -0.00220f},
+        {'H', -0.00165f},
+        {'K', -0.00110f},
+        {'R', -0.00165f},
+        {'Q', -0.00110f},
+        {'E', -0.00110f},
+        {'N', 0.00110f},
+        {'D', 0.00110f}
+    };
+
     const QMap<QString, double> uniModNameVsModificationMass = {
             {QStringLiteral("UniMod:4"), static_cast<double>(57.021464)},
             {QStringLiteral("Carbamidomethyl (C)"), static_cast<double>(57.021464)},

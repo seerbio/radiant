@@ -79,6 +79,7 @@ private:
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
+        bool isDecoy,
         MatriciesAndVecs *matriciesAndVecs
         ) const;
 
@@ -90,7 +91,8 @@ private:
         ) const;
 
     [[nodiscard]] float ionMobilityCenter(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        bool isDecoy
         ) const;
     [[nodiscard]] float ionMobilityTolerance(
         float fallbackTolerance,
