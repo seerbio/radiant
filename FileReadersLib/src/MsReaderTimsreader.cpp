@@ -75,6 +75,7 @@ int columnIndex(TimsreaderTransformedColumn column) {
     return static_cast<int>(column);
 }
 
+#ifdef PYTHIA_HAVE_TIMSREADER
 const ArrowArray *columnArray(const ArrowArray *recordBatch, TimsreaderTransformedColumn column) {
     if (recordBatch == nullptr
         || recordBatch->children == nullptr
@@ -253,6 +254,7 @@ void appendIonMobilitiesFromList(
         ionMobilities->push_back(halfBitsToFloat(values[valueOffset + itemIndex]));
     }
 }
+#endif
 
 float driftTimeFromWindowBounds(float lower, float upper) {
     if (lower <= 0.0f || upper <= 0.0f || upper < lower) {
