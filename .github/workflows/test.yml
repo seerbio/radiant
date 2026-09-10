@@ -6,6 +6,11 @@ jobs:
     runs-on: [self-hosted, aws-master, X64]
     steps:
       - uses: actions/checkout@v6
+      - name: verify-timsreader
+        run: |
+          test -f ThirdPartyLibs/timsreader/include/timsreader.hpp
+          test -f ThirdPartyLibs/timsreader/include/timsreader.h
+          test -f ThirdPartyLibs/timsreader/lib/x86_64/libtimsreader.so
       - name: container-test
         run: ./test_container.sh
 
@@ -14,6 +19,11 @@ jobs:
     runs-on: [self-hosted, aws-master, ARM64]
     steps:
       - uses: actions/checkout@v6
+      - name: verify-timsreader
+        run: |
+          test -f ThirdPartyLibs/timsreader/include/timsreader.hpp
+          test -f ThirdPartyLibs/timsreader/include/timsreader.h
+          test -f ThirdPartyLibs/timsreader/lib/aarch64/libtimsreader.so
       - name: container-test
         run: ./test_container.sh
 

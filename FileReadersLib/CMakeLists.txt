@@ -11,15 +11,39 @@ SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
 
-SET(TIMSREADER_ROOT "/home/sethjust/src/timsbuktoolkit" CACHE PATH "Path to the timsbuktoolkit checkout")
+SET(TIMSREADER_ROOT "${CMAKE_SOURCE_DIR}/ThirdPartyLibs/timsreader" CACHE PATH "Path to the vendored timsreader payload")
 SET(TIMSREADER_INCLUDE_DIR "${TIMSREADER_ROOT}/include" CACHE PATH "Path to timsreader headers")
-SET(TIMSREADER_LIBRARY "" CACHE FILEPATH "Path to the timsreader C API library")
+SET(TIMSREADER_LIBRARY "" CACHE FILEPATH "Path to the timsreader shared library")
+SET(TIMSREADER_ARCH_DIR "" CACHE STRING "Architecture-specific subdirectory under ${TIMSREADER_ROOT}/lib")
+
+SET(_TIMSREADER_ARCH_DIR "${TIMSREADER_ARCH_DIR}")
+IF(_TIMSREADER_ARCH_DIR STREQUAL "")
+    STRING(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _TIMSREADER_PROCESSOR)
+    IF(_TIMSREADER_PROCESSOR STREQUAL "x86_64" OR _TIMSREADER_PROCESSOR STREQUAL "amd64")
+        SET(_TIMSREADER_ARCH_DIR "x86_64")
+    ELSEIF(_TIMSREADER_PROCESSOR STREQUAL "aarch64" OR _TIMSREADER_PROCESSOR STREQUAL "arm64")
+        SET(_TIMSREADER_ARCH_DIR "aarch64")
+    ENDIF()
+ENDIF()
 
 IF(TIMSREADER_LIBRARY STREQUAL "")
+    IF(NOT _TIMSREADER_ARCH_DIR STREQUAL "")
+        LIST(APPEND TIMSREADER_LIBRARY_CANDIDATES
+                "${TIMSREADER_ROOT}/lib/${_TIMSREADER_ARCH_DIR}/libtimsreader.so"
+                "${TIMSREADER_ROOT}/lib/${_TIMSREADER_ARCH_DIR}/libtimsreader_capi.so")
+    ENDIF()
+
     FOREACH(TIMSREADER_LIBRARY_CANDIDATE
+            ${TIMSREADER_LIBRARY_CANDIDATES}
+            "${TIMSREADER_ROOT}/lib/libtimsreader.so"
+            "${TIMSREADER_ROOT}/lib/libtimsreader_capi.so"
+            "${TIMSREADER_ROOT}/target/release/libtimsreader.so"
             "${TIMSREADER_ROOT}/target/release/libtimsreader_capi.so"
+            "${TIMSREADER_ROOT}/target/release/libtimsreader.a"
             "${TIMSREADER_ROOT}/target/release/libtimsreader_capi.a"
+            "${TIMSREADER_ROOT}/target/debug/libtimsreader.so"
             "${TIMSREADER_ROOT}/target/debug/libtimsreader_capi.so"
+            "${TIMSREADER_ROOT}/target/debug/libtimsreader.a"
             "${TIMSREADER_ROOT}/target/debug/libtimsreader_capi.a")
         IF(EXISTS "${TIMSREADER_LIBRARY_CANDIDATE}")
             SET(TIMSREADER_LIBRARY "${TIMSREADER_LIBRARY_CANDIDATE}" CACHE FILEPATH "Path to the timsreader C API library" FORCE)
@@ -138,9 +162,13 @@ IF(PYTHIA_HAVE_TIMSREADER)
     TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE "${TIMSREADER_INCLUDE_DIR}")
     TARGET_LINK_LIBRARIES(${PROJECT_NAME} "${TIMSREADER_LIBRARY}")
     TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE PYTHIA_HAVE_TIMSREADER=1)
-    MESSAGE(STATUS "FileReadersLib: timsreader enabled")
+    MESSAGE(STATUS "FileReadersLib: timsreader enabled from ${TIMSREADER_LIBRARY}")
 ELSE()
-    MESSAGE(STATUS "FileReadersLib: timsreader disabled")
+    IF(NOT _TIMSREADER_ARCH_DIR STREQUAL "")
+        MESSAGE(STATUS "FileReadersLib: timsreader disabled (expected ${TIMSREADER_ROOT}/lib/${_TIMSREADER_ARCH_DIR}/libtimsreader.so)")
+    ELSE()
+        MESSAGE(STATUS "FileReadersLib: timsreader disabled (unsupported processor ${CMAKE_SYSTEM_PROCESSOR})")
+    ENDIF()
 ENDIF()
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

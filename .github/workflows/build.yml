@@ -17,6 +17,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
+      - name: Verify vendored timsreader payload
+        run: |
+          test -f ThirdPartyLibs/timsreader/include/timsreader.hpp
+          test -f ThirdPartyLibs/timsreader/include/timsreader.h
+          test -f ThirdPartyLibs/timsreader/lib/x86_64/libtimsreader.so
+
       - name: Build and tag container image
         uses: seerbio/action-build-container@1.1.0
         with:
@@ -34,6 +40,12 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v6
+
+      - name: Verify vendored timsreader payload
+        run: |
+          test -f ThirdPartyLibs/timsreader/include/timsreader.hpp
+          test -f ThirdPartyLibs/timsreader/include/timsreader.h
+          test -f ThirdPartyLibs/timsreader/lib/aarch64/libtimsreader.so
 
       - name: Build and tag container image
         uses: seerbio/action-build-container@1.1.0

@@ -44,6 +44,27 @@ cp UtilsLib/libUtilsLib.so "$radiant_lib/libUtilsLib.so"
 cp WorkFlowsLib/libWorkFlowsLib.so "$radiant_lib/libWorkFlowsLib.so"
 cp PyTorchLib/libPyTorchLib.so "$radiant_lib/libPyTorchLib.so"
 
+TIMSREADER_ARCH_DIR="${TIMSREADER_ARCH_DIR:-}"
+if [ -z "${TIMSREADER_ARCH_DIR}" ]; then
+    case "${ARCH}" in
+        amd64)
+            TIMSREADER_ARCH_DIR="x86_64"
+            ;;
+        arm64)
+            TIMSREADER_ARCH_DIR="aarch64"
+            ;;
+    esac
+fi
+
+TIMSREADER_RUNTIME_LIBRARY="${TIMSREADER_RUNTIME_LIBRARY:-}"
+if [ -z "${TIMSREADER_RUNTIME_LIBRARY}" ] && [ -n "${TIMSREADER_ARCH_DIR}" ]; then
+    TIMSREADER_RUNTIME_LIBRARY="/src/PythiaDIACpp/ThirdPartyLibs/timsreader/lib/${TIMSREADER_ARCH_DIR}/libtimsreader.so"
+fi
+
+if [ -n "${TIMSREADER_RUNTIME_LIBRARY}" ] && [ -e "${TIMSREADER_RUNTIME_LIBRARY}" ]; then
+    cp "${TIMSREADER_RUNTIME_LIBRARY}" "${radiant_lib}/libtimsreader.so"
+fi
+
 cp /src/pytorch/build/lib/libtorch.so "$radiant_lib/"
 cp /src/pytorch/build/lib/libtorch_cpu.so "$radiant_lib/"
 cp /src/pytorch/build/lib/libc10.so "$radiant_lib/"

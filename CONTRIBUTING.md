@@ -12,6 +12,17 @@ To set up your environment:
 ./install-build-deps-ubuntu.sh && ./get-or-build-libtorch.sh
 ```
 
+To enable Bruker `.d` support locally, vendor `timsreader` into:
+
+```text
+ThirdPartyLibs/timsreader/include/timsreader.h
+ThirdPartyLibs/timsreader/include/timsreader.hpp
+ThirdPartyLibs/timsreader/lib/x86_64/libtimsreader.so
+ThirdPartyLibs/timsreader/lib/aarch64/libtimsreader.so
+```
+
+The headers are shared across architectures. `build-local.sh`, Docker builds, and GitHub Actions pick the matching `lib/<arch>/libtimsreader.so` automatically.
+
 ## Running a local build
 
 ```shell
@@ -30,5 +41,4 @@ Once the project has been built, run `ctest` in the build directory:
 ```
 ./test-local.sh
 ```
-
 
