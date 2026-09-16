@@ -438,6 +438,32 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
             &msCalibrationReaderRows
             ); ree;
 
+    QVector<CandidateScores*> candidateScoresVecBatchPntrsTargets;
+    candidateScoresVecBatchPntrsTargets.reserve(candidateScoresVecBatchPntrsResized.size());
+    std::copy_if(
+            candidateScoresVecBatchPntrsResized.cbegin(),
+            candidateScoresVecBatchPntrsResized.cend(),
+            std::back_inserter(candidateScoresVecBatchPntrsTargets),
+            [](const CandidateScores *cs) {
+                return !cs->isDecoy;
+            }
+            );
+
+    QVector<MsCalibarationReaderRow> msCalibrationReaderRowsTargets;
+    e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
+            MSLevelEnum::MS2,
+            candidateScoresVecBatchPntrsTargets,
+            m_pythiaParameters->verbosity,
+            &msCalibrationReaderRowsTargets
+            ); ree;
+
+    if (m_pythiaParameters->verbosity > 0) {
+        qDebug() << "Using" << msCalibrationReaderRowsTargets.size()
+                 << "target rows for RT/IM calibration; excluded"
+                 << msCalibrationReaderRows.size() - msCalibrationReaderRowsTargets.size()
+                 << "decoy rows";
+    }
+
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
 
         if (m_entered.value(cs->targetDecoyCandidatePair) ) {
@@ -454,9 +480,9 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         m_entered.insert(cs->targetDecoyCandidatePair, true);
     }
 
-    e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
+    e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRowsTargets); ree;
     if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
-        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
+        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRowsTargets); ree;
     }
 
     if (m_pythiaParameters->verbosity > 0) {
