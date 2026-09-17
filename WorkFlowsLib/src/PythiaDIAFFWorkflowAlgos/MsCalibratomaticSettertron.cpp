@@ -487,7 +487,8 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     if (m_pythiaParameters->verbosity > 0) {
         qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters->scanTimeWindowStDevs
-                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs);
+                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs)
+                 << "seconds";
     }
 
     constexpr int ms2MassRecalCountMin = 200;
@@ -528,7 +529,8 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         << "ScanTimeWindow Mean|Median|Min"
         << MathUtils::mean(m_scanTimeStDevs)
         << MathUtils::median(m_scanTimeStDevs)
-        << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
+        << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()})
+        << "seconds";
 
         qDebug()
         << qPrintable(S_GLOBAL_TIMER.elapsed())

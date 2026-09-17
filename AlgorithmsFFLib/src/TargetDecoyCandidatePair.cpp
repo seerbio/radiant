@@ -236,6 +236,7 @@ float TargetDecoyCandidatePair::mass() const {
 
 float TargetDecoyCandidatePair::iRt(bool isDecoy) const {
 
+	// Decoy shifts are in library iRT space; conversion to scan-time seconds happens later.
 	float decoyAdjustment = 0;
 	if (isDecoy) {
 		const PeptideString ps = peptideString();

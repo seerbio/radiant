@@ -587,7 +587,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "Optimal scanTimeWindow setting:"
              << m_msCalibratomatic->scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs)
-             << "minutes";
+             << "seconds";
 
     if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
         const float calibratedIonMobilityWindow

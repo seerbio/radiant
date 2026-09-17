@@ -207,8 +207,8 @@ void MsReaderBaseTests::scanTimeMinMaxTest() {
 
     const QPair<ScanTime, ScanTime> scanTimeMinMax = msReaderPointerAcc.ptr->scanTimeMinMax();
 
-    QCOMPARE(MathUtils::pRound(static_cast<double>(scanTimeMinMax.first), 4), 0.0028);
-    QCOMPARE(MathUtils::pRound(static_cast<double>(scanTimeMinMax.second), 4), 6.1676);
+    QCOMPARE(MathUtils::pRound(static_cast<double>(scanTimeMinMax.first), 4), 0.1695);
+    QCOMPARE(MathUtils::pRound(static_cast<double>(scanTimeMinMax.second), 4), 370.0576);
 
 }
 
@@ -295,7 +295,7 @@ void MsReaderBaseTests::getMsScanInfoTest() {
     QCOMPARE(e, eNoError);
     QCOMPARE(msScanInfo.scanNumber, 666);
     QCOMPARE(msScanInfo.msLevel, 2);
-    QCOMPARE(MathUtils::pRound(static_cast<double>(msScanInfo.scanTime), 4), 0.8267);
+    QCOMPARE(MathUtils::pRound(static_cast<double>(msScanInfo.scanTime), 4), 49.6016);
     QCOMPARE(msScanInfo.collisionEnergy, 28);
     QCOMPARE(MathUtils::pRound(static_cast<double>(msScanInfo.precursorTargetMz), 3), 725.079);
     QCOMPARE(msScanInfo.isoWindowUpper, 5.5);
@@ -392,7 +392,7 @@ void MsReaderBaseTests::getNearestScanNumberFromScanTimeTest() {
     e = msReaderPointerAcc.openFile(m_prqFFFilePath);
     QCOMPARE(e, eNoError);
 
-    const ScanTime scanTime = 0.666;
+    const ScanTime scanTime = 39.96;
     const ScanNumber scanNumber = msReaderPointerAcc.ptr->getNearestScanNumberFromScanTime(scanTime);
     QCOMPARE(scanNumber, 536);
 
@@ -424,8 +424,8 @@ void MsReaderBaseTests::getScanNumberVsScanTimeTest() {
     QCOMPARE(scanNumberVsScanTime.size(), 5000);
     QCOMPARE(scanNumberVsScanTime.firstKey(), 1);
     QCOMPARE(scanNumberVsScanTime.lastKey(), 5000);
-    QCOMPARE(MathUtils::pRound(static_cast<double>(scanNumberVsScanTime.first()), 4), 0.0028);
-    QCOMPARE(MathUtils::pRound(static_cast<double>(scanNumberVsScanTime.last()), 4), 6.1676);
+    QCOMPARE(MathUtils::pRound(static_cast<double>(scanNumberVsScanTime.first()), 4), 0.1695);
+    QCOMPARE(MathUtils::pRound(static_cast<double>(scanNumberVsScanTime.last()), 4), 370.0576);
 
 }
 

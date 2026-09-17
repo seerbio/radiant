@@ -45,7 +45,7 @@ namespace {
     const QString JSON_FIELD_VERSION = QStringLiteral("version");
     const QString JSON_FIELD_IM = QStringLiteral("im");
     const QString JSON_FIELD_MZ = QStringLiteral("mz");
-    const float TIMSBUK_SCAN_TIME_MILLISECONDS_TO_MINUTES = 1.0f / 60000.0f;
+    const float TIMSBUK_SCAN_TIME_MILLISECONDS_TO_SECONDS = 1.0f / 1000.0f;
     const float TIMSBUK_ION_MOBILITY_EPSILON = 0.0005f;
 
     struct TimsbukIsolationWindowSegment {
@@ -1359,7 +1359,7 @@ namespace {
             MsScanInfo materializedMsScanInfo = pendingScan.msScanInfo;
             materializedMsScanInfo.scanNumber = scanNumber;
             materializedMsScanInfo.scanTime = pendingScan.scanTimeMilliseconds
-                * TIMSBUK_SCAN_TIME_MILLISECONDS_TO_MINUTES;
+                * TIMSBUK_SCAN_TIME_MILLISECONDS_TO_SECONDS;
 
             msScanInfo->insert(scanNumber, materializedMsScanInfo);
             scanPoints->insert(scanNumber, pendingScan.pointStore.scanPoints);

@@ -44,6 +44,7 @@ struct FILEREADERSLIB_EXPORTS TimsbukLogicalScanDescriptor {
     int msLevel = -1;
     TimsbukCycleIndex cycleIndex = 0;
     TimsbukWindowGroupId windowGroupId = -1;
+    // Sidecar metadata remains in milliseconds until it is materialized as ScanTime.
     float scanTimeMilliseconds = -1.0f;
     float collisionEnergy = -1.0f;
     float precursorTargetMz = -1.0f;

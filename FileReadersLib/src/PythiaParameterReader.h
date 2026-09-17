@@ -116,8 +116,8 @@ struct PythiaParameters{
     ImHandlingMode imHandlingMode = ImHandlingMode::Centroid;
     bool optimizeMode = false;
     bool shortReport = false;
-    double analysisScanTimeMin = -1.0;
-    double analysisScanTimeMax = -1.0;
+    double analysisScanTimeMin = -1.0; // seconds
+    double analysisScanTimeMax = -1.0; // seconds
 
     //[LibraryParams]
     int chargeStateMin = -1;
@@ -159,7 +159,7 @@ struct PythiaParameters{
     float timsTargetedMs2IonMobilityWindow = 0.06f;
     float timsHighEvidenceMinCosineSimSum100 = 4.2f;
     float timsHighEvidenceMinCosineSimSpectrumOverTimeCubed = 0.3f;
-    float timsHighEvidenceMaxScanTimeDeltaAbs = 70.0f;
+    float timsHighEvidenceMaxScanTimeDeltaAbs = 70.0f; // seconds
     bool timsHighEvidenceFilterSweep = false;
     bool timsHighEvidenceFilterEnabled = false;
     int timsSecondStageCandidateRowLimit = 12000;

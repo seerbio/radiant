@@ -31,7 +31,7 @@ public:
 
     int msLevel = -1;
     ScanNumber scanNumber = -1;
-    float scanTime = -1.0;
+    float scanTime = -1.0; // seconds
     float collisionEnergy = -1.0;
     float precursorTargetMz = -1.0;
     float isoWindowLower = -1.0;

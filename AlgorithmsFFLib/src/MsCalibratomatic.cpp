@@ -154,7 +154,7 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {
-        qDebug() << "scanTimeStDev" << m_scanTimeStd;
+        qDebug() << "scanTimeStDev" << m_scanTimeStd << "seconds";
     }
     m_isInitRT = true;
 

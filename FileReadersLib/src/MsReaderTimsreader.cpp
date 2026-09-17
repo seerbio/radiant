@@ -428,8 +428,9 @@ public:
             msScanInfo.msLevel = static_cast<int>(
                 readRequiredPrimitive<uint8_t>(msLevelArray, rowIndex)
                 );
+            // ScanStartTimeSec is already expressed in seconds.
             msScanInfo.scanTime = static_cast<float>(
-                readRequiredPrimitive<double>(scanTimeArray, rowIndex) / 60.0
+                readRequiredPrimitive<double>(scanTimeArray, rowIndex)
                 );
 
             readNullablePrimitive<float>(isolationTargetMzArray, rowIndex, &msScanInfo.precursorTargetMz);
