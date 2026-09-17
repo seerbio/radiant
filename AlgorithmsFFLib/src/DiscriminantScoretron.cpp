@@ -408,7 +408,7 @@ QVector<float> DiscriminantScoretron::defaultWeights(const QVector<Features> &fe
     // cs.featuresArray[KlDivSpectrumCubeRoot] = -1.0f;
     // cs.featuresArray[CosineSim100MS1] = 1.0f;
     // cs.featuresArray[CosineSimSpectrumStDev] = -1.0f;
-    cs.featuresArray[ScanTimeDeltaAbs] = -0.5f;
+    cs.featuresArray[ScanTimeDeltaAbs] = -0.5f / 60.0f;
     if (features.contains(IonMobilityDeltaAbs)) {
         cs.featuresArray[IonMobilityDeltaAbs] = -1.0f;
     }
