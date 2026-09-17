@@ -28,6 +28,8 @@ public:
     MsCalibratomatic();
     ~MsCalibratomatic() = default;
 
+    void setPythiaParameters(const PythiaParameters &pythiaParameters);
+
     Err buildRTMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
     Err buildIMMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 

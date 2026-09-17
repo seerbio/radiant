@@ -24,6 +24,10 @@ MsCalibratomatic::MsCalibratomatic()
 , m_polynomialOrderMassCal(2)
 {}
 
+void MsCalibratomatic::setPythiaParameters(const PythiaParameters &pythiaParameters) {
+    m_params = pythiaParameters;
+}
+
 namespace {
 
     enum class MetricType {

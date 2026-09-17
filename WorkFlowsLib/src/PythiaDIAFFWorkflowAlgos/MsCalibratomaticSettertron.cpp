@@ -49,6 +49,7 @@ Err MsCalibratomaticSettertron::init(
     m_pythiaParameters = pythiaParameters;
     m_targetDecoyCandidatePairScoretron = targetDecoyCandidatePairScoretron;
     m_featuresCalibration = featuresCalibration;
+    m_msCalibratomatic.setPythiaParameters(*pythiaParameters);
 
     e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
         &m_targetDecoyPairPntrs
@@ -99,6 +100,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager->isInit()); ree;
     e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
+    msCalibratomatic->setPythiaParameters(*m_pythiaParameters);
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron->isInit()); ree;
 
     const int numberOfTranches = calculateNumberOfTranches(m_pythiaParameters->verbosity);
