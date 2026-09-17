@@ -13,7 +13,6 @@
 #include "ParallelUtils.h"
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 #include "QValueSettertron.h"
-#include "TimsbukIndexTypes.h"
 #include "TurboXIC.h"
 
 #include <cmath>

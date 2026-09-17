@@ -92,7 +92,7 @@ Err MsReaderBase::getMzTargetScanPoints(
 
 Err MsReaderBase::getMzTargetAlignedPointData(
     const MzTargetKey &targetKey,
-    QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+    QMap<ScanNumber, const MsAlignedPointData*> *scanNumberVsAlignedPointData
     ) const {
     Q_UNUSED(targetKey)
     Q_UNUSED(scanNumberVsAlignedPointData)
@@ -588,7 +588,7 @@ float MsReaderBase::mzMs2Max() const {
     return m_mzMs2Max;
 }
 
-const TimsbukAlignedPointData *MsReaderBase::alignedPointDataPntr(ScanNumber scanNumber) const {
+const MsAlignedPointData *MsReaderBase::alignedPointDataPntr(ScanNumber scanNumber) const {
     Q_UNUSED(scanNumber)
     return nullptr;
 }

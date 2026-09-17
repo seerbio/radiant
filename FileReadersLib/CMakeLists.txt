@@ -108,7 +108,6 @@ SET(HEADER_FILES
         src/ImHandlingMode.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
-        src/TimsbukIndexTypes.h
         src/MsReaderMzML.h
         src/MsReaderMzMLLazyLoad.h
         src/MsReaderMzMLMapped.h

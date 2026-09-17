@@ -16,7 +16,41 @@
 
 using namespace Error;
 
-struct TimsbukAlignedPointData;
+struct FILEREADERSLIB_EXPORTS MsAlignedPointData {
+    QVector<float> ionMobilityByPoint;
+
+    void clear() {
+        ionMobilityByPoint.clear();
+    }
+
+    [[nodiscard]] bool isEmpty() const {
+        return ionMobilityByPoint.isEmpty();
+    }
+
+    [[nodiscard]] bool hasIonMobility() const {
+        return !ionMobilityByPoint.isEmpty();
+    }
+
+    [[nodiscard]] bool isAlignedWith(const ScanPoints &scanPoints) const {
+        return ionMobilityByPoint.isEmpty() || ionMobilityByPoint.size() == scanPoints.size();
+    }
+
+    [[nodiscard]] int pointCount() const {
+        return ionMobilityByPoint.size();
+    }
+};
+
+[[nodiscard]] inline float msIonMobilityOf(
+    const MsAlignedPointData &pointData,
+    int pointIndex
+    ) {
+
+    if (pointIndex < 0 || pointIndex >= pointData.ionMobilityByPoint.size()) {
+        return -1.0f;
+    }
+
+    return pointData.ionMobilityByPoint.at(pointIndex);
+}
 
 enum class ScanPointsSort {
     AscMz,
@@ -173,7 +207,7 @@ public:
 
     virtual Err getMzTargetAlignedPointData(
             const MzTargetKey &targetKey,
-            QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+            QMap<ScanNumber, const MsAlignedPointData*> *scanNumberVsAlignedPointData
             ) const;
 
     /**
@@ -510,7 +544,7 @@ public:
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
-    virtual const TimsbukAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const;
+    virtual const MsAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const;
 
 
 protected:

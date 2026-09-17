@@ -591,7 +591,7 @@ namespace {
 
         e = ensureTargetScanPointsLoaded(pi, scanNumberVsScanPoints); ree;
 
-        QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
+        QMap<ScanNumber, const MsAlignedPointData*> scanNumberVsAlignedPointData;
         e = pi.msReaderPointerAcc->ptr->getMzTargetAlignedPointData(
             pi.targetKey,
             &scanNumberVsAlignedPointData
@@ -711,7 +711,7 @@ namespace {
             && context->msFrameMzTarget != nullptr
             && context->msFrameMzTarget->isValid()
             && !context->ownedScanPoints.isEmpty()) {
-            QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
+            QMap<ScanNumber, const MsAlignedPointData*> scanNumberVsAlignedPointData;
             e = pi.msReaderPointerAcc->ptr->getMzTargetAlignedPointData(
                 pi.targetKey,
                 &scanNumberVsAlignedPointData

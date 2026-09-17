@@ -7,8 +7,8 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 #include "Error.h"
+#include "MsReaderBase.h"
 #include "Ms2IonMobilityIndexBase.h"
-#include "TimsbukIndexTypes.h"
 
 #include <QHash>
 #include <QMap>
@@ -24,7 +24,7 @@ public:
 
     Err init(
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
-        const QMap<ScanNumber, const TimsbukAlignedPointData*> &scanNumberVsAlignedPointData,
+        const QMap<ScanNumber, const MsAlignedPointData*> &scanNumberVsAlignedPointData,
         const MsFrame &msFrame
         );
 

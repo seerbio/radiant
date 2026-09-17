@@ -9,7 +9,6 @@
 
 #include "ImHandlingMode.h"
 #include "MsReaderBase.h"
-#include "TimsbukIndexTypes.h"
 
 #include <QScopedPointer>
 
@@ -38,10 +37,10 @@ public:
 
     Err getMzTargetAlignedPointData(
         const MzTargetKey &targetKey,
-        QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+        QMap<ScanNumber, const MsAlignedPointData*> *scanNumberVsAlignedPointData
         ) const override;
 
-    const TimsbukAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const override;
+    const MsAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const override;
 
     Err closeFile() override;
 

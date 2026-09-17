@@ -15,7 +15,6 @@
 #include "MsUtils.h"
 #include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
-#include "TimsbukIndexTypes.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
 
@@ -1099,7 +1098,7 @@ namespace {
         }
 
         ScanPoints *ms1ScanPoints = msFrameMS1->getScanPointsByScanNumber(ms1ScanNumber);
-        const TimsbukAlignedPointData *alignedPointData = msReaderPointerAcc->ptr->alignedPointDataPntr(ms1ScanNumber);
+        const MsAlignedPointData *alignedPointData = msReaderPointerAcc->ptr->alignedPointDataPntr(ms1ScanNumber);
         if (ms1ScanPoints == nullptr
             || alignedPointData == nullptr
             || !alignedPointData->isAlignedWith(*ms1ScanPoints)) {
@@ -1108,7 +1107,7 @@ namespace {
 
         for (int pointIndex = 0; pointIndex < ms1ScanPoints->size(); ++pointIndex) {
             const ScanPoint &scanPoint = ms1ScanPoints->at(pointIndex);
-            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
+            const float driftTime = msIonMobilityOf(*alignedPointData, pointIndex);
             if (driftTime <= 0.0f
                 || scanPoint.x() < mzMin
                 || scanPoint.x() > mzMax

@@ -26,7 +26,7 @@ namespace {
 
 Err CentroidMs2IonMobilityIndex::init(
     const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
-    const QMap<ScanNumber, const TimsbukAlignedPointData*> &scanNumberVsAlignedPointData,
+    const QMap<ScanNumber, const MsAlignedPointData*> &scanNumberVsAlignedPointData,
     const MsFrame &msFrame
     ) {
 
@@ -54,7 +54,7 @@ Err CentroidMs2IonMobilityIndex::init(
             continue;
         }
 
-        const TimsbukAlignedPointData *alignedPointData = alignedIt.value();
+        const MsAlignedPointData *alignedPointData = alignedIt.value();
         if (alignedPointData == nullptr || !alignedPointData->isAlignedWith(scanPointIt.value())) {
             continue;
         }
@@ -66,7 +66,7 @@ Err CentroidMs2IonMobilityIndex::init(
 
         m_pointCount += scanPoints.size();
         for (int pointIndex = 0; pointIndex < scanPoints.size(); ++pointIndex) {
-            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
+            const float driftTime = msIonMobilityOf(*alignedPointData, pointIndex);
             if (driftTime <= 0.0f) {
                 continue;
             }
@@ -93,7 +93,7 @@ Err CentroidMs2IonMobilityIndex::init(
             continue;
         }
 
-        const TimsbukAlignedPointData *alignedPointData = alignedIt.value();
+        const MsAlignedPointData *alignedPointData = alignedIt.value();
         if (alignedPointData == nullptr || !alignedPointData->isAlignedWith(scanPointIt.value())) {
             continue;
         }
@@ -105,7 +105,7 @@ Err CentroidMs2IonMobilityIndex::init(
 
         const FrameIndex frameIndex = msFrame.frameIndexFromScanNumber(alignedIt.key());
         for (int pointIndex = 0; pointIndex < scanPoints.size(); ++pointIndex) {
-            const float driftTime = timsbukIonMobilityOf(*alignedPointData, pointIndex);
+            const float driftTime = msIonMobilityOf(*alignedPointData, pointIndex);
             if (driftTime <= 0.0f) {
                 continue;
             }

@@ -300,7 +300,7 @@ public:
     struct MaterializedPartition {
         QMap<ScanNumber, MsScanInfo> msScanInfoByScanNumber;
         QMap<ScanNumber, ScanPoints> scanPointsByScanNumber;
-        QMap<ScanNumber, TimsbukAlignedPointData> alignedPointDataByScanNumber;
+        QMap<ScanNumber, MsAlignedPointData> alignedPointDataByScanNumber;
         std::vector<timsreader::OwnedBatch> ownedBatches;
     };
 
@@ -475,7 +475,7 @@ public:
             partition->scanPointsByScanNumber.insert(msScanInfo.scanNumber, scanPoints);
 
             if (m_imHandlingMode == ImHandlingMode::Centroid) {
-                TimsbukAlignedPointData alignedPointData;
+                MsAlignedPointData alignedPointData;
                 appendIonMobilitiesFromList(
                     ionMobilitiesArray,
                     rowIndex,
@@ -653,7 +653,7 @@ public:
     ImHandlingMode m_imHandlingMode = ImHandlingMode::Centroid;
     int m_threadCount = 1;
     TimsreaderRunCatalog runCatalog;
-    QMap<ScanNumber, TimsbukAlignedPointData> alignedPointDataByScanNumber;
+    QMap<ScanNumber, MsAlignedPointData> alignedPointDataByScanNumber;
 
 #ifdef PYTHIA_HAVE_TIMSREADER
     std::vector<timsreader::OwnedBatch> ownedBatches;
@@ -750,7 +750,7 @@ Err MsReaderTimsreader::getMzTargetScanPoints(
 
 Err MsReaderTimsreader::getMzTargetAlignedPointData(
     const MzTargetKey &targetKey,
-    QMap<ScanNumber, const TimsbukAlignedPointData*> *scanNumberVsAlignedPointData
+    QMap<ScanNumber, const MsAlignedPointData*> *scanNumberVsAlignedPointData
     ) const {
 
     ERR_INIT
@@ -785,7 +785,7 @@ Err MsReaderTimsreader::getMzTargetAlignedPointData(
     ERR_RETURN
 }
 
-const TimsbukAlignedPointData *MsReaderTimsreader::alignedPointDataPntr(ScanNumber scanNumber) const {
+const MsAlignedPointData *MsReaderTimsreader::alignedPointDataPntr(ScanNumber scanNumber) const {
     const auto alignedPointDataIt = d_ptr->alignedPointDataByScanNumber.constFind(scanNumber);
     if (alignedPointDataIt == d_ptr->alignedPointDataByScanNumber.constEnd()) {
         return nullptr;

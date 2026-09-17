@@ -45,10 +45,10 @@ void CentroidMs2IonMobilityIndexTests::extractFiltersMzFrameAndIonMobilityTest()
     e = msFrame.init(scanNumberVsScanPointsPntrs, scanNumberVsScanTime);
     QCOMPARE(e, eNoError);
 
-    QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
-    const TimsbukAlignedPointData alignedScan100{{1.00f, 1.15f}};
-    const TimsbukAlignedPointData alignedScan200{{1.00f}};
-    const TimsbukAlignedPointData alignedScan300{{1.20f}};
+    QMap<ScanNumber, const MsAlignedPointData*> scanNumberVsAlignedPointData;
+    const MsAlignedPointData alignedScan100{{1.00f, 1.15f}};
+    const MsAlignedPointData alignedScan200{{1.00f}};
+    const MsAlignedPointData alignedScan300{{1.20f}};
     scanNumberVsAlignedPointData.insert(100, &alignedScan100);
     scanNumberVsAlignedPointData.insert(200, &alignedScan200);
     scanNumberVsAlignedPointData.insert(300, &alignedScan300);
@@ -123,10 +123,10 @@ void CentroidMs2IonMobilityIndexTests::extractRespectsFrameWindowEdgeExclusionTe
     e = msFrame.init(scanNumberVsScanPointsPntrs, scanNumberVsScanTime);
     QCOMPARE(e, eNoError);
 
-    QMap<ScanNumber, const TimsbukAlignedPointData*> scanNumberVsAlignedPointData;
-    const TimsbukAlignedPointData alignedScan100{{1.00f}};
-    const TimsbukAlignedPointData alignedScan200{{1.00f}};
-    const TimsbukAlignedPointData alignedScan300{{1.00f}};
+    QMap<ScanNumber, const MsAlignedPointData*> scanNumberVsAlignedPointData;
+    const MsAlignedPointData alignedScan100{{1.00f}};
+    const MsAlignedPointData alignedScan200{{1.00f}};
+    const MsAlignedPointData alignedScan300{{1.00f}};
     scanNumberVsAlignedPointData.insert(100, &alignedScan100);
     scanNumberVsAlignedPointData.insert(200, &alignedScan200);
     scanNumberVsAlignedPointData.insert(300, &alignedScan300);
