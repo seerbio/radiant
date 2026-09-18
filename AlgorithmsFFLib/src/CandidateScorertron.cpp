@@ -1814,13 +1814,10 @@ Err CandidateScorertron::setPredictedFrameIndexes(
                 &candidateScores->scanTimePredicted
         ); ree;
 
-        e = m_msFrameMzTarget->frameIndexFromScanTime(
+        e = m_msFrameMzTarget->frameIndexRangeFromScanTime(
                 candidateScores->scanTimePredicted - scanTimeWindow,
-                frameIndexPredictedMin
-        ); ree;
-
-        e = m_msFrameMzTarget->frameIndexFromScanTime(
                 candidateScores->scanTimePredicted + scanTimeWindow,
+                frameIndexPredictedMin,
                 frameIndexPredictedMax
         ); ree;
 

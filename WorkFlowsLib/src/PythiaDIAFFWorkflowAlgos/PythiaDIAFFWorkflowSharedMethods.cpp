@@ -229,12 +229,12 @@ namespace {
         const float scanTimeWindow
             = msCalibratomatic.scanTimeStDev(static_cast<float>(pythiaParameters.scanTimeWindowStDevs));
 
-        e = msFrameMzTarget.frameIndexFromScanTime(predictedScanTime - scanTimeWindow, frameIndexMin);
-        if (e != eNoError) {
-            return false;
-        }
-
-        e = msFrameMzTarget.frameIndexFromScanTime(predictedScanTime + scanTimeWindow, frameIndexMax);
+        e = msFrameMzTarget.frameIndexRangeFromScanTime(
+            predictedScanTime - scanTimeWindow,
+            predictedScanTime + scanTimeWindow,
+            frameIndexMin,
+            frameIndexMax
+            );
         if (e != eNoError) {
             return false;
         }

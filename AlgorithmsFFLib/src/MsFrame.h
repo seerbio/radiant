@@ -206,6 +206,21 @@ public:
     [[nodiscard]] Err frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex) const;
 
     /**
+    * @brief Get outward frame bounds for a ScanTime interval.
+    *
+    * The lower bound is rounded down to the last frame at or before
+    * scanTimeMin, and the upper bound is rounded up to the first frame at or
+    * after scanTimeMax. This is intended for interval extraction rather than
+    * point lookup.
+    */
+    [[nodiscard]] Err frameIndexRangeFromScanTime(
+        ScanTime scanTimeMin,
+        ScanTime scanTimeMax,
+        FrameIndex *frameIndexMin,
+        FrameIndex *frameIndexMax
+        ) const;
+
+    /**
     * @brief Get the ScanNumber corresponding to the given FrameIndex.
     *
     * This function retrieves the ScanNumber associated with the provided FrameIndex.
