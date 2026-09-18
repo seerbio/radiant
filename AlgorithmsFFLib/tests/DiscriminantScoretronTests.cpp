@@ -15,7 +15,7 @@ public:
 private slots:
 
     static void setDisciminantScoreForCandidatesTest();
-    static void defaultWeightsPreserveLegacyNonIonMobilityFeaturesTest();
+    static void defaultWeightsPreserveNonIonMobilityFeaturesTest();
     static void defaultWeightsEnableIonMobilityFeaturesWhenSelectedTest();
 
 
@@ -26,7 +26,7 @@ void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
     QSKIP("Legacy no-op fixture; covered by default weight tests.");
 }
 
-void DiscriminantScoretronTests::defaultWeightsPreserveLegacyNonIonMobilityFeaturesTest() {
+void DiscriminantScoretronTests::defaultWeightsPreserveNonIonMobilityFeaturesTest() {
 
     const QVector<Features> features = {
         CosineSimSum100GreaterThan80,
@@ -41,7 +41,7 @@ void DiscriminantScoretronTests::defaultWeightsPreserveLegacyNonIonMobilityFeatu
     QCOMPARE(weights.at(0), 1.0f);
     QCOMPARE(weights.at(1), 1.0f);
     QCOMPARE(weights.at(2), 1.0f);
-    QCOMPARE(weights.at(3), -0.5f);
+    QCOMPARE(weights.at(3), -0.5f / 60.0f);
 }
 
 void DiscriminantScoretronTests::defaultWeightsEnableIonMobilityFeaturesWhenSelectedTest() {
