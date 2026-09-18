@@ -89,6 +89,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSkipScanCount = QStringLiteral("skipScanCount");
 
     const QString kRtBinning = QStringLiteral("rtBinning");
+    const QString kImBinning = QStringLiteral("imBinning");
 
     const QString kNeuralNetParams = QStringLiteral("NeuralNetParams");
     const QString kEpochs = QStringLiteral("epochs");
@@ -228,6 +229,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->peakDifferenceFractionThreshold = ms2ParamsNode[kPeakDifferenceThresholdFraction.toStdString()].value_or(pythiaParameters->peakDifferenceFractionThreshold);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
     pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
+    pythiaParameters->imBinning = ms2ParamsNode[kImBinning.toStdString()].value_or(pythiaParameters->imBinning);
     pythiaParameters->peakCenter = ms2ParamsNode[kPeakCenter.toStdString()].value_or(pythiaParameters->peakCenter);
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(pythiaParameters->topNIntegrations);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);

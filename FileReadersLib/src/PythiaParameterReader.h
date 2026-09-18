@@ -88,6 +88,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSkipScanCount;
 
     extern const QString FILEREADERSLIB_EXPORTS kRtBinning;
+    extern const QString FILEREADERSLIB_EXPORTS kImBinning;
 
     extern const QString FILEREADERSLIB_EXPORTS kNeuralNetParams;
     extern const QString FILEREADERSLIB_EXPORTS kEpochs;
@@ -143,6 +144,7 @@ struct PythiaParameters{
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
     int rtBinning = 20;
+    int imBinning = 20;
     float scanTimeWindowStDevs = 3;
     float imWindowStdDevs = 3;
     bool subtractShadows = true;
@@ -283,6 +285,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kRtBinning) << rtBinning;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kImBinning) << imBinning;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kImWindowStdDevs) << imWindowStdDevs;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;

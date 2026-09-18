@@ -38,7 +38,7 @@ namespace {
     Err generateMetricsXYMapperMetrics(
             const QVector<QPair<XVal, YVal>> &data,
             int verbosity,
-            int rtBinning,
+            int binning,
             MetricType metricType,
             double *stDevMetricDiff
             ) {
@@ -60,8 +60,8 @@ namespace {
                 ); ree;
 
         XYMappermatic mapperMetrics;
+        e = mapperMetrics.setBinning(binning); ree;
         e = mapperMetrics.init(trainingData); ree;
-        e = mapperMetrics.setBinning(rtBinning); ree;
 
         QVector<QPair<double, double>> actualVsPredicted;
         QVector<double> diffs;
@@ -152,9 +152,10 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
         &m_scanTimeStd
         ); ree;
 
-    e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
-	e = m_scanTimeToIRTMapper.init(dataScanTime); ree;
     e = m_iRTtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
+    e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
+    e = m_scanTimeToIRTMapper.setBinning(m_params.rtBinning); ree;
+	e = m_scanTimeToIRTMapper.init(dataScanTime); ree;
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {
@@ -196,13 +197,13 @@ Err MsCalibratomatic::buildIMMapper(const QVector<MsCalibarationReaderRow> &msCa
     e = generateMetricsXYMapperMetrics(
         dataIIM,
         m_params.verbosity,
-        m_params.rtBinning,
+        m_params.imBinning,
         MetricType::IIM,
         &m_ionMobilityStd
         ); ree;
 
+    e = m_iIMtoScanTimeMapper.setBinning(m_params.imBinning); ree;
     e = m_iIMtoScanTimeMapper.init(dataIIM); ree;
-    e = m_iIMtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
     e = ErrorUtils::isTrue(m_ionMobilityStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {
