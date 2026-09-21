@@ -2996,6 +2996,13 @@ Err CandidateScorertron::setCandidateScores(
             ); ree;
     }
 
+    if (m_msCalibratomatic.isInitIM() && candidateScores->imDriftTime > 0.0f) {
+        e = m_msCalibratomatic.predictEmpiricalIonMobility(
+            candidateScores->imDriftTime,
+            &candidateScores->empiricalIIM
+            ); ree;
+    }
+
     e = setFoundMs2Ions(
         bestCorrelationResults,
         m_topNMS2Ions,

@@ -75,10 +75,15 @@ public:
         float *predictedIonMobility
         ) const;
 
-	Err predictIRT(
+    Err predictIRT(
 		float scanTime,
 		float *predictedIRT
 		) const;
+
+    Err predictEmpiricalIonMobility(
+        float driftTime,
+        float *empiricalIonMobility
+        ) const;
 
     [[nodiscard]] bool isInitRT() const;
 
@@ -101,6 +106,7 @@ private:
     XYMappermatic m_iRTtoScanTimeMapper;
     XYMappermatic m_scanTimeToIRTMapper;
     XYMappermatic m_iIMtoScanTimeMapper;
+    XYMappermatic m_scanTimeToIIMMapper;
     QVector<double> m_calibrationCurveCoeffsMS1;
     QVector<double> m_calibrationCurveCoeffsMS2;
 

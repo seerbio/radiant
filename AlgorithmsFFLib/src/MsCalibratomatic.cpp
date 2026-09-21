@@ -204,6 +204,17 @@ Err MsCalibratomatic::buildIMMapper(const QVector<MsCalibarationReaderRow> &msCa
 
     e = m_iIMtoScanTimeMapper.setBinning(m_params.imBinning); ree;
     e = m_iIMtoScanTimeMapper.init(dataIIM); ree;
+
+    QVector<QPair<XVal, YVal>> dataScanTimeToIIM;
+    dataScanTimeToIIM.reserve(dataIIM.size());
+    std::transform(
+        dataIIM.begin(),
+        dataIIM.end(),
+        std::back_inserter(dataScanTimeToIIM),
+        [](const QPair<XVal, YVal> &p) { return qMakePair(p.second, p.first); }
+        );
+    e = m_scanTimeToIIMMapper.setBinning(m_params.imBinning); ree;
+    e = m_scanTimeToIIMMapper.init(dataScanTimeToIIM); ree;
     e = ErrorUtils::isTrue(m_ionMobilityStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {
@@ -643,6 +654,19 @@ Err MsCalibratomatic::predictIRT(float scanTime, float *predictedIRT) const {
 	*predictedIRT = static_cast<float>(predictedIRTDouble);
 
 	ERR_RETURN
+}
+
+Err MsCalibratomatic::predictEmpiricalIonMobility(
+    float driftTime,
+    float *empiricalIonMobility
+    ) const {
+    ERR_INIT
+
+    double empiricalIonMobilityDouble;
+    e = m_scanTimeToIIMMapper.predictY(static_cast<double>(driftTime), &empiricalIonMobilityDouble); ree;
+    *empiricalIonMobility = static_cast<float>(empiricalIonMobilityDouble);
+
+    ERR_RETURN
 }
 
 bool MsCalibratomatic::isInitRT() const {

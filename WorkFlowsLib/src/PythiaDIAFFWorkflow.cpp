@@ -340,6 +340,10 @@ namespace {
         ) {
         ERR_INIT
 
+        const bool includeIonMobility = msReaderPointerAcc != nullptr
+            && !msReaderPointerAcc->ptr.isNull()
+            && msReaderPointerAcc->ptr->hasIonMobility();
+
         if (writeShortReport) {
 
             QVector<CandidateScoresReaderRowTrunc> candidateScoreReaderRows;
@@ -347,7 +351,9 @@ namespace {
                     candidateScoresPntrs.begin(),
                     candidateScoresPntrs.end(),
                     std::back_inserter(candidateScoreReaderRows),
-                    [](const CandidateScores *cs){return CandidateScoresReaderRowTrunc::buildCandidateScoresReaderRow(cs);}
+                    [includeIonMobility](const CandidateScores *cs){
+                        return CandidateScoresReaderRowTrunc::buildCandidateScoresReaderRow(cs, includeIonMobility);
+                    }
                     );
 
             QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_RADIANT_DIA_FILE_EXTENSION;
@@ -367,7 +373,9 @@ namespace {
                 candidateScoresPntrs.begin(),
                 candidateScoresPntrs.end(),
                 std::back_inserter(candidateScoreReaderRows),
-                [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
+                [includeIonMobility](const CandidateScores *cs){
+                    return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs, includeIonMobility);
+                }
                 );
 
         QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_RADIANT_DIA_FILE_EXTENSION;

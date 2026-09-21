@@ -326,6 +326,7 @@ public:
     ScanTime scanTimeEnd = -1.0;
     ScanTime scanTimePredicted = -1.0;
 	float empiricalIRT = -1.0;
+    float empiricalIIM = -1.0;
 
     IonMobilityIndex ionMobilityIndex = -1;
     IonMobilityIndex ionMobilityIndexStart = -1;
@@ -403,6 +404,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString SHADOW_COSINE_SIM_SUM = QStringLiteral("ShadowsCosineSimSum");
     const QString IRT_PRED = QStringLiteral("IRTPredicted");
     const QString IRT_EMP = QStringLiteral("IRTEmpirical");
+    const QString IIM_EMP = QStringLiteral("IIMEmpirical");
     const QString ION_MOBILITY_LIBRARY = QStringLiteral("IonMobilityLibrary");
     const QString ION_MOBILITY_FOUND = QStringLiteral("IonMobilityFound");
     const QString ION_MOBILITY_INDEX = QStringLiteral("IonMobilityIndex");
@@ -850,6 +852,28 @@ namespace CandidateScoresReaderRowNamespace {
     		ION_LABEL_12
     };
 
+    inline void removeIonMobilityColumns(QMap<QString, QVariant> *values) {
+        values->remove(ION_MOBILITY_LIBRARY);
+        values->remove(ION_MOBILITY_FOUND);
+        values->remove(ION_MOBILITY_INDEX);
+        values->remove(ION_MOBILITY_INDEX_START);
+        values->remove(ION_MOBILITY_INDEX_END);
+        values->remove(ION_MOBILITY_DELTA);
+        values->remove(ION_MOBILITY_DELTA_ABS);
+        values->remove(ION_MOBILITY_PD_ABS);
+        values->remove(MS2_ION_MOBILITY_WEIGHTED_DELTA);
+        values->remove(MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS);
+        values->remove(MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN);
+        values->remove(MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV);
+        values->remove(MS2_ION_MOBILITY_MATCHED_ION_FRACTION);
+        values->remove(MS2_ION_MOBILITY_MATCHED_ION_FRACTION_WEIGHTED);
+        values->remove(MS2_ION_MOBILITY_MATCHED_TOP3_ION_FRACTION);
+        values->remove(MS2_ION_MOBILITY_FWHM_MEAN);
+        values->remove(MS2_ION_MOBILITY_FWHM_STDEV);
+        values->remove(MS1_INTZ_FND_APEX_100_IM);
+        values->remove(IIM_EMP);
+    }
+
 }//namespace
 
 struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderInputBase {
@@ -887,6 +911,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float shadowsCosineSimSum = -1.0;
     float iRtPredicted = -1.0;
     float iRtEmpirical = -1.0;
+    float iIMEmpirical = -1.0;
+    bool includeIonMobility = true;
     float ionMobilityLibrary = -1.0;
     float ionMobilityFound = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
@@ -1118,14 +1144,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         ERR_INIT
 
         const QMap<QString, QVariant> &dataMap = row.dataMap();
+        QStringList expectedKeys = keysToCheck;
+        if (!dataMap.contains(ION_MOBILITY_LIBRARY)) {
+            expectedKeys.removeAll(ION_MOBILITY_LIBRARY);
+            expectedKeys.removeAll(ION_MOBILITY_FOUND);
+            expectedKeys.removeAll(ION_MOBILITY_INDEX);
+            expectedKeys.removeAll(ION_MOBILITY_INDEX_START);
+            expectedKeys.removeAll(ION_MOBILITY_INDEX_END);
+            expectedKeys.removeAll(MS1_INTZ_FND_APEX_100_IM);
+        }
         const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
                 dataMap,
-                keysToCheck
+                expectedKeys
         );
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
         cosineSimSum100 = dataMap.value(COS_SIM_SUM_100).toFloat();
+        includeIonMobility = dataMap.contains(ION_MOBILITY_LIBRARY);
         cosineSimSum100Greater80 = dataMap.value(COS_SIM_SUM_100_GREATER_80).toFloat();
         allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toFloat();
         cosineSim100MS1 = dataMap.value(COS_SIM_SUM_MS1_100).toFloat();
@@ -1158,6 +1194,9 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         shadowsCosineSimSum = dataMap.value(SHADOW_COSINE_SIM_SUM).toFloat();
         iRtPredicted = dataMap.value(IRT_PRED).toFloat();
         iRtEmpirical = dataMap.value(IRT_EMP).toFloat();
+        if (dataMap.contains(IIM_EMP)) {
+            iIMEmpirical = dataMap.value(IIM_EMP).toFloat();
+        }
         ionMobilityLibrary = dataMap.value(ION_MOBILITY_LIBRARY).toFloat();
         ionMobilityFound = dataMap.value(ION_MOBILITY_FOUND).toFloat();
         ionMobilityIndex = dataMap.value(ION_MOBILITY_INDEX).toInt();
@@ -1349,7 +1388,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         using namespace CandidateScoresReaderRowNamespace;
 
-        return {
+        QMap<QString, QVariant> values = {
                 {COS_SIM_SUM_100, QVariant(cosineSimSum100)},
                 {COS_SIM_SUM_100_GREATER_80, QVariant(cosineSimSum100Greater80)},
                 {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
@@ -1383,6 +1422,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {SHADOW_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {IRT_PRED, QVariant(iRtPredicted)},
                 {IRT_EMP, QVariant(iRtEmpirical)},
+                {IIM_EMP, QVariant(iIMEmpirical)},
                 {ION_MOBILITY_LIBRARY, QVariant(ionMobilityLibrary)},
                 {ION_MOBILITY_FOUND, QVariant(ionMobilityFound)},
                 {ION_MOBILITY_INDEX, QVariant(ionMobilityIndex)},
@@ -1606,12 +1646,21 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 				{ION_LABEL_11, QVariant(ionLabels11)},
 				{ION_LABEL_12, QVariant(ionLabels12)},
         };
+        if (!includeIonMobility) {
+            removeIonMobilityColumns(&values);
+        }
+        return values;
     }
 
-    static CandidateScoresReaderRow buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {
+    static CandidateScoresReaderRow buildCandidateScoresReaderRow(
+        const CandidateScores* candidateScores,
+        bool includeIonMobility = true
+        ) {
 
         CandidateScoresReaderRow row;
-    	row.iRtEmpirical = candidateScores->empiricalIRT;
+        row.includeIonMobility = includeIonMobility;
+        row.iRtEmpirical = candidateScores->empiricalIRT;
+        row.iIMEmpirical = candidateScores->empiricalIIM;
         row.ionMobilityLibrary = candidateScores->targetDecoyCandidatePair->iIM();
         row.ionMobilityFound = candidateScores->imDriftTime;
         row.ionMobilityIndex = candidateScores->ionMobilityIndex;
@@ -2158,6 +2207,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
     QString proteinGroup;
     bool isDecoy = false;
 	float iRtEmpirical = -1.0;
+    float iIMEmpirical = -1.0;
+    bool includeIonMobility = true;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     ScanTime scanTimeStart = -1.0;
@@ -2192,14 +2243,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         ERR_INIT
 
         const QMap<QString, QVariant> &dataMap = row.dataMap();
+        QStringList expectedKeys = keysToCheck;
+        if (!dataMap.contains(ION_MOBILITY_LIBRARY)) {
+            expectedKeys.removeAll(ION_MOBILITY_LIBRARY);
+            expectedKeys.removeAll(ION_MOBILITY_FOUND);
+            expectedKeys.removeAll(ION_MOBILITY_INDEX);
+            expectedKeys.removeAll(ION_MOBILITY_INDEX_START);
+            expectedKeys.removeAll(ION_MOBILITY_INDEX_END);
+            expectedKeys.removeAll(MS1_INTZ_FND_APEX_100_IM);
+        }
         const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
                 dataMap,
-                keysToCheck
+                expectedKeys
         );
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
         charge = dataMap.value(CHARGE).toFloat();
+        includeIonMobility = dataMap.contains(ION_MOBILITY_LIBRARY);
         mass = dataMap.value(MASS).toFloat();
 
         intensityFoundMax1 = dataMap.value(INTS_FND_MAX_1).toFloat();
@@ -2221,7 +2282,10 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         proteinGroup = dataMap.value(PROT_GRP).toString();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumber = dataMap.value(SCAN_NUM).toInt();
-    	iRtEmpirical = dataMap.value(IRT_EMP).toFloat();
+        iRtEmpirical = dataMap.value(IRT_EMP).toFloat();
+        if (dataMap.contains(IIM_EMP)) {
+            iIMEmpirical = dataMap.value(IIM_EMP).toFloat();
+        }
         scanTime = dataMap.value(SCAN_TIME).toFloat();
         scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
         scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
@@ -2264,7 +2328,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
 
         using namespace CandidateScoresReaderRowNamespace;
 
-        return {
+        QMap<QString, QVariant> values = {
                 {CHARGE, QVariant(charge)},
                 {MASS, QVariant(mass)},
 
@@ -2301,6 +2365,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 {IS_BEST_PEPTIDE_CANDIDATE, QVariant(isBestPeptideCandidate)},
                 {IS_BEST_PROTEIN_CANDIDATE, QVariant(isBestProteinCandidate)},
                 {IRT_EMP, QVariant(iRtEmpirical)},
+                {IIM_EMP, QVariant(iIMEmpirical)},
 
                 {MZ_SEARCHED_1, QVariant(mzSearched1)},
                 {MZ_SEARCHED_2, QVariant(mzSearched2)},
@@ -2337,11 +2402,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 {MS2_ION_MOBILITY_FWHM_MEAN, QVariant(ms2IonMobilityFwhmMean)},
                 {MS2_ION_MOBILITY_FWHM_STDEV, QVariant(ms2IonMobilityFwhmStDev)},
         };
+        if (!includeIonMobility) {
+            removeIonMobilityColumns(&values);
+        }
+        return values;
     }
 
-    static CandidateScoresReaderRowTrunc buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {
+    static CandidateScoresReaderRowTrunc buildCandidateScoresReaderRow(
+        const CandidateScores* candidateScores,
+        bool includeIonMobility = true
+        ) {
 
         CandidateScoresReaderRowTrunc row;
+        row.includeIonMobility = includeIonMobility;
 
         row.charge = candidateScores->featuresArray[Features::Charge];
         row.mass = candidateScores->featuresArray[Features::Mass];
@@ -2369,7 +2442,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.isDecoy = candidateScores->targetDecoyCandidatePair->isDecoy() ? true : candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
-    	row.iRtEmpirical = candidateScores->empiricalIRT;
+        row.iRtEmpirical = candidateScores->empiricalIRT;
+        row.iIMEmpirical = candidateScores->empiricalIIM;
         row.scanTimeStart = candidateScores->scanTimeStart;
         row.scanTimeEnd = candidateScores->scanTimeEnd;
         row.classifierScore = candidateScores->classifierScore;
