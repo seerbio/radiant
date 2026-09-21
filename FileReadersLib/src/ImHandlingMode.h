@@ -11,7 +11,7 @@
 
 enum class ImHandlingMode {
     Centroid,
-    Summed,
+    NoIM,
     Raw4D,
 };
 

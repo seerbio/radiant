@@ -108,8 +108,8 @@ QString imHandlingModeToString(ImHandlingMode mode) {
     switch (mode) {
     case ImHandlingMode::Centroid:
         return QStringLiteral("centroid");
-    case ImHandlingMode::Summed:
-        return QStringLiteral("summed");
+    case ImHandlingMode::NoIM:
+        return QStringLiteral("noIM");
     case ImHandlingMode::Raw4D:
         return QStringLiteral("raw4d");
     }
@@ -131,8 +131,8 @@ bool imHandlingModeFromString(
         *mode = ImHandlingMode::Centroid;
         return true;
     }
-    if (normalized == QStringLiteral("summed")) {
-        *mode = ImHandlingMode::Summed;
+    if (normalized == QStringLiteral("noim")) {
+        *mode = ImHandlingMode::NoIM;
         return true;
     }
     if (normalized == QStringLiteral("raw4d")

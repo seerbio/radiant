@@ -48,7 +48,6 @@ enum class TimsreaderTransformedColumn : int {
     IonMobilityIndices,
 };
 
-constexpr int kFlattenedColumnCount = 18;
 constexpr int kCentroidColumnCount = 20;
 
 #ifdef PYTHIA_HAVE_TIMSREADER
@@ -371,9 +370,9 @@ public:
     timsreader::Representation representation() const {
         switch (m_imHandlingMode) {
         case ImHandlingMode::Centroid:
+        case ImHandlingMode::NoIM:
+            // noIM mode is an IM-free view of the same centroided peaks.
             return timsreader::Representation::CentroidedFrameSpectrum;
-        case ImHandlingMode::Summed:
-            return timsreader::Representation::FlattenedWindowSpectrum;
         case ImHandlingMode::Raw4D:
             break;
         }
@@ -383,7 +382,7 @@ public:
 
     bool modeSupported() const {
         return m_imHandlingMode == ImHandlingMode::Centroid
-            || m_imHandlingMode == ImHandlingMode::Summed;
+            || m_imHandlingMode == ImHandlingMode::NoIM;
     }
 
     Err ingestOwnedBatch(
@@ -398,9 +397,7 @@ public:
         e = ErrorUtils::isTrue(recordBatch != nullptr, eFileError); ree;
         e = ErrorUtils::isTrue(partition != nullptr, eError); ree;
 
-        const int expectedColumns = m_imHandlingMode == ImHandlingMode::Centroid
-            ? kCentroidColumnCount
-            : kFlattenedColumnCount;
+        const int expectedColumns = kCentroidColumnCount;
         e = ErrorUtils::isTrue(recordBatch->n_children >= expectedColumns, eFileError); ree;
 
         const ArrowArray *scanNumberArray = columnArray(recordBatch, TimsreaderTransformedColumn::ScanNumber);
@@ -546,6 +543,7 @@ public:
 
         try {
             timsreader::Stream stream = m_imHandlingMode == ImHandlingMode::Centroid
+                || m_imHandlingMode == ImHandlingMode::NoIM
                 ? plan.open_stream(legacySidecarCentroidStreamConfig(plan))
                 : plan.open_stream();
             while (true) {

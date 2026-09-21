@@ -263,7 +263,7 @@ void MsReaderPointerAccTests::openFileTest11() {
 
     MsReaderPointerAcc msReaderPointerAcc;
     msReaderPointerAcc.setUseLazyLoading(true);
-    msReaderPointerAcc.setImHandlingMode(ImHandlingMode::Summed);
+    msReaderPointerAcc.setImHandlingMode(ImHandlingMode::NoIM);
     e = msReaderPointerAcc.openFile(paths.brukerPath);
     QVERIFY(e != eNoError);
     QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
