@@ -110,6 +110,8 @@ private:
         int *targetCountBelowFDRThresholdOnePercent
         );
 
+    Err applyFragmentCompetition(QVector<CandidateScores*> *candidates) const;
+
     Err applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         int seed,

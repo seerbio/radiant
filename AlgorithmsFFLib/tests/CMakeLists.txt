@@ -22,6 +22,7 @@ SET(TEST_CLASSES
         FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
+        FragmentCompetitionTests
         IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests

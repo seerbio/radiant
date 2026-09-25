@@ -12,6 +12,7 @@
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
+#include "FragmentCompetition.h"
 #include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
@@ -431,6 +432,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         m_candidateScorePairs,
         &candidateScoresTargetsAndDecoys
         ); ree;
+
+    e = applyFragmentCompetition(&candidateScoresTargetsAndDecoys); ree;
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
 
@@ -1088,6 +1091,18 @@ namespace {
     }
 
 }//namespace
+Err PythiaDIAFFWorkflow::applyFragmentCompetition(QVector<CandidateScores*> *candidates) const {
+    ERR_INIT
+    const int before = candidates->size();
+    e = FragmentCompetition::removeCompetingCandidates(
+        m_pythiaParameters.competitionEnabled, candidates); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Fragment competition before neural net"
+             << "enabled" << m_pythiaParameters.competitionEnabled
+             << "candidate_rows" << before << "->" << candidates->size();
+    ERR_RETURN
+}
+
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         int seed,
