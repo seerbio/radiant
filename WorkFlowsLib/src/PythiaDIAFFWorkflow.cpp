@@ -13,6 +13,7 @@
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "IdLevelQValueAnnotator.h"
+#include "FragmentCompetition.h"
 #include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
@@ -738,6 +739,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         m_candidateScorePairs,
         &candidateScoresTargetsAndDecoys
         ); ree;
+
+    e = applyFragmentCompetition(&candidateScoresTargetsAndDecoys); ree;
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
 
@@ -1877,6 +1880,87 @@ namespace {
     }
 
 }//namespace
+Err PythiaDIAFFWorkflow::applyFragmentCompetition(QVector<CandidateScores*> *candidates) const {
+    ERR_INIT
+    const int before = candidates->size();
+    e = FragmentCompetition::removeCompetingCandidates(
+        m_pythiaParameters.competitionEnabled, candidates); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Fragment competition before neural net"
+             << "enabled" << m_pythiaParameters.competitionEnabled
+             << "candidate_rows" << before << "->" << candidates->size();
+    ERR_RETURN
+}
+
+void PythiaDIAFFWorkflow::completeCandidateRowsToTargetDecoyPairs(
+    const QVector<CandidateScores*> &availableCandidateScores,
+    QVector<CandidateScores*> *candidateScoreRows
+    ) {
+
+    if (candidateScoreRows == nullptr || candidateScoreRows->isEmpty()) {
+        return;
+    }
+
+    const QSet<CandidateScores*> availableRows(
+        availableCandidateScores.begin(), availableCandidateScores.end());
+    QHash<TargetDecoyCandidatePair*, QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> pairByCandidate;
+    pairByCandidate.reserve(m_candidateScorePairs.size());
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pair : m_candidateScorePairs) {
+        TargetDecoyCandidatePair *candidatePair = pair.first.targetDecoyCandidatePair;
+        if (candidatePair == nullptr) {
+            candidatePair = pair.second.targetDecoyCandidatePair;
+        }
+        if (candidatePair == nullptr) {
+            continue;
+        }
+
+        pairByCandidate.insert(candidatePair, {&pair.first, &pair.second});
+    }
+
+    QSet<CandidateScores*> existingRows;
+    QSet<TargetDecoyCandidatePair*> selectedCandidatePairs;
+    existingRows.reserve(candidateScoreRows->size());
+    selectedCandidatePairs.reserve(candidateScoreRows->size() / 2);
+    for (CandidateScores *candidateScores : *candidateScoreRows) {
+        if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
+            continue;
+        }
+
+        existingRows.insert(candidateScores);
+        selectedCandidatePairs.insert(candidateScores->targetDecoyCandidatePair);
+    }
+
+    const int initialRowCount = candidateScoreRows->size();
+    int appendedComplementRows = 0;
+    for (TargetDecoyCandidatePair *candidatePair : selectedCandidatePairs) {
+        const auto pairIt = pairByCandidate.constFind(candidatePair);
+        if (pairIt == pairByCandidate.constEnd()) {
+            continue;
+        }
+
+        CandidateScoresTarget *targetScores = pairIt.value().first;
+        CandidateScoresDecoy *decoyScores = pairIt.value().second;
+        if (targetScores != nullptr && availableRows.contains(targetScores) && !existingRows.contains(targetScores)) {
+            candidateScoreRows->push_back(targetScores);
+            existingRows.insert(targetScores);
+            ++appendedComplementRows;
+        }
+        if (decoyScores != nullptr && availableRows.contains(decoyScores) && !existingRows.contains(decoyScores)) {
+            candidateScoreRows->push_back(decoyScores);
+            existingRows.insert(decoyScores);
+            ++appendedComplementRows;
+        }
+    }
+
+    if (appendedComplementRows > 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "TIMS neural-net candidate pool completed target-decoy pairs"
+                 << "initial_rows" << initialRowCount
+                 << "appended_rows" << appendedComplementRows
+                 << "final_rows" << candidateScoreRows->size();
+    }
+}
+
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         const MsReaderPointerAcc *msReaderPointerAcc,
@@ -1901,70 +1985,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     m_timsSecondStageCandidateScorePairs.clear();
 	QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
     QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> discriminantFallbackTargetDecoyPairPntrs;
-
-    auto completeCandidateRowsToTargetDecoyPairs =
-        [this](QVector<CandidateScores*> *candidateScoreRows) {
-            if (candidateScoreRows == nullptr || candidateScoreRows->isEmpty()) {
-                return;
-            }
-
-            QHash<TargetDecoyCandidatePair*, QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> pairByCandidate;
-            pairByCandidate.reserve(m_candidateScorePairs.size());
-            for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : m_candidateScorePairs) {
-                TargetDecoyCandidatePair *candidatePair = pr.first.targetDecoyCandidatePair;
-                if (candidatePair == nullptr) {
-                    candidatePair = pr.second.targetDecoyCandidatePair;
-                }
-                if (candidatePair == nullptr) {
-                    continue;
-                }
-
-                pairByCandidate.insert(candidatePair, {&pr.first, &pr.second});
-            }
-
-            QSet<CandidateScores*> existingRows;
-            QSet<TargetDecoyCandidatePair*> selectedCandidatePairs;
-            existingRows.reserve(candidateScoreRows->size());
-            selectedCandidatePairs.reserve(candidateScoreRows->size() / 2);
-            for (CandidateScores *candidateScores : *candidateScoreRows) {
-                if (candidateScores == nullptr || candidateScores->targetDecoyCandidatePair == nullptr) {
-                    continue;
-                }
-
-                existingRows.insert(candidateScores);
-                selectedCandidatePairs.insert(candidateScores->targetDecoyCandidatePair);
-            }
-
-            const int initialRowCount = candidateScoreRows->size();
-            int appendedComplementRows = 0;
-            for (TargetDecoyCandidatePair *candidatePair : selectedCandidatePairs) {
-                const auto pairIt = pairByCandidate.constFind(candidatePair);
-                if (pairIt == pairByCandidate.constEnd()) {
-                    continue;
-                }
-
-                CandidateScoresTarget *targetScores = pairIt.value().first;
-                CandidateScoresDecoy *decoyScores = pairIt.value().second;
-                if (targetScores != nullptr && !existingRows.contains(targetScores)) {
-                    candidateScoreRows->push_back(targetScores);
-                    existingRows.insert(targetScores);
-                    ++appendedComplementRows;
-                }
-                if (decoyScores != nullptr && !existingRows.contains(decoyScores)) {
-                    candidateScoreRows->push_back(decoyScores);
-                    existingRows.insert(decoyScores);
-                    ++appendedComplementRows;
-                }
-            }
-
-            if (appendedComplementRows > 0) {
-                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                         << "TIMS neural-net candidate pool completed target-decoy pairs"
-                         << "initial_rows" << initialRowCount
-                         << "appended_rows" << appendedComplementRows
-                         << "final_rows" << candidateScoreRows->size();
-            }
-        };
 
     auto rebuildTargetDecoyCandidateScorePairPointers =
         [&targetDecoyCandidateScorePairsPntrs](QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScorePairs) {
@@ -2032,7 +2052,9 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             true,
             &candidateScoresForNeuralNetTraining
             ); ree;
-        completeCandidateRowsToTargetDecoyPairs(&candidateScoresForNeuralNetTraining);
+        completeCandidateRowsToTargetDecoyPairs(
+            candidateScoresTargetsAndDecoys,
+            &candidateScoresForNeuralNetTraining);
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "TIMS neural-net split pool"
@@ -2048,7 +2070,9 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 		        ); ree;
 
     if (isTimsRun) {
-        completeCandidateRowsToTargetDecoyPairs(&candidateScoresTargetsAndDecoysNeuralNet);
+        completeCandidateRowsToTargetDecoyPairs(
+            candidateScoresTargetsAndDecoys,
+            &candidateScoresTargetsAndDecoysNeuralNet);
         candidateScoresForDiscriminantFallback = candidateScoresTargetsAndDecoysNeuralNet;
         rebuildTargetDecoyCandidateScorePairPointersFromCandidateRows(candidateScoresForDiscriminantFallback);
         discriminantFallbackTargetDecoyPairPntrs = targetDecoyCandidateScorePairsPntrs;

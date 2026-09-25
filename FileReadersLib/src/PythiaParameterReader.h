@@ -43,6 +43,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthIntegration;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kCompetitionEnabled;
     extern const QString FILEREADERSLIB_EXPORTS kIonsSharedToReject;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPMOverride;
@@ -132,6 +133,7 @@ struct PythiaParameters{
     //[MS2Params]
     int filterLengthIntegration = 5;
     int filterLengthMS2 = 3;
+    bool competitionEnabled = true;
     int ionsSharedToReject = 4;
     double ms2ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPMOverride = -1.0;
@@ -268,6 +270,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthIntegration) << filterLengthIntegration;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthMS2) << filterLengthMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kCompetitionEnabled) << competitionEnabled;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kIonsSharedToReject) << ionsSharedToReject;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPMOverride) << ms2ExtractionWidthPPMOverride;

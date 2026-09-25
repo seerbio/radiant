@@ -110,6 +110,13 @@ private:
         int *targetCountBelowFDRThresholdOnePercent
         );
 
+    Err applyFragmentCompetition(QVector<CandidateScores*> *candidates) const;
+
+    void completeCandidateRowsToTargetDecoyPairs(
+        const QVector<CandidateScores*> &availableCandidateScores,
+        QVector<CandidateScores*> *candidateScoreRows
+        );
+
     Err applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         const MsReaderPointerAcc *msReaderPointerAcc,

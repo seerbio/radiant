@@ -31,9 +31,9 @@ SET(SOURCE_FILES
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/FragmentCompetition.cpp
         src/IdLevelQValueAnnotator.cpp
         src/IonMobilitron.cpp
-        src/InterferingCandidatesEliminatomatic.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
         src/Ms2IonFraggertronManager.cpp
@@ -67,8 +67,8 @@ SET(HEADER_FILES
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/FragmentCompetition.h
         src/IdLevelQValueAnnotator.h
-        src/InterferingCandidatesEliminatomatic.h
         src/IonMobilitron.h
         src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
