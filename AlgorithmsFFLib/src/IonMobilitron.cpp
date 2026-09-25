@@ -91,16 +91,51 @@ namespace {
         QVector<ScanNumber> scanNumbers;
     };
 
+    bool nearestPrecedingScanNumber(
+        const QVector<ScanNumber> &scanNumbers,
+        ScanNumber scanNumber,
+        ScanNumber *nearestScanNumber
+        ) {
+
+        if (nearestScanNumber == nullptr || scanNumbers.isEmpty()) {
+            return false;
+        }
+
+        int closestIndex = MathUtils::closest(scanNumbers, scanNumber);
+        if (closestIndex < 0 || closestIndex >= scanNumbers.size()) {
+            return false;
+        }
+
+        ScanNumber scanNumberClosest = scanNumbers.at(closestIndex);
+        if (scanNumberClosest > scanNumber) {
+            if (closestIndex == 0) {
+                return false;
+            }
+            scanNumberClosest = scanNumbers.at(closestIndex - 1);
+        }
+
+        *nearestScanNumber = scanNumberClosest;
+        return true;
+    }
+
     Err assignIonMobilityIndexesToCandidateScoresLogic(const IonMobilityInput &imi) {
 
         ERR_INIT
 
-        FrameIndex ms1ScanNumberClosest = imi.scanNumbers.at(MathUtils::closest(imi.scanNumbers, imi.candidateScores->scanNumber));
-        ms1ScanNumberClosest = ms1ScanNumberClosest > imi.candidateScores->scanNumber
-                             ? imi.scanNumbers.at(MathUtils::closest(imi.scanNumbers, imi.candidateScores->scanNumber) - 1)
-                             : ms1ScanNumberClosest;
+        e = ErrorUtils::isNotEmpty(imi.scanNumbers); ree;
 
-        e = ErrorUtils::contains(ms1ScanNumberClosest, *imi.ms1Frames); ree;
+        ScanNumber ms1ScanNumberClosest = -1;
+        if (!nearestPrecedingScanNumber(
+            imi.scanNumbers,
+            imi.candidateScores->scanNumber,
+            &ms1ScanNumberClosest
+            )) {
+            ERR_RETURN
+        }
+
+        if (!imi.ms1Frames->contains(ms1ScanNumberClosest)) {
+            ERR_RETURN
+        }
         Ms1FrameTIMS ms1FrameTims = imi.ms1Frames->value(ms1ScanNumberClosest);
 
         const std::tuple<Err, float, float> result = IonMobilitron::findEmpericalIonMobilityDriftTime(

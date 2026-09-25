@@ -18,6 +18,7 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
         CosineSimSpectrumOverTimeCubed,
         CosineSimSpectrumStDev,
         CosineSim100MS1,
+        Ms1IntensityFoundApex100IM,
         Ms1MzStDevFound100,
         CosineSim100MS1Iso1,
         CosineSim100MS1Iso2,
@@ -40,8 +41,10 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
         DiscScoresStDev,
         DiscScore1stRunnerUpDiff,
         DiscScore2ndRunnerUpDiff,
+        IonMobilityDeltaAbs,
+        IonMobilityPdAbs,
     	MzFoundOverCount650,
-		MzFoundUnderCount650,
+			MzFoundUnderCount650,
     	MzPeakLengthsMean,
     	MzPeakLengthsStd
     };
@@ -57,6 +60,7 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         CosineSimSpectrumStDev,
         CosineSimSum100MS1,
         CosineSim100MS1,
+        Ms1IntensityFoundApex100IM,
         CosineSim100MS1Iso1,
         CosineSim100MS1Iso2,
         MonoPreMonoRatio,
@@ -82,6 +86,14 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         CosineSimSum100Window1p5X,
         CosineSimSum100Window2X,
         TargetWindowLocationAbs,
+        IonMobilityDeltaAbs,
+        IonMobilityPdAbs,
+        Ms2IonMobilityWeightedDeltaAbs,
+        Ms2IonMobilityApexDeltaAbsMean,
+        Ms2IonMobilityApexDeltaAbsStDev,
+        Ms2IonMobilityMatchedIonFraction,
+        Ms2IonMobilityFwhmMean,
+        Ms2IonMobilityFwhmStDev,
     	MzPeakLengthsStd
         };
 
@@ -96,6 +108,7 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 AllignedMaxIndexesCount,
 
                 CosineSim100MS1,
+                Ms1IntensityFoundApex100IM,
                 CosineSimSpectrumCubed,
                 KlDivSpectrumCubeRoot,
                 CosineSimSum45,
@@ -197,6 +210,16 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 CosineSimSum100Window2X,
                 TotalIntensityRaw,
                 TargetWindowLocation,
+                IonMobilityDelta,
+                IonMobilityDeltaAbs,
+                IonMobilityPdAbs,
+                Ms2IonMobilityWeightedDelta,
+                Ms2IonMobilityWeightedDeltaAbs,
+                Ms2IonMobilityApexDeltaAbsMean,
+                Ms2IonMobilityApexDeltaAbsStDev,
+                Ms2IonMobilityMatchedIonFraction,
+                Ms2IonMobilityFwhmMean,
+                Ms2IonMobilityFwhmStDev,
                 DiscriminantScore,
                 MatrixZeroPercentage,
                 DiscScore1stRunnerUpDiff,
@@ -390,6 +413,39 @@ QVector<float> DiscriminantScoretron::defaultWeights(const QVector<Features> &fe
     // cs.featuresArray[CosineSim100MS1] = 1.0f;
     // cs.featuresArray[CosineSimSpectrumStDev] = -1.0f;
     cs.featuresArray[ScanTimeDeltaAbs] = -0.5f;
+    if (features.contains(IonMobilityDeltaAbs)) {
+        cs.featuresArray[IonMobilityDeltaAbs] = -1.0f;
+    }
+    if (features.contains(IonMobilityPdAbs)) {
+        cs.featuresArray[IonMobilityPdAbs] = -0.5f;
+    }
+    if (features.contains(Ms2IonMobilityWeightedDeltaAbs)) {
+        cs.featuresArray[Ms2IonMobilityWeightedDeltaAbs] = -1.0f;
+    }
+    if (features.contains(Ms2IonMobilityApexDeltaAbsMean)) {
+        cs.featuresArray[Ms2IonMobilityApexDeltaAbsMean] = -1.0f;
+    }
+    if (features.contains(Ms2IonMobilityApexDeltaAbsStDev)) {
+        cs.featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = -0.25f;
+    }
+    if (features.contains(Ms2IonMobilityMatchedIonFraction)) {
+        cs.featuresArray[Ms2IonMobilityMatchedIonFraction] = 1.0f;
+    }
+    if (features.contains(Ms2IonMobilityFwhmMean)) {
+        cs.featuresArray[Ms2IonMobilityFwhmMean] = -1.0f;
+    }
+    if (features.contains(Ms2IonMobilityFwhmStDev)) {
+        cs.featuresArray[Ms2IonMobilityFwhmStDev] = -0.25f;
+    }
+    if (features.contains(Ms2IonMobilityRtCosineMean)) {
+        cs.featuresArray[Ms2IonMobilityRtCosineMean] = 1.5f;
+    }
+    if (features.contains(Ms2IonMobilityRtCosineStDev)) {
+        cs.featuresArray[Ms2IonMobilityRtCosineStDev] = -0.75f;
+    }
+    if (features.contains(Ms2IonMobilityRtApexAgreementFraction)) {
+        cs.featuresArray[Ms2IonMobilityRtApexAgreementFraction] = 1.0f;
+    }
     // cs.featuresArray[ShadowsCosineSimSum] = -1.0f;
 
     return CandidateScores::selectFeaturesArrayFeatures(cs.featuresArray, features);

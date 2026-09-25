@@ -268,7 +268,8 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             *m_pythiaParameters,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
-            &weights
+            &weights,
+            m_msReaderPointerAcc->ptr->isTIMS()
             ); ree;
 
         QString fdrString;

@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 
     QString outputFilePath;
     e = ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(
-            cliParameters.mzMLFilePath,
+            cliParameters.msDataFilePath,
             &outputFilePath
             );
     if (e != eNoError) {

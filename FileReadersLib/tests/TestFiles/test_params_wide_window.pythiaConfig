@@ -30,6 +30,16 @@ smoothCountMS2 = 2
 stopThresholdFractionMS2 = 0.666
 topNIntegrations = 5
 maxAnchorColumnIndex = 6
+timsMainCandidateBudgetPerTargetKey = 4000
+timsStratifyCandidateBudget = true
+timsHighEvidenceMinCosineSimSum100 = 3.8
+timsHighEvidenceMinCosineSimSpectrumOverTimeCubed = 0.2
+timsHighEvidenceMaxScanTimeDeltaAbs = 90.0
+timsHighEvidenceFilterSweep = true
+timsHighEvidenceFilterEnabled = false
+timsSecondStageCandidateRowLimit = 24000
+timsSecondStageUniquePrecursorLimit = 12000
+timsLocalFdrRtBinSeconds = 150.0
 
 [FdrParams]
 percentFDR = 2.0

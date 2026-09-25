@@ -22,6 +22,8 @@ SET(TEST_CLASSES
         FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
+        FragmentCompetitionTests
+        IdLevelQValueAnnotatorTests
         IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests
@@ -34,6 +36,7 @@ SET(TEST_CLASSES
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
+        TimsMs2IonMobilityIndexTests
         TurboXICTests
         TurboXIC2DTests
         XICPeakManagerTests
@@ -50,3 +53,9 @@ foreach(class ${TEST_CLASSES})
     ADD_TEST( NAME ${class} COMMAND ${class} )
 
 endforeach()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestFiles/fragment_competition_reference.json"
+    "${CMAKE_BINARY_DIR}/bin/fragment_competition_reference.json"
+    COPYONLY
+)

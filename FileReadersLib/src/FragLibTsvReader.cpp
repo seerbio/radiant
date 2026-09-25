@@ -819,6 +819,9 @@ Err FragLibTsvReader::getFragLibReaderRows(
                     case FragLibTsvColumn::FragmentSeriesNumber:
                         e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); eee_absorb;
                         break;
+                    case FragLibTsvColumn::ProteinGroup:
+                        fragLibTsvReaderRow.proteinGroups = valString;
+                        break;
                 }
             }
 
@@ -850,11 +853,13 @@ Err FragLibTsvReader::getFragLibReaderRows(
         FragLibReaderRow fragLibReaderRow;
         fragLibReaderRow.precursorCharge = m_precursorChargeCurrent;
         fragLibReaderRow.iRT = m_irtCurrent;
+        fragLibReaderRow.iM = m_ionMobilityCurrent;
         fragLibReaderRow.intensityVals = intensityCurrentNormalized;
         fragLibReaderRow.mzVals = m_mzValsCurrent;
         fragLibReaderRow.ionLabels = m_labelsCurrent.join(S_GLOBAL_SETTINGS.SEPARATOR);
         fragLibReaderRow.isDecoy = m_decoyCurrent;
         fragLibReaderRow.peptideSequenceChargeKey = m_currentPeptide;
+        fragLibReaderRow.proteinGroups = m_proteinGroupsCurrent;
         fragLibReaderRow.mass = (m_precursorMzCurrent * static_cast<float>(m_precursorChargeCurrent))
                                 - (ChemConstants::PROTON * m_precursorChargeCurrent);
 
@@ -924,11 +929,13 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
         FragLibReaderRow fragLibReaderRow;
         fragLibReaderRow.precursorCharge = m_precursorChargeCurrent;
         fragLibReaderRow.iRT = m_irtCurrent;
+        fragLibReaderRow.iM = m_ionMobilityCurrent;
         fragLibReaderRow.intensityVals = intensityValsNormalized;
         fragLibReaderRow.mzVals = m_mzValsCurrent;
         fragLibReaderRow.ionLabels = m_labelsCurrent.join(S_GLOBAL_SETTINGS.SEPARATOR);
         fragLibReaderRow.isDecoy = m_decoyCurrent;
         fragLibReaderRow.peptideSequenceChargeKey = m_currentPeptide;
+        fragLibReaderRow.proteinGroups = m_proteinGroupsCurrent;
         fragLibReaderRow.mass = (m_precursorMzCurrent * static_cast<float>(m_precursorChargeCurrent))
                                 - (ChemConstants::PROTON * m_precursorChargeCurrent);
 
@@ -938,6 +945,7 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
         m_mzValsCurrent.clear();
         m_labelsCurrent.clear();
         m_currentPeptide = peptideSequenceChargeKey;
+        m_proteinGroupsCurrent.clear();
     }
 
     if (tsvRow.productMz < 1.0) {
@@ -953,9 +961,11 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
     m_mzValsCurrent.push_back(static_cast<float>(tsvRow.productMz));
     m_intensityCurrent.push_back(static_cast<float>(tsvRow.libraryIntensity));
     m_irtCurrent = static_cast<float>(tsvRow.trRecalibrated);
+    m_ionMobilityCurrent = static_cast<float>(tsvRow.ionMobility);
     m_precursorChargeCurrent = tsvRow.precursorCharge;
     m_precursorMzCurrent = static_cast<float>(tsvRow.precursorMz);
     m_decoyCurrent = tsvRow.decoy;
+    m_proteinGroupsCurrent = tsvRow.proteinGroups;
 
     ERR_RETURN
 }

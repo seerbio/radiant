@@ -620,6 +620,16 @@ Err MsCalibratomatic::predictScanTime(float iRT, float *predictedScanTime) const
     ERR_RETURN
 }
 
+Err MsCalibratomatic::predictIonMobility(float iIM, float *predictedIonMobility) const {
+    ERR_INIT
+
+    double predictedIonMobilityDouble;
+    e = m_iIMtoScanTimeMapper.predictY(static_cast<double>(iIM), &predictedIonMobilityDouble); ree;
+    *predictedIonMobility = static_cast<float>(predictedIonMobilityDouble);
+
+    ERR_RETURN
+}
+
 Err MsCalibratomatic::predictIRT(float scanTime, float *predictedIRT) const {
 	ERR_INIT
 
@@ -632,6 +642,10 @@ Err MsCalibratomatic::predictIRT(float scanTime, float *predictedIRT) const {
 
 bool MsCalibratomatic::isInitRT() const {
     return m_isInitRT;
+}
+
+bool MsCalibratomatic::isInitIM() const {
+    return m_isInitIM;
 }
 
 bool MsCalibratomatic::isInitCalMS1() const {

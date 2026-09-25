@@ -5,6 +5,7 @@
 #include "ErrorUtils.h"
 #include "PythiaParameterReader.h"
 
+#include <QTemporaryFile>
 #include <QtTest/QtTest>
 #include <QVariant>
 
@@ -19,6 +20,8 @@ public:
 private Q_SLOTS:
 
     static void readFileTest();
+    static void competitionEnabled_data();
+    static void competitionEnabled();
 
 };
 
@@ -50,6 +53,7 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.ms1ExtractionWidthPPM, 20.0);
     QCOMPARE(pythiaParameters.filterLengthIntegration, 6);
     QCOMPARE(pythiaParameters.filterLengthMS2, 4);
+    QCOMPARE(pythiaParameters.competitionEnabled, true);
     QCOMPARE(pythiaParameters.ionsSharedToReject, 2);
     QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 21.0);
     QCOMPARE(pythiaParameters.minMs2FragCount, 3);
@@ -57,6 +61,16 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.subtractShadows, false);
     QCOMPARE(pythiaParameters.smoothCountMS2, 2);
     QCOMPARE(pythiaParameters.stopThresholdFractionMS2, 0.666f);
+    QCOMPARE(pythiaParameters.timsMainCandidateBudgetPerTargetKey, 4000);
+    QCOMPARE(pythiaParameters.timsStratifyCandidateBudget, true);
+    QCOMPARE(pythiaParameters.timsHighEvidenceMinCosineSimSum100, 3.8f);
+    QCOMPARE(pythiaParameters.timsHighEvidenceMinCosineSimSpectrumOverTimeCubed, 0.2f);
+    QCOMPARE(pythiaParameters.timsHighEvidenceMaxScanTimeDeltaAbs, 90.0f);
+    QCOMPARE(pythiaParameters.timsHighEvidenceFilterSweep, true);
+    QCOMPARE(pythiaParameters.timsHighEvidenceFilterEnabled, false);
+    QCOMPARE(pythiaParameters.timsSecondStageCandidateRowLimit, 24000);
+    QCOMPARE(pythiaParameters.timsSecondStageUniquePrecursorLimit, 12000);
+    QCOMPARE(pythiaParameters.timsLocalFdrRtBinSeconds, 150.0);
     QCOMPARE(pythiaParameters.percentFDR, 2.0);
     QCOMPARE(pythiaParameters.reportDecoys, true);
     QCOMPARE(pythiaParameters.filterLength, 4);
@@ -68,6 +82,42 @@ void PythiaParameterReaderTests::readFileTest() {
 
     pythiaParameters.print();
 
+}
+
+void PythiaParameterReaderTests::competitionEnabled_data() {
+    QTest::addColumn<QByteArray>("config");
+    QTest::addColumn<bool>("expected");
+    QTest::newRow("missing-section-defaults-on")
+        << QByteArray("[General]\nthreadCount = 1\n") << true;
+    QTest::newRow("missing-option-defaults-on")
+        << QByteArray("[MS2Params]\nionsSharedToReject = 7\n") << true;
+    QTest::newRow("explicitly-enabled")
+        << QByteArray("[MS2Params]\ncompetitionEnabled = true\nionsSharedToReject = 7\n") << true;
+    QTest::newRow("explicitly-disabled")
+        << QByteArray("[MS2Params]\ncompetitionEnabled = false\nionsSharedToReject = 7\n") << false;
+}
+
+void PythiaParameterReaderTests::competitionEnabled() {
+    QFETCH(QByteArray, config);
+    QFETCH(bool, expected);
+
+    PythiaParameters parameters;
+    QVERIFY(parameters.competitionEnabled);
+    // Loading a new config with an omitted option must restore the default.
+    parameters.competitionEnabled = false;
+
+    QTemporaryFile file;
+    QVERIFY(file.open());
+    QCOMPARE(file.write(config), static_cast<qint64>(config.size()));
+    QVERIFY(file.flush());
+
+    const Err error = PythiaParameterReader::buildPythiaParameters(
+        file.fileName(), &parameters);
+    QCOMPARE(error, eNoError);
+    QCOMPARE(parameters.competitionEnabled, expected);
+    if (config.contains("ionsSharedToReject")) {
+        QCOMPARE(parameters.ionsSharedToReject, 7);
+    }
 }
 
 

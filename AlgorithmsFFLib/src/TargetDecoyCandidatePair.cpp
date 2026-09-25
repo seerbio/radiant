@@ -25,6 +25,10 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 
 void TargetDecoyCandidatePair::setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr) {
     m_fragLibReaderRowPntr = fragLibReaderRowPntr;
+    m_ms2IonsTargetCacheValid = false;
+    m_ms2IonsDecoyCacheValid = false;
+    m_ms2IonsTargetCache.clear();
+    m_ms2IonsDecoyCache.clear();
 }
 
 QString TargetDecoyCandidatePair::proteinGroups() const {
@@ -86,7 +90,12 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
-    return buildMS2Ions(m_fragLibReaderRowPntr);
+    if (!m_ms2IonsTargetCacheValid) {
+        m_ms2IonsTargetCache = buildMS2Ions(m_fragLibReaderRowPntr);
+        m_ms2IonsTargetCacheValid = true;
+    }
+
+    return m_ms2IonsTargetCache;
 }
 
 namespace {
@@ -192,15 +201,19 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
-    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(
+    if (!m_ms2IonsDecoyCacheValid) {
+        m_ms2IonsDecoyCache = mutateCandidatePeptideTarget(
             peptideStringWithMods(),
             ms2IonsTarget(),
             m_decoyFragmentShiftMode
             );
-    if (m_decoySharesSequenceWithOtherTarget) {
-        mangleMs2IonsDecoy(&ms2IonsDec);
+        if (m_decoySharesSequenceWithOtherTarget) {
+            mangleMs2IonsDecoy(&m_ms2IonsDecoyCache);
+        }
+        m_ms2IonsDecoyCacheValid = true;
     }
-    return ms2IonsDec;
+
+    return m_ms2IonsDecoyCache;
 }
 
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {
@@ -276,8 +289,12 @@ void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
 
 void TargetDecoyCandidatePair::decoySharesSequenceWithOtherTarget(bool val) {
     m_decoySharesSequenceWithOtherTarget = val;
+    m_ms2IonsDecoyCacheValid = false;
+    m_ms2IonsDecoyCache.clear();
 }
 
 void TargetDecoyCandidatePair::setDecoyFragmentShiftMode(DecoyFragmentShiftMode mode) {
     m_decoyFragmentShiftMode = mode;
+    m_ms2IonsDecoyCacheValid = false;
+    m_ms2IonsDecoyCache.clear();
 }

@@ -110,10 +110,26 @@ private:
         int *targetCountBelowFDRThresholdOnePercent
         );
 
+    Err applyFragmentCompetition(QVector<CandidateScores*> *candidates) const;
+
+    void completeCandidateRowsToTargetDecoyPairs(
+        const QVector<CandidateScores*> &availableCandidateScores,
+        QVector<CandidateScores*> *candidateScoreRows
+        );
+
     Err applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
+        const MsReaderPointerAcc *msReaderPointerAcc,
         int seed,
-        QVector<CandidateScores*> *candidateScoreClassifier
+        QVector<CandidateScores*> *candidateScoreClassifier,
+        bool *usedDiscriminantFallback
+        );
+
+    Err rescoreTimsFilteredCandidatesForNeuralNet(
+        const MsReaderPointerAcc *msReaderPointerAcc,
+        QVector<CandidateScores*> *candidateScoresTargetsAndDecoysNeuralNet,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *rescoredCandidateScorePairs,
+        QVector<Features> *neuralNetFeatures
         );
 
     Err updateProteinGroupAnnotation(
@@ -141,8 +157,9 @@ private:
     QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;
     QHash<TargetDecoyCandidatePair*, bool> m_entered;
 
-    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
-    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
+	QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_timsSecondStageCandidateScorePairs;
+	QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
