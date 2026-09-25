@@ -21,7 +21,7 @@ Radiant DIA is available as a Docker container or a Linux binary package.
 Docker images are available for both Intel (`x86`) and ARM / Apple Silicon (`aarch64`):
 
 ```
-docker run --rm 718843040700.dkr.ecr.us-west-2.amazonaws.com/seer/radiant-dia:latest 
+docker run --rm seerbio/radiant-dia:latest 
 ```
 
 You can download Ubuntu/Debian binaries from the [Releases page](https://github.com/seerbio/radiant/releases).
@@ -31,14 +31,14 @@ On Intel (`x86`):
 
 ```
 apt-get install -y radiantdia_<version>+amd64.deb
-/usr/local/bin/radiant/RadiantDIA --help
+RadiantDIA --help
 ```
 
 On ARM / Apple Silicon (`aarch64`):
 
 ```
 apt-get install -y radiantdia_<version>+arm64.deb
-/usr/local/bin/radiant/RadiantDIA --help
+RadiantDIA --help
 ```
 
 ## Fragment competition
