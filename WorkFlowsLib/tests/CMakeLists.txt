@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         ConvertMzMLToParquetWorkFlowTests
         MsCalibratomaticSettertronTests
         PythiaDIAFFWorkflowTests
+        NeuralNetFeatureTransformsTests
 
         PlayGroundTests
         )

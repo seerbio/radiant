@@ -39,15 +39,18 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kPrecursorExtractionWindowThomsons;
     extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPMOverride;
+    extern const QString FILEREADERSLIB_EXPORTS kAlignMs1ScanTimes;
 
     extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthIntegration;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthMS2;
     extern const QString FILEREADERSLIB_EXPORTS kCompetitionEnabled;
     extern const QString FILEREADERSLIB_EXPORTS kIonsSharedToReject;
+    extern const QString FILEREADERSLIB_EXPORTS kPostNeuralNetSharedFragments;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPMOverride;
     extern const QString FILEREADERSLIB_EXPORTS kMinMs2FragCount;
+    extern const QString FILEREADERSLIB_EXPORTS kMainMinSimultaneousFragments;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
@@ -93,9 +96,14 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
     extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
+    extern const QString FILEREADERSLIB_EXPORTS kCandidateBundleLimit;
     extern const QString FILEREADERSLIB_EXPORTS kNeuralNetCandidateLimit;
     extern const QString FILEREADERSLIB_EXPORTS kTimsNeuralNetInferenceCandidateLimit;
     extern const QString FILEREADERSLIB_EXPORTS kNormalizeNeuralNetPredictions;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetEnsembleSize;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetGroupPeptideFamilies;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetLogIntensities;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetShuffleEachEpoch;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
 
 
@@ -129,15 +137,20 @@ struct PythiaParameters{
     double ms1ExtractionWidthPPM = 20.0;
     double ms1ExtractionWidthPPMOverride = -1.0;
     double precursorExtractionWindowThomsons = 0.0;
+    // Main non-TIMS extraction only; calibration retains its existing scoring.
+    bool alignMs1ScanTimes = false;
 
     //[MS2Params]
     int filterLengthIntegration = 5;
     int filterLengthMS2 = 3;
     bool competitionEnabled = true;
     int ionsSharedToReject = 4;
+    // Zero disables post-NN physical competition and confidence recalculation.
+    int postNeuralNetSharedFragments = 0;
     double ms2ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
+    int mainMinSimultaneousFragments = 4;
     int rtBinning = 20;
     float scanTimeWindowStDevs = 3;
     bool subtractShadows = true;
@@ -183,8 +196,13 @@ struct PythiaParameters{
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
     int neuralNetCandidateLimit = 50000;
+    int candidateBundleLimit = 0;
     int timsNeuralNetInferenceCandidateLimit = 0;
     bool normalizeNeuralNetPredictions = true;
+    int neuralNetEnsembleSize = 1;
+    bool neuralNetGroupPeptideFamilies = false;
+    bool neuralNetLogIntensities = false;
+    bool neuralNetShuffleEachEpoch = false;
 	bool parallelNeuralNets = false;
 
     [[nodiscard]] bool isValid() const {
@@ -234,6 +252,16 @@ struct PythiaParameters{
     		return false;
     	}
 
+        if (candidateBundleLimit < 0 || candidateBundleLimit == 1 || candidateBundleLimit > 1000000) return false;
+        if (neuralNetEnsembleSize < 1
+            || mainMinSimultaneousFragments < 3
+            || mainMinSimultaneousFragments > 12
+            || (postNeuralNetSharedFragments != 0
+                && (postNeuralNetSharedFragments < 2 || postNeuralNetSharedFragments > 12))
+            || (competitionEnabled && (ionsSharedToReject < 2 || ionsSharedToReject > 12))) {
+            return false;
+        }
+
         return true;
     }
 
@@ -265,6 +293,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons) << precursorExtractionWindowThomsons;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPM) << ms1ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPMOverride) << ms1ExtractionWidthPPMOverride;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kAlignMs1ScanTimes) << alignMs1ScanTimes;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS2Params << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
@@ -272,9 +301,11 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthMS2) << filterLengthMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCompetitionEnabled) << competitionEnabled;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kIonsSharedToReject) << ionsSharedToReject;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPostNeuralNetSharedFragments) << postNeuralNetSharedFragments;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPMOverride) << ms2ExtractionWidthPPMOverride;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMainMinSimultaneousFragments) << mainMinSimultaneousFragments;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kRtBinning) << rtBinning;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
@@ -317,9 +348,14 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kCandidateBundleLimit) << candidateBundleLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetCandidateLimit) << neuralNetCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsNeuralNetInferenceCandidateLimit) << timsNeuralNetInferenceCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNormalizeNeuralNetPredictions) << normalizeNeuralNetPredictions;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetEnsembleSize) << neuralNetEnsembleSize;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetGroupPeptideFamilies) << neuralNetGroupPeptideFamilies;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetLogIntensities) << neuralNetLogIntensities;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetShuffleEachEpoch) << neuralNetShuffleEachEpoch;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kParallelNeuralNets) << parallelNeuralNets;
 
         qDebug() << QStringLiteral("**********************************************");

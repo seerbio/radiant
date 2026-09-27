@@ -21,6 +21,10 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/CandidateScores.cpp
+        src/CandidateBundleIO.cpp
+        src/CandidatePoolRescorer.cpp
+        src/CandidatePoolSelection.cpp
+        src/PeptideFamilyNeuralNet.cpp
         src/CandidateScorertron.cpp
         src/Centroidotron.cpp
         src/ClassifierWeightsManager.cpp
@@ -41,6 +45,7 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/PostNeuralNetCompetition.cpp
         src/QuanTransitionRefinertron.cpp
         src/QValueSettertron.cpp
         src/SequenceSubstringSearchomatic.cpp
@@ -57,6 +62,11 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/CandidateScores.h
+        src/CandidateFeatureSchema.h
+        src/CandidateBundleIO.h
+        src/CandidatePoolRescorer.h
+        src/CandidatePoolSelection.h
+        src/PeptideFamilyNeuralNet.h
         src/CandidateScorertron.h
         src/Centroidotron.h
         src/ClassifierWeightsManager.h
@@ -77,6 +87,7 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
+        src/PostNeuralNetCompetition.h
         src/QuanTransitionRefinertron.h
         src/QValueSettertron.h
         src/SequenceSubstringSearchomatic.h

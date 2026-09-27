@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <random>
+#include <numeric>
 
 #include "ParallelUtils.h"
 
@@ -106,7 +107,8 @@ public:
             float focalLossGamma,
             int seed,
             double nodeFraction,
-            int verbosity
+            int verbosity,
+            bool shuffleEachEpoch
     );
 
     bool predict(
@@ -208,7 +210,8 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         float focalLossGamma,
         int seed,
         double nodeFraction,
-        int verbosity
+        int verbosity,
+        bool shuffleEachEpoch
         ) {
 
     m_isTrained = false;
@@ -275,7 +278,20 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     QElapsedTimer et;
     et.start();
 
+    // Each model owns its permutation RNG, so parallel folds do not consume
+    // process-global LibTorch random state during training.
+    std::mt19937 epochRng(seed);
+    std::vector<int64_t> epochOrder(xData.size());
+    std::iota(epochOrder.begin(), epochOrder.end(), int64_t(0));
     for (int epoch = 0; epoch < epochsMax; ++epoch) {
+        torch::Tensor epochX = X, epochY = y;
+        if (shuffleEachEpoch) {
+            std::shuffle(epochOrder.begin(), epochOrder.end(), epochRng);
+            const auto indices = torch::from_blob(epochOrder.data(),
+                {static_cast<int64_t>(epochOrder.size())}, torch::kInt64);
+            epochX = X.index_select(0, indices);
+            epochY = y.index_select(0, indices);
+        }
 
         float batchLossSum = 0.0;
         int iters = 0;
@@ -284,8 +300,8 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
             iters++;
 
-            torch::Tensor batchX = X.index({torch::indexing::Slice(i, i + batchSize)});
-            torch::Tensor batchY = y.index({torch::indexing::Slice(i, i + batchSize)});
+            torch::Tensor batchX = epochX.index({torch::indexing::Slice(i, i + batchSize)});
+            torch::Tensor batchY = epochY.index({torch::indexing::Slice(i, i + batchSize)});
 
             const int tensorRows = static_cast<int>(batchY.sizes().at(0));
             if (tensorRows < 2) {
@@ -386,7 +402,8 @@ bool CandidateClassifier::trainCandidateClassifier(
         int seed,
         double nodeFraction,
         float focalLossGamma,
-        int verbosity
+        int verbosity,
+        bool shuffleEachEpoch
         ) const {
 
     QVector<QVector<float>> xDataResized = xData;
@@ -407,7 +424,8 @@ bool CandidateClassifier::trainCandidateClassifier(
             focalLossGamma,
             seed,
             nodeFraction,
-            verbosity
+            verbosity,
+            shuffleEachEpoch
             );
 }
 

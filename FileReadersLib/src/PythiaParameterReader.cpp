@@ -40,15 +40,18 @@ namespace PythiaParameterReaderConstants {
     const QString kPrecursorExtractionWindowThomsons = QStringLiteral("precursorExtractionWindowThomsons");
     const QString kMS1ExtractionWidthPPM = QStringLiteral("ms1ExtractionWidthPPM");
     const QString kMS1ExtractionWidthPPMOverride = QStringLiteral("ms1ExtractionWidthPPMOverride");
+    const QString kAlignMs1ScanTimes = QStringLiteral("alignMs1ScanTimes");
 
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kFilterLengthIntegration = QStringLiteral("filterLengthIntegration");
     const QString kFilterLengthMS2 = QStringLiteral("filterLengthMS2");
     const QString kCompetitionEnabled = QStringLiteral("competitionEnabled");
     const QString kIonsSharedToReject = QStringLiteral("ionsSharedToReject");
+    const QString kPostNeuralNetSharedFragments = QStringLiteral("postNeuralNetSharedFragments");
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
     const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
+    const QString kMainMinSimultaneousFragments = QStringLiteral("mainMinSimultaneousFragments");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
@@ -94,9 +97,14 @@ namespace PythiaParameterReaderConstants {
     const QString kLearningRate = QStringLiteral("learningRate");
     const QString kNodesFraction = QStringLiteral("nodesFraction");
     const QString kFocalLossGamma = QStringLiteral("focalLossGamma");
+    const QString kCandidateBundleLimit = QStringLiteral("candidateBundleLimit");
     const QString kNeuralNetCandidateLimit = QStringLiteral("neuralNetCandidateLimit");
     const QString kTimsNeuralNetInferenceCandidateLimit = QStringLiteral("timsNeuralNetInferenceCandidateLimit");
     const QString kNormalizeNeuralNetPredictions = QStringLiteral("normalizeNeuralNetPredictions");
+    const QString kNeuralNetEnsembleSize = QStringLiteral("neuralNetEnsembleSize");
+    const QString kNeuralNetGroupPeptideFamilies = QStringLiteral("neuralNetGroupPeptideFamilies");
+    const QString kNeuralNetLogIntensities = QStringLiteral("neuralNetLogIntensities");
+    const QString kNeuralNetShuffleEachEpoch = QStringLiteral("neuralNetShuffleEachEpoch");
     const QString kParallelNeuralNets = QStringLiteral("parallelNeuralNets");
 
 }
@@ -159,6 +167,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
     pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms1ExtractionWidthPPM);
     pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
+    pythiaParameters->alignMs1ScanTimes = ms1ParamsNode[kAlignMs1ScanTimes.toStdString()].value_or(false);
     pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(pythiaParameters->precursorExtractionWindowThomsons);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
@@ -166,9 +175,11 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(pythiaParameters->filterLengthMS2);
     pythiaParameters->competitionEnabled = ms2ParamsNode[kCompetitionEnabled.toStdString()].value_or(true);
     pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(pythiaParameters->ionsSharedToReject);
+    pythiaParameters->postNeuralNetSharedFragments = ms2ParamsNode[kPostNeuralNetSharedFragments.toStdString()].value_or(0);
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms2ExtractionWidthPPM);
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
+    pythiaParameters->mainMinSimultaneousFragments = ms2ParamsNode[kMainMinSimultaneousFragments.toStdString()].value_or(4);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(pythiaParameters->smoothCountMS2);
@@ -218,6 +229,12 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->skipScanCount = featureFinderParamsNode[kSkipScanCount.toStdString()].value_or(0);
 
     const auto neuralNetParamsNode = parser[kNeuralNetParams.toStdString()];
+    const auto bundleLimitNode = neuralNetParamsNode[kCandidateBundleLimit.toStdString()];
+    if (bundleLimitNode && !bundleLimitNode.is_integer()) { rrr(eValueError); }
+    const auto bundleLimit = bundleLimitNode.value_or<int64_t>(0);
+    if (bundleLimit < 0 || bundleLimit == 1 || bundleLimit > 1000000) { rrr(eValueError); }
+    pythiaParameters->candidateBundleLimit = static_cast<int>(bundleLimit);
+
     pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(pythiaParameters->epochs);
     pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
@@ -226,6 +243,10 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->neuralNetCandidateLimit = neuralNetParamsNode[kNeuralNetCandidateLimit.toStdString()].value_or(pythiaParameters->neuralNetCandidateLimit);
     pythiaParameters->timsNeuralNetInferenceCandidateLimit = neuralNetParamsNode[kTimsNeuralNetInferenceCandidateLimit.toStdString()].value_or(pythiaParameters->timsNeuralNetInferenceCandidateLimit);
     pythiaParameters->normalizeNeuralNetPredictions = neuralNetParamsNode[kNormalizeNeuralNetPredictions.toStdString()].value_or(pythiaParameters->normalizeNeuralNetPredictions);
+    pythiaParameters->neuralNetEnsembleSize = neuralNetParamsNode[kNeuralNetEnsembleSize.toStdString()].value_or(1);
+    pythiaParameters->neuralNetGroupPeptideFamilies = neuralNetParamsNode[kNeuralNetGroupPeptideFamilies.toStdString()].value_or(false);
+    pythiaParameters->neuralNetLogIntensities = neuralNetParamsNode[kNeuralNetLogIntensities.toStdString()].value_or(false);
+    pythiaParameters->neuralNetShuffleEachEpoch = neuralNetParamsNode[kNeuralNetShuffleEachEpoch.toStdString()].value_or(false);
     pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 
 	if (pythiaParameters->baggingSize < 2) {

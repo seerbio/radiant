@@ -16,6 +16,7 @@ private Q_SLOTS:
     void acceptsBoundaryMatchesAcrossScans();
     void needsFourDistinctSupportedFragments_data();
     void needsFourDistinctSupportedFragments();
+    void configurableSharedFragmentThreshold();
     void rejectsUnresolvedGroups();
     void resolvesTransitiveComponents();
     void unsupportedCompetitorFragmentsPreventUniqueness();
@@ -134,6 +135,22 @@ void FragmentCompetitionTests::rejectsUnresolvedGroups() {
     QVector<CandidateScores*> rows = {&singleton.scores, &second.scores, &first.scores};
     QCOMPARE(FragmentCompetition::removeCompetingCandidates(true, &rows), eNoError);
     QCOMPARE(rows, QVector<CandidateScores*>({&singleton.scores}));
+}
+
+void FragmentCompetitionTests::configurableSharedFragmentThreshold() {
+    CompetitionCandidateFixture first("PEPTIDEK", {300, 400, 500, 700});
+    CompetitionCandidateFixture second("PEPTIDER", {300, 400, 500, 800});
+    first.scores.integrations[3] = 10.0f;
+    second.scores.integrations[3] = 100.0f;
+    const QVector<CandidateScores*> original = {&first.scores, &second.scores};
+    auto rows = original;
+    QCOMPARE(FragmentCompetition::removeCompetingCandidates(true, &rows, 4), eNoError);
+    QCOMPARE(rows, original);
+    QCOMPARE(FragmentCompetition::removeCompetingCandidates(true, &rows, 3), eNoError);
+    QCOMPARE(rows, QVector<CandidateScores*>({&second.scores}));
+    rows = original;
+    QCOMPARE(FragmentCompetition::removeCompetingCandidates(true, &rows, 1), eValueError);
+    QCOMPARE(rows, original);
 }
 
 void FragmentCompetitionTests::resolvesTransitiveComponents() {

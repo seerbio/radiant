@@ -5,6 +5,11 @@
 #include "PythiaDIAFFWorkflow.h"
 
 #include "CandidateScores.h"
+#include "CandidateBundleIO.h"
+#include <QDir>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QCoreApplication>
 #include "ClassifierWeightsManager.h"
 #include "Deconvolvotron.h"
 #include "DiscriminantScoretron.h"
@@ -17,6 +22,8 @@
 #include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
+#include "NeuralNetFeatureTransforms.h"
+#include "PostNeuralNetCompetition.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
@@ -30,6 +37,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSet>
+#include <QScopedValueRollback>
 #include <QTextStream>
 
 #include <algorithm>
@@ -661,6 +669,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &m_neuralNetFeatures
         );
 
+    const bool alignMs1ScanTimes = m_pythiaParameters.alignMs1ScanTimes;
+    QScopedValueRollback<bool> restoreMs1Alignment(m_pythiaParameters.alignMs1ScanTimes, false);
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
             &msReaderPointerAcc
@@ -728,6 +738,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     }
 
+    m_pythiaParameters.alignMs1ScanTimes = alignMs1ScanTimes && !msReaderPointerAcc.ptr->isTIMS();
+    e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
         &msReaderPointerAcc,
@@ -785,6 +798,19 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                  << removedNonWritableCandidateScores;
     }
 
+    const bool postNeuralNetCompetition = !msReaderPointerAcc.ptr->isTIMS()
+        && !usedDiscriminantFallback && m_pythiaParameters.postNeuralNetSharedFragments > 0;
+    if (postNeuralNetCompetition) {
+        const int before = candidateScoreClassifierPntrs.size();
+        e = PostNeuralNetCompetition::apply(
+            m_pythiaParameters.postNeuralNetSharedFragments, &candidateScoreClassifierPntrs); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Fragment competition after neural net"
+                 << "minimum_shared_fragments" << m_pythiaParameters.postNeuralNetSharedFragments
+                 << "candidate_rows" << before << "->" << candidateScoreClassifierPntrs.size()
+                 << "confidence" << "tied +1 precursor q-values";
+    }
+
     if (candidateScoreClassifierPntrs.isEmpty()) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "No writable candidate score rows after neural-net filtering; skipping result write";
@@ -802,7 +828,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
              << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
-    const bool candidateScoresSortedHiLo = usedDiscriminantFallback
+    const bool candidateScoresSortedHiLo = postNeuralNetCompetition
+        ? std::is_sorted(
+            candidateScoreClassifierPntrs.begin(),
+            candidateScoreClassifierPntrs.end(),
+            [](const CandidateScores *left, const CandidateScores *right) {
+                return left->classifierScore < right->classifierScore;
+            })
+        : usedDiscriminantFallback
         ? std::is_sorted(
             candidateScoreClassifierPntrs.begin(),
             candidateScoreClassifierPntrs.end(),
@@ -843,6 +876,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         !usedDiscriminantFallback,
         useLocalRtIdLevelQValues ? m_pythiaParameters.timsLocalFdrRtBinSeconds : 0.0
         ); ree;
+
+    if (postNeuralNetCompetition) {
+        for (CandidateScores *candidate : candidateScoreClassifierPntrs) {
+            candidate->precursorQValue = candidate->qValue;
+            candidate->isBestPrecursorCandidate = 1;
+        }
+    }
 
     filterDecoysOrNot(&candidateScoreClassifierPntrs);
 
@@ -1059,7 +1099,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
 
-    const float minPeakCount = msReaderPointerAcc->ptr->isTIMS() ? 2.9f : 3.9f;
+    const float minPeakCount = msReaderPointerAcc->ptr->isTIMS()
+        ? 2.9f : static_cast<float>(m_pythiaParameters.mainMinSimultaneousFragments) - .1f;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             m_ppmOptimizationFeatures,
@@ -1156,6 +1197,7 @@ namespace {
     Err buildKarnnNNTargetsNormalized(
         const QVector<Features> &neuralNetFeatures,
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoysFDRFiltered,
+        bool logIntensities,
         QVector<KarnnNNTarget> *karnnNNTargetsNorm
     ){
 
@@ -1183,6 +1225,10 @@ namespace {
             );
 #endif
 
+            if (logIntensities) {
+                NeuralNetFeatureTransforms::logIntensities(
+                    neuralNetFeatures, &karnnNnTarget.scoreVecNormalized);
+            }
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
@@ -1204,15 +1250,15 @@ namespace {
 	    ERR_INIT
     	FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
 
-    	constexpr int baggingOverride = 1;
     	e = fdrcLassifierNeuralNet.init(
 				pythiaParameters.epochs,
-				baggingOverride,
+				pythiaParameters.neuralNetEnsembleSize,
 				batchSize,
 				pythiaParameters.learningRate,
 				pythiaParameters.nodesFraction,
 				pythiaParameters.focalLossGamma,
-				pythiaParameters.threadCount
+				pythiaParameters.threadCount,
+				pythiaParameters.neuralNetShuffleEachEpoch
 		); rree;
 
     	e = fdrcLassifierNeuralNet.trainClassifier(
@@ -1884,10 +1930,12 @@ Err PythiaDIAFFWorkflow::applyFragmentCompetition(QVector<CandidateScores*> *can
     ERR_INIT
     const int before = candidates->size();
     e = FragmentCompetition::removeCompetingCandidates(
-        m_pythiaParameters.competitionEnabled, candidates); ree;
+        m_pythiaParameters.competitionEnabled, candidates,
+        m_pythiaParameters.ionsSharedToReject); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "Fragment competition before neural net"
              << "enabled" << m_pythiaParameters.competitionEnabled
+             << "minimum_shared_fragments" << m_pythiaParameters.ionsSharedToReject
              << "candidate_rows" << before << "->" << candidates->size();
     ERR_RETURN
 }
@@ -1980,6 +2028,43 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     const bool isTimsRun = msReaderPointerAcc != nullptr
                            && !msReaderPointerAcc->ptr.isNull()
                            && msReaderPointerAcc->ptr->isTIMS();
+    if (m_pythiaParameters.candidateBundleLimit > 0) {
+        if (isTimsRun || msReaderPointerAcc == nullptr || msReaderPointerAcc->ptr.isNull()) {
+            qWarning() << "Candidate bundle export currently requires a non-TIMS run";
+            rrr(eValueError);
+        }
+        QVector<CandidateScores*> exportRows = candidateScoresTargetsAndDecoys;
+        removeNonWritableCandidateScores(&exportRows);
+        const auto ineligible = [this](const CandidateScores *row) {
+            return row->featuresArray[CosineSimSum100]
+                < static_cast<float>(m_pythiaParameters.minMs2FragCount);
+        };
+        exportRows.erase(std::remove_if(exportRows.begin(), exportRows.end(), ineligible), exportRows.end());
+        PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(&exportRows);
+        exportRows.resize(std::min(exportRows.size(), m_pythiaParameters.candidateBundleLimit));
+        if (!exportRows.isEmpty()) {
+            const QString input = msReaderPointerAcc->ptr->filePath();
+            const QFileInfo source(input);
+            QJsonObject provenance{
+                {"source_path", source.absoluteFilePath()},
+                {"source_sha256", CandidateBundleIO::fileHash(input)},
+                {"library_sha256", CandidateBundleIO::fileHash(m_fragLibUri)},
+                {"fasta_sha256", CandidateBundleIO::fileHash(m_fastaUri)},
+                {"executable_sha256", CandidateBundleIO::fileHash(QCoreApplication::applicationFilePath())},
+                {"command_line", QJsonArray::fromStringList(QCoreApplication::arguments())},
+                {"main_min_simultaneous_fragments", m_pythiaParameters.mainMinSimultaneousFragments},
+                {"pre_nn_shared_fragments", m_pythiaParameters.ionsSharedToReject},
+                {"ms1_acquisition_time_alignment", m_pythiaParameters.alignMs1ScanTimes},
+                {"export_candidate_limit", m_pythiaParameters.candidateBundleLimit}
+            };
+            for (const auto &key : {"source_sha256", "library_sha256", "fasta_sha256", "executable_sha256"})
+                if (provenance[key].toString().isEmpty()) { rrr(eFileError); }
+            const QDir directory(m_outputFolderPath.isEmpty() ? source.absolutePath() : m_outputFolderPath);
+            e = CandidateBundleIO::write(exportRows, source.fileName(), provenance,
+                directory.filePath(source.fileName() + ".radiantCandidates")); ree;
+        }
+    }
+
     QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet = candidateScoresTargetsAndDecoys;
     QVector<CandidateScores*> candidateScoresForDiscriminantFallback = candidateScoresTargetsAndDecoys;
     m_timsSecondStageCandidateScorePairs.clear();
@@ -2139,6 +2224,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     e = buildKarnnNNTargetsNormalized(
         neuralNetFeatures,
         candidateScoresTargetsAndDecoysNeuralNet,
+        m_pythiaParameters.neuralNetLogIntensities,
         &karnnNNTargetsNorm
         ); ree;
 
@@ -2178,11 +2264,20 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 	logNeuralNetStats(karnnNNTargetsNormTrain);
 
 		QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormTranched;
-	e = ParallelUtils::trancheVectorForParallelization(
-			karnnNNTargetsNormTrain,
-			m_pythiaParameters.baggingSize,
-			&karnnNNTargetsNormTranched
-			); ree;
+    if (m_pythiaParameters.neuralNetGroupPeptideFamilies) {
+        karnnNNTargetsNormTranched.resize(m_pythiaParameters.baggingSize);
+        for (const KarnnNNTarget &candidate : karnnNNTargetsNormTrain) {
+            const auto hash = NeuralNetFeatureTransforms::peptideFamilyHash(
+                candidate.candidateScores->targetDecoyCandidatePair->peptideStringWithMods());
+            karnnNNTargetsNormTranched[hash % m_pythiaParameters.baggingSize].push_back(candidate);
+        }
+    } else {
+        e = ParallelUtils::trancheVectorForParallelization(
+            karnnNNTargetsNormTrain,
+            m_pythiaParameters.baggingSize,
+            &karnnNNTargetsNormTranched
+            ); ree;
+    }
 
     QVector<FDRCLassifierNeuralNet> fdrClassifierNeuralNets;
 	QVector<QVector<KarnnNNTarget>> inferenceKarnnVecs;
@@ -2225,7 +2320,27 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 		    processPredictions(predictions[i], &inferenceKarnnVecs[i], i); ree;
 		}
 
-        if (!karnnNNTargetsNormInferOnly.isEmpty()) {
+        if (!karnnNNTargetsNormInferOnly.isEmpty() && m_pythiaParameters.neuralNetGroupPeptideFamilies) {
+            // An inference-only charge state can share its origin family
+            // with training rows. Use that family's held-out network.
+            QVector<QVector<KarnnNNTarget>> grouped(m_pythiaParameters.baggingSize);
+            for (const KarnnNNTarget &candidate : karnnNNTargetsNormInferOnly) {
+                const auto hash = NeuralNetFeatureTransforms::peptideFamilyHash(
+                    candidate.candidateScores->targetDecoyCandidatePair->peptideStringWithMods());
+                grouped[hash % grouped.size()].push_back(candidate);
+            }
+            for (int fold = 0; fold < grouped.size(); ++fold) {
+                if (grouped[fold].isEmpty()) continue;
+                QVector<QVector<float>> foldPredictions;
+                QVector<FDRCLassifierNeuralNet> foldNetworks = {fdrClassifierNeuralNets[fold]};
+                e = predictClassifierScores(
+                    {grouped[fold]}, foldNetworks,
+                    normalizeNeuralNetPredictions, useMonotonePairQValues,
+                    &foldPredictions); ree;
+                e = processPredictions(foldPredictions.first(), &grouped[fold], fold); ree;
+            }
+        }
+        else if (!karnnNNTargetsNormInferOnly.isEmpty()) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                      << "TIMS inference-only candidate prediction start"
                      << karnnNNTargetsNormInferOnly.size();

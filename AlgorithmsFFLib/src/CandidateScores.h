@@ -1251,12 +1251,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         aminoAcidCountU = dataMap.value(AA_U).toFloat();
         aminoAcidCountX = dataMap.value(AA_X).toFloat();
         aminoAcidCountZ = dataMap.value(AA_Z).toFloat();
-        mzFoundStDev1 = dataMap.value(MZ_FND_MEAN_1).toFloat();
-        mzFoundStDev2 = dataMap.value(MZ_FND_MEAN_2).toFloat();
-        mzFoundStDev3 = dataMap.value(MZ_FND_MEAN_3).toFloat();
-        mzFoundStDev4 = dataMap.value(MZ_FND_MEAN_4).toFloat();
-        mzFoundStDev5 = dataMap.value(MZ_FND_MEAN_5).toFloat();
-        mzFoundStDev6 = dataMap.value(MZ_FND_MEAN_6).toFloat();
+        mzFoundStDev1 = dataMap.value(MZ_FND_STDEV_1).toFloat();
+        mzFoundStDev2 = dataMap.value(MZ_FND_STDEV_2).toFloat();
+        mzFoundStDev3 = dataMap.value(MZ_FND_STDEV_3).toFloat();
+        mzFoundStDev4 = dataMap.value(MZ_FND_STDEV_4).toFloat();
+        mzFoundStDev5 = dataMap.value(MZ_FND_STDEV_5).toFloat();
+        mzFoundStDev6 = dataMap.value(MZ_FND_STDEV_6).toFloat();
         // mzFoundStDev7 = dataMap.value(MZ_FND_MEAN_8).toFloat();
         // mzFoundStDev8 = dataMap.value(MZ_FND_MEAN_8).toFloat();
         // mzFoundStDev9 = dataMap.value(MZ_FND_MEAN_9).toFloat();
@@ -1306,8 +1306,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         ms1MzMeanFound100PPM = dataMap.value(MS1_MZ_MEAN_FND_100_PPM).toFloat();
         ms1MzMeanFound45PPM = dataMap.value(MS1_MZ_MEAN_FND_45_PPM).toFloat();
         ms1MzMeanFoundPreMonoPPM = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO_PPM).toFloat();
-        ms1MzMeanFoundIso1PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO1).toFloat();
-        ms1MzMeanFoundIso2PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO2).toFloat();
+        ms1MzMeanFoundIso1PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO_1_PPM).toFloat();
+        ms1MzMeanFoundIso2PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO_2_PPM).toFloat();
         ms1MzStDevFound100 = dataMap.value(MS1_MZ_MEAN_FND_100_STD).toFloat();
         ms1MzStDevFound45 = dataMap.value(MS1_MZ_MEAN_FND_45_STD).toFloat();
         ms1MzStDevFoundPreMono = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO_STD).toFloat();
@@ -1329,6 +1329,31 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         totalIntensityPeakHeights = dataMap.value(TOT_INTENSITY_PEAK_HEIGHTS).toFloat();
         totalIntensityRaw = dataMap.value(TOT_INTENSITY_RAW).toFloat();
         targetWindowLocation = dataMap.value(TARGET_WINDOW_LOCATION).toFloat();
+
+        mzSearched1 = dataMap.value(MZ_SEARCHED_1).toFloat();
+        mzSearched2 = dataMap.value(MZ_SEARCHED_2).toFloat();
+        mzSearched3 = dataMap.value(MZ_SEARCHED_3).toFloat();
+        mzSearched4 = dataMap.value(MZ_SEARCHED_4).toFloat();
+        mzSearched5 = dataMap.value(MZ_SEARCHED_5).toFloat();
+        mzSearched6 = dataMap.value(MZ_SEARCHED_6).toFloat();
+        mzSearched7 = dataMap.value(MZ_SEARCHED_7).toFloat();
+        mzSearched8 = dataMap.value(MZ_SEARCHED_8).toFloat();
+        mzSearched9 = dataMap.value(MZ_SEARCHED_9).toFloat();
+        mzSearched10 = dataMap.value(MZ_SEARCHED_10).toFloat();
+        mzSearched11 = dataMap.value(MZ_SEARCHED_11).toFloat();
+        mzSearched12 = dataMap.value(MZ_SEARCHED_12).toFloat();
+        ionLabels1 = dataMap.value(ION_LABEL_1).toString();
+        ionLabels2 = dataMap.value(ION_LABEL_2).toString();
+        ionLabels3 = dataMap.value(ION_LABEL_3).toString();
+        ionLabels4 = dataMap.value(ION_LABEL_4).toString();
+        ionLabels5 = dataMap.value(ION_LABEL_5).toString();
+        ionLabels6 = dataMap.value(ION_LABEL_6).toString();
+        ionLabels7 = dataMap.value(ION_LABEL_7).toString();
+        ionLabels8 = dataMap.value(ION_LABEL_8).toString();
+        ionLabels9 = dataMap.value(ION_LABEL_9).toString();
+        ionLabels10 = dataMap.value(ION_LABEL_10).toString();
+        ionLabels11 = dataMap.value(ION_LABEL_11).toString();
+        ionLabels12 = dataMap.value(ION_LABEL_12).toString();
 
         ERR_RETURN
     }
@@ -1893,7 +1918,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Features::CosineSim100MS1] = candidateScoresReaderRow.cosineSim100MS1;
         featuresArray[Features::CosineSimSpectrumCubed] = candidateScoresReaderRow.cosineSimSpectrumCubed;
         featuresArray[Features::KlDivSpectrumCubeRoot] = candidateScoresReaderRow.klDivSpectrumCubeRoot;
-        featuresArray[Features::CosineSim45MS1] = candidateScoresReaderRow.cosineSimSum45;
+        featuresArray[Features::CosineSimSum45] = candidateScoresReaderRow.cosineSimSum45;
         featuresArray[Features::CosineSimSumTop] = candidateScoresReaderRow.cosineSimSumTop;
         featuresArray[Features::CosineSimSumBottom] = candidateScoresReaderRow.cosineSimSumBottom;
         featuresArray[Features::TopBottomRatio] = candidateScoresReaderRow.topBottomRatio;
@@ -2024,8 +2049,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Features::AltTargetKeyIdDiscScoreCharge2_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge2_2;
         featuresArray[Features::AltTargetKeyIdDiscScoreCharge3_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge3_1;
         featuresArray[Features::AltTargetKeyIdDiscScoreCharge3_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge3_2;
-        featuresArray[Features::AltTargetKeyIdDiscScoreCharge3_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge4_1;
-        featuresArray[Features::AltTargetKeyIdDiscScoreCharge3_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge4_2;
+        featuresArray[Features::AltTargetKeyIdDiscScoreCharge4_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge4_1;
+        featuresArray[Features::AltTargetKeyIdDiscScoreCharge4_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge4_2;
         featuresArray[Features::AltTargetKeyIdTimeDeltaCharge1_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge1_1;
         featuresArray[Features::AltTargetKeyIdTimeDeltaCharge2_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge2_1;
         featuresArray[Features::AltTargetKeyIdTimeDeltaCharge3_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge3_1;

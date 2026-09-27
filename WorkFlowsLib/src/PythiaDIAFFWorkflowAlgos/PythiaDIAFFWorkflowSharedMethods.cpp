@@ -601,7 +601,9 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top6);
             }
             else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
+                // MS1 traces are extracted at the origin precursor mass for
+                // targets and decoys alike; only their MS2 hypotheses differ.
+                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(false)};
                 row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
                 row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
                 row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};

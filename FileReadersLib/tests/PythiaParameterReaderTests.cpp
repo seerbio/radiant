@@ -22,6 +22,9 @@ private Q_SLOTS:
     static void readFileTest();
     static void competitionEnabled_data();
     static void competitionEnabled();
+    static void sensitivityOptions();
+    static void rejectsInvalidSensitivityOptions();
+    static void candidateBundleOption();
 
 };
 
@@ -120,6 +123,88 @@ void PythiaParameterReaderTests::competitionEnabled() {
     }
 }
 
+
+void PythiaParameterReaderTests::sensitivityOptions() {
+    const QByteArray config =
+        "[MS1Params]\nalignMs1ScanTimes = true\n"
+        "[MS2Params]\nmainMinSimultaneousFragments = 3\nionsSharedToReject = 3\n"
+        "postNeuralNetSharedFragments = 2\n"
+        "[NeuralNetParams]\nneuralNetEnsembleSize = 4\n"
+        "neuralNetGroupPeptideFamilies = true\nneuralNetLogIntensities = true\n"
+        "neuralNetShuffleEachEpoch = true\n";
+    QTemporaryFile file;
+    QVERIFY(file.open());
+    QCOMPARE(file.write(config), static_cast<qint64>(config.size()));
+    QVERIFY(file.flush());
+    PythiaParameters parameters;
+    QCOMPARE(PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters), eNoError);
+    QVERIFY(parameters.alignMs1ScanTimes);
+    QCOMPARE(parameters.mainMinSimultaneousFragments, 3);
+    QCOMPARE(parameters.postNeuralNetSharedFragments, 2);
+    QCOMPARE(parameters.neuralNetEnsembleSize, 4);
+    QVERIFY(parameters.neuralNetGroupPeptideFamilies);
+    QVERIFY(parameters.neuralNetLogIntensities);
+    QVERIFY(parameters.neuralNetShuffleEachEpoch);
+    QVERIFY(file.resize(0));
+    QVERIFY(file.seek(0));
+    QVERIFY(file.write("[General]\nthreadCount = 1\n") > 0);
+    QVERIFY(file.flush());
+    QCOMPARE(PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters), eNoError);
+    QVERIFY(!parameters.alignMs1ScanTimes);
+    QCOMPARE(parameters.mainMinSimultaneousFragments, 4);
+    QCOMPARE(parameters.postNeuralNetSharedFragments, 0);
+    QCOMPARE(parameters.neuralNetEnsembleSize, 1);
+    QVERIFY(!parameters.neuralNetGroupPeptideFamilies);
+    QVERIFY(!parameters.neuralNetLogIntensities);
+    QVERIFY(!parameters.neuralNetShuffleEachEpoch);
+}
+
+void PythiaParameterReaderTests::rejectsInvalidSensitivityOptions() {
+    auto parameters = PythiaParameterReader::genericPythiaParametersForTests();
+    QVERIFY(parameters.isValid());
+    parameters.neuralNetEnsembleSize = 0;
+    QVERIFY(!parameters.isValid());
+    parameters.neuralNetEnsembleSize = 4;
+    parameters.mainMinSimultaneousFragments = 2;
+    QVERIFY(!parameters.isValid());
+    parameters.mainMinSimultaneousFragments = 3;
+    parameters.ionsSharedToReject = 1;
+    QVERIFY(!parameters.isValid());
+    parameters.ionsSharedToReject = 3;
+    QVERIFY(parameters.isValid());
+    for (const int value : {-1, 1, 13}) {
+        parameters.postNeuralNetSharedFragments = value;
+        QVERIFY(!parameters.isValid());
+    }
+    for (const int value : {0, 2, 12}) {
+        parameters.postNeuralNetSharedFragments = value;
+        QVERIFY(parameters.isValid());
+    }
+}
+
+void PythiaParameterReaderTests::candidateBundleOption() {
+    QTemporaryFile file;
+    QVERIFY(file.open());
+    PythiaParameters parameters;
+    for (const QByteArray value : {QByteArray("0"), QByteArray("2"), QByteArray("200000"), QByteArray("1000000")}) {
+        QVERIFY(file.resize(0)); QVERIFY(file.seek(0));
+        const QByteArray config = "[NeuralNetParams]\ncandidateBundleLimit = " + value + "\n";
+        QCOMPARE(file.write(config), qint64(config.size())); QVERIFY(file.flush());
+        QCOMPARE(PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters), eNoError);
+        QCOMPARE(parameters.candidateBundleLimit, value.toInt());
+    }
+    for (const QByteArray value : {QByteArray("-1"), QByteArray("1"), QByteArray("1000001"), QByteArray("true"), QByteArray("2.5"), QByteArray("\"200000\"")}) {
+        QVERIFY(file.resize(0)); QVERIFY(file.seek(0));
+        const QByteArray config = "[NeuralNetParams]\ncandidateBundleLimit = " + value + "\n";
+        QCOMPARE(file.write(config), qint64(config.size())); QVERIFY(file.flush());
+        QVERIFY(PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters) != eNoError);
+    }
+    QVERIFY(file.resize(0)); QVERIFY(file.seek(0));
+    QVERIFY(file.write("[General]\nthreadCount = 1\n") > 0); QVERIFY(file.flush());
+    parameters.candidateBundleLimit = 200000;
+    QCOMPARE(PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters), eNoError);
+    QCOMPARE(parameters.candidateBundleLimit, 0);
+}
 
 QTEST_MAIN(PythiaParameterReaderTests)
 #include "PythiaParameterReaderTests.moc"
