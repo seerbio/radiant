@@ -3,6 +3,7 @@
 //
 
 #include "src/CommandLineParser.h"
+#include "src/CandidateCohort.h"
 #include "CommandLineParserUtils.h"
 #include "Error.h"
 #include "PythiaParameterReader.h"
@@ -27,6 +28,14 @@ int main(int argc, char *argv[]) {
     et.start();
 
     QCoreApplication app(argc, argv);
+    const auto arguments = QCoreApplication::arguments();
+    if (arguments.size() > 1 && arguments[1] == "--candidate-cohort") {
+        if (arguments.size() != 3) {
+            qCritical() << "Usage: RadiantDIA --candidate-cohort cohort.json";
+            return 2;
+        }
+        return runCandidateCohort(arguments[2]);
+    }
     CommandLineParser parser;
 
     if (!parser.validateArguments(QCoreApplication::arguments())) {

@@ -786,25 +786,6 @@ namespace {
         xicPoints->erase(terminator, xicPoints->end());
     }
 
-    void filterXICPointsByFrameIndex(
-        FrameIndex frameIndexPredictedMin,
-        FrameIndex frameIndexPredictedMax,
-        XICPoints *xicPoints
-        ) {
-
-        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](const XICPoint &p) {
-            return !(frameIndexPredictedMin < p.scanNumber && p.scanNumber < frameIndexPredictedMax);
-        };
-
-        const auto terminator = std::remove_if(
-            xicPoints->begin(),
-            xicPoints->end(),
-            terminatorLogic
-            );
-
-        xicPoints->erase(terminator, xicPoints->end());
-    }
-
     bool canUseLibraryIonMobilityFilteredMs2(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
@@ -1288,14 +1269,11 @@ namespace {
             const MS2Ion &ms2Ion = ms2Ions.at(i);
 
             XICPoints xicPoints;
-            e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
-
             if (frameIndexPredictedMax > 0) {
-                filterXICPointsByFrameIndex(
-                frameIndexPredictedMin,
-                frameIndexPredictedMax,
-                &xicPoints
-                );
+                e = xicPeakManager->getXIC(ms2Ion.mz, frameIndexPredictedMin,
+                                         frameIndexPredictedMax, &xicPoints); ree;
+            } else {
+                e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
             }
 
             if (xicPoints.empty()) {
@@ -1307,19 +1285,18 @@ namespace {
 
             XICPoints xicPointsShadows;
             const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-            e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
+            if (frameIndexPredictedMax > 0) {
+                e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons,
+                    frameIndexPredictedMin, frameIndexPredictedMax, &xicPointsShadows); ree;
+            } else {
+                e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons,
+                                         &xicPointsShadows); ree;
+            }
             if (xicPointsShadows.empty()) {
                 xicPointsVec100Shadows->push_back({});
             }
             else {
-                if (frameIndexPredictedMax > 0) {
-                    filterXICPointsByFrameIndex(
-                        frameIndexPredictedMin,
-                        frameIndexPredictedMax,
-                        &xicPointsShadows
-                        );
-                }
-                xicPointsVec100Shadows->push_back(xicPointsShadows);
+                xicPointsVec100Shadows->push_back(std::move(xicPointsShadows));
             }
 
             xicPointsVec100->push_back(xicPoints);
@@ -1329,7 +1306,7 @@ namespace {
                 ppmTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
                 &xicPoints
                 );
-            xicPointsVec45->push_back(xicPoints);
+            xicPointsVec45->push_back(std::move(xicPoints));
 
         }
 
@@ -1377,8 +1354,10 @@ namespace {
         matIntensity->resize(rows, xicPointsVec.size());
         matIntensity->setZero();
 
-        matMz->resize(rows, xicPointsVec.size());
-        matMz->setZero();
+        if (buildMzMatrix) {
+            matMz->resize(rows, xicPointsVec.size());
+            matMz->setZero();
+        }
 
         for (int col = 0; col < xicPointsVec.size(); col++) {
 
@@ -1596,6 +1575,11 @@ Err CandidateScorertron::initMatricesdAndVecs(
 				);
 		}
 
+        // An all-zero product yields no integration; the 45% matrix is then
+        // never read. Keep the preceding arithmetic unchanged.
+        if (matriciesAndVecs->productVec.isZero(0.0f)) {
+            ERR_RETURN
+        }
         constexpr int noSmooths = 0;
         e = buildEigenMatrix(
             xicPointsVec45,
@@ -2899,13 +2883,9 @@ namespace {
 
         XICPoints xicPoints = turboXicMS1->extractPointsXIC(
             mzToExtract - massTol,
-            mzToExtract + massTol
-            );
-
-        TurboXIC::filterXICPointsByScanNumber(
+            mzToExtract + massTol,
             frameIndexMin,
-            frameIndexMax,
-            &xicPoints
+            frameIndexMax
             );
 
         if (xicPoints.empty()) {

@@ -10,6 +10,7 @@
 #include "TurboXIC.h"
 
 #include <QtTest/QtTest>
+#include <cstring>
 
 class TurboXICTests : public QObject
 {
@@ -23,6 +24,7 @@ private Q_SLOTS:
 
     void initTest();
     void extractPointsTest();
+    void scanRestrictedQueryPreservesOrderAndValues();
     void turboXICUtility();
 
 
@@ -150,6 +152,53 @@ void TurboXICTests::turboXICUtility() {
 //    e = MsUtils::writePointsToCSV(vec, "xic.csv");
 //    QCOMPARE(e, eNoError);
 
+}
+
+void TurboXICTests::scanRestrictedQueryPreservesOrderAndValues() {
+    QMap<ScanNumber, ScanPoints> storage;
+    for (int scan = -2; scan < 80; ++scan) {
+        ScanPoints points;
+        for (int index = 0; index < 129; ++index) {
+            // Repeated m/z values and multiple observations per scan make
+            // any reordering of the spatial query visible.
+            points.push_back(ScanPoint(100.0f + float(index % 33) * .125f,
+                                      float((scan + 3) * 129 + index)));
+        }
+        storage.insert(scan, points);
+    }
+    QMap<ScanNumber, ScanPoints*> pointers;
+    for (auto it = storage.begin(); it != storage.end(); ++it)
+        pointers.insert(it.key(), &it.value());
+    TurboXIC index;
+    QCOMPARE(index.init(pointers), eNoError);
+    const QVector<QPair<float, float>> massRanges{
+        {99, 105}, {100, 100}, {100.125f, 102.5f}, {104, 104}, {105, 106}};
+    const QVector<QPair<int, int>> scanRanges{
+        {-10, 100}, {-1, 1}, {0, 0}, {3, 8}, {78, 100}, {101, 102}, {20, 10}};
+    for (const auto &mass : massRanges) {
+        const auto all = index.extractPointsXIC(mass.first, mass.second);
+        for (const auto &scans : scanRanges) {
+            for (bool inclusive : {false, true}) {
+                auto expected = all;
+                expected.erase(std::remove_if(expected.begin(), expected.end(),
+                    [&](const XICPoint &point) {
+                        return inclusive
+                            ? !(scans.first <= point.scanNumber && point.scanNumber <= scans.second)
+                            : !(scans.first < point.scanNumber && point.scanNumber < scans.second);
+                    }), expected.end());
+                const auto actual = index.extractPointsXIC(
+                    mass.first, mass.second, scans.first, scans.second, inclusive);
+                QCOMPARE(actual.size(), expected.size());
+                for (size_t row = 0; row < actual.size(); ++row) {
+                    QCOMPARE(actual[row].scanNumber, expected[row].scanNumber);
+                    QCOMPARE(actual[row].ionMobilityIndex, expected[row].ionMobilityIndex);
+                    QVERIFY(std::memcmp(&actual[row].mz, &expected[row].mz, sizeof(float)) == 0);
+                    QVERIFY(std::memcmp(&actual[row].intensity, &expected[row].intensity,
+                                        sizeof(float)) == 0);
+                }
+            }
+        }
+    }
 }
 
 

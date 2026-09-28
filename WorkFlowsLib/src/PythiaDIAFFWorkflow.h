@@ -14,6 +14,7 @@
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
 #include "TargetDecoyCandidatePairScoretron.h"
+#include <QSharedPointer>
 
 using namespace Error;
 
@@ -54,6 +55,25 @@ public:
     PythiaDIAFFWorkflow();
     ~PythiaDIAFFWorkflow();
 
+    class PreparedLibrary {
+        friend class PythiaDIAFFWorkflow;
+        QString canonicalPath;
+        bool alternativeDecoys = false;
+        qint64 fileSize = -1;
+        qint64 modifiedMSecs = -1;
+        QList<FragLibReaderRow> rows;
+    };
+    using LibraryHandle = QSharedPointer<PreparedLibrary>;
+
+    struct CandidateView {
+        int minimumFragments = 4;
+        int sharedFragments = 4;
+        QString outputDirectory;
+    };
+
+    static Err prepareLibrary(const QString &path, bool alternativeDecoys,
+                              LibraryHandle *prepared);
+
     /**
     * @brief Initializes the PythiaDIAFFWorkflow with necessary parameters
     *
@@ -74,6 +94,10 @@ public:
             const QString &fastaUri,
             const QString &outputFolderPath
             );
+
+    Err init(const PythiaParameters &parameters, const QString &libraryPath,
+             const QString &fastaPath, const QString &outputDirectory,
+             const LibraryHandle &prepared);
 
     /**
     * @brief Executes data analysis and interpretation workflow for MS/MS data
@@ -96,6 +120,11 @@ public:
     */
     Err processFile(const QString &msDataFilePath);
 
+    // Candidate-only, non-TIMS searches differing only in the two fragment
+    // settings. Input loading, calibration and tolerance fitting are shared.
+    Err processCandidateViews(const QString &msDataFilePath,
+                              const QVector<CandidateView> &views);
+
     Err setCalibratomaticFeatures(const QVector<Features> &features);
     Err setPPMOptimizationFeatures(const QVector<Features> &features);
     Err setNeuralNetFeatures(const QVector<Features> &features);
@@ -104,6 +133,9 @@ public:
 
 
 private:
+
+    Err processFileImpl(const QString &msDataFilePath, const QVector<CandidateView> &views);
+    Err processCalibratedFile(const MsReaderPointerAcc *reader);
 
     Err mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
@@ -174,6 +206,7 @@ private:
     QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
     QList<FragLibReaderRow> m_fragLibReaderRows;
+    LibraryHandle m_preparedLibrary;
 
     QVector<Features> m_calibratomaticFeatures;
     QVector<Features> m_ppmOptimizationFeatures;

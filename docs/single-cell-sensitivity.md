@@ -99,6 +99,16 @@ ensemble summation order are unchanged. For twelve available CPU workers,
 use `"threads": 12`; all three folds and four ensemble models can then
 train concurrently.
 
+`RadiantDIA --candidate-cohort cohort.json` can generate these bundles in one
+process. See `configs/candidate-cohort.example.json`. Its base configuration
+must enable `candidateBundleOnly`; each view changes only the minimum and
+shared fragment counts. Paths are relative to the cohort JSON. Output
+directories must be new. Parsed library rows are reused across files, and
+raw loading, calibration and tolerance fitting are reused between views of
+one file. Every view still performs its own full search and competition.
+Each file has fresh mutable workflow state. Library preparation is part of
+the command's runtime and must be included in performance comparisons.
+
 The fixed combined policy trains three family folds with four networks each,
 24 epochs, log-intensity transformation and deterministic row shuffling. It
 uses100000 candidates per run for the per-run and pooled original models,

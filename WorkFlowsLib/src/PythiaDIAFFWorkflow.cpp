@@ -39,6 +39,7 @@
 #include <QSet>
 #include <QScopedValueRollback>
 #include <QTextStream>
+#include <QDateTime>
 
 #include <algorithm>
 
@@ -67,7 +68,33 @@ Err PythiaDIAFFWorkflow::init(
         const QString &fastaUri,
         const QString &outputFolderPath
         ) {
+    return init(pythiaParameters, fragLibUri, fastaUri, outputFolderPath, {});
+}
 
+Err PythiaDIAFFWorkflow::prepareLibrary(
+        const QString &path, bool alternativeDecoys, LibraryHandle *prepared) {
+    if (prepared == nullptr) return eValueError;
+    const QFileInfo before(path);
+    if (!before.isFile()) return eFileError;
+    LibraryHandle library(new PreparedLibrary);
+    library->canonicalPath = before.canonicalFilePath();
+    library->alternativeDecoys = alternativeDecoys;
+    library->fileSize = before.size();
+    library->modifiedMSecs = before.lastModified().toMSecsSinceEpoch();
+    const auto error = FragLibReader::getFragLibReaderRows(path, alternativeDecoys, &library->rows);
+    if (error != eNoError) return error;
+    const QFileInfo after(path);
+    if (after.size() != library->fileSize
+        || after.lastModified().toMSecsSinceEpoch() != library->modifiedMSecs)
+        return eFileError;
+    *prepared = std::move(library);
+    return eNoError;
+}
+
+Err PythiaDIAFFWorkflow::init(
+        const PythiaParameters &pythiaParameters, const QString &fragLibUri,
+        const QString &fastaUri, const QString &outputFolderPath,
+        const LibraryHandle &prepared) {
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
@@ -118,19 +145,27 @@ Err PythiaDIAFFWorkflow::init(
     m_outputFolderPath = outputFolderPath;
     m_pythiaParameters.print();
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading library";
-
-    e = FragLibReader::getFragLibReaderRows(
-            m_fragLibUri,
-            m_pythiaParameters.useAlternativeDecoys,
-            &m_fragLibReaderRows
-            ); ree;
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished reading library";
+    QList<FragLibReaderRow> *rows = &m_fragLibReaderRows;
+    m_preparedLibrary = prepared;
+    if (prepared) {
+        const QFileInfo file(fragLibUri);
+        if (file.canonicalFilePath() != prepared->canonicalPath
+            || file.size() != prepared->fileSize
+            || file.lastModified().toMSecsSinceEpoch() != prepared->modifiedMSecs
+            || pythiaParameters.useAlternativeDecoys != prepared->alternativeDecoys)
+            return eValueError;
+        rows = &prepared->rows;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reusing prepared library";
+    } else {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading library";
+        e = FragLibReader::getFragLibReaderRows(
+                m_fragLibUri, m_pythiaParameters.useAlternativeDecoys, rows); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished reading library";
+    }
 
     e = m_targetDecoyCandidatePairManager.init(
             m_pythiaParameters,
-            &m_fragLibReaderRows
+            rows
             ); ree;
 
     e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree //TODO HERHHERHEHREH
@@ -620,7 +655,27 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
+    return processFileImpl(msDataFilePath, {});
+}
 
+Err PythiaDIAFFWorkflow::processCandidateViews(
+        const QString &msDataFilePath, const QVector<CandidateView> &views) {
+    if (!m_pythiaParameters.candidateBundleOnly || views.isEmpty())
+        return eValueError;
+    QSet<QString> outputs;
+    for (const auto &view : views) {
+        if (view.minimumFragments < 3 || view.minimumFragments > 12
+            || view.sharedFragments < 2 || view.sharedFragments > 12
+            || view.outputDirectory.isEmpty()) return eValueError;
+        const QString output = QDir::cleanPath(QFileInfo(view.outputDirectory).absoluteFilePath());
+        if (outputs.contains(output)) return eValueError;
+        outputs.insert(output);
+    }
+    return processFileImpl(msDataFilePath, views);
+}
+
+Err PythiaDIAFFWorkflow::processFileImpl(
+        const QString &msDataFilePath, const QVector<CandidateView> &views) {
     ERR_INIT
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
@@ -661,6 +716,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     }
     msReaderPointerAcc.ptr->printSize();
+    if (!views.isEmpty() && msReaderPointerAcc.ptr->isTIMS()) return eValueError;
 
     configureWorkflowFeaturesForReader(
         msReaderPointerAcc.ptr->isTIMS(),
@@ -741,9 +797,28 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     m_pythiaParameters.alignMs1ScanTimes = alignMs1ScanTimes && !msReaderPointerAcc.ptr->isTIMS();
     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
+    if (views.isEmpty()) return processCalibratedFile(&msReaderPointerAcc);
+    QScopedValueRollback<int> restoreMinimum(m_pythiaParameters.mainMinSimultaneousFragments);
+    QScopedValueRollback<int> restoreShared(m_pythiaParameters.ionsSharedToReject);
+    QScopedValueRollback<QString> restoreOutput(m_outputFolderPath);
+    for (const auto &view : views) {
+        m_pythiaParameters.mainMinSimultaneousFragments = view.minimumFragments;
+        m_pythiaParameters.ionsSharedToReject = view.sharedFragments;
+        m_outputFolderPath = view.outputDirectory;
+        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Starting candidate view" << view.minimumFragments << view.sharedFragments
+                 << view.outputDirectory;
+        e = processCalibratedFile(&msReaderPointerAcc); ree;
+    }
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::processCalibratedFile(const MsReaderPointerAcc *msReaderPointerAcc) {
+    ERR_INIT
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
-        &msReaderPointerAcc,
+        msReaderPointerAcc,
         &targetCountBelowFDRThreshold
      ); ree;
 
@@ -757,7 +832,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
 
-    // if (msReaderPointerAcc.ptr->isTIMS()) {
+    // if (msReaderPointerAcc->ptr->isTIMS()) {
     //
     //     e = IonMobilitron::assignIonMobilityValues(
     //         m_pythiaParameters,
@@ -785,7 +860,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     bool usedDiscriminantFallback = false;
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys,
-            &msReaderPointerAcc,
+            msReaderPointerAcc,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
             &candidateScoreClassifierPntrs,
             &usedDiscriminantFallback
@@ -804,7 +879,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                  << removedNonWritableCandidateScores;
     }
 
-    const bool postNeuralNetCompetition = !msReaderPointerAcc.ptr->isTIMS()
+    const bool postNeuralNetCompetition = !msReaderPointerAcc->ptr->isTIMS()
         && !usedDiscriminantFallback && m_pythiaParameters.postNeuralNetSharedFragments > 0;
     if (postNeuralNetCompetition) {
         const int before = candidateScoreClassifierPntrs.size();
@@ -876,7 +951,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 ); ree;
     }
 
-    const bool useLocalRtIdLevelQValues = !msReaderPointerAcc.ptr.isNull() && msReaderPointerAcc.ptr->isTIMS();
+    const bool useLocalRtIdLevelQValues = !msReaderPointerAcc->ptr.isNull() && msReaderPointerAcc->ptr->isTIMS();
     e = IdLevelQValueAnnotator::annotate(
         &candidateScoreClassifierPntrs,
         !usedDiscriminantFallback,
@@ -897,7 +972,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             candidateScoreClassifierPntrs,
             m_pythiaParameters.shortReport,
             m_outputFolderPath,
-            &msReaderPointerAcc
+            msReaderPointerAcc
             ); ree;
     }
 

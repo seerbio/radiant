@@ -12,6 +12,7 @@
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -36,7 +37,11 @@ public:
 
     XICPoints extractPointsXIC(
             float mzMin,
-            float mzMax
+            float mzMax,
+            bool restrictScans = false,
+            ScanNumber scanNumberMin = 0,
+            ScanNumber scanNumberMax = 0,
+            bool includeEndpoints = true
     ) const;
 
     Err getRTreeLimits(
@@ -144,7 +149,11 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
 
 XICPoints TurboXIC::Private::extractPointsXIC(
         float mzMin,
-        float mzMax
+        float mzMax,
+        bool restrictScans,
+        ScanNumber scanNumberMin,
+        ScanNumber scanNumberMax,
+        bool includeEndpoints
 ) const {
 
     const rTreeSearchBox queryBox(
@@ -152,31 +161,28 @@ XICPoints TurboXIC::Private::extractPointsXIC(
             rTreeCoor(mzMax)
     );
 
-    std::vector<rTreePoint> result;
-    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
-
-    const ulong loaderSize = result.size();
-    XICPoint xicPointsLoader[loaderSize];
-
-    for (int i = 0; i <  result.size(); i++) {
-
-        const rTreePoint &rtp = result[i];
-        const std::pair<rTreeScanNumber , rTreeIntensity> &pr = rtp.second;
-
+    XICPoints xicPoints;
+    const auto append = [&xicPoints](const rTreePoint &rtp) {
+        const auto &pr = rtp.second;
         XICPoint xp;
         xp.mz = rtp.first.get<0>();
         xp.intensity = pr.second;
         xp.scanNumber = static_cast<ScanNumber>(pr.first);
-
-        xicPointsLoader[i] = xp;
+        xicPoints.push_back(xp);
+    };
+    const auto output = boost::make_function_output_iterator(append);
+    if (restrictScans) {
+        const auto selectedScan = [=](const rTreePoint &point) {
+            // Match the old filter after its float-to-ScanNumber conversion.
+            const auto scan = static_cast<ScanNumber>(point.second.first);
+            return includeEndpoints
+                ? scanNumberMin <= scan && scan <= scanNumberMax
+                : scanNumberMin < scan && scan < scanNumberMax;
+        };
+        m_rTree->query(bgi::intersects(queryBox) && bgi::satisfies(selectedScan), output);
+    } else {
+        m_rTree->query(bgi::intersects(queryBox), output);
     }
-
-    XICPoints xicPoints = {xicPointsLoader, xicPointsLoader + loaderSize};
-    // std::sort(
-    //     xicPoints.begin(),
-    //     xicPoints.end(),
-    //     [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
-    //     );
 
     return xicPoints;
 }
@@ -236,6 +242,13 @@ XICPoints TurboXIC::extractPointsXIC(
             mzMin,
             mzMax
     );
+}
+
+XICPoints TurboXIC::extractPointsXIC(
+        float mzMin, float mzMax, ScanNumber scanNumberMin,
+        ScanNumber scanNumberMax, bool includeEndpoints) const {
+    return d_ptr->extractPointsXIC(
+        mzMin, mzMax, true, scanNumberMin, scanNumberMax, includeEndpoints);
 }
 
 Err TurboXIC::getRTreeLimits(

@@ -8,12 +8,20 @@
 class CandidateScorertronRegressionTests : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void rejectsPeaksWithoutLeadingFragmentSupport_data();
     void rejectsPeaksWithoutLeadingFragmentSupport();
     void preservesMs1SignalAcrossSamplingRates_data();
     void preservesMs1SignalAcrossSamplingRates();
 };
 
+void CandidateScorertronRegressionTests::rejectsPeaksWithoutLeadingFragmentSupport_data() {
+    QTest::addColumn<bool>("lowerRankedSignal");
+    QTest::newRow("unsupported-leading-fragments") << true;
+    QTest::newRow("no-signal") << false;
+}
+
 void CandidateScorertronRegressionTests::rejectsPeaksWithoutLeadingFragmentSupport() {
+    QFETCH(bool, lowerRankedSignal);
     FragLibReaderRow library;
     library.mass = 1000.0;
     library.precursorCharge = 2;
@@ -35,8 +43,10 @@ void CandidateScorertronRegressionTests::rejectsPeaksWithoutLeadingFragmentSuppo
     for (int scan = 0; scan < 41; ++scan) {
         ScanPoints points = {ScanPoint(100.0f, 1.0f)};
         const float intensity = 1000.0f * std::exp(-std::pow((scan - 20) / 4.0f, 2.0f));
-        for (int ion = 6; ion < 12; ++ion)
-            points.push_back(ScanPoint(library.mzVals.at(ion), intensity));
+        if (lowerRankedSignal) {
+            for (int ion = 6; ion < 12; ++ion)
+                points.push_back(ScanPoint(library.mzVals.at(ion), intensity));
+        }
         scans.insert(scan, points);
         times.insert(scan, scan * 0.02f);
     }
@@ -63,7 +73,8 @@ void CandidateScorertronRegressionTests::rejectsPeaksWithoutLeadingFragmentSuppo
     QCOMPARE(result.featuresArray.at(CosineSimSum100), 0.0f);
     QCOMPARE(result.scanNumber, -1);
     QVERIFY(result.integrations.isEmpty());
-    QVERIFY(scorer.scoringDiagnosticsSummary().contains("no_discriminant_candidate=1"));
+    if (lowerRankedSignal)
+        QVERIFY(scorer.scoringDiagnosticsSummary().contains("no_discriminant_candidate=1"));
 }
 
 void CandidateScorertronRegressionTests::preservesMs1SignalAcrossSamplingRates_data() {
