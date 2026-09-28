@@ -791,6 +791,12 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &usedDiscriminantFallback
             ); ree;
 
+    if (m_pythiaParameters.candidateBundleOnly) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Candidate-only search complete; final scoring requires RadiantRescore";
+        ERR_RETURN
+    }
+
     const int removedNonWritableCandidateScores = removeNonWritableCandidateScores(&candidateScoreClassifierPntrs);
     if (removedNonWritableCandidateScores > 0) {
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -2062,6 +2068,10 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             const QDir directory(m_outputFolderPath.isEmpty() ? source.absolutePath() : m_outputFolderPath);
             e = CandidateBundleIO::write(exportRows, source.fileName(), provenance,
                 directory.filePath(source.fileName() + ".radiantCandidates")); ree;
+        }
+        if (m_pythiaParameters.candidateBundleOnly) {
+            if (exportRows.isEmpty()) { rrr(eValueError); }
+            ERR_RETURN
         }
     }
 

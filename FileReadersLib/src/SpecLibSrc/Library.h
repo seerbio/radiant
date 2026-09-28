@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <regex>
+#include <array>
 
 
 using namespace Error;
@@ -166,6 +167,13 @@ public:
 		// fragLibReaderRows->reserve(static_cast<int>(entries.size()));
 		int droppedFragmentCount = 0;
 		int affectedPrecursorCount = 0;
+		// Labels repeat across millions of fragments. Share their immutable
+		// QString storage; unusual indices/charges still use the original path.
+		std::array<std::array<std::array<IonLabel, 256>, 9>, 2> ionLabelCache;
+		std::vector<QString> proteinNames;
+		proteinNames.reserve(proteinIds.size());
+		for (const auto &protein : proteinIds)
+			proteinNames.push_back(QString::fromStdString(protein.names));
 
 		for (int i = 0; i < entries.size(); i++) {
 
@@ -176,7 +184,7 @@ public:
 
 			FragLibReaderRow flrr;
 
-			const QString proteinGroups = QString::fromStdString(proteinIds.at(entries.at(i).pidIndex).names);
+			const QString &proteinGroups = proteinNames.at(entries.at(i).pidIndex);
 			flrr.proteinGroups = proteinGroups;
 
 			QString specLibPeptide = QString::fromStdString(p);
@@ -224,14 +232,20 @@ public:
 				flrr.intensityVals.push_back(intensityVal);
 
 				IonLabel ionLabel;
-				e = extractIonLabel(
-					ionIndexRaw,
-					ionTypeInt,
-					ionCharge,
-					ionLoss,
-					peptideString.size(),
-					&ionLabel
-					); ree;
+				const int labelIndex = ionTypeInt == 1
+					? static_cast<int>(ionIndexRaw) : peptideString.size() - ionIndexRaw;
+				if ((ionTypeInt == 1 || ionTypeInt == 2) && ionCharge < 9 && ionLoss == 0
+					&& labelIndex >= 0 && labelIndex < 256) {
+					auto &cached = ionLabelCache[ionTypeInt - 1][ionCharge][labelIndex];
+					if (cached.isNull()) {
+						e = extractIonLabel(ionIndexRaw, ionTypeInt, ionCharge,
+							ionLoss, peptideString.size(), &cached); ree;
+					}
+					ionLabel = cached;
+				} else {
+					e = extractIonLabel(ionIndexRaw, ionTypeInt, ionCharge,
+						ionLoss, peptideString.size(), &ionLabel); ree;
+				}
 				ionLabelsList.push_back(ionLabel);
 			}
 

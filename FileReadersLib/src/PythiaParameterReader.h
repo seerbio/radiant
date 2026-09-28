@@ -197,6 +197,7 @@ struct PythiaParameters{
     float focalLossGamma = 0.0;
     int neuralNetCandidateLimit = 50000;
     int candidateBundleLimit = 0;
+    bool candidateBundleOnly = false;
     int timsNeuralNetInferenceCandidateLimit = 0;
     bool normalizeNeuralNetPredictions = true;
     int neuralNetEnsembleSize = 1;
@@ -253,6 +254,7 @@ struct PythiaParameters{
     	}
 
         if (candidateBundleLimit < 0 || candidateBundleLimit == 1 || candidateBundleLimit > 1000000) return false;
+        if (candidateBundleOnly && candidateBundleLimit < 2) return false;
         if (neuralNetEnsembleSize < 1
             || mainMinSimultaneousFragments < 3
             || mainMinSimultaneousFragments > 12
@@ -349,6 +351,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCandidateBundleLimit) << candidateBundleLimit;
+        qDebug() << "candidateBundleOnly" << candidateBundleOnly;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetCandidateLimit) << neuralNetCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsNeuralNetInferenceCandidateLimit) << timsNeuralNetInferenceCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNormalizeNeuralNetPredictions) << normalizeNeuralNetPredictions;

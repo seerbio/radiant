@@ -25,8 +25,16 @@ int main(int argc, char **argv) {
     const auto document = QJsonDocument::fromJson(configurationBytes, &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) return 3;
     const auto config = document.object();
-    const QSet<QString> allowed{"runs", "output"};
+    const QSet<QString> allowed{"runs", "output", "threads"};
     for (const auto &key : config.keys()) if (!allowed.contains(key)) return 3;
+    CandidatePoolRescorer::Settings settings;
+    if (config.contains("threads")) {
+        const auto value = config["threads"];
+        const int threads = value.toInt(-1);
+        if (!value.isDouble() || threads < 1 || threads > 64 || value.toDouble() != threads)
+            return 3;
+        settings.neuralNet.threads = threads;
+    }
     if (!config["runs"].isArray() || config["runs"].toArray().isEmpty()
         || config["output"].toString().isEmpty() || QFile::exists(config["output"].toString())) return 3;
     QVector<QVector<CandidateBundleIO::View>> views;
@@ -85,7 +93,6 @@ int main(int argc, char **argv) {
         runs.push_back(std::move(run));
         views.push_back(std::move(runViews));
     }
-    CandidatePoolRescorer::Settings settings;
     QVector<CandidatePoolRescorer::Result> results;
     if (CandidatePoolRescorer::score(runs, settings, &results) != Error::eNoError) {
         qCritical() << "Combined candidate scoring failed";
