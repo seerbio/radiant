@@ -272,7 +272,7 @@ public:
 
         const int filterLength = static_cast<int>(kernel.size());
 
-        if constexpr (std::is_same_v<T, float>) {
+        if (std::is_same<T, float>::value) {
             if (filterLength % 2 == 1) {
                 // Preserve the original padding, dimensions and matrix-vector
                 // evaluation while reading overlapping columns directly.
