@@ -296,6 +296,7 @@ public:
     Eigen::MatrixX<float> mzMatrix100;
 
     Eigen::VectorX<float> intensityVec;
+    Eigen::VectorX<float> integrationCounts;
     Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
     Eigen::VectorX<float> productVec;
@@ -1472,12 +1473,10 @@ namespace {
         ERR_RETURN
     }
 
-    Err buildIntegrationVector(
+    Err buildIntegrationCounts(
         const MatriciesAndVecs &matriciesAndVecs,
-        const Eigen::VectorX<float> &kernelIntegration,
-        float minPeakCount,
         int maxAnchorColumnIndex,
-        Eigen::VectorX<float> *ionCountVec
+        Eigen::VectorX<float> *integrationCounts
         ) {
 
         ERR_INIT
@@ -1495,7 +1494,21 @@ namespace {
         matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
         EigenUtils::thresholdMatrix(0.0f, &matCount);
 
-        Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
+        *integrationCounts = matCount.rowwise().sum();
+
+        ERR_RETURN
+    }
+
+    Err buildIntegrationVector(
+        const Eigen::VectorX<float> &integrationCounts,
+        const Eigen::VectorX<float> &kernelIntegration,
+        float minPeakCount,
+        Eigen::VectorX<float> *ionCountVec
+        ) {
+
+        ERR_INIT
+
+        Eigen::VectorX<float> integrationVecLocal = integrationCounts;
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
         *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
@@ -1640,6 +1653,11 @@ Err CandidateScorertron::initMatricesdAndVecs(
 
         matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
+        // These counts precede the view-specific threshold and are identical
+        // for both views of this candidate.
+        e = buildIntegrationCounts(*matriciesAndVecs,
+                                   m_pythiaParameters.maxAnchorColumnIndex,
+                                   &matriciesAndVecs->integrationCounts); ree;
         e = updateIntegrationVectors(minPeakCount, matriciesAndVecs); ree;
 
         // An all-zero product yields no integration; the 45% matrix is then
@@ -1665,10 +1683,9 @@ Err CandidateScorertron::updateIntegrationVectors(
     float minPeakCount, MatriciesAndVecs *matriciesAndVecs) const {
     ERR_INIT
         e = buildIntegrationVector(
-            *matriciesAndVecs,
+            matriciesAndVecs->integrationCounts,
             d_ptr->m_kernelMs2,
             minPeakCount,
-            m_pythiaParameters.maxAnchorColumnIndex,
             &matriciesAndVecs->ionCountVec
             ); ree;
 

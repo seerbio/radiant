@@ -14,6 +14,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <type_traits>
 
 
 class EIGENLIB_EXPORTS EigenKernelUtils
@@ -270,6 +271,18 @@ public:
         vecResized.segment(halfWindow, vec.size()) = vec;
 
         const int filterLength = static_cast<int>(kernel.size());
+
+        if constexpr (std::is_same_v<T, float>) {
+            if (filterLength % 2 == 1) {
+                // Preserve the original padding, dimensions and matrix-vector
+                // evaluation while reading overlapping columns directly.
+                using Windows = Eigen::Map<const Eigen::MatrixX<T>,
+                                           Eigen::Unaligned, Eigen::OuterStride<>>;
+                const Windows windows(vecResized.data(), vec.size(), filterLength,
+                                      Eigen::OuterStride<>(1));
+                return windows * kernel;
+            }
+        }
 
         Eigen::MatrixX<T> convolutionMatrix(vec.size(), filterLength);
         convolutionMatrix.setZero();
