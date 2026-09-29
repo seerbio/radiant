@@ -41,6 +41,7 @@ public:
 
     Eigen::VectorX<float> m_kernelIntegration;
     Eigen::VectorX<float> m_kernelMs2;
+    int m_zeroPrefixGuard = -1;
 
     struct ScoringDiagnostics {
         quint64 scoreCalls = 0;
@@ -96,6 +97,13 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
         ); ree;
     const Eigen::VectorX<float> kernelVec(kernel);
     m_kernelMs2 = kernelVec;
+    m_zeroPrefixGuard = -1;
+    if (kernelVec.size() > 0 && kernelVec.size() % 2 == 1
+        && kernelVec.allFinite() && (kernelVec.array() > 0.0f).all()) {
+        // One count smoothing and three product smoothings. Keep the
+        // original zero padding through all four operations.
+        m_zeroPrefixGuard = 4 * ((kernelVec.size() - 1) / 2) + 1;
+    }
 
     Eigen::MatrixX<float> kernelIntegration;
     e = EigenKernelUtils::buildSavitzkyGolayKernel(
@@ -289,6 +297,7 @@ class MatriciesAndVecs {
 
 public:
 
+    FrameIndex frameOffset = 0;
     Eigen::MatrixX<float> intensityMatrix100;
     Eigen::MatrixX<float> intensityMatrix100Shadow;
     Eigen::MatrixX<float> intensityMatrix45;
@@ -307,6 +316,21 @@ public:
 
     [[nodiscard]] bool integrationVecIsValid() const {
         return ionCountVec.size() > 0;
+    }
+
+    Eigen::MatrixX<float> globalBlock(
+        const Eigen::MatrixX<float> &matrix, FrameIndex first, int count) const {
+        if (first >= frameOffset) {
+            return matrix.block(first - frameOffset, 0, count, matrix.cols()).eval();
+        }
+        // Correlation windows may extend into the omitted zero prefix.
+        // Preserve their original dimensions and global coordinates.
+        Eigen::MatrixX<float> block = Eigen::MatrixX<float>::Zero(count, matrix.cols());
+        const int overlap = std::max(0, first + count - frameOffset);
+        if (overlap > 0) {
+            block.bottomRows(overlap) = matrix.topRows(overlap);
+        }
+        return block;
     }
 };
 
@@ -1422,6 +1446,7 @@ namespace {
         const QVector<XICPoints> &xicPointsVec,
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
+        FrameIndex frameOffset,
         bool buildMzMatrix,
         int smoothCount,
         Eigen::MatrixX<float> *matIntensity,
@@ -1433,7 +1458,8 @@ namespace {
 
         const FrameIndex frameIndexBuffer = 2;
 
-        const int rows = frameIndexMax + frameIndexBuffer;
+        const int globalRows = frameIndexMax + frameIndexBuffer;
+        const int rows = globalRows - frameOffset;
 
         matIntensity->resize(rows, xicPointsVec.size());
         matIntensity->setZero();
@@ -1448,20 +1474,21 @@ namespace {
             const XICPoints &xicPointsCol = xicPointsVec.at(col);
             for (const XICPoint &p : xicPointsCol) {
 
-                if (p.scanNumber >= rows) {
+                if (p.scanNumber >= globalRows) {
                     continue;
                 }
 
-                matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
+                const FrameIndex row = p.scanNumber - frameOffset;
+                matIntensity->coeffRef(row, col) += p.intensity;
                 if (buildMzMatrix) {
 
-                    if (matMz->coeff(p.scanNumber, col) > 0) {
-                        matMz->coeffRef(p.scanNumber, col) += p.mz;
-                        matMz->coeffRef(p.scanNumber, col) /= 2.0;
+                    if (matMz->coeff(row, col) > 0) {
+                        matMz->coeffRef(row, col) += p.mz;
+                        matMz->coeffRef(row, col) /= 2.0;
                         continue;
                     }
 
-                    matMz->coeffRef(p.scanNumber, col) = p.mz;
+                    matMz->coeffRef(row, col) = p.mz;
                 }
             }
         }
@@ -1615,12 +1642,30 @@ Err CandidateScorertron::initMatricesdAndVecs(
         e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
+        matriciesAndVecs->frameOffset = 0;
+        if (d_ptr->m_zeroPrefixGuard >= 0 && m_timsMs2IonMobilityIndex == nullptr
+            && !m_pythiaParameters.writeFullCandidateDebug && frameIndexMax > 0) {
+            FrameIndex firstPoint = frameIndexMax;
+            // Shadows can precede primary evidence. The narrow-mass
+            // points are a subset of primary evidence.
+            for (const auto *columns : {&xicPointsVec100, &xicPointsVec100Shadow}) {
+                for (const XICPoints &points : *columns) {
+                    for (const XICPoint &point : points) {
+                        firstPoint = std::min(firstPoint, point.scanNumber);
+                    }
+                }
+            }
+            // Retain SIMD alignment as well as the convolution's zero guard.
+            matriciesAndVecs->frameOffset
+                = std::max(0, firstPoint - d_ptr->m_zeroPrefixGuard) / 16 * 16;
+        }
 
         constexpr int smoothCount = 1;
         e = buildEigenMatrix(
             xicPointsVec100,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             true,
             smoothCount,
             &matriciesAndVecs->intensityMatrix100,
@@ -1640,6 +1685,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             xicPointsVec100Shadow,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             false,
             smoothCount,
             &matriciesAndVecs->intensityMatrix100Shadow,
@@ -1670,6 +1716,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             xicPointsVec45,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             false,
             noSmooths,
             &matriciesAndVecs->intensityMatrix45,
@@ -1699,6 +1746,18 @@ Err CandidateScorertron::updateIntegrationVectors(
 				d_ptr->m_kernelMs2
 				);
 		}
+
+        if (matriciesAndVecs->frameOffset > 0) {
+            // Peak finding sorts full vectors, including zero-valued rows.
+            // Restore them before integration so tie order and indexes stay
+            // identical to the original global matrices.
+            for (auto *vector : {&matriciesAndVecs->ionCountVec, &matriciesAndVecs->productVec}) {
+                Eigen::VectorX<float> global = Eigen::VectorX<float>::Zero(
+                    vector->size() + matriciesAndVecs->frameOffset);
+                global.tail(vector->size()) = *vector;
+                vector->swap(global);
+            }
+        }
 
     ERR_RETURN
 }
@@ -1977,7 +2036,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
     e = ErrorUtils::isTrue(matriciesAndVecs.integrationVecIsValid()); ree;
 
-    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
+    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows())
+                       + matriciesAndVecs.frameOffset;
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
     // if (m_useTopNIntegrationsParam) {
     //     peakIntegrationsVsIntensityResized.resize(std::min(
@@ -1995,12 +2055,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const int ogPeakLength = piiWorking.first.second - piiWorking.first.first + 1;
 
-        Eigen::MatrixX<float> matBlock = matriciesAndVecs.intensityMatrix100.block(
-              piiWorking.first.first,
-              0,
-              ogPeakLength,
-              matriciesAndVecs.intensityMatrix100.cols()
-              ).eval();
+        Eigen::MatrixX<float> matBlock = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, piiWorking.first.first, ogPeakLength);
 
         const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);
 
@@ -2054,12 +2110,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const auto frameIndex1p5XMax
             = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier1p5X * ogPeakLength))), maxRows);
         const int peakLength1p5X = frameIndex1p5XMax - frameIndex1p5XMin;
-        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.intensityMatrix100.block(
-              frameIndex1p5XMin,
-              0,
-              peakLength1p5X,
-              matriciesAndVecs.intensityMatrix100.cols()
-              ).eval();
+        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, frameIndex1p5XMin, peakLength1p5X);
 
         constexpr float windowMultiplier2X = 1.0;
         const auto frameIndex2XMin
@@ -2067,12 +2119,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const auto frameIndex2XMax
             = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier2X * ogPeakLength))), maxRows);
         const int peakLength2X = frameIndex2XMax - frameIndex2XMin;
-        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.intensityMatrix100.block(
-                      frameIndex2XMin,
-                      0,
-                      peakLength2X,
-                      matriciesAndVecs.intensityMatrix100.cols()
-                      ).eval();
+        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, frameIndex2XMin, peakLength2X);
 
         // bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
         //     matBlock1p5X,
@@ -2112,26 +2160,14 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const PeakIntegrationIndexes &p = piiWorking.first;
         const int pSize = p.second - p.first + 1;
-        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.mzMatrix100.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.mzMatrix100, p.first, pSize);
 
-        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100Shadow, p.first, pSize);
 
-        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix45, p.first, pSize);
 
         e = calculatePeakCorrelations(
 			integrationVecSegment,
