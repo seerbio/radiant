@@ -1,6 +1,7 @@
 #include "CandidateBundleIO.h"
 #include "CandidateFeatureSchema.h"
 #include "CandidateReportColumns.h"
+#include "FileSha256.h"
 #include "ParquetReader.h"
 
 #include <QCryptographicHash>
@@ -70,11 +71,7 @@ bool validIdentity(const CandidatePoolSelection::Identity &id, const FragmentCom
 }
 
 QString CandidateBundleIO::fileHash(const QString &path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return {};
-    QCryptographicHash hash(QCryptographicHash::Sha256);
-    if (!hash.addData(&file) || file.error() != QFileDevice::NoError) return {};
-    return QString::fromLatin1(hash.result().toHex());
+    return CandidateBundleIODetail::fileHash(path);
 }
 
 Error::Err CandidateBundleIO::write(
