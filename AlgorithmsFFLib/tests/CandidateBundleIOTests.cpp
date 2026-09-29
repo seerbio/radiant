@@ -1,5 +1,6 @@
 #include "CandidateBundleIO.h"
 #include "CandidateFeatureSchema.h"
+#include "CandidateReportColumns.h"
 #include "FragmentCompetitionTestData.h"
 
 #include <QFile>
@@ -16,6 +17,11 @@ private slots:
     void roundTripAndReport();
     void rejectsCorruption();
     void invalidInputDoesNotOverwrite();
+    void columnWriterMatchesLegacyBits();
+    void combinedColumnsMatchLegacyAcrossViews();
+    void noncanonicalReportRetainsLegacyConversion_data();
+    void noncanonicalReportRetainsLegacyConversion();
+    void rejectsIdentityMismatchInUnselectedRow();
 };
 
 namespace {
@@ -45,6 +51,173 @@ bool replaceBytes(const QString &path, const QByteArray &bytes) {
     return file.open(QIODevice::WriteOnly | QIODevice::Truncate)
         && file.write(bytes) == bytes.size() && file.flush();
 }
+struct MappedRow : ParquetReaderInputBase {
+    QMap<QString, QVariant> map() override { return dataMap(); }
+};
+bool updateReportHash(const QString &directory) {
+    const QString path = directory + "/manifest.json";
+    auto manifest = QJsonDocument::fromJson(readBytes(path)).object();
+    auto files = manifest["files"].toObject();
+    files["report.parquet"] = CandidateBundleIO::fileHash(directory + "/report.parquet");
+    manifest["files"] = files;
+    return replaceBytes(path, QJsonDocument(manifest).toJson());
+}
+QVector<CandidateScoresReaderRow> legacyCombined(
+    const QVector<CandidateBundleIO::View> &views, const CandidatePoolRescorer::Result &result) {
+    QVector<CandidateScoresReaderRow> all;
+    for (const auto &view : views) {
+        QVector<CandidateScoresReaderRow> rows;
+        if (ParquetReader::read(view.directory + "/report.parquet", &rows) != Error::eNoError)
+            return {};
+        all += rows;
+    }
+    QVector<CandidateScoresReaderRow> output;
+    for (int row = 0; row < result.confidence.inputIndices.size(); ++row) {
+        const int index = result.confidence.inputIndices[row];
+        auto record = all[index];
+        record.classifierScore = result.combinedProbability[result.selectedInputIndices.indexOf(index)];
+        record.decoyRatio = -1;
+        record.classifierFold = int(PeptideFamilyNeuralNet::familyHash(
+            record.peptideStringWithModsDecoyOrigin) % 3);
+        record.qValue = record.precursorQValue = result.confidence.qValues[row];
+        record.isBestPrecursorCandidate = 1;
+        record.peptideQValue = record.proteinQValue = 1;
+        record.isBestPeptideCandidate = record.isBestProteinCandidate = 0;
+        output.push_back(std::move(record));
+    }
+    return output;
+}
+}
+
+void CandidateBundleIOTests::columnWriterMatchesLegacyBits() {
+    CandidateScoresReaderRow defaults;
+    QVector<CandidateScoresReaderRow> rows;
+    for (int row = 0; row < 37; ++row) {
+        auto values = defaults.map();
+        int ordinal = 0;
+        for (auto it = values.begin(); it != values.end(); ++it) {
+            ++ordinal;
+            switch (it.value().userType()) {
+            case QMetaType::Float: it.value() = float(ordinal) + float(row) * .125f; break;
+            case QMetaType::Double: it.value() = double(ordinal) + double(row) * .125; break;
+            case QMetaType::Int: it.value() = ordinal * (row % 2 ? -1 : 1); break;
+            case QMetaType::Bool: it.value() = bool(row % 2); break;
+            case QMetaType::QString:
+                it.value() = QString::fromUtf8("λ_") + it.key() + QString::number(row); break;
+            default: QFAIL("Unhandled field");
+            }
+        }
+        values["PeptideStringWithMods"] = "_PEPTIDEK_";
+        values["PeptideStringWithModsDecoyOrigin"] = "_ASDFGHK_";
+        ParquetReaderInputBase mapped;
+        mapped.setDataMap(values);
+        CandidateScoresReaderRow record;
+        QCOMPARE(record.initFromRead(mapped), Error::eNoError);
+        rows.push_back(std::move(record));
+    }
+    rows[0].mass = -0.0f;
+    rows[0].classifierScore = -0.0;
+    const quint32 floatNaN = 0x7fc01234;
+    const quint64 doubleNaN = 0x7ff8000000001234ULL;
+    std::memcpy(&rows[1].mass, &floatNaN, sizeof(float));
+    std::memcpy(&rows[1].classifierScore, &doubleNaN, sizeof(double));
+    QTemporaryDir directory;
+    const auto legacy = directory.filePath("legacy.parquet");
+    const auto columnar = directory.filePath("columns.parquet");
+    QCOMPARE(ParquetReader::write(rows, legacy), Error::eNoError);
+    QCOMPARE(CandidateReportColumns::write(rows, columnar), Error::eNoError);
+    QVERIFY(!readBytes(legacy).isEmpty());
+    QCOMPARE(readBytes(columnar), readBytes(legacy));
+    QVERIFY(CandidateReportColumns::write(rows, columnar) != Error::eNoError);
+}
+
+void CandidateBundleIOTests::combinedColumnsMatchLegacyAcrossViews() {
+    QTemporaryDir directory;
+    CompetitionCandidateFixture first("PEPTIDEK"), second("AGVTFERK");
+    CompetitionCandidateFixture third("PEPTIDER"), fourth("GILGFVFTLK");
+    prepare(first, false);
+    prepare(second, true);
+    prepare(third, false);
+    prepare(fourth, true);
+    const auto one = directory.filePath("one");
+    const auto two = directory.filePath("two");
+    QCOMPARE(CandidateBundleIO::write({&first.scores, &second.scores}, "sample", {}, one), Error::eNoError);
+    QCOMPARE(CandidateBundleIO::write({&third.scores, &fourth.scores}, "sample", {}, two), Error::eNoError);
+    CandidateBundleIO::View left, right;
+    QCOMPARE(CandidateBundleIO::read(one, &left), Error::eNoError);
+    QCOMPARE(CandidateBundleIO::read(two, &right), Error::eNoError);
+    CandidatePoolRescorer::Result result;
+    result.selectedInputIndices = {3, 0, 2, 1};
+    result.combinedProbability = {.1, .3, .2, .7};
+    result.confidence.inputIndices = {2, 0, 3};
+    result.confidence.qValues = {.01, .02, .4};
+    const auto expected = legacyCombined({left, right}, result);
+    QCOMPARE(expected.size(), 3);
+    const auto legacy = directory.filePath("legacy.parquet");
+    const auto columnar = directory.filePath("columns.parquet");
+    QCOMPARE(ParquetReader::write(expected, legacy), Error::eNoError);
+    QCOMPARE(CandidateBundleIO::writeReport({left, right}, result, columnar), Error::eNoError);
+    QCOMPARE(readBytes(columnar), readBytes(legacy));
+}
+
+void CandidateBundleIOTests::noncanonicalReportRetainsLegacyConversion_data() {
+    QTest::addColumn<bool>("extraColumn");
+    QTest::newRow("extra-column") << true;
+    QTest::newRow("noncanonical-boolean") << false;
+}
+
+void CandidateBundleIOTests::noncanonicalReportRetainsLegacyConversion() {
+    QFETCH(bool, extraColumn);
+    QTemporaryDir directory;
+    CompetitionCandidateFixture candidate;
+    prepare(candidate, true);
+    const auto viewPath = directory.filePath("view");
+    QCOMPARE(CandidateBundleIO::write({&candidate.scores}, "sample", {}, viewPath), Error::eNoError);
+    auto values = CandidateScoresReaderRow::buildCandidateScoresReaderRow(&candidate.scores).map();
+    if (extraColumn) values["UnusedAnnotation"] = "ignored by the original row conversion";
+    else values["IsDecoy"] = 7;
+    MappedRow row;
+    row.setDataMap(values);
+    QCOMPARE(ParquetReader::write(QVector<MappedRow>{row}, viewPath + "/report.parquet"), Error::eNoError);
+    QVERIFY(updateReportHash(viewPath));
+    CandidateBundleIO::View view;
+    QCOMPARE(CandidateBundleIO::read(viewPath, &view), Error::eNoError);
+    CandidatePoolRescorer::Result result;
+    result.selectedInputIndices = {0};
+    result.combinedProbability = {.125};
+    result.confidence.inputIndices = {0};
+    result.confidence.qValues = {.5};
+    const auto expected = legacyCombined({view}, result);
+    QCOMPARE(expected.size(), 1);
+    const auto legacy = directory.filePath("legacy.parquet");
+    const auto output = directory.filePath("output.parquet");
+    QCOMPARE(ParquetReader::write(expected, legacy), Error::eNoError);
+    QCOMPARE(CandidateBundleIO::writeReport({view}, result, output), Error::eNoError);
+    QCOMPARE(readBytes(output), readBytes(legacy));
+}
+
+void CandidateBundleIOTests::rejectsIdentityMismatchInUnselectedRow() {
+    QTemporaryDir directory;
+    CompetitionCandidateFixture first("PEPTIDEK"), second("ANOTHERK");
+    prepare(first, false);
+    prepare(second, true);
+    const auto viewPath = directory.filePath("view");
+    QCOMPARE(CandidateBundleIO::write({&first.scores, &second.scores}, "sample", {}, viewPath), Error::eNoError);
+    QVector<CandidateScoresReaderRow> rows;
+    QCOMPARE(ParquetReader::read(viewPath + "/report.parquet", &rows), Error::eNoError);
+    rows[1].targetKey = "different";
+    QCOMPARE(ParquetReader::write(rows, viewPath + "/report.parquet"), Error::eNoError);
+    QVERIFY(updateReportHash(viewPath));
+    CandidateBundleIO::View view;
+    QCOMPARE(CandidateBundleIO::read(viewPath, &view), Error::eNoError);
+    CandidatePoolRescorer::Result result;
+    result.selectedInputIndices = {0};
+    result.combinedProbability = {.125};
+    result.confidence.inputIndices = {0};
+    result.confidence.qValues = {.5};
+    const auto output = directory.filePath("must-not-exist.parquet");
+    QVERIFY(CandidateBundleIO::writeReport({view}, result, output) != Error::eNoError);
+    QVERIFY(!QFile::exists(output));
 }
 
 void CandidateBundleIOTests::everyReportFieldRoundTrips() {

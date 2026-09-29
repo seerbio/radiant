@@ -1,5 +1,6 @@
 #include "CandidateBundleIO.h"
 #include "CandidateFeatureSchema.h"
+#include "CandidateReportColumns.h"
 #include "ParquetReader.h"
 
 #include <QCryptographicHash>
@@ -125,7 +126,7 @@ Error::Err CandidateBundleIO::write(
         return Error::eFileError;
     metadata.close();
     features.close();
-    const auto error = ParquetReader::write(report, dir.filePath(reportName));
+    const auto error = CandidateReportColumns::write(report, dir.filePath(reportName));
     if (error != Error::eNoError) return error;
     QJsonObject files;
     for (const auto &name : {metadataName, featuresName, reportName}) {
@@ -249,6 +250,11 @@ Error::Err CandidateBundleIO::writeReport(
             || !std::isfinite(q) || q < 0 || q > 1) return Error::eValueError;
         destinations[index] = row;
     }
+    bool written = false;
+    const auto columnError = CandidateReportColumns::tryWriteCombined(
+        views, result, probabilities, destinations, path, familyFolds, &written);
+    if (columnError != Error::eNoError || written) return columnError;
+    // Older or noncanonical reports retain the original typed row conversion.
     QVector<CandidateScoresReaderRow> output(result.confidence.inputIndices.size());
     int offset = 0;
     for (const auto &view : views) {
@@ -281,5 +287,5 @@ Error::Err CandidateBundleIO::writeReport(
         offset += report.size();
     }
     if (output.isEmpty()) return Error::eValueError;
-    return ParquetReader::write(output, path);
+    return CandidateReportColumns::write(output, path);
 }

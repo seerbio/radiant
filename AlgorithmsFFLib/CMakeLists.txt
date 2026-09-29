@@ -22,6 +22,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/CandidateScores.cpp
         src/CandidateBundleIO.cpp
+        src/CandidateReportColumns.cpp
         src/CandidatePoolRescorer.cpp
         src/CandidatePoolSelection.cpp
         src/PeptideFamilyNeuralNet.cpp
@@ -64,6 +65,7 @@ SET(HEADER_FILES
         src/CandidateScores.h
         src/CandidateFeatureSchema.h
         src/CandidateBundleIO.h
+        src/CandidateReportColumns.h
         src/CandidatePoolRescorer.h
         src/CandidatePoolSelection.h
         src/PeptideFamilyNeuralNet.h
