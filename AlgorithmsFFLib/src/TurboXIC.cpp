@@ -13,6 +13,11 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
+#include <boost/container/small_vector.hpp>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -25,6 +30,13 @@ class Q_DECL_HIDDEN TurboXIC::Private
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
     using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
+
+    struct IndexedPoint {
+        float mz;
+        float scan;
+        float intensity;
+        std::uint32_t traversalOrder;
+    };
 
 public:
 
@@ -53,7 +65,10 @@ public:
 
 private:
 
+    void finishInit(std::vector<rTreePoint> &cloudLoader);
+
     RTree *m_rTree;
+    std::vector<IndexedPoint> m_pointsByMz;
 
 };
 
@@ -96,14 +111,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
         }
     }
 
-    std::sort(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &l, const rTreePoint &r){
-        return l.first.get<0>() < r.first.get<0>();
-    });
-
-    delete m_rTree;
-
-    constexpr int maxElements = 16;
-    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    finishInit(cloudLoader);
 
     ERR_RETURN
 }
@@ -135,6 +143,12 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
         }
     }
 
+    finishInit(cloudLoader);
+
+    ERR_RETURN
+}
+
+void TurboXIC::Private::finishInit(std::vector<rTreePoint> &cloudLoader) {
     std::sort(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &l, const rTreePoint &r){
         return l.first.get<0>() < r.first.get<0>();
     });
@@ -144,7 +158,29 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
     constexpr int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
-    ERR_RETURN
+    m_pointsByMz.clear();
+    if (cloudLoader.empty()
+        || cloudLoader.size() > std::numeric_limits<std::uint32_t>::max()
+        || !std::all_of(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &point) {
+            return std::isfinite(point.first.get<0>());
+        })) {
+        return;
+    }
+
+    // Every spatial query walks surviving tree nodes in the same order.
+    // Record that order before sorting by mass so lookup can restore the
+    // exact original sequence, including equal-mass observations.
+    m_pointsByMz.reserve(cloudLoader.size());
+    m_rTree->query(bgi::intersects(m_rTree->bounds()),
+        boost::make_function_output_iterator([this](const rTreePoint &point) {
+            m_pointsByMz.push_back({
+                point.first.get<0>(), point.second.first, point.second.second,
+                static_cast<std::uint32_t>(m_pointsByMz.size())});
+        }));
+    std::sort(m_pointsByMz.begin(), m_pointsByMz.end(),
+        [](const IndexedPoint &left, const IndexedPoint &right) {
+            return left.mz < right.mz;
+        });
 }
 
 XICPoints TurboXIC::Private::extractPointsXIC(
@@ -155,6 +191,47 @@ XICPoints TurboXIC::Private::extractPointsXIC(
         ScanNumber scanNumberMax,
         bool includeEndpoints
 ) const {
+
+    if (!m_pointsByMz.empty() && std::isfinite(mzMin) && std::isfinite(mzMax)
+        && mzMin <= mzMax) {
+        const auto first = std::lower_bound(
+            m_pointsByMz.begin(), m_pointsByMz.end(), mzMin,
+            [](const IndexedPoint &point, float mass) { return point.mz < mass; });
+        const auto last = std::upper_bound(
+            first, m_pointsByMz.end(), mzMax,
+            [](float mass, const IndexedPoint &point) { return mass < point.mz; });
+
+        // Broad queries are cheaper in tree traversal order. Narrow mass
+        // windows avoid the tree's recursive visitors and restore that order
+        // only among the selected points.
+        constexpr std::ptrdiff_t maxIndexedRange = 4096;
+        if (last - first <= maxIndexedRange) {
+            boost::container::small_vector<const IndexedPoint*, 64> selected;
+            for (auto it = first; it != last; ++it) {
+                const auto scan = static_cast<ScanNumber>(it->scan);
+                if (restrictScans && !(includeEndpoints
+                    ? scanNumberMin <= scan && scan <= scanNumberMax
+                    : scanNumberMin < scan && scan < scanNumberMax)) {
+                    continue;
+                }
+                selected.push_back(&*it);
+            }
+            std::sort(selected.begin(), selected.end(),
+                [](const IndexedPoint *left, const IndexedPoint *right) {
+                    return left->traversalOrder < right->traversalOrder;
+                });
+            XICPoints xicPoints;
+            xicPoints.reserve(selected.size());
+            for (const IndexedPoint *point : selected) {
+                XICPoint xp;
+                xp.mz = point->mz;
+                xp.intensity = point->intensity;
+                xp.scanNumber = static_cast<ScanNumber>(point->scan);
+                xicPoints.push_back(xp);
+            }
+            return xicPoints;
+        }
+    }
 
     const rTreeSearchBox queryBox(
             (rTreeCoor(mzMin)),

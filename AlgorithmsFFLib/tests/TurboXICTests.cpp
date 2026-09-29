@@ -10,7 +10,13 @@
 #include "TurboXIC.h"
 
 #include <QtTest/QtTest>
+#include <boost/geometry.hpp>
+#include <boost/geometry/index/rtree.hpp>
+#include <cmath>
+#include <cstdint>
 #include <cstring>
+#include <limits>
+#include <random>
 
 class TurboXICTests : public QObject
 {
@@ -25,6 +31,7 @@ private Q_SLOTS:
     void initTest();
     void extractPointsTest();
     void scanRestrictedQueryPreservesOrderAndValues();
+    void indexedQueriesMatchOriginalTree();
     void turboXICUtility();
 
 
@@ -199,6 +206,114 @@ void TurboXICTests::scanRestrictedQueryPreservesOrderAndValues() {
             }
         }
     }
+}
+
+void TurboXICTests::indexedQueriesMatchOriginalTree() {
+    namespace bg = boost::geometry;
+    namespace bgi = boost::geometry::index;
+    using Coordinate = bg::model::point<float, 1, bg::cs::cartesian>;
+    using TreePoint = std::pair<Coordinate, std::pair<float, float>>;
+    using Tree = bgi::rtree<TreePoint, bgi::dynamic_quadratic>;
+
+    std::mt19937 random(666);
+    QMap<ScanNumber, ScanPoints> storage;
+    const QVector<ScanNumber> scans{-3, 0, 1, 7, 100, 16777217, 16777219};
+    for (auto scan : scans) {
+        ScanPoints points;
+        for (int index = 0; index < 3000; ++index) {
+            const float mz = index % 3
+                ? 100.0f + float(random() % 100000) / 128.0f
+                : 100.0f + float(index % 17) / 8.0f;
+            float intensity = float(random());
+            if (index == 0) intensity = -0.0f;
+            if (index == 1) intensity = std::numeric_limits<float>::infinity();
+            if (index == 2) {
+                const std::uint32_t payload = 0x7fc00123u;
+                std::memcpy(&intensity, &payload, sizeof(float));
+            }
+            points.push_back(ScanPoint(mz, intensity));
+        }
+        storage.insert(scan, points);
+    }
+    QMap<ScanNumber, ScanPoints*> pointers;
+    std::vector<TreePoint> cloud;
+    for (auto it = storage.begin(); it != storage.end(); ++it) {
+        pointers.insert(it.key(), &it.value());
+        for (const auto &point : it.value())
+            cloud.emplace_back(Coordinate(point.x()),
+                std::make_pair(static_cast<float>(it.key()), point.y()));
+    }
+    // Independent oracle: the original constructor and spatial query, before
+    // either the bounded-query or the sorted-mass optimization.
+    std::sort(cloud.begin(), cloud.end(), [](const TreePoint &left, const TreePoint &right) {
+        return left.first.get<0>() < right.first.get<0>();
+    });
+    const Tree reference(cloud, bgi::dynamic_quadratic(16));
+    TurboXIC indexed;
+    QCOMPARE(indexed.init(pointers), eNoError);
+    TurboXIC pointerInitialized;
+    QCOMPARE(pointerInitialized.init(&pointers), eNoError);
+
+    const float infinity = std::numeric_limits<float>::infinity();
+    QVector<QPair<float, float>> masses{
+        {-infinity, infinity}, {0, 2000}, {100, 100},
+        {std::nextafter(100.0f, -infinity), std::nextafter(100.0f, infinity)},
+        {std::nextafter(100.0f, infinity), 100.125f},
+        {100.125f, std::nextafter(100.25f, -infinity)},
+        {99, 99.5f}, {2000, 2100}};
+    for (int index = 0; index < 256; ++index) {
+        const float mass = cloud[random() % cloud.size()].first.get<0>();
+        masses.push_back({mass, mass + float(random() % 256) / 128.0f});
+    }
+    const QVector<QPair<ScanNumber, ScanNumber>> ranges{
+        {-3, 100}, {0, 0}, {1, 7}, {101, 102}, {100, -3},
+        {16777216, 16777218}, {16777218, 16777220}};
+    const auto same = [](const XICPoints &actual, const std::vector<TreePoint> &expected) {
+        if (actual.size() != expected.size()) return false;
+        for (size_t row = 0; row < actual.size(); ++row) {
+            const float mass = expected[row].first.get<0>();
+            if (actual[row].scanNumber != static_cast<ScanNumber>(expected[row].second.first)
+                || actual[row].ionMobilityIndex != -1
+                || std::memcmp(&actual[row].mz, &mass, sizeof(float))
+                || std::memcmp(&actual[row].intensity, &expected[row].second.second, sizeof(float))) {
+                return false;
+            }
+        }
+        return true;
+    };
+    for (const auto &mass : masses) {
+        std::vector<TreePoint> original;
+        reference.query(bgi::intersects(
+            bg::model::box<Coordinate>(Coordinate(mass.first), Coordinate(mass.second))),
+            std::back_inserter(original));
+        QVERIFY(same(indexed.extractPointsXIC(mass.first, mass.second), original));
+        QVERIFY(same(pointerInitialized.extractPointsXIC(mass.first, mass.second), original));
+        for (const auto &range : ranges) {
+            for (const bool inclusive : {false, true}) {
+                auto expected = original;
+                expected.erase(std::remove_if(expected.begin(), expected.end(),
+                    [&](const TreePoint &point) {
+                        const auto scan = static_cast<ScanNumber>(point.second.first);
+                        return inclusive
+                            ? !(range.first <= scan && scan <= range.second)
+                            : !(range.first < scan && scan < range.second);
+                    }), expected.end());
+                QVERIFY(same(indexed.extractPointsXIC(
+                    mass.first, mass.second, range.first, range.second, inclusive), expected));
+            }
+        }
+    }
+
+    // Reinitialization must invalidate the previous mass index.
+    auto smallStorage = buildPoints();
+    QMap<ScanNumber, ScanPoints*> smallPointers;
+    for (auto it = smallStorage.begin(); it != smallStorage.end(); ++it)
+        smallPointers.insert(it.key(), &it.value());
+    QCOMPARE(indexed.init(smallPointers), eNoError);
+    const auto after = indexed.extractPointsXIC(100, 101);
+    QCOMPARE(after.size(), size_t(6));
+    QCOMPARE(after.front().scanNumber, 1);
+    QCOMPARE(after.back().scanNumber, 5);
 }
 
 
