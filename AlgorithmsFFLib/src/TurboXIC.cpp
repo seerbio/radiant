@@ -14,10 +14,12 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
 #include <boost/container/small_vector.hpp>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -74,6 +76,7 @@ private:
     double m_massBinBase = 0.0;
     std::vector<std::uint32_t> m_massBinStarts;
     std::vector<std::uint32_t> m_massBinTraversal;
+    std::vector<std::uint32_t> m_massBinByScan;
 
 };
 
@@ -166,6 +169,7 @@ void TurboXIC::Private::finishInit(std::vector<rTreePoint> &cloudLoader) {
     m_pointsByMz.clear();
     m_massBinStarts.clear();
     m_massBinTraversal.clear();
+    m_massBinByScan.clear();
     if (cloudLoader.empty()
         || cloudLoader.size() > std::numeric_limits<std::uint32_t>::max()
         || !std::all_of(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &point) {
@@ -225,6 +229,20 @@ void TurboXIC::Private::prepareMassBins() {
             - m_massBinBase);
         m_massBinTraversal[next[bin]++] = index;
     }
+
+    // A second ordering lets a query choose the more selective dimension.
+    // Sort within bins rather than across the entire run. Query results are
+    // subsequently restored to tree order before any intensity arithmetic.
+    m_massBinByScan.resize(m_pointsByMz.size());
+    std::iota(m_massBinByScan.begin(), m_massBinByScan.end(), std::uint32_t(0));
+    for (std::size_t bin = 0; bin < binCount; ++bin) {
+        std::sort(m_massBinByScan.begin() + m_massBinStarts[bin],
+                  m_massBinByScan.begin() + m_massBinStarts[bin + 1],
+                  [this](std::uint32_t left, std::uint32_t right) {
+                      return static_cast<ScanNumber>(m_pointsByMz[left].scan)
+                           < static_cast<ScanNumber>(m_pointsByMz[right].scan);
+                  });
+    }
 }
 
 XICPoints TurboXIC::Private::extractPointsXIC(
@@ -262,11 +280,56 @@ XICPoints TurboXIC::Private::extractPointsXIC(
             first, rangeEnd, mzMax,
             [](float mass, const IndexedPoint &point) { return mass < point.mz; });
 
+        if (restrictScans && (scanNumberMin > scanNumberMax
+            || (!includeEndpoints && scanNumberMin == scanNumberMax))) return {};
+
+        const auto massMatches = last - first;
+        struct ScanRange { std::uint32_t first, last; };
+        std::array<ScanRange, 2> scanRanges{};
+        bool useScanIndex = false;
+        if (restrictScans && massMatches >= 64 && pastLastBin > firstBin
+            && pastLastBin - firstBin <= scanRanges.size()) {
+            std::size_t scanMatches = 0;
+            for (std::size_t bin = firstBin; bin < pastLastBin; ++bin) {
+                const auto begin = m_massBinByScan.cbegin() + m_massBinStarts[bin];
+                const auto end = m_massBinByScan.cbegin() + m_massBinStarts[bin + 1];
+                if (begin == end) continue;
+                const auto beforeScan = [this](std::uint32_t index, ScanNumber scan) {
+                    return static_cast<ScanNumber>(m_pointsByMz[index].scan) < scan;
+                };
+                const auto afterScan = [this](ScanNumber scan, std::uint32_t index) {
+                    return scan < static_cast<ScanNumber>(m_pointsByMz[index].scan);
+                };
+                const auto firstScan = static_cast<ScanNumber>(m_pointsByMz[*begin].scan);
+                const auto lastScan = static_cast<ScanNumber>(m_pointsByMz[*(end - 1)].scan);
+                const auto lower = (includeEndpoints ? scanNumberMin <= firstScan
+                                                     : scanNumberMin < firstScan)
+                    ? begin
+                    : includeEndpoints
+                        ? std::lower_bound(begin, end, scanNumberMin, beforeScan)
+                        : std::upper_bound(begin, end, scanNumberMin, afterScan);
+                const auto upper = (includeEndpoints ? lastScan <= scanNumberMax
+                                                     : lastScan < scanNumberMax)
+                    ? end
+                    : includeEndpoints
+                        ? std::upper_bound(lower, end, scanNumberMax, afterScan)
+                        : std::lower_bound(lower, end, scanNumberMax, beforeScan);
+                scanRanges[bin - firstBin] = {
+                    static_cast<std::uint32_t>(lower - m_massBinByScan.cbegin()),
+                    static_cast<std::uint32_t>(upper - m_massBinByScan.cbegin())};
+                scanMatches += upper - lower;
+                if (scanMatches >= static_cast<std::size_t>(massMatches) / 2) break;
+            }
+            // Pay the indirect scan only when it visits less than half as
+            // many points as the mass range, including broad mass matches.
+            useScanIndex = scanMatches < static_cast<std::size_t>(massMatches) / 2;
+        }
+
         // Broad queries are cheaper in tree traversal order. Narrow mass
         // windows avoid the tree's recursive visitors and restore that order
         // only among the selected points.
         constexpr std::ptrdiff_t maxIndexedRange = 4096;
-        if (last - first <= maxIndexedRange) {
+        if (massMatches <= maxIndexedRange || useScanIndex) {
             boost::container::small_vector<const IndexedPoint*, 64> selected;
             const auto appendSelected = [&](const IndexedPoint &point) {
                 const auto scan = static_cast<ScanNumber>(point.scan);
@@ -280,10 +343,21 @@ XICPoints TurboXIC::Private::extractPointsXIC(
             // Only scan a whole bin when it contains at most twice as many
             // points as the exact mass range. This bounds the work by O(k)
             // and avoids sorting k matches on every dense, narrow query.
-            const auto massMatches = last - first;
             const bool scanOrderedBin = pastLastBin == firstBin + 1
-                && massMatches >= 16 && rangeEnd - rangeBegin <= 2 * massMatches;
-            if (scanOrderedBin) {
+                && massMatches >= 16 && rangeEnd - rangeBegin <= 2 * massMatches
+                && (!restrictScans || massMatches >= 64);
+            if (useScanIndex) {
+                const auto firstIndex = static_cast<std::uint32_t>(first - m_pointsByMz.cbegin());
+                const auto matchCount = static_cast<std::uint32_t>(massMatches);
+                for (std::size_t bin = firstBin; bin < pastLastBin; ++bin) {
+                    const auto range = scanRanges[bin - firstBin];
+                    for (auto offset = range.first; offset < range.last; ++offset) {
+                        const auto index = m_massBinByScan[offset];
+                        if (index - firstIndex < matchCount)
+                            selected.push_back(&m_pointsByMz[index]);
+                    }
+                }
+            } else if (scanOrderedBin) {
                 const auto firstIndex = static_cast<std::uint32_t>(first - m_pointsByMz.cbegin());
                 const auto matchCount = static_cast<std::uint32_t>(massMatches);
                 for (auto offset = m_massBinStarts[firstBin];
@@ -295,6 +369,8 @@ XICPoints TurboXIC::Private::extractPointsXIC(
                 }
             } else {
                 for (auto it = first; it != last; ++it) appendSelected(*it);
+            }
+            if (useScanIndex || !scanOrderedBin) {
                 std::sort(selected.begin(), selected.end(),
                     [](const IndexedPoint *left, const IndexedPoint *right) {
                         return left->traversalOrder < right->traversalOrder;

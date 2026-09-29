@@ -34,6 +34,7 @@ private Q_SLOTS:
     void indexedQueriesMatchOriginalTree();
     void massDirectoryPreservesBoundariesAndFallbacks();
     void denseMassBinsPreserveTraversal();
+    void retentionTimeIndexPreservesTraversal();
     void turboXICUtility();
 
 
@@ -453,6 +454,80 @@ void TurboXICTests::denseMassBinsPreserveTraversal() {
                     QVERIFY(std::memcmp(&actual[i].mz, &expectedMass, sizeof(float)) == 0);
                     QVERIFY(std::memcmp(&actual[i].intensity, &expected[i].second.second,
                                         sizeof(float)) == 0);
+                }
+            }
+        }
+    }
+}
+
+void TurboXICTests::retentionTimeIndexPreservesTraversal() {
+    namespace bg = boost::geometry;
+    namespace bgi = boost::geometry::index;
+    using Coordinate = bg::model::point<float, 1, bg::cs::cartesian>;
+    using TreePoint = std::pair<Coordinate, std::pair<float, float>>;
+    using Tree = bgi::rtree<TreePoint, bgi::dynamic_quadratic>;
+    TurboXIC index;
+    // Reuse the index, including scans beyond exact float integer precision.
+    for (const int base : {0, 16777200}) {
+        QMap<ScanNumber, ScanPoints> storage;
+        QMap<ScanNumber, ScanPoints*> pointers;
+        std::vector<TreePoint> cloud;
+        for (int scan = 0; scan < 256; ++scan) {
+            const int frame = base + 3 * scan;
+            auto &points = storage[frame];
+            for (int bin = 0; bin < 3; ++bin) {
+                for (int i = 0; i < 64; ++i) {
+                    const float mass = (bin == 2 ? 201.0f : 200.0f + bin * .125f)
+                        + float((i * 37 + scan * 13) % 64) * .0015f;
+                    const float intensity = float(scan * 1000 + bin * 100 + i) * .125f;
+                    points.push_back(ScanPoint(mass, intensity));
+                    cloud.emplace_back(Coordinate(mass),
+                                       std::make_pair(float(frame), intensity));
+                }
+            }
+        }
+        for (auto it = storage.begin(); it != storage.end(); ++it)
+            pointers.insert(it.key(), &it.value());
+        std::sort(cloud.begin(), cloud.end(), [](const TreePoint &a, const TreePoint &b) {
+            return a.first.get<0>() < b.first.get<0>();
+        });
+        const Tree reference(cloud, bgi::dynamic_quadratic(16));
+        QCOMPARE(index.init(pointers), eNoError);
+        const QVector<QPair<float, float>> masses{
+            {199.99f, 200.10f}, {200.015f, 200.085f}, // More than 4,096 mass matches.
+            {200.125f, 200.22f}, {200.08f, 200.17f},  // Second bin and two bins.
+            {200.045f, 200.046f}, {199.0f, 202.0f}   // Sparse and many-bin fallback.
+        };
+        const QVector<QPair<int, int>> scans{
+            {-10, -1}, {0, 0}, {2, 4}, {381, 387}, {384, 384},
+            {5, 4}, {0, 765}, {765, 780}
+        };
+        for (const auto &mass : masses) {
+            std::vector<TreePoint> original;
+            reference.query(bgi::intersects(bg::model::box<Coordinate>(
+                                Coordinate(mass.first), Coordinate(mass.second))),
+                            std::back_inserter(original));
+            for (const auto &scan : scans) {
+                for (bool inclusive : {false, true}) {
+                    const int first = base + scan.first, last = base + scan.second;
+                    std::vector<TreePoint> expected;
+                    for (const auto &point : original) {
+                        const int frame = static_cast<int>(point.second.first);
+                        if (inclusive ? (first <= frame && frame <= last)
+                                      : (first < frame && frame < last))
+                            expected.push_back(point);
+                    }
+                    const auto actual = index.extractPointsXIC(
+                        mass.first, mass.second, first, last, inclusive);
+                    QCOMPARE(actual.size(), expected.size());
+                    for (std::size_t i = 0; i < expected.size(); ++i) {
+                        const float massValue = expected[i].first.get<0>();
+                        QCOMPARE(actual[i].scanNumber, static_cast<int>(expected[i].second.first));
+                        QCOMPARE(actual[i].ionMobilityIndex, -1);
+                        QVERIFY(std::memcmp(&actual[i].mz, &massValue, sizeof(float)) == 0);
+                        QVERIFY(std::memcmp(&actual[i].intensity, &expected[i].second.second,
+                                            sizeof(float)) == 0);
+                    }
                 }
             }
         }
