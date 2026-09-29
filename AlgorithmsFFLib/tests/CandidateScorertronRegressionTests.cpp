@@ -13,6 +13,7 @@ private Q_SLOTS:
     void rejectsPeaksWithoutLeadingFragmentSupport();
     void preservesMs1SignalAcrossSamplingRates_data();
     void preservesMs1SignalAcrossSamplingRates();
+    void preservesIndependentFragmentThresholds();
 };
 
 void CandidateScorertronRegressionTests::rejectsPeaksWithoutLeadingFragmentSupport_data() {
@@ -201,6 +202,80 @@ void CandidateScorertronRegressionTests::preservesMs1SignalAcrossSamplingRates()
     QVERIFY(std::memcmp(reinitialized.featuresArray.constData(), result.featuresArray.constData(),
                         result.featuresArray.size() * sizeof(float)) != 0);
     QCOMPARE(reinitialized.scanNumber, fresh.scanNumber);
+}
+
+void CandidateScorertronRegressionTests::preservesIndependentFragmentThresholds() {
+    FragLibReaderRow library;
+    library.mass = 1000.0;
+    library.precursorCharge = 2;
+    QStringList labels;
+    for (int ion = 0; ion < 12; ++ion) {
+        library.mzVals.push_back(300.0f + ion * 30.0f);
+        library.intensityVals.push_back(1000.0f - ion * 40.0f);
+        labels.push_back(QString(ion < 6 ? "b" : "y") + QString::number(ion % 6 + 1));
+    }
+    library.ionLabels = labels.join(S_GLOBAL_SETTINGS.SEPARATOR);
+    TargetDecoyCandidatePair pair(PeptideStringWithMods("PEPTIDEK"), 0.0f);
+    pair.setFragLibReaderRowPntr(&library);
+    auto parameters = PythiaParameterReader::genericPythiaParametersForTests();
+    parameters.subtractShadows = false;
+    parameters.maxAnchorColumnIndex = 12;
+    const auto features = DiscriminantScoretron::featuresOptimization();
+    const auto weights = DiscriminantScoretron::defaultWeights(features);
+
+    for (int strongIons : {0, 3, 4, 12}) {
+        QMap<ScanNumber, ScanPoints> scans;
+        QMap<ScanNumber, ScanTime> times;
+        for (int scan = 0; scan <= 100; ++scan) {
+            const float peak = std::exp(-std::pow((scan - 50) / 8.0f, 2.0f));
+            ScanPoints points = {ScanPoint(100.0f, 1.0f)};
+            const QVector<int> order = {0, 1, 6, 7, 2, 3, 4, 5, 8, 9, 10, 11};
+            for (int rank = 0; rank < 12; ++rank) {
+                const int ion = order.at(rank);
+                const float scale = rank < strongIons ? library.intensityVals.at(ion) : .05f;
+                points.push_back(ScanPoint(library.mzVals.at(ion), peak * scale));
+            }
+            scans.insert(scan, points);
+            times.insert(scan, scan * .02f);
+        }
+        QMap<ScanNumber, ScanPoints*> pointers;
+        for (auto it = scans.begin(); it != scans.end(); ++it) pointers.insert(it.key(), &it.value());
+        MsFrame frame;
+        QCOMPARE(frame.init(pointers, times), eNoError);
+        XICPeakManager peaks;
+        QCOMPARE(peaks.init(frame, {&pair}, 12, 20.0f), eNoError);
+        const auto initialize = [&](CandidateScorertron *scorer, float threshold) {
+            return scorer->init(parameters, MsCalibratomatic(), "500000", 12, threshold,
+                                2.0f, {{1000, {1.0f, .5f, .25f, .125f}}}, features,
+                                false, &peaks, &frame, nullptr, nullptr, nullptr, nullptr);
+        };
+        CandidateScorertron joint;
+        QCOMPARE(initialize(&joint, 3.9f), eNoError);
+        for (const QVector<float> thresholds : {
+                QVector<float>{3.9f, 2.9f, 4.9f}, QVector<float>{2.9f, 4.9f, 3.9f}}) {
+            QVector<CandidateScores> together(thresholds.size());
+            QCOMPARE(joint.calculateScoresForFragmentThresholds(
+                pair.ms2IonsTarget(), weights, &pair, thresholds, &together), eNoError);
+            for (int view = 0; view < thresholds.size(); ++view) {
+                CandidateScorertron independent;
+                QCOMPARE(initialize(&independent, thresholds.at(view)), eNoError);
+                CandidateScores expected;
+                QCOMPARE(independent.calculateScores(pair.ms2IonsTarget(), weights, &pair, &expected), eNoError);
+                QCOMPARE(together.at(view).featuresArray.size(), expected.featuresArray.size());
+                QCOMPARE(std::memcmp(together.at(view).featuresArray.constData(), expected.featuresArray.constData(),
+                                     expected.featuresArray.size() * sizeof(float)), 0);
+                QCOMPARE(together.at(view).scanNumber, expected.scanNumber);
+                QCOMPARE(together.at(view).scanNumberStart, expected.scanNumberStart);
+                QCOMPARE(together.at(view).scanNumberEnd, expected.scanNumberEnd);
+            }
+            if (strongIons == 3) {
+                const int three = thresholds.indexOf(2.9f);
+                const int four = thresholds.indexOf(3.9f);
+                QVERIFY(together.at(three).scanNumber >= 0);
+                QCOMPARE(together.at(four).scanNumber, -1);
+            }
+        }
+    }
 }
 
 QTEST_MAIN(CandidateScorertronRegressionTests)

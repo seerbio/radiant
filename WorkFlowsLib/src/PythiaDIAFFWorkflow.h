@@ -135,11 +135,14 @@ public:
 private:
 
     Err processFileImpl(const QString &msDataFilePath, const QVector<CandidateView> &views);
-    Err processCalibratedFile(const MsReaderPointerAcc *reader);
+    Err processCalibratedFile(
+        const MsReaderPointerAcc *reader,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *preparedScores = nullptr);
 
     Err mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
-        int *targetCountBelowFDRThresholdOnePercent
+        int *targetCountBelowFDRThresholdOnePercent,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *preparedScores = nullptr
         );
 
     Err applyFragmentCompetition(QVector<CandidateScores*> *candidates) const;

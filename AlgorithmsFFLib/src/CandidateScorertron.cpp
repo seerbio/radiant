@@ -523,13 +523,10 @@ namespace {
 
 
 }//namespace
-Err CandidateScorertron::calculateScores(
-    const QVector<MS2Ion> &ms2Ions,
-    const QVector<float> &weights,
-    TargetDecoyCandidatePair* targetDecoyCandidatePair,
-    CandidateScores *candidateScores
-    ) const {
-
+Err CandidateScorertron::initializeCandidate(
+    const QVector<MS2Ion> &ms2Ions, TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    CandidateScores *candidateScores, FrameIndex *frameIndexPredictedMin,
+    FrameIndex *frameIndexPredictedMax) const {
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
@@ -558,24 +555,75 @@ Err CandidateScorertron::calculateScores(
     //Note, target key must be set before peptideSequenceWithModsChargeAndTargetKey
     candidateScores->peptideSequenceWithModsChargeAndTargetKey = buildPeptideSequenceWithModsChargeAndTargetKey(candidateScores);
 
-    FrameIndex frameIndexPredictedMin;
-    FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
         targetDecoyCandidatePair->iRt(candidateScores->isDecoy),
         candidateScores,
-        &frameIndexPredictedMin,
-        &frameIndexPredictedMax
+        frameIndexPredictedMin,
+        frameIndexPredictedMax
         );
 
-    MatriciesAndVecs matriciesAndVecs;
-    e = initMatricesdAndVecs(
-        targetDecoyCandidatePair,
-        ms2Ions,
-        frameIndexPredictedMin,
-        frameIndexPredictedMax,
-        &matriciesAndVecs
-        ); ree;
+    ERR_RETURN
+}
 
+Err CandidateScorertron::calculateScores(
+    const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair, CandidateScores *candidateScores) const {
+    ERR_INIT
+    FrameIndex first, last;
+    e = initializeCandidate(ms2Ions, targetDecoyCandidatePair, candidateScores, &first, &last); ree;
+    MatriciesAndVecs matrices;
+    e = initMatricesdAndVecs(targetDecoyCandidatePair, ms2Ions, first, last,
+                            m_minPeakCount, &matrices); ree;
+    e = calculatePreparedScores(ms2Ions, weights, targetDecoyCandidatePair, matrices, candidateScores); ree;
+    ERR_RETURN
+}
+
+Err CandidateScorertron::calculateScoresForFragmentThresholds(
+    const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair, const QVector<float> &minimumCounts,
+    QVector<CandidateScores> *candidateScores) const {
+    ERR_INIT
+    if (minimumCounts.isEmpty() || candidateScores == nullptr
+        || candidateScores->size() != minimumCounts.size()) return eValueError;
+    for (float count : minimumCounts) {
+        if (!std::isfinite(count) || count <= 1.0f) return eValueError;
+    }
+    for (const auto &scores : *candidateScores) {
+        if (scores.isDecoy != candidateScores->first().isDecoy) return eValueError;
+    }
+    const int firstView = std::min_element(minimumCounts.constBegin(), minimumCounts.constEnd())
+                          - minimumCounts.constBegin();
+    MatriciesAndVecs matrices;
+    for (int step = 0; step < minimumCounts.size(); ++step) {
+        // Prepare the least restrictive view first, but preserve output slots.
+        const int view = step == 0 ? firstView : (step <= firstView ? step - 1 : step);
+        CandidateScores &scores = (*candidateScores)[view];
+        FrameIndex first, last;
+        e = initializeCandidate(ms2Ions, targetDecoyCandidatePair, &scores, &first, &last); ree;
+        if (step == 0) {
+            e = initMatricesdAndVecs(targetDecoyCandidatePair, ms2Ions, first, last,
+                                    minimumCounts.at(view), &matrices); ree;
+        } else {
+            e = updateIntegrationVectors(minimumCounts.at(view), &matrices); ree;
+            // Preserve the original path if the first view skipped its 45%
+            // matrix and an alternate view needs it.
+            if (matrices.intensityMatrix45.size() == 0 && !matrices.productVec.isZero(0.0f)) {
+                e = initMatricesdAndVecs(targetDecoyCandidatePair, ms2Ions, first, last,
+                                        minimumCounts.at(view), &matrices); ree;
+            }
+        }
+        e = calculatePreparedScores(ms2Ions, weights, targetDecoyCandidatePair,
+                                    matrices, &scores); ree;
+    }
+    ERR_RETURN
+}
+
+Err CandidateScorertron::calculatePreparedScores(
+    const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair, const MatriciesAndVecs &matriciesAndVecs,
+    CandidateScores *candidateScores) const {
+    ERR_INIT
+    const bool collectScoringDiagnostics = m_pythiaParameters.writeFullCandidateDebug;
     if (matriciesAndVecs.intensityMatrix100.size() == 0
         || MathUtils::tZero(matriciesAndVecs.intensityMatrix100.maxCoeff())) {
         if (collectScoringDiagnostics) {
@@ -1510,6 +1558,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
+        float minPeakCount,
         MatriciesAndVecs *matriciesAndVecs
         ) const {
 
@@ -1591,24 +1640,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
 
         matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
-        e = buildIntegrationVector(
-            *matriciesAndVecs,
-            d_ptr->m_kernelMs2,
-            m_minPeakCount,
-            m_pythiaParameters.maxAnchorColumnIndex,
-            &matriciesAndVecs->ionCountVec
-            ); ree;
-
-        matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
-                                     * matriciesAndVecs->intensityVec.array();
-
-		constexpr int smoothCountOverride = 3;
-		for (int i = 0; i < smoothCountOverride; ++i) {
-			matriciesAndVecs->productVec = EigenKernelUtils::convolveVectorWithKernel(
-				matriciesAndVecs->productVec,
-				d_ptr->m_kernelMs2
-				);
-		}
+        e = updateIntegrationVectors(minPeakCount, matriciesAndVecs); ree;
 
         // An all-zero product yields no integration; the 45% matrix is then
         // never read. Keep the preceding arithmetic unchanged.
@@ -1628,6 +1660,31 @@ Err CandidateScorertron::initMatricesdAndVecs(
 
         ERR_RETURN
     }
+
+Err CandidateScorertron::updateIntegrationVectors(
+    float minPeakCount, MatriciesAndVecs *matriciesAndVecs) const {
+    ERR_INIT
+        e = buildIntegrationVector(
+            *matriciesAndVecs,
+            d_ptr->m_kernelMs2,
+            minPeakCount,
+            m_pythiaParameters.maxAnchorColumnIndex,
+            &matriciesAndVecs->ionCountVec
+            ); ree;
+
+        matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
+                                     * matriciesAndVecs->intensityVec.array();
+
+		constexpr int smoothCountOverride = 3;
+		for (int i = 0; i < smoothCountOverride; ++i) {
+			matriciesAndVecs->productVec = EigenKernelUtils::convolveVectorWithKernel(
+				matriciesAndVecs->productVec,
+				d_ptr->m_kernelMs2
+				);
+		}
+
+    ERR_RETURN
+}
 
 Err CandidateScorertron::setPredictedFrameIndexes(
     float iRT,

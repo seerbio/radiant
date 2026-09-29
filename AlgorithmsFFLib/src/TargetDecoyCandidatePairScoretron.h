@@ -84,7 +84,9 @@ public:
         const QVector<MsScanInfo> &msScanInfos,
         const QVector<float> &weights,
         QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
-        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec,
+        const QVector<float> &additionalMinPeakCounts = {},
+        QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> *additionalScores = nullptr
         ) const;
 
     /**

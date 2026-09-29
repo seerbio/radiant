@@ -801,7 +801,30 @@ Err PythiaDIAFFWorkflow::processFileImpl(
     QScopedValueRollback<int> restoreMinimum(m_pythiaParameters.mainMinSimultaneousFragments);
     QScopedValueRollback<int> restoreShared(m_pythiaParameters.ionsSharedToReject);
     QScopedValueRollback<QString> restoreOutput(m_outputFolderPath);
-    for (const auto &view : views) {
+    QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> preparedScores(views.size());
+    if (views.size() > 1) {
+        m_pythiaParameters.mainMinSimultaneousFragments = views.first().minimumFragments;
+        m_pythiaParameters.ionsSharedToReject = views.first().sharedFragments;
+        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+        const QVector<MsScanInfo> scanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
+        const int threads = scanInfos.size() < m_pythiaParameters.threadCount
+            ? std::min(scanInfos.size() * 2, m_pythiaParameters.threadCount)
+            : m_pythiaParameters.threadCount;
+        QVector<float> additionalCounts;
+        for (int i = 1; i < views.size(); ++i)
+            additionalCounts.push_back(static_cast<float>(views.at(i).minimumFragments) - .1f);
+        QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> additionalScores;
+        m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Scoring candidate views with shared signal matrices";
+        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            m_ppmOptimizationFeatures, 12, m_msCalibratomatic,
+            static_cast<float>(views.first().minimumFragments) - .1f, threads, false,
+            scanInfos, m_weights, &m_targetDecoyPairPntrs, &preparedScores[0],
+            additionalCounts, &additionalScores); ree;
+        for (int i = 1; i < views.size(); ++i) preparedScores[i].swap(additionalScores[i - 1]);
+    }
+    for (int viewIndex = 0; viewIndex < views.size(); ++viewIndex) {
+        const auto &view = views.at(viewIndex);
         m_pythiaParameters.mainMinSimultaneousFragments = view.minimumFragments;
         m_pythiaParameters.ionsSharedToReject = view.sharedFragments;
         m_outputFolderPath = view.outputDirectory;
@@ -809,17 +832,21 @@ Err PythiaDIAFFWorkflow::processFileImpl(
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "Starting candidate view" << view.minimumFragments << view.sharedFragments
                  << view.outputDirectory;
-        e = processCalibratedFile(&msReaderPointerAcc); ree;
+        e = processCalibratedFile(&msReaderPointerAcc,
+                                  views.size() > 1 ? &preparedScores[viewIndex] : nullptr); ree;
     }
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::processCalibratedFile(const MsReaderPointerAcc *msReaderPointerAcc) {
+Err PythiaDIAFFWorkflow::processCalibratedFile(
+    const MsReaderPointerAcc *msReaderPointerAcc,
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *preparedScores) {
     ERR_INIT
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
         msReaderPointerAcc,
-        &targetCountBelowFDRThreshold
+        &targetCountBelowFDRThreshold,
+        preparedScores
      ); ree;
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
@@ -1146,7 +1173,8 @@ Err PythiaDIAFFWorkflow::rescoreTimsFilteredCandidatesForNeuralNet(
 
 Err PythiaDIAFFWorkflow::mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
-        int *targetCountBelowFDRThresholdOnePercent
+        int *targetCountBelowFDRThresholdOnePercent,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *preparedScores
         ) {
 
     ERR_INIT
@@ -1183,7 +1211,11 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     const float minPeakCount = msReaderPointerAcc->ptr->isTIMS()
         ? 2.9f : static_cast<float>(m_pythiaParameters.mainMinSimultaneousFragments) - .1f;
     m_candidateScorePairs.clear();
-    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+    if (preparedScores != nullptr) {
+        m_candidateScorePairs.swap(*preparedScores);
+        preparedScores->squeeze();
+    } else {
+        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             m_ppmOptimizationFeatures,
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
@@ -1195,6 +1227,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             &m_targetDecoyPairPntrs,
             &m_candidateScorePairs
             ); ree
+    }
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
 

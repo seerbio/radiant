@@ -15,6 +15,7 @@
 #include <QtConcurrent/QtConcurrent>
 
 #include <QSet>
+#include <QSharedPointer>
 
 #include <algorithm>
 #include <cmath>
@@ -53,6 +54,8 @@ public:
     TurboXIC *turboXicMS2 = nullptr;
     MsFrame *msFrameMS1 = nullptr;
     float minPeakCount = -1.0;
+    QVector<float> additionalMinPeakCounts;
+    QSharedPointer<QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> additionalScores;
     QMap<int, QVector<float>> averagineTable;
     QVector<float> weights;
     QVector<Features> features;
@@ -810,6 +813,11 @@ namespace {
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> allCandidateScores;
             allCandidateScores.reserve(targetDecoyPointers.size() * 2);
             quint64 zeroTargetDecoyScorePairs = 0;
+            QVector<float> fragmentThresholds = {pi.minPeakCount};
+            fragmentThresholds.append(pi.additionalMinPeakCounts);
+            if (pi.additionalScores) {
+                for (auto &scores : *pi.additionalScores) scores.reserve(targetDecoyPointers.size());
+            }
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
@@ -931,22 +939,30 @@ namespace {
                 }
 
                 CandidateScores candidateScoresTarget;
-                candidateScoresTarget.isDecoy = false;
-                e = candidateScorertron.calculateScores(
-                        ms2TargetIons,
-                        pi.weights,
-                        tdcp,
-                        &candidateScoresTarget
-                        ); rree;
-
                 CandidateScores candidateScoresDecoy;
-                candidateScoresDecoy.isDecoy = true;
-                e = candidateScorertron.calculateScores(
-                        ms2DecoyIons,
-                        pi.weights,
-                        tdcp,
-                        &candidateScoresDecoy
-                        ); rree;
+                if (!pi.additionalMinPeakCounts.isEmpty()) {
+                    QVector<CandidateScores> targets(fragmentThresholds.size());
+                    QVector<CandidateScores> decoys(fragmentThresholds.size());
+                    for (auto &scores : decoys) scores.isDecoy = true;
+                    e = candidateScorertron.calculateScoresForFragmentThresholds(
+                        ms2TargetIons, pi.weights, tdcp, fragmentThresholds, &targets); rree;
+                    e = candidateScorertron.calculateScoresForFragmentThresholds(
+                        ms2DecoyIons, pi.weights, tdcp, fragmentThresholds, &decoys); rree;
+                    candidateScoresTarget = targets.first();
+                    candidateScoresDecoy = decoys.first();
+                    for (int view = 1; view < fragmentThresholds.size(); ++view) {
+                        if (MathUtils::tZero(targets.at(view).featuresArray[CosineSimSum100])
+                            && MathUtils::tZero(decoys.at(view).featuresArray[CosineSimSum100])) continue;
+                        (*pi.additionalScores)[view - 1].push_back({targets.at(view), decoys.at(view)});
+                    }
+                } else {
+                    candidateScoresTarget.isDecoy = false;
+                    e = candidateScorertron.calculateScores(
+                        ms2TargetIons, pi.weights, tdcp, &candidateScoresTarget); rree;
+                    candidateScoresDecoy.isDecoy = true;
+                    e = candidateScorertron.calculateScores(
+                        ms2DecoyIons, pi.weights, tdcp, &candidateScoresDecoy); rree;
+                }
 
                 if (
                     MathUtils::tZero(candidateScoresTarget.featuresArray[CosineSimSum100])
@@ -1105,7 +1121,9 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         const QVector<MsScanInfo> &msScanInfos,
         const QVector<float> &weights,
         QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
-        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec,
+        const QVector<float> &additionalMinPeakCounts,
+        QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> *additionalScores
         ) const {
 
     ERR_INIT
@@ -1131,6 +1149,19 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             targetDecoyCandidateAllPntrs,
             &parallelInputs
             ); ree;
+
+    if (!additionalMinPeakCounts.isEmpty()) {
+        if (additionalScores == nullptr || m_msReaderPointerAcc->ptr->isTIMS()) return eValueError;
+        for (float count : additionalMinPeakCounts) {
+            if (!std::isfinite(count) || count <= 1.0f) return eValueError;
+        }
+        additionalScores->clear();
+        additionalScores->resize(additionalMinPeakCounts.size());
+        for (auto &input : parallelInputs) {
+            input.additionalMinPeakCounts = additionalMinPeakCounts;
+            input.additionalScores = decltype(input.additionalScores)::create(additionalMinPeakCounts.size());
+        }
+    }
 
     const bool useTimsMainThreadLimit = m_msReaderPointerAcc->ptr->isTIMS()
         && targetDecoyCandidateAllPntrs != nullptr
@@ -1188,6 +1219,17 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         }
     }
 #endif
+
+    if (!additionalMinPeakCounts.isEmpty()) {
+        // Match the primary result's tranche, target and candidate ordering.
+        for (const auto &tranche : parallelInputsTranched) {
+            for (const auto &input : tranche) {
+                for (int view = 0; view < additionalMinPeakCounts.size(); ++view) {
+                    (*additionalScores)[view].append(input.additionalScores->at(view));
+                }
+            }
+        }
+    }
 
     ERR_RETURN
 }
