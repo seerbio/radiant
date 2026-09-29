@@ -34,6 +34,7 @@ SET(TEST_CLASSES
         MsCalibratomaticTests
         MsFrameTests
         MsUtilsTests
+        PreparedSpectrumTests
         PeakIntegratomaticTests
         PostNeuralNetCompetitionTests
         QuanTransitionRefinertronTests

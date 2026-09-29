@@ -37,6 +37,7 @@ public:
     Err init(const PythiaParameters &pythiaParameters);
     void resetDiagnostics();
     [[nodiscard]] QString scoringDiagnosticsSummary(const MzTargetKey &mzTargetKey) const;
+    QVector<QPointF> sortedScanPoints(ScanNumber scanNumber, const ScanPoints &points);
 
     Eigen::VectorX<float> m_kernelIntegration;
     Eigen::VectorX<float> m_kernelMs2;
@@ -60,6 +61,10 @@ public:
 
 private:
     PythiaParameters m_pythiaParameters;
+    // Each scorer belongs to one worker and an immutable target frame. Keep
+    // at most 16 MiB of converted observations; init invalidates this cache.
+    std::unordered_map<ScanNumber, QVector<QPointF>> m_sortedScans;
+    std::size_t m_cachedPointCount = 0;
 
 };
 
@@ -72,6 +77,8 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_pythiaParameters = pythiaParameters;
+    m_sortedScans.clear();
+    m_cachedPointCount = 0;
 
     constexpr int order = 1;
     constexpr int derivative = 0;
@@ -102,6 +109,34 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
     m_kernelIntegration = kernelIntegrationVec;
 
     ERR_RETURN
+}
+
+QVector<QPointF> CandidateScorertron::Private::sortedScanPoints(
+    ScanNumber scanNumber, const ScanPoints &points) {
+    const auto found = m_sortedScans.find(scanNumber);
+    if (found != m_sortedScans.end()) {
+        return found->second;
+    }
+
+    QVector<QPointF> sorted;
+    sorted.reserve(points.size());
+    for (const ScanPoint &point : points) {
+        sorted.push_back(QPointF(static_cast<double>(point.x()),
+                                 static_cast<double>(point.y())));
+    }
+    // Use the original conversion and sort, including its equal-mass order.
+    std::sort(sorted.begin(), sorted.end(),
+              [](const QPointF &left, const QPointF &right) { return left.x() < right.x(); });
+    constexpr std::size_t maxCachedPoints = 16 * 1024 * 1024 / sizeof(QPointF);
+    if (static_cast<std::size_t>(sorted.size()) <= maxCachedPoints) {
+        if (m_cachedPointCount + sorted.size() > maxCachedPoints) {
+            m_sortedScans.clear();
+            m_cachedPointCount = 0;
+        }
+        m_cachedPointCount += sorted.size();
+        m_sortedScans.emplace(scanNumber, sorted);
+    }
+    return sorted;
 }
 
 void CandidateScorertron::Private::resetDiagnostics() {
@@ -3769,7 +3804,7 @@ namespace {
     }
 
     Err extractFullTheoreticalPointsFromScan(
-        const ScanPoints* scanPoints,
+        const QVector<QPointF> &sortedScanPoints,
         const QVector<MS2Ion> &ms2IonsTheoritical,
         double ms2ExtractionWidthPPM,
         QVector<QPair<QPointF, MS2Ion>> *foundPointVsMS2Ions
@@ -3777,15 +3812,8 @@ namespace {
 
         ERR_INIT
 
-        QVector<QPointF> scanPointsQF;
-        std::transform(
-            scanPoints->begin(),
-            scanPoints->end(),
-            std::back_inserter(scanPointsQF),
-            [](const ScanPoint& scanPoint){return QPointF(static_cast<double>(scanPoint.x()), static_cast<double>(scanPoint.y()));}
-            );
-
         QVector<double> mzVals;
+        mzVals.reserve(ms2IonsTheoritical.size());
         std::transform(
             ms2IonsTheoritical.begin(),
             ms2IonsTheoritical.end(),
@@ -3793,8 +3821,8 @@ namespace {
             [](const MS2Ion& ms2Ion){return static_cast<double>(ms2Ion.mz);}
             );
 
-        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromPoints(
-            scanPointsQF,
+        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromSortedPoints(
+            sortedScanPoints,
             mzVals,
             ms2ExtractionWidthPPM,
             true
@@ -3906,6 +3934,8 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     ERR_INIT
 
     const ScanPoints* scanPoints = m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber);
+    const QVector<QPointF> sortedScanPoints = d_ptr->sortedScanPoints(
+        candidateScores->scanNumber, *scanPoints);
 
     const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
                                      ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
@@ -3921,7 +3951,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
 
     QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
     e = extractFullTheoreticalPointsFromScan(
-        scanPoints,
+        sortedScanPoints,
         ms2IonsTheoritical,
         m_pythiaParameters.ms2ExtractionWidthPPM,
         &foundPointVsMS2Ions

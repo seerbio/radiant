@@ -4,6 +4,7 @@
 
 #include <QtTest/QtTest>
 #include <cmath>
+#include <cstring>
 
 class CandidateScorertronRegressionTests : public QObject {
     Q_OBJECT
@@ -162,6 +163,44 @@ void CandidateScorertronRegressionTests::preservesMs1SignalAcrossSamplingRates()
     QVERIFY(result.featuresArray.at(Ms1IntensityFound100) > 0.0f);
     QVERIFY(result.featuresArray.at(CosineSim100MS1) > minimumCosine);
     QVERIFY(result.featuresArray.at(CosineSim100MS1) < maximumCosine);
+
+    // Repeated candidates reuse the same scan without changing any feature.
+    CandidateScores repeated;
+    QCOMPARE(scorer.calculateScores(pair.ms2IonsTarget(),
+                                   DiscriminantScoretron::defaultWeights(features),
+                                   &pair, &repeated), eNoError);
+    QCOMPARE(repeated.featuresArray.size(), result.featuresArray.size());
+    QCOMPARE(std::memcmp(repeated.featuresArray.constData(), result.featuresArray.constData(),
+                         result.featuresArray.size() * sizeof(float)), 0);
+    QCOMPARE(repeated.scanNumber, result.scanNumber);
+
+    // Reinitializing the same scorer must discard spectra from the prior
+    // frame, even when scan numbers and underlying point addresses recur.
+    for (auto it = ms2Scans.begin(); it != ms2Scans.end(); ++it) {
+        it.value()[9].ry() *= .25f;
+    }
+    XICPeakManager changedPeaks;
+    QCOMPARE(changedPeaks.init(ms2Frame, {&pair}, 12, 20.0f), eNoError);
+    CandidateScorertron freshScorer;
+    for (auto *item : {&scorer, &freshScorer}) {
+        QCOMPARE(item->init(parameters, MsCalibratomatic(), "500000", 12, 3.9f,
+                            2.0f, {{1000, {1.0f, 0.5f, 0.25f, 0.125f}}}, features,
+                            false, &changedPeaks, &ms2Frame, &ms1Xic, &ms1Frame,
+                            nullptr, nullptr), eNoError);
+    }
+    CandidateScores reinitialized, fresh;
+    QCOMPARE(scorer.calculateScores(pair.ms2IonsTarget(),
+                                   DiscriminantScoretron::defaultWeights(features),
+                                   &pair, &reinitialized), eNoError);
+    QCOMPARE(freshScorer.calculateScores(pair.ms2IonsTarget(),
+                                        DiscriminantScoretron::defaultWeights(features),
+                                        &pair, &fresh), eNoError);
+    QCOMPARE(reinitialized.featuresArray.size(), fresh.featuresArray.size());
+    QCOMPARE(std::memcmp(reinitialized.featuresArray.constData(), fresh.featuresArray.constData(),
+                         fresh.featuresArray.size() * sizeof(float)), 0);
+    QVERIFY(std::memcmp(reinitialized.featuresArray.constData(), result.featuresArray.constData(),
+                        result.featuresArray.size() * sizeof(float)) != 0);
+    QCOMPARE(reinitialized.scanNumber, fresh.scanNumber);
 }
 
 QTEST_MAIN(CandidateScorertronRegressionTests)
