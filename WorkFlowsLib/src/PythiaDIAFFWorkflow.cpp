@@ -389,7 +389,7 @@ namespace {
         const QVector<CandidateScores*> &candidateScoresPntrs,
         bool writeShortReport,
         const QString &outputFolderPath,
-        MsReaderPointerAcc *msReaderPointerAcc
+        const MsReaderPointerAcc *msReaderPointerAcc
         ) {
         ERR_INIT
 
