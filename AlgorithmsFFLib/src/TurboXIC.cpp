@@ -66,9 +66,13 @@ public:
 private:
 
     void finishInit(std::vector<rTreePoint> &cloudLoader);
+    void prepareMassBins();
 
     RTree *m_rTree;
     std::vector<IndexedPoint> m_pointsByMz;
+    static constexpr double massBinScale = 8.0;
+    double m_massBinBase = 0.0;
+    std::vector<std::uint32_t> m_massBinStarts;
 
 };
 
@@ -159,6 +163,7 @@ void TurboXIC::Private::finishInit(std::vector<rTreePoint> &cloudLoader) {
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
     m_pointsByMz.clear();
+    m_massBinStarts.clear();
     if (cloudLoader.empty()
         || cloudLoader.size() > std::numeric_limits<std::uint32_t>::max()
         || !std::all_of(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &point) {
@@ -181,6 +186,28 @@ void TurboXIC::Private::finishInit(std::vector<rTreePoint> &cloudLoader) {
         [](const IndexedPoint &left, const IndexedPoint &right) {
             return left.mz < right.mz;
         });
+    prepareMassBins();
+}
+
+void TurboXIC::Private::prepareMassBins() {
+    // Power-of-two scaling is exact for stored float masses. The directory
+    // only bounds the existing binary searches; it never rounds a query or
+    // changes which observations are selected.
+    m_massBinBase = std::floor(static_cast<double>(m_pointsByMz.front().mz) * massBinScale);
+    const double lastBin = std::floor(static_cast<double>(m_pointsByMz.back().mz) * massBinScale);
+    const double span = lastBin - m_massBinBase;
+    constexpr std::size_t maxBins = 65536;
+    if (!(span >= 0.0 && span < maxBins)) return;
+    const std::size_t binCount = static_cast<std::size_t>(span) + 1;
+    m_massBinStarts.resize(binCount + 1);
+    std::size_t point = 0;
+    for (std::size_t bin = 0; bin < binCount; ++bin) {
+        while (point < m_pointsByMz.size()
+               && std::floor(static_cast<double>(m_pointsByMz[point].mz) * massBinScale)
+                      - m_massBinBase < static_cast<double>(bin)) ++point;
+        m_massBinStarts[bin] = static_cast<std::uint32_t>(point);
+    }
+    m_massBinStarts[binCount] = static_cast<std::uint32_t>(m_pointsByMz.size());
 }
 
 XICPoints TurboXIC::Private::extractPointsXIC(
@@ -194,11 +221,25 @@ XICPoints TurboXIC::Private::extractPointsXIC(
 
     if (!m_pointsByMz.empty() && std::isfinite(mzMin) && std::isfinite(mzMax)
         && mzMin <= mzMax) {
+        auto rangeBegin = m_pointsByMz.cbegin();
+        auto rangeEnd = m_pointsByMz.cend();
+        if (!m_massBinStarts.empty()) {
+            const std::size_t binCount = m_massBinStarts.size() - 1;
+            const auto clampBin = [binCount](double bin) -> std::size_t {
+                if (bin <= 0.0) return 0;
+                if (bin >= static_cast<double>(binCount)) return binCount;
+                return static_cast<std::size_t>(bin);
+            };
+            const double lowerBin = std::floor(static_cast<double>(mzMin) * massBinScale) - m_massBinBase;
+            const double upperBin = std::floor(static_cast<double>(mzMax) * massBinScale) - m_massBinBase + 1.0;
+            rangeBegin += m_massBinStarts[clampBin(lowerBin)];
+            rangeEnd = m_pointsByMz.cbegin() + m_massBinStarts[clampBin(upperBin)];
+        }
         const auto first = std::lower_bound(
-            m_pointsByMz.begin(), m_pointsByMz.end(), mzMin,
+            rangeBegin, rangeEnd, mzMin,
             [](const IndexedPoint &point, float mass) { return point.mz < mass; });
         const auto last = std::upper_bound(
-            first, m_pointsByMz.end(), mzMax,
+            first, rangeEnd, mzMax,
             [](float mass, const IndexedPoint &point) { return mass < point.mz; });
 
         // Broad queries are cheaper in tree traversal order. Narrow mass

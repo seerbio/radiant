@@ -62,7 +62,7 @@ public:
 private:
     PythiaParameters m_pythiaParameters;
     // Each scorer belongs to one worker and an immutable target frame. Keep
-    // at most 16 MiB of converted observations; init invalidates this cache.
+    // at most 64 MiB of converted observations; init invalidates this cache.
     std::unordered_map<ScanNumber, QVector<QPointF>> m_sortedScans;
     std::size_t m_cachedPointCount = 0;
 
@@ -127,7 +127,7 @@ QVector<QPointF> CandidateScorertron::Private::sortedScanPoints(
     // Use the original conversion and sort, including its equal-mass order.
     std::sort(sorted.begin(), sorted.end(),
               [](const QPointF &left, const QPointF &right) { return left.x() < right.x(); });
-    constexpr std::size_t maxCachedPoints = 16 * 1024 * 1024 / sizeof(QPointF);
+    constexpr std::size_t maxCachedPoints = 64 * 1024 * 1024 / sizeof(QPointF);
     if (static_cast<std::size_t>(sorted.size()) <= maxCachedPoints) {
         if (m_cachedPointCount + sorted.size() > maxCachedPoints) {
             m_sortedScans.clear();

@@ -802,7 +802,8 @@ Err PythiaDIAFFWorkflow::processFileImpl(
     QScopedValueRollback<int> restoreShared(m_pythiaParameters.ionsSharedToReject);
     QScopedValueRollback<QString> restoreOutput(m_outputFolderPath);
     QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> preparedScores(views.size());
-    if (views.size() > 1) {
+    const bool shareViewPreparation = views.size() == 2;
+    if (shareViewPreparation) {
         m_pythiaParameters.mainMinSimultaneousFragments = views.first().minimumFragments;
         m_pythiaParameters.ionsSharedToReject = views.first().sharedFragments;
         e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
@@ -833,7 +834,7 @@ Err PythiaDIAFFWorkflow::processFileImpl(
                  << "Starting candidate view" << view.minimumFragments << view.sharedFragments
                  << view.outputDirectory;
         e = processCalibratedFile(&msReaderPointerAcc,
-                                  views.size() > 1 ? &preparedScores[viewIndex] : nullptr); ree;
+                                  shareViewPreparation ? &preparedScores[viewIndex] : nullptr); ree;
     }
     ERR_RETURN
 }
