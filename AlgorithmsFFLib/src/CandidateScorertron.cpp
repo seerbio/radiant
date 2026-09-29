@@ -24,6 +24,7 @@
 #include <cmath>
 #include <numeric>
 #include <unordered_map>
+#include <utility>
 
 class Q_DECL_HIDDEN CandidateScorertron::Private {
 public:
@@ -2128,7 +2129,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         //     stopThresholdFraction
         //     );
 
-    	bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = std::move(matBlock1p5X);
     	const Eigen::VectorX<float> integrationVecSegment1p5X = matriciesAndVecs.productVec.segment(
 			frameIndex1p5XMin,
 			peakLength1p5X
@@ -2140,7 +2141,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestCorrelationResultPii.peakCorrelationsWindow1p5X
             ); ree;
 
-    	bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = matBlock2X;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = std::move(matBlock2X);
 		const Eigen::VectorX<float> integrationVecSegment2X = matriciesAndVecs.productVec.segment(
 			frameIndex2XMin,
 			peakLength2X
@@ -2175,7 +2176,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestCorrelationResultPii.peakCorrelations45
             ); ree;
 
-        bestCorrelationResults->push_back(bestCorrelationResultPii);
+        bestCorrelationResults->push_back(std::move(bestCorrelationResultPii));
 
 // #define OUTPUT_MATS
 #ifdef OUTPUT_MATS
