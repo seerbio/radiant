@@ -1,4 +1,5 @@
 #include "MsFrame.h"
+#include "MsFrameLookupReference.h"
 
 #include "MsReaderParquet.h"
 
@@ -30,6 +31,8 @@ private slots:
     void scanNumberFromScanTimeTest();
     void frameIndexFromScanNumberTest();
     void getScanPointsByScanNumberTest();
+    void cachedFrameLookupsMatchLegacy_data();
+    void cachedFrameLookupsMatchLegacy();
 
 private:
 
@@ -292,6 +295,70 @@ void MsFrameTests::getScanPointsByScanNumberTest() {
 
 }
 
+
+void MsFrameTests::cachedFrameLookupsMatchLegacy_data() {
+    QTest::addColumn<int>("count");
+    QTest::addColumn<int>("kind");
+    for (int count : {1, 2, 3, 15, 16, 31, 257, 1423}) {
+        for (int kind = 0; kind < 9; ++kind) {
+            const QByteArray name = QByteArray::number(count) + "-" + QByteArray::number(kind);
+            QTest::newRow(name.constData()) << count << kind;
+        }
+    }
+}
+
+void MsFrameTests::cachedFrameLookupsMatchLegacy() {
+    QFETCH(int, count);
+    QFETCH(int, kind);
+    MsFrame actual;
+    MsFrameLookupReference expected;
+    for (int initialization = 0; initialization < 2; ++initialization) {
+        auto inputs = makeFrameLookupInputs(initialization ? count / 2 + 1 : count,
+                                           initialization ? (kind + 4) % 9 : kind);
+        QMap<ScanNumber, ScanPoints *> pointers;
+        for (auto it = inputs.points.begin(); it != inputs.points.end(); ++it)
+            pointers.insert(it.key(), &it.value());
+        expected.init(inputs.points.keys(), inputs.times);
+        QCOMPARE(actual.init(pointers, inputs.times), eNoError);
+        QCOMPARE(actual.scanCount(), expected.scanCount());
+        for (int frame : {std::numeric_limits<int>::min(), -10, -1, 0, 1,
+                          expected.scanCount() - 1, expected.scanCount(),
+                          expected.scanCount() + 1, std::numeric_limits<int>::max()}) {
+            QCOMPARE(actual.scanNumberFromFrameIndex(frame), expected.scanNumberFromFrameIndex(frame));
+            QCOMPARE(scanTimeBits(actual.scanTimeFromFrameIndex(frame)),
+                     scanTimeBits(expected.scanTimeFromFrameIndex(frame)));
+        }
+        for (int frame = 0; frame < expected.scanCount(); ++frame) {
+            QCOMPARE(actual.scanNumberFromFrameIndex(frame), expected.scanNumberFromFrameIndex(frame));
+            QCOMPARE(scanTimeBits(actual.scanTimeFromFrameIndex(frame)),
+                     scanTimeBits(expected.scanTimeFromFrameIndex(frame)));
+        }
+        for (auto it = inputs.times.begin(); it != inputs.times.end(); ++it) {
+            for (std::int64_t number : {std::int64_t(it.key()) - 1, std::int64_t(it.key()),
+                                       std::int64_t(it.key()) + 1}) {
+                if (number < std::numeric_limits<int>::min() || number > std::numeric_limits<int>::max())
+                    continue;
+                QCOMPARE(scanTimeBits(actual.scanTimeFromScanNumber(int(number))),
+                         scanTimeBits(expected.scanTimeFromScanNumber(int(number))));
+            }
+            for (float query : {it.value(), std::nextafter(it.value(), -std::numeric_limits<float>::infinity()),
+                                std::nextafter(it.value(), std::numeric_limits<float>::infinity()),
+                                it.value() - .5f, it.value() + .5f}) {
+                FrameIndex frame = -999;
+                QCOMPARE(actual.frameIndexFromScanTime(query, &frame), eNoError);
+                QCOMPARE(frame, expected.frameIndexFromScanTime(query));
+            }
+        }
+        for (float query : {-1e30f, 1e30f, .5f / 60.f, -0.f, 0.f,
+                            std::numeric_limits<float>::infinity(),
+                            -std::numeric_limits<float>::infinity(),
+                            std::numeric_limits<float>::quiet_NaN()}) {
+            FrameIndex frame = -999;
+            QCOMPARE(actual.frameIndexFromScanTime(query, &frame), eNoError);
+            QCOMPARE(frame, expected.frameIndexFromScanTime(query));
+        }
+    }
+}
 
 QTEST_MAIN(MsFrameTests)
 
