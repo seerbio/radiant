@@ -85,6 +85,30 @@ The output directory must be new. Views within one run must have the same
 raw-source hash; all runs must have matching library and FASTA hashes.
 The same raw source cannot be repeated under multiple run names.
 
+For combined rescoring, add `candidateBundleOnly = true` under
+`[NeuralNetParams]` to stop each search after the candidate bundle has been
+written. This optional mode requires a nonzero bundle limit and does not
+write an ordinary per-view `.radiantDIA` report. The exported candidate
+payload and subsequent `RadiantRescore` inputs are unchanged. A bundle
+without eligible candidates is reported as an error in this mode.
+
+The cohort JSON also accepts an optional integer `threads` from 1 to 64
+(default 3). It controls the number of independent neural models trained
+concurrently. Seeds, training rows, family folds, model settings, and
+ensemble summation order are unchanged. For twelve available CPU workers,
+use `"threads": 12`; all three folds and four ensemble models can then
+train concurrently.
+
+`RadiantDIA --candidate-cohort cohort.json` can generate these bundles in one
+process. See `configs/candidate-cohort.example.json`. Its base configuration
+must enable `candidateBundleOnly`; each view changes only the minimum and
+shared fragment counts. Paths are relative to the cohort JSON. Output
+directories must be new. Parsed library rows are reused across files, and
+raw loading, calibration and tolerance fitting are reused between views of
+one file. Every view still performs its own full search and competition.
+Each file has fresh mutable workflow state. Library preparation is part of
+the command's runtime and must be included in performance comparisons.
+
 The fixed combined policy trains three family folds with four networks each,
 24 epochs, log-intensity transformation and deterministic row shuffling. It
 uses100000 candidates per run for the per-run and pooled original models,

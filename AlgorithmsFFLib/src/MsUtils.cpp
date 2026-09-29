@@ -15,15 +15,23 @@ ExtractPoints MsUtils::extractPointsFromPoints(
         double extractionPPM
         ) {
 
+    QVector<QPointF> points = _points;
+    std::sort(points.begin(), points.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
+    return extractPointsFromSortedPoints(points, _pointsToExtract, extractionPPM);
+}
+
+ExtractPoints MsUtils::extractPointsFromSortedPoints(
+        const QVector<QPointF> &points,
+        const QVector<QPointF> &_pointsToExtract,
+        double extractionPPM
+        ) {
+
     ExtractPoints extractPointsOutput;
     extractPointsOutput.mzFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
     extractPointsOutput.intensityFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
 
     QVector<QPointF> pointsToExtract = _pointsToExtract;
     std::sort(pointsToExtract.begin(), pointsToExtract.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
-
-    QVector<QPointF> points = _points;
-    std::sort(points.begin(), points.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
 
     int currentExtractionIndex = 0;
     double extractionPointX = pointsToExtract.at(currentExtractionIndex).x();
@@ -88,6 +96,20 @@ QVector<QPointF> MsUtils::extractPointsFromPoints(
         bool removeZeroPoints
         ) {
 
+    QVector<QPointF> sortedPoints = points;
+    std::sort(sortedPoints.begin(), sortedPoints.end(),
+              [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
+    return extractPointsFromSortedPoints(
+            sortedPoints, extractionPoints, extractionPPM, removeZeroPoints);
+}
+
+QVector<QPointF> MsUtils::extractPointsFromSortedPoints(
+        const QVector<QPointF> &points,
+        const QVector<double> &extractionPoints,
+        double extractionPPM,
+        bool removeZeroPoints
+        ) {
+
     QVector<QPointF> extractQPoints;
     std::transform(
             extractionPoints.begin(),
@@ -96,7 +118,7 @@ QVector<QPointF> MsUtils::extractPointsFromPoints(
             [](double mz){return QPointF(mz, 1.0);}
     );
 
-    const ExtractPoints ep = extractPointsFromPoints(
+    const ExtractPoints ep = extractPointsFromSortedPoints(
             points,
             extractQPoints,
             extractionPPM

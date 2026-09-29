@@ -92,9 +92,18 @@ Err XICPeakManager:: getXIC(
     const float mzMin = mzVal - massTol;
     const float mzMax = mzVal + massTol;
 
-    const XICPoints xicPointsLocal = m_turboXic->extractPointsXIC(mzMin, mzMax);
-    *xicPoints = xicPointsLocal;
+    *xicPoints = m_turboXic->extractPointsXIC(mzMin, mzMax);
 
     ERR_RETURN
 }
 
+Err XICPeakManager::getXIC(
+    float mzVal, FrameIndex frameMin, FrameIndex frameMax, XICPoints *xicPoints) const {
+    ERR_INIT
+    e = ErrorUtils::isTrue(m_isInit); ree;
+    e = ErrorUtils::isAboveThreshold(mzVal, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
+    const float massTol = MathUtils::calculatePPM(mzVal, m_ppmTolerance);
+    *xicPoints = m_turboXic->extractPointsXIC(
+        mzVal - massTol, mzVal + massTol, frameMin, frameMax, false);
+    ERR_RETURN
+}

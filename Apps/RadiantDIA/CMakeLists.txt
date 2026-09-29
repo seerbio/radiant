@@ -12,11 +12,13 @@ FIND_PACKAGE(Qt5 COMPONENTS
 
 SET(SOURCE_FILES
         src/CommandLineParser.cpp
+        src/CandidateCohort.cpp
         main.cpp
      )
 
 SET(HEADER_FILES
         src/CommandLineParser.h
+        src/CandidateCohort.h
     )
 
 INCLUDE_DIRECTORIES(

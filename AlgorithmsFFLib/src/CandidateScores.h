@@ -1358,263 +1358,222 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         ERR_RETURN
     }
 
-    QMap<QString, QVariant> map() override {
-
+    // One field list serves the legacy row map and direct column writers.
+    template<typename Visitor>
+    void visitFields(Visitor &&visitor) const {
         using namespace CandidateScoresReaderRowNamespace;
+        visitor(COS_SIM_SUM_100, cosineSimSum100);
+        visitor(COS_SIM_SUM_100_GREATER_80, cosineSimSum100Greater80);
+        visitor(ALL_MAX_IND_CNT, allignedMaxIndexesCount);
+        visitor(COS_SIM_SUM_MS1_100, cosineSim100MS1);
+        visitor(COS_SIM_SPEC_CUBED, cosineSimSpectrumCubed);
+        visitor(KL_DIV_SPEC_CUBE_RT, klDivSpectrumCubeRoot);
+        visitor(COS_SIM_SUM_45, cosineSimSum45);
+        visitor(COS_SIM_SUM_TOP_6, cosineSimSumTop);
+        visitor(COS_SIM_SUM_BOTTOM_6, cosineSimSumBottom);
+        visitor(TOP_BOTTOM_RATIO, topBottomRatio);
+        visitor(TOP_BOTTOME_RATIO_NORM, topBottomRatioNorm);
+        visitor(CHARGE, charge);
+        visitor(MASS, mass);
+        visitor(SCAN_TIME_DELTA, scanTimeDelta);
+        visitor(SCAN_TIME_PD, scanTimePd);
+        visitor(SCAN_ION_CNT, scanIonCount);
+        visitor(MZ_NORM, mzNorm);
+        visitor(KL_DIV_SPEC, klDivSpectrum);
+        visitor(COSINE_SIM_SPEC, cosineSimSpectrum);
+        visitor(COSINE_SIM_SUM_MS1_45, cosineSim45MS1);
+        visitor(COSINE_SIM_SUM_MS1_PRE_MONO, cosineSim100MS1PreMono);
+        visitor(COSINE_SIM_SUM_MS1_ISO_1, cosineSim100MS1Iso1);
+        visitor(COSINE_SIM_SUM_MS1_ISO_2, cosineSim100MS1Iso2);
+        visitor(PEP_LEN_NORM, peptideLengthNorm);
+        visitor(SCAN_TIME_PRED, scanTimePredicted);
+        visitor(THEO_FRAG_CNT, theoFragmentCount);
+        visitor(TOT_INT_LOG, totalIntensityLog);
+        visitor(PEAK_RATIO_1, peakShapeRatio1);
+        visitor(PEAK_RATIO_2, peakShapeRatio2);
+        visitor(PEAK_RATIO_3, peakShapeRatio3);
+        visitor(SHADOW_COSINE_SIM_SUM, shadowsCosineSimSum);
+        visitor(IRT_PRED, iRtPredicted);
+        visitor(IRT_EMP, iRtEmpirical);
+        visitor(ION_MOBILITY_LIBRARY, ionMobilityLibrary);
+        visitor(ION_MOBILITY_FOUND, ionMobilityFound);
+        visitor(ION_MOBILITY_INDEX, ionMobilityIndex);
+        visitor(ION_MOBILITY_INDEX_START, ionMobilityIndexStart);
+        visitor(ION_MOBILITY_INDEX_END, ionMobilityIndexEnd);
+        visitor(ION_MOBILITY_DELTA, ionMobilityDelta);
+        visitor(ION_MOBILITY_DELTA_ABS, ionMobilityDeltaAbs);
+        visitor(ION_MOBILITY_PD_ABS, ionMobilityPdAbs);
+        visitor(MS2_ION_MOBILITY_WEIGHTED_DELTA, ms2IonMobilityWeightedDelta);
+        visitor(MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS, ms2IonMobilityWeightedDeltaAbs);
+        visitor(MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN, ms2IonMobilityApexDeltaAbsMean);
+        visitor(MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV, ms2IonMobilityApexDeltaAbsStDev);
+        visitor(MS2_ION_MOBILITY_MATCHED_ION_FRACTION, ms2IonMobilityMatchedIonFraction);
+        visitor(MS2_ION_MOBILITY_FWHM_MEAN, ms2IonMobilityFwhmMean);
+        visitor(MS2_ION_MOBILITY_FWHM_STDEV, ms2IonMobilityFwhmStDev);
+        visitor(COS_SIM_ANCH_1, cosineSimToAnchor1);
+        visitor(COS_SIM_ANCH_2, cosineSimToAnchor2);
+        visitor(COS_SIM_ANCH_3, cosineSimToAnchor3);
+        visitor(COS_SIM_ANCH_4, cosineSimToAnchor4);
+        visitor(COS_SIM_ANCH_5, cosineSimToAnchor5);
+        visitor(COS_SIM_ANCH_6, cosineSimToAnchor6);
+        visitor(COS_SIM_ANCH_7, cosineSimToAnchor7);
+        visitor(COS_SIM_ANCH_8, cosineSimToAnchor8);
+        visitor(COS_SIM_ANCH_9, cosineSimToAnchor9);
+        visitor(COS_SIM_ANCH_10, cosineSimToAnchor10);
+        visitor(COS_SIM_ANCH_11, cosineSimToAnchor11);
+        visitor(COS_SIM_ANCH_12, cosineSimToAnchor12);
+        visitor(MZ_FND_MEAN_1, mzFoundMean1);
+        visitor(MZ_FND_MEAN_2, mzFoundMean2);
+        visitor(MZ_FND_MEAN_3, mzFoundMean3);
+        visitor(MZ_FND_MEAN_4, mzFoundMean4);
+        visitor(MZ_FND_MEAN_5, mzFoundMean5);
+        visitor(MZ_FND_MEAN_6, mzFoundMean6);
+        visitor(MZ_FND_MEAN_7, mzFoundMean7);
+        visitor(MZ_FND_MEAN_8, mzFoundMean8);
+        visitor(MZ_FND_MEAN_9, mzFoundMean9);
+        visitor(MZ_FND_MEAN_10, mzFoundMean10);
+        visitor(MZ_FND_MEAN_11, mzFoundMean11);
+        visitor(MZ_FND_MEAN_12, mzFoundMean12);
+        visitor(INTS_FND_MAX_1, intensityFoundMax1);
+        visitor(INTS_FND_MAX_2, intensityFoundMax2);
+        visitor(INTS_FND_MAX_3, intensityFoundMax3);
+        visitor(INTS_FND_MAX_4, intensityFoundMax4);
+        visitor(INTS_FND_MAX_5, intensityFoundMax5);
+        visitor(INTS_FND_MAX_6, intensityFoundMax6);
+        visitor(INTS_FND_MAX_7, intensityFoundMax7);
+        visitor(INTS_FND_MAX_8, intensityFoundMax8);
+        visitor(INTS_FND_MAX_9, intensityFoundMax9);
+        visitor(INTS_FND_MAX_10, intensityFoundMax10);
+        visitor(INTS_FND_MAX_11, intensityFoundMax11);
+        visitor(INTS_FND_MAX_12, intensityFoundMax12);
+        visitor(AA_A, aminoAcidCountA);
+        visitor(AA_C, aminoAcidCountC);
+        visitor(AA_D, aminoAcidCountD);
+        visitor(AA_E, aminoAcidCountE);
+        visitor(AA_F, aminoAcidCountF);
+        visitor(AA_G, aminoAcidCountG);
+        visitor(AA_H, aminoAcidCountH);
+        visitor(AA_I, aminoAcidCountI);
+        visitor(AA_K, aminoAcidCountK);
+        visitor(AA_L, aminoAcidCountL);
+        visitor(AA_M, aminoAcidCountM);
+        visitor(AA_N, aminoAcidCountN);
+        visitor(AA_P, aminoAcidCountP);
+        visitor(AA_Q, aminoAcidCountQ);
+        visitor(AA_R, aminoAcidCountR);
+        visitor(AA_S, aminoAcidCountS);
+        visitor(AA_T, aminoAcidCountT);
+        visitor(AA_V, aminoAcidCountV);
+        visitor(AA_W, aminoAcidCountW);
+        visitor(AA_Y, aminoAcidCountY);
+        visitor(AA_B, aminoAcidCountB);
+        visitor(AA_J, aminoAcidCountJ);
+        visitor(AA_O, aminoAcidCountO);
+        visitor(AA_U, aminoAcidCountU);
+        visitor(AA_X, aminoAcidCountX);
+        visitor(AA_Z, aminoAcidCountZ);
+        visitor(MZ_FND_STDEV_1, mzFoundStDev1);
+        visitor(MZ_FND_STDEV_2, mzFoundStDev2);
+        visitor(MZ_FND_STDEV_3, mzFoundStDev3);
+        visitor(MZ_FND_STDEV_4, mzFoundStDev4);
+        visitor(MZ_FND_STDEV_5, mzFoundStDev5);
+        visitor(MZ_FND_STDEV_6, mzFoundStDev6);
+        visitor(TARG_KEY, targetKey);
+        visitor(PEP_STR_W_MODS, peptideStringWithMods);
+        visitor(PEP_STR_W_MODS_DECOY_OG, peptideStringWithModsDecoyOrigin);
+        visitor(PROT_GRP, proteinGroup);
+        visitor(IS_DECOY, isDecoy);
+        visitor(SCAN_NUM, scanNumber);
+        visitor(SCAN_TIME, scanTime);
+        visitor(SCAN_TIME_START, scanTimeStart);
+        visitor(SCAN_TIME_END, scanTimeEnd);
+        visitor(CLASS_SCR, classifierScore);
+        visitor(CLASS_FOLD, classifierFold);
+        visitor(DISC_SCR, discriminantScore);
+        visitor(Q_VAL, qValue);
+        visitor(DECOY_RATIO, decoyRatio);
+        visitor(PRECURSOR_Q_VAL, precursorQValue);
+        visitor(PEPTIDE_Q_VAL, peptideQValue);
+        visitor(PROTEIN_Q_VAL, proteinQValue);
+        visitor(IS_BEST_PRECURSOR_CANDIDATE, isBestPrecursorCandidate);
+        visitor(IS_BEST_PEPTIDE_CANDIDATE, isBestPeptideCandidate);
+        visitor(IS_BEST_PROTEIN_CANDIDATE, isBestProteinCandidate);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT, altTargetKeyIdDiscScoreChargeOG_alt);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG1_1, altTargetKeyIdDiscScoreCharge1_1);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG1_2, altTargetKeyIdDiscScoreCharge1_2);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG2_1, altTargetKeyIdDiscScoreCharge2_1);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG2_2, altTargetKeyIdDiscScoreCharge2_2);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG3_1, altTargetKeyIdDiscScoreCharge3_1);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG3_2, altTargetKeyIdDiscScoreCharge3_2);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG4_1, altTargetKeyIdDiscScoreCharge4_1);
+        visitor(ALT_TARG_ID_DISC_SCORE_CHRG4_2, altTargetKeyIdDiscScoreCharge4_2);
+        visitor(ALT_TARG_ID_TIME_DELTA_CHRG1_1, altTargetKeyIdTimeDeltaCharge1_1);
+        visitor(ALT_TARG_ID_TIME_DELTA_CHRG2_1, altTargetKeyIdTimeDeltaCharge2_1);
+        visitor(ALT_TARG_ID_TIME_DELTA_CHRG3_1, altTargetKeyIdTimeDeltaCharge3_1);
+        visitor(ALT_TARG_ID_TIME_DELTA_CHRG4_1, altTargetKeyIdTimeDeltaCharge4_1);
+        visitor(MS1_MZ_MEAN_FND_100, ms1MzMeanFound100);
+        visitor(MS1_MZ_MEAN_FND_45, ms1MzMeanFound45);
+        visitor(MS1_MZ_MEAN_FND_PRE_MONO, ms1MzMeanFoundPreMono);
+        visitor(MS1_MZ_MEAN_FND_ISO1, ms1MzMeanFoundIso1);
+        visitor(MS1_MZ_MEAN_FND_ISO2, ms1MzMeanFoundIso2);
+        visitor(MS1_MZ_MEAN_FND_100_PPM, ms1MzMeanFound100PPM);
+        visitor(MS1_MZ_MEAN_FND_45_PPM, ms1MzMeanFound45PPM);
+        visitor(MS1_MZ_MEAN_FND_PRE_MONO_PPM, ms1MzMeanFoundPreMonoPPM);
+        visitor(MS1_MZ_MEAN_FND_ISO_1_PPM, ms1MzMeanFoundIso1PPM);
+        visitor(MS1_MZ_MEAN_FND_ISO_2_PPM, ms1MzMeanFoundIso2PPM);
+        visitor(MS1_MZ_MEAN_FND_100_STD, ms1MzStDevFound100);
+        visitor(MS1_MZ_MEAN_FND_45_STD, ms1MzStDevFound45);
+        visitor(MS1_MZ_MEAN_FND_PRE_MONO_STD, ms1MzStDevFoundPreMono);
+        visitor(MS1_MZ_MEAN_FND_ISO_1_STD, ms1MzStDevFoundIso1);
+        visitor(MS1_MZ_MEAN_FND_ISO_2_STD, ms1MzStDevFoundIso2);
+        visitor(MS1_INTZ_FND_100, ms1IntensityFound100);
+        visitor(MS1_INTZ_FND_APEX_100_IM, ms1IntensityFoundApex100IM);
+        visitor(MS1_INTZ_FND_45, ms1IntensityFound45);
+        visitor(MS1_INTZ_FND_PRE_MONO, ms1IntensityFoundPreMono);
+        visitor(MS1_INTZ_FND_ISO_1, ms1IntensityFoundIso1);
+        visitor(MS1_INTZ_FND_ISO_2, ms1IntensityFoundIso2);
+        visitor(COS_SIM_SPEC_TIME, cosineSimSpectrumOverTime);
+        visitor(COS_SIM_SPEC_TIME_CUBED, cosineSimSpectrumOverTimeCubed);
+        visitor(COS_SIM_SPEC_STDEV, cosineSimSpectrumStDev);
+        visitor(COS_SIM_SUM100_MS1, cosineSimSum100MS1);
+        visitor(MS1_AVERAGINE, ms1Averagine);
+        visitor(COS_SIM_SUM100_WIN_1p5X, cosineSimSum100Window1p5X);
+        visitor(COS_SIM_SUM100_WIN_2X, cosineSimSum100Window2X);
+        visitor(TOT_INTENSITY_PEAK_HEIGHTS, totalIntensityPeakHeights);
+        visitor(TOT_INTENSITY_RAW, totalIntensityRaw);
+        visitor(TARGET_WINDOW_LOCATION, targetWindowLocation);
+        visitor(MZ_SEARCHED_1, mzSearched1);
+        visitor(MZ_SEARCHED_2, mzSearched2);
+        visitor(MZ_SEARCHED_3, mzSearched3);
+        visitor(MZ_SEARCHED_4, mzSearched4);
+        visitor(MZ_SEARCHED_5, mzSearched5);
+        visitor(MZ_SEARCHED_6, mzSearched6);
+        visitor(MZ_SEARCHED_7, mzSearched7);
+        visitor(MZ_SEARCHED_8, mzSearched8);
+        visitor(MZ_SEARCHED_9, mzSearched9);
+        visitor(MZ_SEARCHED_10, mzSearched10);
+        visitor(MZ_SEARCHED_11, mzSearched11);
+        visitor(MZ_SEARCHED_12, mzSearched12);
+        visitor(ION_LABEL_1, ionLabels1);
+        visitor(ION_LABEL_2, ionLabels2);
+        visitor(ION_LABEL_3, ionLabels3);
+        visitor(ION_LABEL_4, ionLabels4);
+        visitor(ION_LABEL_5, ionLabels5);
+        visitor(ION_LABEL_6, ionLabels6);
+        visitor(ION_LABEL_7, ionLabels7);
+        visitor(ION_LABEL_8, ionLabels8);
+        visitor(ION_LABEL_9, ionLabels9);
+        visitor(ION_LABEL_10, ionLabels10);
+        visitor(ION_LABEL_11, ionLabels11);
+        visitor(ION_LABEL_12, ionLabels12);
+    }
 
-        return {
-                {COS_SIM_SUM_100, QVariant(cosineSimSum100)},
-                {COS_SIM_SUM_100_GREATER_80, QVariant(cosineSimSum100Greater80)},
-                {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
-                {COS_SIM_SUM_MS1_100, QVariant(cosineSim100MS1)},
-                {COS_SIM_SPEC_CUBED, QVariant(cosineSimSpectrumCubed)},
-                {KL_DIV_SPEC_CUBE_RT, QVariant(klDivSpectrumCubeRoot)},
-                {COS_SIM_SUM_45, QVariant(cosineSimSum45)},
-                {COS_SIM_SUM_TOP_6, QVariant(cosineSimSumTop)},
-                {COS_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom)},
-                {TOP_BOTTOM_RATIO, QVariant(topBottomRatio)},
-                {TOP_BOTTOME_RATIO_NORM, QVariant(topBottomRatioNorm)},
-                {CHARGE, QVariant(charge)},
-                {MASS, QVariant(mass)},
-                {SCAN_TIME_DELTA, QVariant(scanTimeDelta)},
-                {SCAN_TIME_PD, QVariant(scanTimePd)},
-                {SCAN_ION_CNT, QVariant(scanIonCount)},
-                {MZ_NORM, QVariant(mzNorm)},
-                {KL_DIV_SPEC, QVariant(klDivSpectrum)},
-                {COSINE_SIM_SPEC, QVariant(cosineSimSpectrum)},
-                {COSINE_SIM_SUM_MS1_45, QVariant(cosineSim45MS1)},
-                {COSINE_SIM_SUM_MS1_PRE_MONO, QVariant(cosineSim100MS1PreMono)},
-                {COSINE_SIM_SUM_MS1_ISO_1, QVariant(cosineSim100MS1Iso1)},
-                {COSINE_SIM_SUM_MS1_ISO_2, QVariant(cosineSim100MS1Iso2)},
-                {PEP_LEN_NORM, QVariant(peptideLengthNorm)},
-                {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
-                {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
-                {TOT_INT_LOG, QVariant(totalIntensityLog)},
-                {PEAK_RATIO_1, QVariant(peakShapeRatio1)},
-                {PEAK_RATIO_2, QVariant(peakShapeRatio2)},
-                {PEAK_RATIO_3, QVariant(peakShapeRatio3)},
-                {SHADOW_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
-                {IRT_PRED, QVariant(iRtPredicted)},
-                {IRT_EMP, QVariant(iRtEmpirical)},
-                {ION_MOBILITY_LIBRARY, QVariant(ionMobilityLibrary)},
-                {ION_MOBILITY_FOUND, QVariant(ionMobilityFound)},
-                {ION_MOBILITY_INDEX, QVariant(ionMobilityIndex)},
-                {ION_MOBILITY_INDEX_START, QVariant(ionMobilityIndexStart)},
-                {ION_MOBILITY_INDEX_END, QVariant(ionMobilityIndexEnd)},
-                {ION_MOBILITY_DELTA, QVariant(ionMobilityDelta)},
-                {ION_MOBILITY_DELTA_ABS, QVariant(ionMobilityDeltaAbs)},
-                {ION_MOBILITY_PD_ABS, QVariant(ionMobilityPdAbs)},
-                {MS2_ION_MOBILITY_WEIGHTED_DELTA, QVariant(ms2IonMobilityWeightedDelta)},
-                {MS2_ION_MOBILITY_WEIGHTED_DELTA_ABS, QVariant(ms2IonMobilityWeightedDeltaAbs)},
-                {MS2_ION_MOBILITY_APEX_DELTA_ABS_MEAN, QVariant(ms2IonMobilityApexDeltaAbsMean)},
-                {MS2_ION_MOBILITY_APEX_DELTA_ABS_STDEV, QVariant(ms2IonMobilityApexDeltaAbsStDev)},
-                {MS2_ION_MOBILITY_MATCHED_ION_FRACTION, QVariant(ms2IonMobilityMatchedIonFraction)},
-                {MS2_ION_MOBILITY_FWHM_MEAN, QVariant(ms2IonMobilityFwhmMean)},
-                {MS2_ION_MOBILITY_FWHM_STDEV, QVariant(ms2IonMobilityFwhmStDev)},
-                {COS_SIM_ANCH_1, QVariant(cosineSimToAnchor1)},
-                {COS_SIM_ANCH_2, QVariant(cosineSimToAnchor2)},
-                {COS_SIM_ANCH_3, QVariant(cosineSimToAnchor3)},
-                {COS_SIM_ANCH_4, QVariant(cosineSimToAnchor4)},
-                {COS_SIM_ANCH_5, QVariant(cosineSimToAnchor5)},
-                {COS_SIM_ANCH_6, QVariant(cosineSimToAnchor6)},
-                {COS_SIM_ANCH_7, QVariant(cosineSimToAnchor7)},
-                {COS_SIM_ANCH_8, QVariant(cosineSimToAnchor8)},
-                {COS_SIM_ANCH_9, QVariant(cosineSimToAnchor9)},
-                {COS_SIM_ANCH_10, QVariant(cosineSimToAnchor10)},
-                {COS_SIM_ANCH_11, QVariant(cosineSimToAnchor11)},
-                {COS_SIM_ANCH_12, QVariant(cosineSimToAnchor12)},
-                // {COS_SIM_ANCH_SHADOW_1, QVariant(cosineSimShadowsToAnchor1)},
-                // {COS_SIM_ANCH_SHADOW_2, QVariant(cosineSimShadowsToAnchor2)},
-                // {COS_SIM_ANCH_SHADOW_3, QVariant(cosineSimShadowsToAnchor3)},
-                // {COS_SIM_ANCH_SHADOW_4, QVariant(cosineSimShadowsToAnchor4)},
-                // {COS_SIM_ANCH_SHADOW_5, QVariant(cosineSimShadowsToAnchor5)},
-                // {COS_SIM_ANCH_SHADOW_6, QVariant(cosineSimShadowsToAnchor6)},
-                // {COS_SIM_ANCH_SHADOW_7, QVariant(cosineSimShadowsToAnchor7)},
-                // {COS_SIM_ANCH_SHADOW_8, QVariant(cosineSimShadowsToAnchor8)},
-                // {COS_SIM_ANCH_SHADOW_9, QVariant(cosineSimShadowsToAnchor9)},
-                // {COS_SIM_ANCH_SHADOW_10, QVariant(cosineSimShadowsToAnchor10)},
-                // {COS_SIM_ANCH_SHADOW_11, QVariant(cosineSimShadowsToAnchor11)},
-                // {COS_SIM_ANCH_SHADOW_12, QVariant(cosineSimShadowsToAnchor12)},
-                {MZ_FND_MEAN_1, QVariant(mzFoundMean1)},
-                {MZ_FND_MEAN_2, QVariant(mzFoundMean2)},
-                {MZ_FND_MEAN_3, QVariant(mzFoundMean3)},
-                {MZ_FND_MEAN_4, QVariant(mzFoundMean4)},
-                {MZ_FND_MEAN_5, QVariant(mzFoundMean5)},
-                {MZ_FND_MEAN_6, QVariant(mzFoundMean6)},
-                {MZ_FND_MEAN_7, QVariant(mzFoundMean7)},
-                {MZ_FND_MEAN_8, QVariant(mzFoundMean8)},
-                {MZ_FND_MEAN_9, QVariant(mzFoundMean9)},
-                {MZ_FND_MEAN_10, QVariant(mzFoundMean10)},
-                {MZ_FND_MEAN_11, QVariant(mzFoundMean11)},
-                {MZ_FND_MEAN_12, QVariant(mzFoundMean12)},
-                {INTS_FND_MAX_1, QVariant(intensityFoundMax1)},
-                {INTS_FND_MAX_2, QVariant(intensityFoundMax2)},
-                {INTS_FND_MAX_3, QVariant(intensityFoundMax3)},
-                {INTS_FND_MAX_4, QVariant(intensityFoundMax4)},
-                {INTS_FND_MAX_5, QVariant(intensityFoundMax5)},
-                {INTS_FND_MAX_6, QVariant(intensityFoundMax6)},
-                {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
-                {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
-                {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
-                {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
-                {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
-                {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
-                // {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
-                // {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
-                // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
-                // {MZ_PK_LEN_NORM_4, QVariant(mzPeakLengthsNorm4)},
-                // {MZ_PK_LEN_NORM_5, QVariant(mzPeakLengthsNorm5)},
-                // {MZ_PK_LEN_NORM_6, QVariant(mzPeakLengthsNorm6)},
-                // {MZ_PK_LEN_NORM_7, QVariant(mzPeakLengthsNorm7)},
-                // {MZ_PK_LEN_NORM_8, QVariant(mzPeakLengthsNorm8)},
-                // {MZ_PK_LEN_NORM_9, QVariant(mzPeakLengthsNorm9)},
-                // {MZ_PK_LEN_NORM_10, QVariant(mzPeakLengthsNorm10)},
-                // {MZ_PK_LEN_NORM_11, QVariant(mzPeakLengthsNorm11)},
-                // {MZ_PK_LEN_NORM_12, QVariant(mzPeakLengthsNorm12)},
-                {AA_A, QVariant(aminoAcidCountA)},
-                {AA_C, QVariant(aminoAcidCountC)},
-                {AA_D, QVariant(aminoAcidCountD)},
-                {AA_E, QVariant(aminoAcidCountE)},
-                {AA_F, QVariant(aminoAcidCountF)},
-                {AA_G, QVariant(aminoAcidCountG)},
-                {AA_H, QVariant(aminoAcidCountH)},
-                {AA_I, QVariant(aminoAcidCountI)},
-                {AA_K, QVariant(aminoAcidCountK)},
-                {AA_L, QVariant(aminoAcidCountL)},
-                {AA_M, QVariant(aminoAcidCountM)},
-                {AA_N, QVariant(aminoAcidCountN)},
-                {AA_P, QVariant(aminoAcidCountP)},
-                {AA_Q, QVariant(aminoAcidCountQ)},
-                {AA_R, QVariant(aminoAcidCountR)},
-                {AA_S, QVariant(aminoAcidCountS)},
-                {AA_T, QVariant(aminoAcidCountT)},
-                {AA_V, QVariant(aminoAcidCountV)},
-                {AA_W, QVariant(aminoAcidCountW)},
-                {AA_Y, QVariant(aminoAcidCountY)},
-                {AA_B, QVariant(aminoAcidCountB)},
-                {AA_J, QVariant(aminoAcidCountJ)},
-                {AA_O, QVariant(aminoAcidCountO)},
-                {AA_U, QVariant(aminoAcidCountU)},
-                {AA_X, QVariant(aminoAcidCountX)},
-                {AA_Z, QVariant(aminoAcidCountZ)},
-                {MZ_FND_STDEV_1, QVariant(mzFoundStDev1)},
-                {MZ_FND_STDEV_2, QVariant(mzFoundStDev2)},
-                {MZ_FND_STDEV_3, QVariant(mzFoundStDev3)},
-                {MZ_FND_STDEV_4, QVariant(mzFoundStDev4)},
-                {MZ_FND_STDEV_5, QVariant(mzFoundStDev5)},
-                {MZ_FND_STDEV_6, QVariant(mzFoundStDev6)},
-                // {MZ_FND_STDEV_7, QVariant(mzFoundStDev7)},
-                // {MZ_FND_STDEV_8, QVariant(mzFoundStDev8)},
-                // {MZ_FND_STDEV_9, QVariant(mzFoundStDev9)},
-                // {MZ_FND_STDEV_10, QVariant(mzFoundStDev10)},
-                // {MZ_FND_STDEV_11, QVariant(mzFoundStDev11)},
-                // {MZ_FND_STDEV_12, QVariant(mzFoundStDev12)},
-                {TARG_KEY, QVariant(targetKey)},
-                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
-                {PEP_STR_W_MODS_DECOY_OG, QVariant(peptideStringWithModsDecoyOrigin)},
-                {PROT_GRP, QVariant(proteinGroup)},
-                {IS_DECOY, QVariant(isDecoy)},
-                {SCAN_NUM, QVariant(scanNumber)},
-                {SCAN_TIME, QVariant(scanTime)},
-                {SCAN_TIME_START, QVariant(scanTimeStart)},
-                {SCAN_TIME_END, QVariant(scanTimeEnd)},
-                {CLASS_SCR, QVariant(classifierScore)},
-                {CLASS_FOLD, QVariant(classifierFold)},
-                {DISC_SCR, QVariant(discriminantScore)},
-                {Q_VAL, QVariant(qValue)},
-                {DECOY_RATIO, QVariant(decoyRatio)},
-                {PRECURSOR_Q_VAL, QVariant(precursorQValue)},
-                {PEPTIDE_Q_VAL, QVariant(peptideQValue)},
-                {PROTEIN_Q_VAL, QVariant(proteinQValue)},
-                {IS_BEST_PRECURSOR_CANDIDATE, QVariant(isBestPrecursorCandidate)},
-                {IS_BEST_PEPTIDE_CANDIDATE, QVariant(isBestPeptideCandidate)},
-                {IS_BEST_PROTEIN_CANDIDATE, QVariant(isBestProteinCandidate)},
-
-                {ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT, QVariant(altTargetKeyIdDiscScoreChargeOG_alt)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG1_1, QVariant(altTargetKeyIdDiscScoreCharge1_1)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG1_2, QVariant(altTargetKeyIdDiscScoreCharge1_2)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG2_1, QVariant(altTargetKeyIdDiscScoreCharge2_1)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG2_2, QVariant(altTargetKeyIdDiscScoreCharge2_2)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG3_1, QVariant(altTargetKeyIdDiscScoreCharge3_1)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG3_2, QVariant(altTargetKeyIdDiscScoreCharge3_2)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG4_1, QVariant(altTargetKeyIdDiscScoreCharge4_1)},
-                {ALT_TARG_ID_DISC_SCORE_CHRG4_2, QVariant(altTargetKeyIdDiscScoreCharge4_2)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG1_1 , QVariant(altTargetKeyIdTimeDeltaCharge1_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG2_1 , QVariant(altTargetKeyIdTimeDeltaCharge2_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG3_1 , QVariant(altTargetKeyIdTimeDeltaCharge3_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG4_1 , QVariant(altTargetKeyIdTimeDeltaCharge4_1)},
-                {MS1_MZ_MEAN_FND_100, QVariant(ms1MzMeanFound100)},
-                {MS1_MZ_MEAN_FND_45, QVariant(ms1MzMeanFound45)},
-                {MS1_MZ_MEAN_FND_PRE_MONO, QVariant(ms1MzMeanFoundPreMono)},
-                {MS1_MZ_MEAN_FND_ISO1, QVariant(ms1MzMeanFoundIso1)},
-                {MS1_MZ_MEAN_FND_ISO2, QVariant(ms1MzMeanFoundIso2)},
-                {MS1_MZ_MEAN_FND_100_PPM, QVariant(ms1MzMeanFound100PPM)},
-                {MS1_MZ_MEAN_FND_45_PPM, QVariant(ms1MzMeanFound45PPM)},
-                {MS1_MZ_MEAN_FND_PRE_MONO_PPM, QVariant(ms1MzMeanFoundPreMonoPPM)},
-                {MS1_MZ_MEAN_FND_ISO_1_PPM, QVariant(ms1MzMeanFoundIso1PPM)},
-                {MS1_MZ_MEAN_FND_ISO_2_PPM, QVariant(ms1MzMeanFoundIso2PPM)},
-                {MS1_MZ_MEAN_FND_100_STD, QVariant(ms1MzStDevFound100)},
-                {MS1_MZ_MEAN_FND_45_STD, QVariant(ms1MzStDevFound45)},
-                {MS1_MZ_MEAN_FND_PRE_MONO_STD, QVariant(ms1MzStDevFoundPreMono)},
-                {MS1_MZ_MEAN_FND_ISO_1_STD, QVariant(ms1MzStDevFoundIso1)},
-                {MS1_MZ_MEAN_FND_ISO_2_STD, QVariant(ms1MzStDevFoundIso2)},
-                {MS1_INTZ_FND_100, QVariant(ms1IntensityFound100)},
-                {MS1_INTZ_FND_APEX_100_IM, QVariant(ms1IntensityFoundApex100IM)},
-                {MS1_INTZ_FND_45, QVariant(ms1IntensityFound45)},
-                {MS1_INTZ_FND_PRE_MONO, QVariant(ms1IntensityFoundPreMono)},
-                {MS1_INTZ_FND_ISO_1, QVariant(ms1IntensityFoundIso1)},
-                {MS1_INTZ_FND_ISO_2, QVariant(ms1IntensityFoundIso2)},
-
-                {COS_SIM_SPEC_TIME, QVariant(cosineSimSpectrumOverTime)},
-                {COS_SIM_SPEC_TIME_CUBED, QVariant(cosineSimSpectrumOverTimeCubed)},
-                {COS_SIM_SPEC_STDEV, QVariant(cosineSimSpectrumStDev)},
-                {COS_SIM_SUM100_MS1, QVariant(cosineSimSum100MS1)},
-                {MS1_AVERAGINE, QVariant(ms1Averagine)},
-                {COS_SIM_SUM100_WIN_1p5X, QVariant(cosineSimSum100Window1p5X)},
-                {COS_SIM_SUM100_WIN_2X, QVariant(cosineSimSum100Window2X)},
-                {TOT_INTENSITY_PEAK_HEIGHTS, QVariant(totalIntensityPeakHeights)},
-                {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)},
-                {TARGET_WINDOW_LOCATION, QVariant(targetWindowLocation)},
-
-                // {TRAP_AREA_1, QVariant(trapArea1)},
-                // {TRAP_AREA_2, QVariant(trapArea2)},
-                // {TRAP_AREA_3, QVariant(trapArea3)},
-                // {TRAP_AREA_4, QVariant(trapArea4)},
-                // {TRAP_AREA_5, QVariant(trapArea5)},
-                // {TRAP_AREA_6, QVariant(trapArea6)},
-                // {TRAP_AREA_7, QVariant(trapArea7)},
-                // {TRAP_AREA_8, QVariant(trapArea8)},
-                // {TRAP_AREA_9, QVariant(trapArea9)},
-                // {TRAP_AREA_10, QVariant(trapArea10)},
-                // {TRAP_AREA_11, QVariant(trapArea11)},
-                // {TRAP_AREA_12, QVariant(trapArea12)},
-
-                {MZ_SEARCHED_1, QVariant(mzSearched1)},
-                {MZ_SEARCHED_2, QVariant(mzSearched2)},
-                {MZ_SEARCHED_3, QVariant(mzSearched3)},
-                {MZ_SEARCHED_4, QVariant(mzSearched4)},
-                {MZ_SEARCHED_5, QVariant(mzSearched5)},
-                {MZ_SEARCHED_6, QVariant(mzSearched6)},
-                {MZ_SEARCHED_7, QVariant(mzSearched7)},
-                {MZ_SEARCHED_8, QVariant(mzSearched8)},
-                {MZ_SEARCHED_9, QVariant(mzSearched9)},
-                {MZ_SEARCHED_10, QVariant(mzSearched10)},
-                {MZ_SEARCHED_11, QVariant(mzSearched11)},
-                {MZ_SEARCHED_12, QVariant(mzSearched12)},
-
-				{ION_LABEL_1, QVariant(ionLabels1)},
-				{ION_LABEL_2, QVariant(ionLabels2)},
-				{ION_LABEL_3, QVariant(ionLabels3)},
-				{ION_LABEL_4, QVariant(ionLabels4)},
-				{ION_LABEL_5, QVariant(ionLabels5)},
-				{ION_LABEL_6, QVariant(ionLabels6)},
-				{ION_LABEL_7, QVariant(ionLabels7)},
-				{ION_LABEL_8, QVariant(ionLabels8)},
-				{ION_LABEL_9, QVariant(ionLabels9)},
-				{ION_LABEL_10, QVariant(ionLabels10)},
-				{ION_LABEL_11, QVariant(ionLabels11)},
-				{ION_LABEL_12, QVariant(ionLabels12)},
-        };
+    QMap<QString, QVariant> map() override {
+        QMap<QString, QVariant> result;
+        visitFields([&](const QString &key, const auto &value) {
+            result.insert(key, QVariant(value));
+        });
+        return result;
     }
 
     static CandidateScoresReaderRow buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {

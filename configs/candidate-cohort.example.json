@@ -1,0 +1,21 @@
+{
+  "library": "human.speclib",
+  "fasta": "human.fasta",
+  "config": "candidate-only.radiantConfig",
+  "runs": [
+    {
+      "input": "sample1.mzML",
+      "views": [
+        {"minimum_fragments": 4, "shared_fragments": 4, "output": "results/sample1/4"},
+        {"minimum_fragments": 3, "shared_fragments": 3, "output": "results/sample1/3"}
+      ]
+    },
+    {
+      "input": "sample2.mzML",
+      "views": [
+        {"minimum_fragments": 4, "shared_fragments": 4, "output": "results/sample2/4"},
+        {"minimum_fragments": 3, "shared_fragments": 3, "output": "results/sample2/3"}
+      ]
+    }
+  ]
+}

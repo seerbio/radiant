@@ -40,16 +40,26 @@ int main(int argc, char **argv) {
     const auto features = PeptideFamilyNeuralNet::nonTimsFeatures();
     PeptideFamilyNeuralNet::Settings settings;
     settings.epochs = 2;
-    settings.networks = 2;
+    settings.networks = 4;
     settings.threads = 1;
     PeptideFamilyNeuralNet::Predictions serial, parallel, changed;
     QThreadPool::globalInstance()->setMaxThreadCount(7);
     require(PeptideFamilyNeuralNet::score(values, decoys, families, features, settings, &serial) == 0,
             "Serial score");
-    settings.threads = 3;
+    settings.threads = 12;
     require(PeptideFamilyNeuralNet::score(values, decoys, families, features, settings, &parallel) == 0,
             "Parallel score");
     require(serial.perNetwork == parallel.perNetwork, "Serial/parallel determinism");
+    require(serial.meanDecoyProbability == parallel.meanDecoyProbability, "Serial/parallel means");
+    require(serial.heldOutFold == parallel.heldOutFold, "Serial/parallel folds");
+    for (int threads : {2, 3, 7}) {
+        settings.threads = threads;
+        PeptideFamilyNeuralNet::Predictions limited;
+        require(PeptideFamilyNeuralNet::score(values, decoys, families, features, settings, &limited) == 0,
+                "Limited worker score");
+        require(serial.perNetwork == limited.perNetwork, "Limited worker determinism");
+    }
+    settings.threads = 12;
     require(QThreadPool::globalInstance()->maxThreadCount() == 7, "Global pool unchanged");
     for (int row = 0; row < values.size(); ++row)
         if (families[row] % 3 == 0) decoys[row] = 1 - decoys[row];
@@ -58,11 +68,13 @@ int main(int argc, char **argv) {
     bool otherFoldChanged = false;
     for (int row = 0; row < values.size(); ++row) {
         require(parallel.heldOutFold[row] == families[row] % 3, "Family fold assignment");
-        const float mean = float((double(parallel.perNetwork[row * 2])
-                                + parallel.perNetwork[row * 2 + 1]) / 2);
+        double total = 0;
+        for (int net = 0; net < settings.networks; ++net)
+            total += parallel.perNetwork[row * settings.networks + net];
+        const float mean = float(total / settings.networks);
         require(mean == parallel.meanDecoyProbability[row], "Ensemble mean");
-        for (int net = 0; net < 2; ++net) {
-            const auto index = row * 2 + net;
+        for (int net = 0; net < settings.networks; ++net) {
+            const auto index = row * settings.networks + net;
             if (families[row] % 3 == 0)
                 require(parallel.perNetwork[index] == changed.perNetwork[index], "Held-out label leakage");
             else

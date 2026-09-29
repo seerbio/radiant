@@ -66,6 +66,13 @@ public:
         CandidateScores *candidateScores
         ) const;
 
+    // Score the same target or decoy at each threshold, sharing only the
+    // signal matrices. Results retain the order of minimumCounts.
+    Err calculateScoresForFragmentThresholds(
+        const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+        TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const QVector<float> &minimumCounts, QVector<CandidateScores> *candidateScores) const;
+
     [[nodiscard]] QString scoringDiagnosticsSummary() const;
     void printScoringDiagnosticsIfEnabled() const;
     void setUseAdaptiveTimsMobilityCentering(bool useAdaptiveTimsMobilityCentering);
@@ -73,11 +80,23 @@ public:
 
 private:
 
+    Err initializeCandidate(
+        const QVector<MS2Ion> &ms2Ions, TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        CandidateScores *candidateScores, FrameIndex *first, FrameIndex *last) const;
+
+    Err calculatePreparedScores(
+        const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+        TargetDecoyCandidatePair *targetDecoyCandidatePair, const MatriciesAndVecs &matrices,
+        CandidateScores *candidateScores) const;
+
+    Err updateIntegrationVectors(float minPeakCount, MatriciesAndVecs *matrices) const;
+
     Err initMatricesdAndVecs(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
+        float minPeakCount,
         MatriciesAndVecs *matriciesAndVecs
         ) const;
 

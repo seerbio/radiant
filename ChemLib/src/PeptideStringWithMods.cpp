@@ -25,14 +25,15 @@ bool PeptideStringWithMods::isValidSequence() const {
 PeptideString PeptideStringWithMods::removeUniModChars() const {
 
     PeptideString peptideString;
+    peptideString.reserve(size());
 
     bool unimodOn = false;
     for (const QChar &c : *this) {
-        if (c == "(" || c == "[") {
+        if (c == QLatin1Char('(') || c == QLatin1Char('[')) {
             unimodOn = true;
             continue;
         }
-        else if (c == ")" || c == "]" ) {
+        else if (c == QLatin1Char(')') || c == QLatin1Char(']')) {
             unimodOn = false;
             continue;
         }
@@ -60,12 +61,12 @@ QMap<Index, double> PeptideStringWithMods::modificationsMap() const {
 
         const QChar &c = this->at(i);
 
-        if (c == "(" || c == "[") {
+        if (c == QLatin1Char('(') || c == QLatin1Char('[')) {
             unimodOn = true;
             index = index - 1;
             continue;
         }
-        else if (c == ")" || c == "]" ) {
+        else if (c == QLatin1Char(')') || c == QLatin1Char(']')) {
             unimodOn = false;
 
             bool isNumber;

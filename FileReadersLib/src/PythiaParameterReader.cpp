@@ -234,6 +234,10 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto bundleLimit = bundleLimitNode.value_or<int64_t>(0);
     if (bundleLimit < 0 || bundleLimit == 1 || bundleLimit > 1000000) { rrr(eValueError); }
     pythiaParameters->candidateBundleLimit = static_cast<int>(bundleLimit);
+    const auto bundleOnlyNode = neuralNetParamsNode["candidateBundleOnly"];
+    if (bundleOnlyNode && !bundleOnlyNode.is_boolean()) { rrr(eValueError); }
+    pythiaParameters->candidateBundleOnly = bundleOnlyNode.value_or(false);
+    if (pythiaParameters->candidateBundleOnly && bundleLimit < 2) { rrr(eValueError); }
 
     pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(pythiaParameters->epochs);
     pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);

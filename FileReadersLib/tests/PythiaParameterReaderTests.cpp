@@ -25,6 +25,7 @@ private Q_SLOTS:
     static void sensitivityOptions();
     static void rejectsInvalidSensitivityOptions();
     static void candidateBundleOption();
+    static void candidateOnlyOption();
 
 };
 
@@ -204,6 +205,35 @@ void PythiaParameterReaderTests::candidateBundleOption() {
     parameters.candidateBundleLimit = 200000;
     QCOMPARE(PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters), eNoError);
     QCOMPARE(parameters.candidateBundleLimit, 0);
+}
+
+void PythiaParameterReaderTests::candidateOnlyOption() {
+    QTemporaryFile file;
+    QVERIFY(file.open());
+    PythiaParameters parameters;
+    const auto read = [&](const QByteArray &configuration) {
+        file.resize(0);
+        file.seek(0);
+        file.write(configuration);
+        file.flush();
+        return PythiaParameterReader::buildPythiaParameters(file.fileName(), &parameters);
+    };
+    QCOMPARE(read("[NeuralNetParams]\ncandidateBundleLimit = 200000\ncandidateBundleOnly = true\n"),
+             eNoError);
+    QVERIFY(parameters.candidateBundleOnly);
+    QCOMPARE(read("[NeuralNetParams]\ncandidateBundleOnly = true\n"), eValueError);
+    for (const QByteArray value : {QByteArray("1"), QByteArray("\"true\""), QByteArray("1.0")}) {
+        QVERIFY(read("[NeuralNetParams]\ncandidateBundleLimit = 200000\ncandidateBundleOnly = "
+                     + value + "\n") != eNoError);
+    }
+    QCOMPARE(read("[General]\nthreadCount = 1\n"), eNoError);
+    QVERIFY(!parameters.candidateBundleOnly);
+    parameters = PythiaParameterReader::genericPythiaParametersForTests();
+    parameters.candidateBundleOnly = true;
+    parameters.candidateBundleLimit = 0;
+    QVERIFY(!parameters.isValid());
+    parameters.candidateBundleLimit = 200000;
+    QVERIFY(parameters.isValid());
 }
 
 QTEST_MAIN(PythiaParameterReaderTests)

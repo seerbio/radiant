@@ -61,7 +61,14 @@ namespace {
         fragment.type = 1;
         fragment.index = 1;
         fragment.loss = 0;
-        writeVector(out, std::vector<Product>{fragment});
+        std::vector<Product> fragments{fragment, fragment};
+        fragment.type = 2;
+        fragment.index = 1;
+        fragment.charge = 2;
+        fragments.push_back(fragment);
+        fragment.index = 5; // Unusual negative y index uses the uncached path.
+        fragments.push_back(fragment);
+        writeVector(out, fragments);
 
         const int hasDecoy = 0;
         const int entryFlags = 0;
@@ -248,6 +255,11 @@ void SpecLibReaderTests::getFragLibReaerRowsFiltersInvalidSequencesTest() {
 
     QCOMPARE(fragLibReaderRows.size(), 1);
     QCOMPARE(fragLibReaderRows.front().peptideSequenceChargeKey, QString("ACDE|2"));
+    QCOMPARE(fragLibReaderRows.front().ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR),
+             QStringList({"b1", "b1", "y3^2", "y-1^2"}));
+    QCOMPARE(fragLibReaderRows.front().mzVals, QVector<float>({250, 250, 250, 250}));
+    QCOMPARE(fragLibReaderRows.front().intensityVals, QVector<float>({1, 1, 1, 1}));
+    QCOMPARE(fragLibReaderRows.front().proteinGroups, QString("PG1"));
 }
 
 

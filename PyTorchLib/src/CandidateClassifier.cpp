@@ -254,6 +254,8 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     std::vector<float> flatData;
+    flatData.reserve(static_cast<std::size_t>(xData.size())
+                     * static_cast<std::size_t>(input_size));
     for (const QVector<float> &innerVec : xData) {
         flatData.insert(flatData.end(), innerVec.begin(), innerVec.end());
     }
@@ -369,9 +371,14 @@ bool CandidateClassifier::Private::predict(
     }
 
     const int input_size = xData.front().size();
+    // Prediction returns detached scalar values, so its autograd graph is unused.
+    // The guard restores the caller's thread-local gradient mode on return.
+    torch::NoGradGuard noGrad;
     m_net->eval();
 
     std::vector<float> flatData;
+    flatData.reserve(static_cast<std::size_t>(xData.size())
+                     * static_cast<std::size_t>(input_size));
     for (const QVector<float> &innerVec : xData) {
         flatData.insert(flatData.end(), innerVec.begin(), innerVec.end());
     }

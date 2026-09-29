@@ -145,57 +145,63 @@ Error::Err PeptideFamilyNeuralNet::score(
     const auto &normalized = values;
     const auto &groups = members;
 
-    using FoldResult = QPair<Error::Err, QVector<float>>;
-    const auto fit = [&](int heldOut) -> FoldResult {
+    struct FoldData {
+        QVector<QVector<float>> training, inference;
+        QVector<float> labels;
+    };
+    QVector<FoldData> foldData(settings.folds);
+    for (int heldOut = 0; heldOut < settings.folds; ++heldOut) {
+        auto &data = foldData[heldOut];
+        data.training.reserve(count - groups[heldOut].size());
+        data.labels.reserve(count - groups[heldOut].size());
+        data.inference.reserve(groups[heldOut].size());
+        for (int fold = 0; fold < settings.folds; ++fold) {
+            for (int row : groups[fold]) {
+                if (fold == heldOut) {
+                    data.inference.push_back(normalized[row]);
+                } else {
+                    data.training.push_back(normalized[row]);
+                    data.labels.push_back(float(decoyLabels[row]));
+                }
+            }
+        }
+    }
+    const auto &trainingData = foldData;
+    using ModelResult = QPair<Error::Err, QVector<float>>;
+    const auto fit = [&](int heldOut, int network) -> ModelResult {
         try {
-            QVector<QVector<float>> training, inference;
-            QVector<float> labels;
-            training.reserve(count - groups[heldOut].size());
-            labels.reserve(count - groups[heldOut].size());
-            inference.reserve(groups[heldOut].size());
-            for (int fold = 0; fold < settings.folds; ++fold) {
-                for (int row : groups[fold]) {
-                    if (fold == heldOut) {
-                        inference.push_back(normalized[row]);
-                    } else {
-                        training.push_back(normalized[row]);
-                        labels.push_back(float(decoyLabels[row]));
-                    }
-                }
+            const auto &data = trainingData[heldOut];
+            CandidateClassifier classifier;
+            if (!classifier.trainCandidateClassifier(
+                    data.training, data.labels, settings.epochs,
+                    std::min(500, std::max(2, count / 100)),
+                    settings.learningRate, 2 * settings.seed + network,
+                    settings.nodesFraction, settings.focalLossGamma, 0,
+                    settings.shuffleEachEpoch)) {
+                return {Error::eError, {}};
             }
-            QVector<float> result(inference.size() * settings.networks);
-            for (int network = 0; network < settings.networks; ++network) {
-                CandidateClassifier classifier;
-                if (!classifier.trainCandidateClassifier(
-                        training, labels, settings.epochs,
-                        std::min(500, std::max(2, count / 100)),
-                        settings.learningRate, 2 * settings.seed + network,
-                        settings.nodesFraction, settings.focalLossGamma, 0,
-                        settings.shuffleEachEpoch)) {
-                    return {Error::eError, {}};
-                }
-                QVector<float> output;
-                if (!classifier.predict(inference, &output) || output.size() != inference.size())
-                    return {Error::eError, {}};
-                for (int row = 0; row < output.size(); ++row) {
-                    if (!std::isfinite(output[row]) || output[row] < 0 || output[row] > 1)
-                        return {Error::eValueError, {}};
-                    result[row * settings.networks + network] = output[row];
-                }
-            }
-            return {Error::eNoError, result};
+            QVector<float> output;
+            if (!classifier.predict(data.inference, &output) || output.size() != data.inference.size())
+                return {Error::eError, {}};
+            for (float probability : output)
+                if (!std::isfinite(probability) || probability < 0 || probability > 1)
+                    return {Error::eValueError, {}};
+            return {Error::eNoError, std::move(output)};
         } catch (const std::exception &error) {
             qWarning() << "Family neural-net training failed:" << error.what();
             return {Error::eError, {}};
         }
     };
     // A private pool avoids changing the caller's global concurrency settings.
+    // Models are independent: their seeds and training-row order stay fixed.
     QThreadPool pool;
-    pool.setMaxThreadCount(std::min(settings.threads, settings.folds));
-    QVector<QFuture<FoldResult>> futures;
-    for (int fold = 0; fold < settings.folds; ++fold)
-        futures.push_back(QtConcurrent::run(&pool, std::function<FoldResult()>(
-            [&, fold] { return fit(fold); })));
+    pool.setMaxThreadCount(std::min(settings.threads, settings.folds * settings.networks));
+    QVector<QFuture<ModelResult>> futures;
+    for (int fold = 0; fold < settings.folds; ++fold) {
+        for (int network = 0; network < settings.networks; ++network)
+            futures.push_back(QtConcurrent::run(&pool, std::function<ModelResult()>(
+                [&, fold, network] { return fit(fold, network); })));
+    }
     pool.waitForDone();
 
     Predictions result;
@@ -203,13 +209,17 @@ Error::Err PeptideFamilyNeuralNet::score(
     result.meanDecoyProbability.resize(count);
     result.heldOutFold.resize(count);
     for (int fold = 0; fold < settings.folds; ++fold) {
-        const auto fitted = futures[fold].result();
-        if (fitted.first != Error::eNoError) return fitted.first;
+        QVector<QVector<float>> fitted;
+        for (int network = 0; network < settings.networks; ++network) {
+            const auto model = futures[fold * settings.networks + network].result();
+            if (model.first != Error::eNoError) return model.first;
+            fitted.push_back(model.second);
+        }
         for (int index = 0; index < members[fold].size(); ++index) {
             const int row = members[fold][index];
             double total = 0.0;
             for (int network = 0; network < settings.networks; ++network) {
-                const float probability = fitted.second[index * settings.networks + network];
+                const float probability = fitted[network][index];
                 result.perNetwork[row * settings.networks + network] = probability;
                 total += probability;
             }

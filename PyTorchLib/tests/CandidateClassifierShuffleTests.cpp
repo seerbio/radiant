@@ -8,6 +8,7 @@ class CandidateClassifierShuffleTests : public QObject {
 private Q_SLOTS:
     static void deterministicTrainingPreservesLabels();
     static void omittedOptionMatchesDisabled();
+    static void predictionPreservesSubsequentTraining();
 };
 
 namespace {
@@ -65,6 +66,24 @@ void CandidateClassifierShuffleTests::omittedOptionMatchesDisabled() {
     QVERIFY(original.predict(training, &a));
     QVERIFY(explicitlyDisabled.predict(training, &b));
     QCOMPARE(a, b);
+}
+
+void CandidateClassifierShuffleTests::predictionPreservesSubsequentTraining() {
+    const auto training = observations(61, .2f);
+    const auto y = labels(training.size());
+    const auto inference = observations(19, .7f);
+    CandidateClassifier classifier;
+    QVERIFY(classifier.trainCandidateClassifier(training, y, 4, 10, .003, 29,
+                                               1.0, 0.0f, 0, true));
+    QVector<float> first, repeated, retrained;
+    QVERIFY(classifier.predict(inference, &first));
+    QVERIFY(classifier.predict(inference, &repeated));
+    QCOMPARE(first, repeated);
+    // A leaked no-gradient context would make this backward pass fail.
+    QVERIFY(classifier.trainCandidateClassifier(training, y, 4, 10, .003, 29,
+                                               1.0, 0.0f, 0, true));
+    QVERIFY(classifier.predict(inference, &retrained));
+    QCOMPARE(first, retrained);
 }
 
 QTEST_MAIN(CandidateClassifierShuffleTests)

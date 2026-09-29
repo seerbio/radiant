@@ -108,7 +108,9 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         EigenLib
         UtilsLib
-        Parquet::parquet_static
+        # Radiant's libraries share one Parquet/Arrow runtime. Propagating the
+        # static archive embeds its global registries in multiple ELF objects.
+        Parquet::parquet_shared
         ${TIMS_LIB}
         ${LIBXML2_LIBRARIES}
         sqlite3

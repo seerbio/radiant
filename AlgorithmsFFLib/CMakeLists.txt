@@ -22,6 +22,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/CandidateScores.cpp
         src/CandidateBundleIO.cpp
+        src/CandidateReportColumns.cpp
         src/CandidatePoolRescorer.cpp
         src/CandidatePoolSelection.cpp
         src/PeptideFamilyNeuralNet.cpp
@@ -64,6 +65,8 @@ SET(HEADER_FILES
         src/CandidateScores.h
         src/CandidateFeatureSchema.h
         src/CandidateBundleIO.h
+        src/CandidateReportColumns.h
+        src/FileSha256.h
         src/CandidatePoolRescorer.h
         src/CandidatePoolSelection.h
         src/PeptideFamilyNeuralNet.h
@@ -121,6 +124,11 @@ FIND_PACKAGE(Qt5 COMPONENTS
         REQUIRED
 )
 
+OPTION(RADIANT_USE_OPENSSL_SHA256 "Use OpenSSL for complete-file SHA256 checks when available" ON)
+IF(RADIANT_USE_OPENSSL_SHA256)
+    FIND_PACKAGE(OpenSSL 1.1 QUIET COMPONENTS Crypto)
+ENDIF()
+
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -134,6 +142,7 @@ SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+        PUBLIC
         Qt5::Concurrent
         Qt5::Core
         Qt5::Test
@@ -144,6 +153,11 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         UtilsLib
         ${SEQAN_LIBRARIES}
         )
+
+IF(RADIANT_USE_OPENSSL_SHA256 AND OPENSSL_FOUND AND TARGET OpenSSL::Crypto)
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE OpenSSL::Crypto)
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE RADIANT_HAS_OPENSSL_SHA256=1)
+ENDIF()
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES

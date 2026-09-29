@@ -13,6 +13,8 @@
 #include "ParquetReader.h"
 #include "PythiaParameterReader.h"
 
+#include <vector>
+
 using namespace Error;
 
 namespace MsFrameScanPointRowsNamespace {
@@ -227,6 +229,11 @@ public:
 
 
 private:
+
+    void prepareLookupCaches();
+    std::vector<ScanTime> m_scanTimeByNumber;
+    std::vector<ScanNumber> m_scanNumbersByFrame;
+    ScanNumber m_scanTimeOffset = 0;
 
     Err buildFrameIndexVsScanNumber();
 

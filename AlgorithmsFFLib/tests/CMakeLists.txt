@@ -13,6 +13,7 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 #Add classes to test here.
 SET(TEST_CLASSES
         CandidateBundleIOTests
+        FileHashTests
         ProbePeptideFamilyNeuralNet
         ProbeCandidatePoolSelection
         ProbeCandidatePoolRescorer
@@ -34,6 +35,7 @@ SET(TEST_CLASSES
         MsCalibratomaticTests
         MsFrameTests
         MsUtilsTests
+        PreparedSpectrumTests
         PeakIntegratomaticTests
         PostNeuralNetCompetitionTests
         QuanTransitionRefinertronTests
