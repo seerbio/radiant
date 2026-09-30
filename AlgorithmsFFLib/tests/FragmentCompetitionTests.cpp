@@ -7,6 +7,28 @@
 #include <memory>
 #include <vector>
 
+namespace {
+FragmentCompetition::Evidence evidenceFor(const CompetitionCandidateFixture &fixture) {
+    const auto &scores = fixture.scores;
+    FragmentCompetition::Evidence evidence;
+    evidence.mass = scores.featuresArray.at(Mass);
+    evidence.charge = scores.featuresArray.at(Charge);
+    evidence.apex = scores.scanTime;
+    evidence.width = static_cast<double>(scores.scanTimeEnd) - scores.scanTimeStart;
+    evidence.priority = scores.discriminantScore;
+    evidence.isDecoy = scores.isDecoy || fixture.pair.isDecoy();
+    evidence.reportedPeptide = QStringLiteral("fixture");
+    evidence.searched.fill(-1.0);
+    const auto ions = evidence.isDecoy ? fixture.pair.ms2IonsDecoy() : fixture.pair.ms2IonsTarget();
+    for (int ion = 0; ion < std::min(12, ions.size()); ++ion) {
+        evidence.searched[ion] = ions.at(ion).mz;
+        evidence.intensity[ion] = scores.integrations.at(ion);
+        evidence.cosine[ion] = scores.featuresArray.at(CosineSimToAnchor1 + ion);
+    }
+    return evidence;
+}
+}
+
 class FragmentCompetitionTests : public QObject {
     Q_OBJECT
 private Q_SLOTS:
@@ -26,6 +48,7 @@ private Q_SLOTS:
     void skipsNoPeakPlaceholders();
     void rejectsMalformedObservedRowsWithoutMutation();
     void matchesPythonReference();
+    void retainsPrecomputedEvidence();
 };
 
 void FragmentCompetitionTests::unsharedEvidenceBeatsScoresAndLabels() {
@@ -277,6 +300,17 @@ void FragmentCompetitionTests::matchesPythonReference() {
     for (int index = 0; index < rows.size(); ++index) {
         QCOMPARE(rows.at(index), original.at(keep[index].toInt()));
     }
+}
+
+void FragmentCompetitionTests::retainsPrecomputedEvidence() {
+    CompetitionCandidateFixture weak("PEPTIDEK", {300, 400, 500, 600, 700});
+    CompetitionCandidateFixture strong("PEPTIDER", {300, 400, 500, 600, 800});
+    weak.scores.integrations[4] = 0.0f;
+    const QVector<FragmentCompetition::Evidence> evidence = {
+        evidenceFor(weak), evidenceFor(strong)};
+    QVector<int> retained = {-1};
+    QCOMPARE(FragmentCompetition::retainEvidence(evidence, 4, &retained), eNoError);
+    QCOMPARE(retained, QVector<int>({1}));
 }
 
 QTEST_MAIN(FragmentCompetitionTests)
