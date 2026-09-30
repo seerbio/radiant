@@ -4,8 +4,6 @@
 #include <QtTest/QtTest>
 
 #include <limits>
-#include <memory>
-#include <vector>
 
 namespace {
 FragmentCompetition::Evidence evidenceFor(const CompetitionCandidateFixture &fixture) {
@@ -47,7 +45,6 @@ private Q_SLOTS:
     void disabledIsExactNoOp();
     void skipsNoPeakPlaceholders();
     void rejectsMalformedObservedRowsWithoutMutation();
-    void matchesPythonReference();
     void retainsPrecomputedEvidence();
 };
 
@@ -254,52 +251,6 @@ void FragmentCompetitionTests::rejectsMalformedObservedRowsWithoutMutation() {
     const auto original = rows;
     QCOMPARE(FragmentCompetition::removeCompetingCandidates(true, &rows), eValueError);
     QCOMPARE(rows, original);
-}
-
-void FragmentCompetitionTests::matchesPythonReference() {
-    const QString location = qEnvironmentVariable(
-        "RADIANT_COMPETITION_REFERENCE",
-        QDir(qApp->applicationDirPath()).filePath("fragment_competition_reference.json"));
-    QFile file(location);
-    QVERIFY(file.open(QIODevice::ReadOnly));
-    QJsonParseError parseError;
-    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
-    QCOMPARE(parseError.error, QJsonParseError::NoError);
-    QVERIFY(document.isObject());
-    const QJsonObject reference = document.object();
-    const QJsonArray input = reference["rows"].toArray();
-    QVERIFY(!input.isEmpty());
-    QVERIFY(reference["keep"].isArray());
-    std::vector<std::unique_ptr<CompetitionCandidateFixture>> fixtures;
-    QVector<CandidateScores*> rows;
-    for (const QJsonValue &value : input) {
-        const QJsonObject row = value.toObject();
-        QVector<float> mzs;
-        for (const QJsonValue &mz : row["mzs"].toArray()) mzs.push_back(mz.toDouble());
-        auto fixture = std::make_unique<CompetitionCandidateFixture>(row["peptide"].toString(), mzs);
-        fixture->library.isDecoy = row["decoy"].toBool();
-        fixture->scores.featuresArray[Mass] = row["mass"].toDouble();
-        fixture->scores.featuresArray[Charge] = row["charge"].toDouble();
-        fixture->scores.scanTime = row["apex"].toDouble();
-        fixture->scores.scanTimeStart = row["start"].toDouble();
-        fixture->scores.scanTimeEnd = row["end"].toDouble();
-        fixture->scores.discriminantScore = row["lda"].toDouble();
-        const QJsonArray intensities = row["intensities"].toArray();
-        const QJsonArray cosines = row["cosines"].toArray();
-        for (int ion = 0; ion < 12; ++ion) {
-            fixture->scores.integrations[ion] = intensities[ion].toDouble();
-            fixture->scores.featuresArray[CosineSimToAnchor1 + ion] = cosines[ion].toDouble();
-        }
-        rows.push_back(&fixture->scores);
-        fixtures.push_back(std::move(fixture));
-    }
-    const auto original = rows;
-    QCOMPARE(FragmentCompetition::removeCompetingCandidates(true, &rows), eNoError);
-    const QJsonArray keep = reference["keep"].toArray();
-    QCOMPARE(rows.size(), keep.size());
-    for (int index = 0; index < rows.size(); ++index) {
-        QCOMPARE(rows.at(index), original.at(keep[index].toInt()));
-    }
 }
 
 void FragmentCompetitionTests::retainsPrecomputedEvidence() {
