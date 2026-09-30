@@ -9,15 +9,43 @@
 
 namespace {
 
+    Err prepareForOpen(
+            const QString &filePath,
+            QString *normalizedFilePath
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::fileExists(filePath); ree;
+
+        QFileInfo fi(filePath);
+        const QString fileSuffix = fi.suffix();
+
+        e = ErrorUtils::isTrue(
+                MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
+                eFileIncorrectTypeError
+        ); ree;
+
+        *normalizedFilePath = filePath;
+
+        ERR_RETURN
+    }
+
     Err convertForMemberVars(
             const QVector<MsParquetReaderRow> &msParquetReaderRows,
             QMap<ScanNumber, MsScanInfo> *memberMsScanInfo,
-            QMap<ScanNumber, ScanPoints>  *memberScanPoints
+            QMap<ScanNumber, ScanPoints>  *memberScanPoints,
+            QMap<FrameIndex, double> *frameIndexVsDriftTime,
+            bool *hasIonMobility
             ) {
 
         ERR_INIT
 
         for (const MsParquetReaderRow &row : msParquetReaderRows) {
+
+            if (row.rowType != MsParquetReaderNamespace::ROW_TYPE_SPECTRUM) {
+                continue;
+            }
 
             MsScanInfo msScanInfo;
 
@@ -29,7 +57,11 @@ namespace {
             msScanInfo.isoWindowLower = row.isoWindowLower;
             msScanInfo.isoWindowUpper = row.isoWindowUpper;
             msScanInfo.ionMobilityDriftTime = row.ionMobilityDriftTime;
+            msScanInfo.ionMobilityWindowLower = row.ionMobilityWindowLower;
+            msScanInfo.ionMobilityWindowUpper = row.ionMobilityWindowUpper;
             msScanInfo.ionMobilityIndex = row.ionMobilityIndex;
+            msScanInfo.nativeFrameNumber = row.nativeFrameNumber;
+            msScanInfo.nativeScanNumber = row.nativeScanNumber;
 
             ScanPoints scanPoints;
             e = MsReaderBase::zipScanPoints(
@@ -43,6 +75,15 @@ namespace {
 
             memberMsScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             memberScanPoints->insert(msScanInfo.scanNumber, scanPoints);
+            if (row.ionMobilityIndex >= 0 && row.ionMobilityDriftTime >= 0) {
+                frameIndexVsDriftTime->insert(row.ionMobilityIndex, row.ionMobilityDriftTime);
+            }
+            if (row.ionMobilityIndex >= 0
+                || row.ionMobilityDriftTime >= 0.0f
+                || row.ionMobilityWindowLower >= 0.0f
+                || row.ionMobilityWindowUpper >= 0.0f) {
+                *hasIonMobility = true;
+            }
         }
 
         ERR_RETURN
@@ -54,16 +95,8 @@ Err MsReaderParquet::openFile(const QString &filePath) {
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(filePath); ree;
-    m_filePath = filePath;
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
-            eFileIncorrectTypeError
-    ); ree;
+    e = prepareForOpen(filePath, &m_filePath); ree;
+    e = closeFile(); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -74,7 +107,9 @@ Err MsReaderParquet::openFile(const QString &filePath) {
     e = convertForMemberVars(
             msParquetReaderRows,
             &m_msScanInfo,
-            &m_scanPoints
+            &m_scanPoints,
+            &m_frameIndexVsDriftTime,
+            &m_hasIonMobility
             ); ree;
 
     e = printFileInfo(); ree;
@@ -92,16 +127,8 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(filePath); ree;
-    m_filePath = filePath;
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
-            eFileIncorrectTypeError
-    ); ree;
+    e = prepareForOpen(filePath, &m_filePath); ree;
+    e = closeFile(); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -114,7 +141,9 @@ Err MsReaderParquet::openFile(
     e = convertForMemberVars(
             msParquetReaderRows,
             &m_msScanInfo,
-            &m_scanPoints
+            &m_scanPoints,
+            &m_frameIndexVsDriftTime,
+            &m_hasIonMobility
     ); ree;
 
     QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
@@ -129,16 +158,8 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(filePath); ree;
-    m_filePath = filePath;
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
-            eFileIncorrectTypeError
-    ); ree;
+    e = prepareForOpen(filePath, &m_filePath); ree;
+    e = closeFile(); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -150,7 +171,9 @@ Err MsReaderParquet::openFile(
     e = convertForMemberVars(
             msParquetReaderRows,
             &m_msScanInfo,
-            &m_scanPoints
+            &m_scanPoints,
+            &m_frameIndexVsDriftTime,
+            &m_hasIonMobility
     ); ree;
 
     QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
@@ -164,6 +187,8 @@ Err MsReaderParquet::closeFile() {
 
     m_msScanInfo.clear();
     m_scanPoints.clear();
+    m_frameIndexVsDriftTime.clear();
+    m_hasIonMobility = false;
 
     e = ErrorUtils::isTrue(m_msScanInfo.isEmpty()); ree;
     e = ErrorUtils::isTrue(m_scanPoints.isEmpty()); ree;
@@ -208,7 +233,11 @@ namespace {
             row.isoWindowLower = msScanInfo.isoWindowLower;
             row.isoWindowUpper = msScanInfo.isoWindowUpper;
             row.ionMobilityDriftTime = msScanInfo.ionMobilityDriftTime;
+            row.ionMobilityWindowLower = msScanInfo.ionMobilityWindowLower;
+            row.ionMobilityWindowUpper = msScanInfo.ionMobilityWindowUpper;
             row.ionMobilityIndex = msScanInfo.ionMobilityIndex;
+            row.nativeFrameNumber = msScanInfo.nativeFrameNumber;
+            row.nativeScanNumber = msScanInfo.nativeScanNumber;
             row.mzVals = mzVals;
             row.intensityVals = intensityVals;
             row.targetKey = QString::number(static_cast<int>(std::round(row.precursorTargetMz *1000)));

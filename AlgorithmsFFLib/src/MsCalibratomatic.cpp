@@ -24,6 +24,10 @@ MsCalibratomatic::MsCalibratomatic()
 , m_polynomialOrderMassCal(2)
 {}
 
+void MsCalibratomatic::setPythiaParameters(const PythiaParameters &pythiaParameters) {
+    m_params = pythiaParameters;
+}
+
 namespace {
 
     enum class MetricType {
@@ -34,7 +38,7 @@ namespace {
     Err generateMetricsXYMapperMetrics(
             const QVector<QPair<XVal, YVal>> &data,
             int verbosity,
-            int rtBinning,
+            int binning,
             MetricType metricType,
             double *stDevMetricDiff
             ) {
@@ -56,8 +60,8 @@ namespace {
                 ); ree;
 
         XYMappermatic mapperMetrics;
+        e = mapperMetrics.setBinning(binning); ree;
         e = mapperMetrics.init(trainingData); ree;
-        e = mapperMetrics.setBinning(rtBinning); ree;
 
         QVector<QPair<double, double>> actualVsPredicted;
         QVector<double> diffs;
@@ -148,13 +152,14 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
         &m_scanTimeStd
         ); ree;
 
-    e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
-	e = m_scanTimeToIRTMapper.init(dataScanTime); ree;
     e = m_iRTtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
+    e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
+    e = m_scanTimeToIRTMapper.setBinning(m_params.rtBinning); ree;
+	e = m_scanTimeToIRTMapper.init(dataScanTime); ree;
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {
-        qDebug() << "scanTimeStDev" << m_scanTimeStd;
+        qDebug() << "scanTimeStDev" << m_scanTimeStd << "seconds";
     }
     m_isInitRT = true;
 
@@ -192,13 +197,24 @@ Err MsCalibratomatic::buildIMMapper(const QVector<MsCalibarationReaderRow> &msCa
     e = generateMetricsXYMapperMetrics(
         dataIIM,
         m_params.verbosity,
-        m_params.rtBinning,
+        m_params.imBinning,
         MetricType::IIM,
         &m_ionMobilityStd
         ); ree;
 
+    e = m_iIMtoScanTimeMapper.setBinning(m_params.imBinning); ree;
     e = m_iIMtoScanTimeMapper.init(dataIIM); ree;
-    e = m_iIMtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
+
+    QVector<QPair<XVal, YVal>> dataScanTimeToIIM;
+    dataScanTimeToIIM.reserve(dataIIM.size());
+    std::transform(
+        dataIIM.begin(),
+        dataIIM.end(),
+        std::back_inserter(dataScanTimeToIIM),
+        [](const QPair<XVal, YVal> &p) { return qMakePair(p.second, p.first); }
+        );
+    e = m_scanTimeToIIMMapper.setBinning(m_params.imBinning); ree;
+    e = m_scanTimeToIIMMapper.init(dataScanTimeToIIM); ree;
     e = ErrorUtils::isTrue(m_ionMobilityStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {
@@ -620,6 +636,16 @@ Err MsCalibratomatic::predictScanTime(float iRT, float *predictedScanTime) const
     ERR_RETURN
 }
 
+Err MsCalibratomatic::predictIonMobility(float iIM, float *predictedIonMobility) const {
+    ERR_INIT
+
+    double predictedIonMobilityDouble;
+    e = m_iIMtoScanTimeMapper.predictY(static_cast<double>(iIM), &predictedIonMobilityDouble); ree;
+    *predictedIonMobility = static_cast<float>(predictedIonMobilityDouble);
+
+    ERR_RETURN
+}
+
 Err MsCalibratomatic::predictIRT(float scanTime, float *predictedIRT) const {
 	ERR_INIT
 
@@ -630,8 +656,25 @@ Err MsCalibratomatic::predictIRT(float scanTime, float *predictedIRT) const {
 	ERR_RETURN
 }
 
+Err MsCalibratomatic::predictEmpiricalIonMobility(
+    float driftTime,
+    float *empiricalIonMobility
+    ) const {
+    ERR_INIT
+
+    double empiricalIonMobilityDouble;
+    e = m_scanTimeToIIMMapper.predictY(static_cast<double>(driftTime), &empiricalIonMobilityDouble); ree;
+    *empiricalIonMobility = static_cast<float>(empiricalIonMobilityDouble);
+
+    ERR_RETURN
+}
+
 bool MsCalibratomatic::isInitRT() const {
     return m_isInitRT;
+}
+
+bool MsCalibratomatic::isInitIM() const {
+    return m_isInitIM;
 }
 
 bool MsCalibratomatic::isInitCalMS1() const {
@@ -725,7 +768,9 @@ void MsCalibratomatic::setScanTimeStDev(double val) {
 
         qDebug()
         << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "ScanTimeStDev x 3:"
+        << "ScanTimeStDev x"
+        << m_params.scanTimeWindowStDevs
+        << ":"
         << scanTimeStDev(m_params.scanTimeWindowStDevs)
         << "seconds";
     }
@@ -741,8 +786,10 @@ void MsCalibratomatic::setIonMobilityStDev(double val) {
 
     qDebug()
     << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "IonMobilityStDev x 3:"
-    << ionMobilityStDev(m_params.scanTimeWindowStDevs)
+    << "IonMobilityStDev x"
+    << m_params.imWindowStdDevs
+    << ":"
+    << ionMobilityStDev(m_params.imWindowStdDevs)
     << "mSec";
 }
 

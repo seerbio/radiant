@@ -8,9 +8,14 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FDRCLassifierNeuralNet.h"
+#include "MS2Ion.h"
 #include "MsFrame.h"
 #include "QValueSettertron.h"
 #include "TurboXIC.h"
+
+#include <algorithm>
+#include <cmath>
+#include <QSet>
 
 
 Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
@@ -23,7 +28,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
-    e = ErrorUtils::isAboveThreshold(numberOfUniqueScanInfosForPurpose, 8, ErrorUtilsParam::IncludeThreshold); ree;
+    e = ErrorUtils::isAboveThreshold(numberOfUniqueScanInfosForPurpose, 4, ErrorUtilsParam::IncludeThreshold); ree;
 
     const double halfSizeScanInfos = uniqueMsScanInfos.size() / 2.0;
     const int incrementSize = std::max(1, static_cast<int>(halfSizeScanInfos / numberOfUniqueScanInfosForPurpose));
@@ -58,6 +63,93 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
 }
 
 namespace {
+
+    constexpr float TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0 = 0.03f;
+    constexpr float TIMS_CALIBRATED_IM_FILTER_PAD_MIN_ONE_OVER_K0 = 0.01f;
+    constexpr float TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0 = 0.15f;
+    float ionMobilityCenterForFilter(
+        const TargetDecoyCandidatePair *candidate,
+        const MsCalibratomatic *msCalibratomatic
+        ) {
+
+        if (candidate == nullptr) {
+            return -1.0f;
+        }
+
+        const float libraryIonMobility = candidate->iIM();
+        if (libraryIonMobility <= 0.0f
+            || msCalibratomatic == nullptr
+            || !msCalibratomatic->isInitIM()) {
+            return libraryIonMobility;
+        }
+
+        float predictedIonMobility = 0.0f;
+        if (msCalibratomatic->predictIonMobility(
+            libraryIonMobility,
+            &predictedIonMobility
+            ) != eNoError) {
+            return libraryIonMobility;
+        }
+
+        return predictedIonMobility > 0.0f
+             ? predictedIonMobility
+             : libraryIonMobility;
+    }
+
+    float ionMobilityFilterPad(
+        const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic *msCalibratomatic
+        ) {
+
+        if (msCalibratomatic == nullptr || !msCalibratomatic->isInitIM()) {
+            return TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        }
+
+        const float calibratedPad = msCalibratomatic->ionMobilityStDev(
+            pythiaParameters.imWindowStdDevs
+            );
+        if (calibratedPad <= 0.0f) {
+            return TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0;
+        }
+
+        return std::max(
+            TIMS_CALIBRATED_IM_FILTER_PAD_MIN_ONE_OVER_K0,
+            std::min(calibratedPad, TIMS_LIBRARY_IM_FILTER_PAD_ONE_OVER_K0)
+            );
+    }
+
+    bool isLibraryIonMobilityInAcquisitionWindow(
+        const TargetDecoyCandidatePair *candidate,
+        const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic *msCalibratomatic,
+        const MsScanInfo &msScanInfo
+        ) {
+
+        if (candidate == nullptr) {
+            return false;
+        }
+
+        const float ionMobilityCenter = ionMobilityCenterForFilter(
+            candidate,
+            msCalibratomatic
+            );
+        if (ionMobilityCenter <= 0.0f || msScanInfo.ionMobilityDriftTime <= 0.0f) {
+            return true;
+        }
+
+        float windowLower = msScanInfo.ionMobilityWindowLower;
+        float windowUpper = msScanInfo.ionMobilityWindowUpper;
+        if (windowLower <= 0.0f || windowUpper <= 0.0f || windowUpper < windowLower) {
+            windowLower = msScanInfo.ionMobilityDriftTime - TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
+            windowUpper = msScanInfo.ionMobilityDriftTime + TIMS_LIBRARY_IM_FILTER_FALLBACK_HALF_WIDTH_ONE_OVER_K0;
+        }
+
+        const float windowPad = ionMobilityFilterPad(pythiaParameters, msCalibratomatic);
+        windowLower -= windowPad;
+        windowUpper += windowPad;
+        return windowLower <= ionMobilityCenter && ionMobilityCenter <= windowUpper;
+    }
+
     struct TurboXICLoadInput {
         QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
@@ -79,6 +171,81 @@ namespace {
 
         return {e, turboXicLoadInput.mzTargetKey, turboXic};
     }
+
+    double maxIntensityInFrameWindow(
+        const TurboXIC &turboXic,
+        const MS2Ion &ms2Ion,
+        float ppmTolerance,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax
+        ) {
+
+        if (ms2Ion.mz <= 0.0f || ppmTolerance <= 0.0f) {
+            return 0.0;
+        }
+
+        if (frameIndexMax < frameIndexMin) {
+            std::swap(frameIndexMin, frameIndexMax);
+        }
+
+        const float massTol = MathUtils::calculatePPM(ms2Ion.mz, ppmTolerance);
+        const XICPoints xicPoints = turboXic.extractPointsXIC(ms2Ion.mz - massTol, ms2Ion.mz + massTol);
+
+        double maxIntensity = 0.0;
+        for (const XICPoint &xicPoint : xicPoints) {
+            if (xicPoint.scanNumber < frameIndexMin || xicPoint.scanNumber > frameIndexMax) {
+                continue;
+            }
+            if (xicPoint.intensity <= maxIntensity) {
+                continue;
+            }
+            maxIntensity = static_cast<double>(xicPoint.intensity);
+        }
+
+        return maxIntensity;
+    }
+
+    bool predictedFrameWindow(
+        const MsCalibratomatic &msCalibratomatic,
+        const PythiaParameters &pythiaParameters,
+        const MsFrame &msFrameMzTarget,
+        const TargetDecoyCandidatePair *targetDecoyPair,
+        FrameIndex *frameIndexMin,
+        FrameIndex *frameIndexMax
+        ) {
+
+        if (targetDecoyPair == nullptr
+            || !msCalibratomatic.isInitRT()
+            || !msFrameMzTarget.isValid()) {
+            return false;
+        }
+
+        float predictedScanTime = -1.0f;
+        Err e = msCalibratomatic.predictScanTime(targetDecoyPair->iRt(false), &predictedScanTime);
+        if (e != eNoError) {
+            return false;
+        }
+
+        const float scanTimeWindow
+            = msCalibratomatic.scanTimeStDev(static_cast<float>(pythiaParameters.scanTimeWindowStDevs));
+
+        e = msFrameMzTarget.frameIndexRangeFromScanTime(
+            predictedScanTime - scanTimeWindow,
+            predictedScanTime + scanTimeWindow,
+            frameIndexMin,
+            frameIndexMax
+            );
+        if (e != eNoError) {
+            return false;
+        }
+
+        if (*frameIndexMax < *frameIndexMin) {
+            std::swap(*frameIndexMin, *frameIndexMax);
+        }
+
+        return true;
+    }
+
 }//namespace
 Err PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
     const QVector<MsScanInfo>& uniqueMsScanInfos,
@@ -283,7 +450,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     const PythiaParameters &pythiaParameters,
     QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
     QMap<int, int> *fdrVsCounts,
-    QVector<float> *weights
+    QVector<float> *weights,
+    bool useMonotonePairQValues
     ) {
 
     ERR_INIT
@@ -359,7 +527,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     //Need to speed this up
     e = QValueSettertron::setQValueForCandidates(
         QValueSettertron::QValueScoreType::DiscriminantScore,
-        &targetDecoyCandidateScorePairsPntrs
+        &targetDecoyCandidateScorePairsPntrs,
+        useMonotonePairQValues
         ); ree;
 
     e = FDRCLassifierNeuralNet::outputFDRResults(
@@ -416,6 +585,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         const PythiaParameters &pythiaParameters,
         const QVector<MsScanInfo> &msScanInfos,
+        const MsCalibratomatic *msCalibratomatic,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
         ) {
 
@@ -431,6 +601,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         filterParallelLogic,
         targetDecoyCandidatePairs,
         pythiaParameters,
+        msCalibratomatic,
         std::placeholders::_1
         );
 
@@ -449,6 +620,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> result = filterParallelLogic(
             targetDecoyCandidatePairs,
             pythiaParameters,
+            msCalibratomatic,
             msScanInfo
             );
         e = result.first; ree;
@@ -462,6 +634,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
 QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWorkflowSharedMethods::filterParallelLogic(
     const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
     const PythiaParameters &pythiaParameters,
+    const MsCalibratomatic *msCalibratomatic,
     const MsScanInfo &msScanInfo
     ) {
 
@@ -470,10 +643,33 @@ QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWo
     e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
 
     const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-    const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+    const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowUpper + pythiaParameters.precursorExtractionWindowThomsons);
 
-    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
-    filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
+    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered;
+    targetDecoyCandidatePairsFiltered.reserve(targetDecoyCandidatePairs.size());
+
+    const bool useIonMobilityFilter = msScanInfo.ionMobilityDriftTime > 0.0f;
+    for (TargetDecoyCandidatePair *candidate : targetDecoyCandidatePairs) {
+        if (candidate == nullptr) {
+            continue;
+        }
+
+        const float precursorMz = candidate->mz(false);
+        if (precursorMz < precursorMzMin || precursorMz > precursorMzMax) {
+            continue;
+        }
+
+        if (useIonMobilityFilter && !isLibraryIonMobilityInAcquisitionWindow(
+            candidate,
+            pythiaParameters,
+            msCalibratomatic,
+            msScanInfo
+            )) {
+            continue;
+        }
+
+        targetDecoyCandidatePairsFiltered.push_back(candidate);
+    }
 
     if (pythiaParameters.verbosity > 0) {
         qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
@@ -666,4 +862,3 @@ double PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(const QMap<int, int> &f
 
     return fdrMean;
 }
-

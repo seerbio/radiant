@@ -8,7 +8,6 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
-#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
@@ -114,8 +113,10 @@ private:
 
     Err applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
+        const MsReaderPointerAcc *msReaderPointerAcc,
         int seed,
-        QVector<CandidateScores*> *candidateScoreClassifier
+        QVector<CandidateScores*> *candidateScoreClassifier,
+        bool *usedDiscriminantFallback
         );
 
     Err updateProteinGroupAnnotation(
@@ -143,8 +144,8 @@ private:
     QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;
     QHash<TargetDecoyCandidatePair*, bool> m_entered;
 
-    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
-    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
+	QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
+	QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
@@ -155,8 +156,6 @@ private:
     int m_minTrainingCountTranche;
 
     QVector<float> m_weights;
-
-    QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
     QList<FragLibReaderRow> m_fragLibReaderRows;
 

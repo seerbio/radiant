@@ -18,11 +18,10 @@ Err SpecLibReader::getFragLibReaerRows(
 
     e = ErrorUtils::fileExists(fragLibFilePath); ree;
 
-    std::ifstream speclibStream(fragLibFilePath.toStdString(), std::ifstream::binary);
-
     Library library;
-    e = library.read(speclibStream, fragLibReaderRows); ree;
+    MappedFileInput mappedInput(fragLibFilePath);
+    e = ErrorUtils::isTrue(mappedInput.isOpen(), eFileError); ree;
+    e = library.read(mappedInput, fragLibReaderRows); ree;
 
     ERR_RETURN
 }
-

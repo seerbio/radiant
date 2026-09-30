@@ -11,15 +11,19 @@
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
+#include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
+
+#include <QString>
 
 class BestCorrelationResult;
 class CandidateScores;
 class MatriciesAndVecs;
 class MS2Ion;
 class MsFrame;
+class Ms2IonMobilityIndexBase;
 class TargetDecoyCandidatePair;
 class XICPeakManager;
 
@@ -50,7 +54,9 @@ public:
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
         TurboXIC *turboXicMS1,
-        MsFrame *msFrameMS1
+        MsFrame *msFrameMS1,
+        MsReaderPointerAcc *msReaderPointerAcc,
+        Ms2IonMobilityIndexBase *ms2IonMobilityIndex
         );
 
     Err calculateScores(
@@ -60,10 +66,16 @@ public:
         CandidateScores *candidateScores
         ) const;
 
+    [[nodiscard]] QString scoringDiagnosticsSummary() const;
+    void printScoringDiagnosticsIfEnabled() const;
+    void setUseAdaptiveIonMobilityCentering(bool useAdaptiveIonMobilityCentering);
+    void setIonMobilityToleranceOverride(float ionMobilityTolerance);
+
 
 private:
 
     Err initMatricesdAndVecs(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
@@ -77,6 +89,14 @@ private:
         FrameIndex *frameIndexPredictedMax
         ) const;
 
+    [[nodiscard]] float ionMobilityCenter(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair
+        ) const;
+    [[nodiscard]] float ionMobilityTolerance(
+        float fallbackTolerance,
+        float minTolerance = 0.0f
+        ) const;
+
     Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
         const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
@@ -85,7 +105,9 @@ private:
 
     Err setCandidateScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const QVector<MS2Ion> &ms2Ions,
         const QVector<BestCorrelationResult> &bestCorrelationResults,
+        const MatriciesAndVecs &matriciesAndVecs,
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores
         ) const;
@@ -94,6 +116,18 @@ private:
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const BestCorrelationResult &bestCorrelationResult,
         float ppmTol,
+        CandidateScores *candidateScores
+        ) const;
+
+    Err setLibraryIonMobilityRelatedScores(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        CandidateScores *candidateScores
+        ) const;
+
+    Err setMs2IonMobilityRelatedScores(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const QVector<MS2Ion> &ms2Ions,
+        const MatriciesAndVecs &matriciesAndVecs,
         CandidateScores *candidateScores
         ) const;
 
@@ -108,6 +142,8 @@ private:
     MsCalibratomatic m_msCalibratomatic;
     TurboXIC *m_turboXicMS1;
     MsFrame *m_msFrameMS1;
+    MsReaderPointerAcc *m_msReaderPointerAcc;
+    Ms2IonMobilityIndexBase *m_ms2IonMobilityIndex;
     MzTargetKey m_mzTargetKey;
 
     float m_minPeakCount;
@@ -117,6 +153,8 @@ private:
 
     QVector<Features> m_features;
     bool m_useTopNIntegrationsParam;
+    bool m_useAdaptiveIonMobilityCentering;
+    float m_ionMobilityToleranceOverride = -1.0f;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

@@ -16,9 +16,41 @@
 
 using namespace Error;
 
-using FrameNumberTIMS = int;
-using Ms1FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
-using Ms1FrameTIMSPntrs = QMap<IonMobilityIndex, ScanPoints*>;
+struct FILEREADERSLIB_EXPORTS MsAlignedPointData {
+    QVector<float> ionMobilityByPoint;
+
+    void clear() {
+        ionMobilityByPoint.clear();
+    }
+
+    [[nodiscard]] bool isEmpty() const {
+        return ionMobilityByPoint.isEmpty();
+    }
+
+    [[nodiscard]] bool hasIonMobility() const {
+        return !ionMobilityByPoint.isEmpty();
+    }
+
+    [[nodiscard]] bool isAlignedWith(const ScanPoints &scanPoints) const {
+        return ionMobilityByPoint.isEmpty() || ionMobilityByPoint.size() == scanPoints.size();
+    }
+
+    [[nodiscard]] int pointCount() const {
+        return ionMobilityByPoint.size();
+    }
+};
+
+[[nodiscard]] inline float msIonMobilityOf(
+    const MsAlignedPointData &pointData,
+    int pointIndex
+    ) {
+
+    if (pointIndex < 0 || pointIndex >= pointData.ionMobilityByPoint.size()) {
+        return -1.0f;
+    }
+
+    return pointData.ionMobilityByPoint.at(pointIndex);
+}
 
 enum class ScanPointsSort {
     AscMz,
@@ -33,13 +65,17 @@ public:
 
     int msLevel = -1;
     ScanNumber scanNumber = -1;
-    float scanTime = -1.0;
+    float scanTime = -1.0; // seconds
     float collisionEnergy = -1.0;
     float precursorTargetMz = -1.0;
     float isoWindowLower = -1.0;
     float isoWindowUpper = -1.0;
     float ionMobilityDriftTime = -1.0;
+    float ionMobilityWindowLower = -1.0;
+    float ionMobilityWindowUpper = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
+    int nativeFrameNumber = -1;
+    int nativeScanNumber = -1;
 
     long scanOffsetStart = -1;
     long scanOffsetEnd = -1;
@@ -169,6 +205,11 @@ public:
             QMap<ScanNumber, ScanPoints>* scanNumberVsScanPoints
             );
 
+    virtual Err getMzTargetAlignedPointData(
+            const MzTargetKey &targetKey,
+            QMap<ScanNumber, const MsAlignedPointData*> *scanNumberVsAlignedPointData
+            ) const;
+
     /**
     * @brief Gets the file path of the currently opened file in the MS Reader.
     *
@@ -200,7 +241,7 @@ public:
     * @return Returns true if m_msScanInfo is not empty, indicating that the MS Reader has been initialized.
     * If m_msScanInfo is empty, returns false.
     */
-    bool isInit();
+    bool isInit() const;
 
     /**
     * @brief Retrieves the minimum and maximum scan times from the currently opened file in the MS Reader.
@@ -497,25 +538,27 @@ public:
     void printSize() const;
 
     Err printFileInfo();
-    [[nodiscard]] bool isTIMS() const;
+    [[nodiscard]] bool hasIonMobility() const;
+    virtual Err restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax);
 
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
+    virtual const MsAlignedPointData *alignedPointDataPntr(ScanNumber scanNumber) const;
 
 
 protected:
 
+    void setHasIonMobility(bool hasIonMobility);
+
     bool m_fileIsCalibrated;
-    bool m_isTIMS;
+    bool m_hasIonMobility;
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetVsScanInfosPntrs;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
     QMap<FrameIndex, double> m_frameIndexVsDriftTime;
 
 

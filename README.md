@@ -77,3 +77,12 @@ are unchanged; use a rebuilt executable and fresh native search outputs.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for information about building from sources
 or contributing to development.
+
+For vendored `timsreader`, use:
+
+```text
+ThirdPartyLibs/timsreader/include/timsreader.h
+ThirdPartyLibs/timsreader/include/timsreader.hpp
+ThirdPartyLibs/timsreader/lib/x86_64/libtimsreader.so
+ThirdPartyLibs/timsreader/lib/aarch64/libtimsreader.so
+```

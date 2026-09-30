@@ -18,11 +18,35 @@
 #include "TurboXIC.h"
 #include "TurboXIC2D.h"
 
+#include <QSharedPointer>
+
 using namespace Error;
 
 
 class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
+struct TargetKeyScoringContext;
+
+namespace TargetDecoyCandidatePairScoretronUtils {
+
+ALGORITHMSFFLIB_EXPORTS int calculateTargetChunkSize(int totalCandidatesInBatch, int threadCount);
+ALGORITHMSFFLIB_EXPORTS int calculateMinChunkSize(int targetChunkSize);
+ALGORITHMSFFLIB_EXPORTS int calculateSliceCount(
+    int candidateCount,
+    int targetChunkSize,
+    int minChunkSize
+    );
+ALGORITHMSFFLIB_EXPORTS QVector<int> calculateAdaptiveSliceCounts(
+    const QVector<int> &candidateCounts,
+    int threadCount
+    );
+ALGORITHMSFFLIB_EXPORTS QPair<int, int> calculateSliceBounds(
+    int itemCount,
+    int sliceIndex,
+    int sliceCount
+    );
+
+}
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron2 {
 
@@ -117,6 +141,8 @@ public:
 
     Err buildMzTargetKeyVsMsFrames();
 
+    void setUseAdaptiveIonMobilityCentering(bool useAdaptiveIonMobilityCentering);
+
 private:
 
     Err buildParallelInput(
@@ -147,6 +173,7 @@ private:
 
     Err buildAveragineTable();
 
+    void clearTargetKeyScoringContextCache() const;
 
 private:
 
@@ -165,6 +192,8 @@ private:
     QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
     QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFramePntr;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
+    bool m_useAdaptiveIonMobilityCentering = false;
+    mutable QMap<MzTargetKey, QSharedPointer<TargetKeyScoringContext>> m_targetKeyScoringContextCache;
 
 };
 

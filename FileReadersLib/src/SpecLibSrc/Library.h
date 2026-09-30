@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <regex>
+#include <QtConcurrent/QtConcurrent>
 
 
 using namespace Error;
@@ -88,6 +89,82 @@ public:
 	bool fromSpeclib = false;
 
 	std::vector<Entry> entries;
+
+	struct EntryConversionResult {
+		Err error = eNoError;
+		FragLibReaderRow row;
+		int droppedFragmentCount = 0;
+	};
+
+	static EntryConversionResult convertEntry(
+		const Entry &entry,
+		const std::string &precursor,
+		const std::vector<PG> &proteinIds
+		) {
+		ERR_INIT
+
+		FragLibReaderRow flrr;
+		flrr.proteinGroups = QString::fromStdString(proteinIds.at(entry.pidIndex).names);
+
+		QString specLibPeptide = QString::fromStdString(precursor);
+		const QChar specLibPeptideCharge = specLibPeptide.back();
+		specLibPeptide.chop(1);
+		const PeptideString peptideString = PeptideStringWithMods(specLibPeptide).removeUniModChars();
+		specLibPeptide += '|' + specLibPeptideCharge;
+
+		flrr.peptideSequenceChargeKey = specLibPeptide;
+		e = ErrorUtils::toInt(QString(specLibPeptideCharge), &flrr.precursorCharge); rree;
+		flrr.iM = entry.target.iIM;
+		flrr.iRT = entry.target.iRT;
+		flrr.isDecoy = false;
+
+		const int fragmentsSize = static_cast<int>(entry.target.fragments.size());
+		flrr.intensityVals.reserve(fragmentsSize);
+		flrr.mzVals.reserve(fragmentsSize);
+		flrr.mass = (entry.target.mz * static_cast<float>(flrr.precursorCharge))
+			- (ChemConstants::PROTON * flrr.precursorCharge);
+
+		QStringList ionLabelsList;
+		ionLabelsList.reserve(fragmentsSize);
+		int droppedFragmentCount = 0;
+		for (int fragmentIndex = 0; fragmentIndex < fragmentsSize; ++fragmentIndex) {
+			const Product &fragment = entry.target.fragments.at(fragmentIndex);
+			const float intensityVal = fragment.height;
+			if (fragment.charge > flrr.precursorCharge) {
+				++droppedFragmentCount;
+			}
+			if (fragment.charge > flrr.precursorCharge || intensityVal < 0.01f) {
+				continue;
+			}
+
+			flrr.mzVals.push_back(fragment.mz);
+			flrr.intensityVals.push_back(intensityVal);
+			IonLabel ionLabel;
+			e = extractIonLabel(
+				static_cast<unsigned int>(fragment.index),
+				static_cast<unsigned int>(fragment.type),
+				static_cast<unsigned int>(fragment.charge),
+				static_cast<unsigned int>(fragment.loss),
+				peptideString.size(),
+				&ionLabel
+				); rree;
+			ionLabelsList.push_back(ionLabel);
+		}
+		flrr.ionLabels = ionLabelsList.join(S_GLOBAL_SETTINGS.SEPARATOR);
+		return {eNoError, flrr, droppedFragmentCount};
+	}
+
+	struct EntryConverter {
+		typedef EntryConversionResult result_type;
+		const Library *library;
+		result_type operator()(int index) const {
+			return convertEntry(
+				library->entries.at(index),
+				library->precursors.at(index),
+				library->proteinIds
+				);
+		}
+	};
 
 	static Err extractIonLabel(
 		unsigned int ionIndexRaw,
@@ -163,85 +240,25 @@ public:
 			Readers::readVector(input, elution_groups);
 		}
 
-		// fragLibReaderRows->reserve(static_cast<int>(entries.size()));
-		int droppedFragmentCount = 0;
-		int affectedPrecursorCount = 0;
-
-		for (int i = 0; i < entries.size(); i++) {
-
-			e = ErrorUtils::isWithinRange(i, entries); ree;
-
-			const auto &[target, decoy, entryFlags, proteotypic, name, pidIndex, pgQValue, ptmQvalue, siteConf] = entries.at(i);
-			const auto &p = precursors.at(i);
-
-			FragLibReaderRow flrr;
-
-			const QString proteinGroups = QString::fromStdString(proteinIds.at(entries.at(i).pidIndex).names);
-			flrr.proteinGroups = proteinGroups;
-
-			QString specLibPeptide = QString::fromStdString(p);
-			const QChar specLibPeptideCharge = specLibPeptide.back();
-
-			specLibPeptide.chop(1);
-			const PeptideString peptideString = PeptideStringWithMods(specLibPeptide).removeUniModChars();
-			specLibPeptide += '|' + specLibPeptideCharge;
-
-			flrr.peptideSequenceChargeKey = specLibPeptide;
-			e = ErrorUtils::toInt(QString(specLibPeptideCharge), &flrr.precursorCharge); ree;
-			flrr.iM = target.iIM;
-			flrr.iRT = target.iRT;
-			flrr.isDecoy = false;
-
-			const int fragmentsSize = static_cast<int>(target.fragments.size());
-			flrr.intensityVals.reserve(fragmentsSize);
-			flrr.mzVals.reserve(fragmentsSize);
-			flrr.mass = (target.mz * static_cast<float>(flrr.precursorCharge)) - (ChemConstants::PROTON * flrr.precursorCharge);
-
-			QStringList ionLabelsList;
-			ionLabelsList.reserve(fragmentsSize);
-			bool droppedForCurrentPrecursor = false;
-
-			for (int i = 0; i < fragmentsSize; i++) {
-				const auto ionIndexRaw = static_cast<unsigned int>(target.fragments.at(i).index);
-				const auto ionTypeInt = static_cast<unsigned int>(target.fragments.at(i).type);
-				const auto ionCharge = static_cast<unsigned int>(target.fragments.at(i).charge);
-				const auto ionLoss = static_cast<unsigned int>(target.fragments.at(i).loss);
-				const float intensityVal = target.fragments.at(i).height;
-				const float mzVal = target.fragments.at(i).mz;
-
-				if (
-					constexpr float intensityCutoff = 0.01;
-					ionCharge > flrr.precursorCharge || intensityVal < intensityCutoff)
-					{
-					if (ionCharge > flrr.precursorCharge) {
-						droppedFragmentCount++;
-						droppedForCurrentPrecursor = true;
-					}
-					continue;
-				}
-
-				flrr.mzVals.push_back(mzVal);
-				flrr.intensityVals.push_back(intensityVal);
-
-				IonLabel ionLabel;
-				e = extractIonLabel(
-					ionIndexRaw,
-					ionTypeInt,
-					ionCharge,
-					ionLoss,
-					peptideString.size(),
-					&ionLabel
-					); ree;
-				ionLabelsList.push_back(ionLabel);
-			}
-
-			flrr.ionLabels = ionLabelsList.join(S_GLOBAL_SETTINGS.SEPARATOR);
-			fragLibReaderRows->push_back(flrr);
-			if (droppedForCurrentPrecursor) {
-				affectedPrecursorCount++;
-			}
+		fragLibReaderRows->reserve(static_cast<int>(entries.size()));
+		QVector<int> entryIndices;
+		entryIndices.reserve(static_cast<int>(entries.size()));
+		for (int i = 0; i < static_cast<int>(entries.size()); ++i) {
+			entryIndices.push_back(i);
 		}
 
+		const EntryConverter convert{this};
+		const QFuture<EntryConversionResult> results = QtConcurrent::mapped(entryIndices, convert);
+		int droppedFragmentCount = 0;
+		int affectedPrecursorCount = 0;
+		for (const EntryConversionResult &result : results.results()) {
+			e = result.error; ree;
+			fragLibReaderRows->push_back(result.row);
+			if (result.droppedFragmentCount > 0) {
+				droppedFragmentCount += result.droppedFragmentCount;
+				++affectedPrecursorCount;
+			}
+		}
 		if (droppedFragmentCount > 0) {
 			qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
 			           << "Dropped"
@@ -250,7 +267,6 @@ public:
 			           << affectedPrecursorCount
 			           << "precursors because fragment charge exceeded precursor charge while reading speclib";
 		}
-
 		ERR_RETURN
 	}
 };

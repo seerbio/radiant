@@ -28,6 +28,8 @@ public:
     MsCalibratomatic();
     ~MsCalibratomatic() = default;
 
+    void setPythiaParameters(const PythiaParameters &pythiaParameters);
+
     Err buildRTMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
     Err buildIMMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 
@@ -68,12 +70,24 @@ public:
         float *predictedScanTime
         ) const;
 
-	Err predictIRT(
+    Err predictIonMobility(
+        float iIM,
+        float *predictedIonMobility
+        ) const;
+
+    Err predictIRT(
 		float scanTime,
 		float *predictedIRT
 		) const;
 
+    Err predictEmpiricalIonMobility(
+        float driftTime,
+        float *empiricalIonMobility
+        ) const;
+
     [[nodiscard]] bool isInitRT() const;
+
+    [[nodiscard]] bool isInitIM() const;
 
     [[nodiscard]] bool isInitCalMS1() const;
 
@@ -92,6 +106,7 @@ private:
     XYMappermatic m_iRTtoScanTimeMapper;
     XYMappermatic m_scanTimeToIRTMapper;
     XYMappermatic m_iIMtoScanTimeMapper;
+    XYMappermatic m_scanTimeToIIMMapper;
     QVector<double> m_calibrationCurveCoeffsMS1;
     QVector<double> m_calibrationCurveCoeffsMS2;
 

@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: verify-timsreader
+        run: |
+          test -f ThirdPartyLibs/timsreader/include/timsreader.hpp
+          test -f ThirdPartyLibs/timsreader/include/timsreader.h
+          test -f ThirdPartyLibs/timsreader/lib/x86_64/libtimsreader.so
       - uses: docker/setup-buildx-action@v3
       - name: Expose GitHub runtime for Buildx cache
         run: |
@@ -31,6 +36,11 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v6
+      - name: verify-timsreader
+        run: |
+          test -f ThirdPartyLibs/timsreader/include/timsreader.hpp
+          test -f ThirdPartyLibs/timsreader/include/timsreader.h
+          test -f ThirdPartyLibs/timsreader/lib/aarch64/libtimsreader.so
       - uses: docker/setup-buildx-action@v3
       - name: Expose GitHub runtime for Buildx cache
         run: |

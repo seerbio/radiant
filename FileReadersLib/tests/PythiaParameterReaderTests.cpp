@@ -40,6 +40,7 @@ void PythiaParameterReaderTests::readFileTest() {
 
     QCOMPARE(pythiaParameters.threadCount, 16);
     QCOMPARE(pythiaParameters.verbosity, 1);
+    QCOMPARE(pythiaParameters.imHandlingMode, ImHandlingMode::Centroid);
     QCOMPARE(pythiaParameters.writeRadiantDIA, true);
     QCOMPARE(pythiaParameters.chargeStateMin, 1);
     QCOMPARE(pythiaParameters.chargeStateMax, 4);
@@ -51,6 +52,7 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.useAlternativeDecoys, false);
     QCOMPARE(pythiaParameters.precursorExtractionWindowThomsons, 0.5);
     QCOMPARE(pythiaParameters.ms1ExtractionWidthPPM, 20.0);
+    QCOMPARE(pythiaParameters.ms1IntensityMinForScoring, 12345.0);
     QCOMPARE(pythiaParameters.filterLengthIntegration, 6);
     QCOMPARE(pythiaParameters.filterLengthMS2, 4);
     QCOMPARE(pythiaParameters.competitionEnabled, true);
@@ -61,6 +63,16 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.subtractShadows, false);
     QCOMPARE(pythiaParameters.smoothCountMS2, 2);
     QCOMPARE(pythiaParameters.stopThresholdFractionMS2, 0.666f);
+    QCOMPARE(pythiaParameters.timsMainCandidateBudgetPerTargetKey, 4000);
+    QCOMPARE(pythiaParameters.timsStratifyCandidateBudget, true);
+    QCOMPARE(pythiaParameters.timsHighEvidenceMinCosineSimSum100, 3.8f);
+    QCOMPARE(pythiaParameters.timsHighEvidenceMinCosineSimSpectrumOverTimeCubed, 0.2f);
+    QCOMPARE(pythiaParameters.timsHighEvidenceMaxScanTimeDeltaAbs, 90.0f);
+    QCOMPARE(pythiaParameters.timsHighEvidenceFilterSweep, true);
+    QCOMPARE(pythiaParameters.timsHighEvidenceFilterEnabled, false);
+    QCOMPARE(pythiaParameters.timsSecondStageCandidateRowLimit, 24000);
+    QCOMPARE(pythiaParameters.timsSecondStageUniquePrecursorLimit, 12000);
+    QCOMPARE(pythiaParameters.timsLocalFdrRtBinSeconds, 150.0);
     QCOMPARE(pythiaParameters.percentFDR, 2.0);
     QCOMPARE(pythiaParameters.reportDecoys, true);
     QCOMPARE(pythiaParameters.filterLength, 4);

@@ -41,7 +41,10 @@ public:
 
     static Err setQValueForCandidates(
         const QValueScoreType &qValueScoreType,
-        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
+        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs,
+        bool useMonotoneQValues = false,
+        bool stratifyByTargetKey = false,
+        double localRtBinSeconds = 0.0
     );
 
 };
