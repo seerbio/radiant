@@ -61,6 +61,21 @@ public:
             bool removeZeroPoints = true
     );
 
+    // The source points must have exactly the order produced by sorting the
+    // original observations by x(). Equal-mass order is significant for ties.
+    static ExtractPoints extractPointsFromSortedPoints(
+            const QVector<QPointF> &sortedPoints,
+            const QVector<QPointF> &extractionPoints,
+            double extractionPPM
+    );
+
+    static QVector<QPointF> extractPointsFromSortedPoints(
+            const QVector<QPointF> &sortedPoints,
+            const QVector<double> &extractionPoints,
+            double extractionPPM,
+            bool removeZeroPoints = true
+    );
+
     /**
     * @brief Writes points to a CSV file.
     *

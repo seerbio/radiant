@@ -54,7 +54,8 @@ public:
             const PythiaParameters &pythiaParameters,
             QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
             QMap<int, int> *fdrVsCounts,
-            QVector<float> *weights
+            QVector<float> *weights,
+            bool useMonotonePairQValues = false
         );
 
     static Err buildTargetDecoyCandidateScorePairsPntrs(

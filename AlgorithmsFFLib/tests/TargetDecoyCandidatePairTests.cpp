@@ -14,6 +14,7 @@ public:
 private Q_SLOTS:
 
     void gettersTest();
+    static void proteinGroupsFromFragLibReaderRowTest();
 	static void mutateCandidatePeptideTargetTestAccessTestPenultimate();
 	static void mutateCandidatePeptideTargetTestAccessTestTerminalByPenultimate();
     static void mutateCandidatePeptideTargetTestAccessTestTerminalByPenultimateWithNTermModification();
@@ -62,6 +63,16 @@ void TargetDecoyCandidatePairTests::gettersTest() {
     // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6f));
     // QCOMPARE(targetDecoyCandidatePair.totalFragmentCount(), 12);
 
+}
+
+void TargetDecoyCandidatePairTests::proteinGroupsFromFragLibReaderRowTest() {
+    FragLibReaderRow fragLibReaderRow;
+    fragLibReaderRow.proteinGroups = "P12345;Q67890";
+
+    TargetDecoyCandidatePair targetDecoyCandidatePair(PeptideStringWithMods("ACDEFGHIK"), 0.0f);
+    targetDecoyCandidatePair.setFragLibReaderRowPntr(&fragLibReaderRow);
+
+    QCOMPARE(targetDecoyCandidatePair.proteinGroups(), QString("P12345;Q67890"));
 }
 
 void TargetDecoyCandidatePairTests::mutateCandidatePeptideTargetTestAccessTestPenultimate() {

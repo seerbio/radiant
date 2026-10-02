@@ -15,8 +15,11 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 
 #Add classes to test here.
 SET(TEST_CLASSES
+        CandidateCohortTests
         ConvertMzMLToParquetWorkFlowTests
+        MsCalibratomaticSettertronTests
         PythiaDIAFFWorkflowTests
+        NeuralNetFeatureTransformsTests
 
         PlayGroundTests
         )

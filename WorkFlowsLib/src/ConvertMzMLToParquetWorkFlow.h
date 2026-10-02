@@ -9,8 +9,8 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "MsReaderMzML.h"
 #include "MsReaderParquet.h"
+#include "MsReaderPointerAcc.h"
 
 
 using namespace Error;
@@ -21,7 +21,7 @@ class WORKFLOWSLIB_EXPORTS ConvertMzMLToParquetWorkFlow {
 public:
 
     static Err convertMzMLToParquet(
-            const QString &mzmlFilePath,
+            const QString &msDataFilePath,
             QString *outputFilePath
             );
 

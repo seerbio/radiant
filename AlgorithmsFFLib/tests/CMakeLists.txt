@@ -12,7 +12,13 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 
 #Add classes to test here.
 SET(TEST_CLASSES
+        CandidateBundleIOTests
+        FileHashTests
+        ProbePeptideFamilyNeuralNet
+        ProbeCandidatePoolSelection
+        ProbeCandidatePoolRescorer
         BiophysicalCalcsTests
+        CandidateScorertronRegressionTests
         CandidateScorertronTests
         CentroidotronTests
         ClassifierWeightsManagerTests
@@ -22,18 +28,24 @@ SET(TEST_CLASSES
         FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
+        FragmentCompetitionTests
+        IdLevelQValueAnnotatorTests
         IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests
         MsFrameTests
         MsUtilsTests
+        PreparedSpectrumTests
         PeakIntegratomaticTests
+        PostNeuralNetCompetitionTests
         QuanTransitionRefinertronTests
         QValueSettertronTests
         SequenceSubstringSearchomaticTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
+        TargetDecoyCandidatePairConcurrencyTests
+        TimsMs2IonMobilityIndexTests
         TurboXICTests
         TurboXIC2DTests
         XICPeakManagerTests
@@ -50,3 +62,9 @@ foreach(class ${TEST_CLASSES})
     ADD_TEST( NAME ${class} COMMAND ${class} )
 
 endforeach()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestFiles/fragment_competition_reference.json"
+    "${CMAKE_BINARY_DIR}/bin/fragment_competition_reference.json"
+    COPYONLY
+)

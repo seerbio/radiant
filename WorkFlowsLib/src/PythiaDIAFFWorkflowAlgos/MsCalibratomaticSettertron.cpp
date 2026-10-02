@@ -8,7 +8,7 @@
 #include "DiscriminantScoretron.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "IonMobilitron.h"
-#include "InterferingCandidatesEliminatomatic.h"
+#include "FragmentCompetition.h"
 #include "MsReaderPointerAcc.h"
 #include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
@@ -188,7 +188,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             *m_pythiaParameters,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
-            &weights
+            &weights,
+            m_msReaderPointerAcc->ptr->isTIMS()
             ); ree;
 
         constexpr int fdrKey = 5;
@@ -372,6 +373,28 @@ int MsCalibratomaticSettertron::calculateNumberOfTranches(int verbosity) const {
 }
 
 
+Err MsCalibratomaticSettertron::selectCalibrationCandidates(
+    QVector<CandidateScores*> *candidates,
+    int topNCandidates,
+    QVector<CandidateScores*> *selected) const {
+    ERR_INIT
+    candidates->removeAll(nullptr);
+    PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(candidates);
+    constexpr int minTrainingCountTranche = 50;
+    // Never grow the list with null padding, including when competition is off.
+    *selected = candidates->mid(
+        0, std::min(candidates->size(), std::max(minTrainingCountTranche, topNCandidates)));
+    const int before = selected->size();
+    e = FragmentCompetition::removeCompetingCandidates(
+        m_pythiaParameters->competitionEnabled, selected); ree;
+    if (m_pythiaParameters->verbosity > 0) {
+        qDebug() << "Fragment competition before calibration"
+                 << "enabled" << m_pythiaParameters->competitionEnabled
+                 << "candidate_rows" << before << "->" << selected->size();
+    }
+    ERR_RETURN
+}
+
 Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
     int topNCandidates,
@@ -381,25 +404,9 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     ERR_INIT
 
     e = ErrorUtils::isFalse(candidateScoresVecScoredPntrs->isEmpty()); ree;
-
-    PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(candidateScoresVecScoredPntrs);
-
-    QVector<CandidateScores*> candidateScoresVecBatchPntrsResized = *candidateScoresVecScoredPntrs;
-
-    constexpr int minTrainingCountTranche = 50;
-    candidateScoresVecBatchPntrsResized.resize(std::max(minTrainingCountTranche, topNCandidates));
-
-    e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
-            m_pythiaParameters->ionsSharedToReject,
-            m_pythiaParameters->mzMinMS2,
-            m_pythiaParameters->mzMaxMS2,
-            &candidateScoresVecBatchPntrsResized
-            ); ree;
-
-    if (m_pythiaParameters->verbosity > 0) {
-        qDebug() << "Using" << candidateScoresVecBatchPntrsResized.size() << "for iRT Estimation";
-        qDebug() << candidateScoresVecBatchPntrsResized.size() << "after filtering";
-    }
+    QVector<CandidateScores*> candidateScoresVecBatchPntrsResized;
+    e = selectCalibrationCandidates(
+        candidateScoresVecScoredPntrs, topNCandidates, &candidateScoresVecBatchPntrsResized); ree;
 
     if (candidateScoresVecBatchPntrsResized.isEmpty()) {
         ERR_RETURN
@@ -450,7 +457,7 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     constexpr int ms2MassRecalCountMin = 200;
     if (topCandidatesMass > ms2MassRecalCountMin) {
 
-        msCalibrationReaderRows.resize(topCandidatesMass);
+        msCalibrationReaderRows.resize(std::min(msCalibrationReaderRows.size(), topCandidatesMass));
 
         e = m_msCalibratomatic.setMassCalibrationCoeffs(
             msCalibrationReaderRows,

@@ -84,7 +84,9 @@ public:
         const QVector<MsScanInfo> &msScanInfos,
         const QVector<float> &weights,
         QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
-        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec,
+        const QVector<float> &additionalMinPeakCounts = {},
+        QVector<QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> *additionalScores = nullptr
         ) const;
 
     /**
@@ -116,6 +118,8 @@ public:
     Err reloadTurboXICMS1();
 
     Err buildMzTargetKeyVsMsFrames();
+
+    void setUseAdaptiveTimsMobilityCentering(bool useAdaptiveTimsMobilityCentering);
 
 private:
 
@@ -165,6 +169,7 @@ private:
     QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
     QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFramePntr;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
+    bool m_useAdaptiveTimsMobilityCentering = false;
 
 };
 

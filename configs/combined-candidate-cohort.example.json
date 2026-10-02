@@ -1,0 +1,19 @@
+{
+  "runs": [
+    {
+      "name": "cell-1",
+      "views": [
+        "/path/to/cell-1/four/raw.mzML.radiantCandidates",
+        "/path/to/cell-1/three/raw.mzML.radiantCandidates"
+      ]
+    },
+    {
+      "name": "cell-2",
+      "views": [
+        "/path/to/cell-2/four/raw.mzML.radiantCandidates",
+        "/path/to/cell-2/three/raw.mzML.radiantCandidates"
+      ]
+    }
+  ],
+  "output": "/path/to/new-combined-results"
+}

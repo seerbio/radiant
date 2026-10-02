@@ -8,6 +8,51 @@
 #include <QDebug>
 #include <QMap>
 #include <QtTest/QtTest>
+#include <cstdint>
+#include <cstring>
+#include <random>
+#include <vector>
+
+namespace {
+
+// Independent oracle: the dense implementation from commit 61a78717.
+Eigen::VectorX<float> frozenConvolution(
+        const Eigen::VectorX<float> &_vec, const Eigen::VectorX<float> &_kernel) {
+    if (_vec.size() <= _kernel.size()) return _vec;
+    Eigen::VectorX<float> vec = _vec;
+    Eigen::VectorX<float> kernel = _kernel;
+    if (kernel.cols() != 1) kernel = kernel.transpose();
+    const int paddingAmount = kernel.size() - 1;
+    Eigen::VectorX<float> vecResized(vec.size() + paddingAmount);
+    const int halfWindow = std::floor(paddingAmount / 2.0);
+    const float frontPadding = vec.head(halfWindow + 1).mean();
+    const float backPadding = vec.tail(halfWindow + 1).mean();
+    for (int i = 0; i < halfWindow; ++i) {
+        vecResized.coeffRef(i) = frontPadding;
+        vecResized.coeffRef(vecResized.size() - 1 - i) = backPadding;
+    }
+    vecResized.segment(halfWindow, vec.size()) = vec;
+    const int filterLength = static_cast<int>(kernel.size());
+    Eigen::MatrixX<float> convolutionMatrix(vec.size(), filterLength);
+    convolutionMatrix.setZero();
+    for (int i = 0; i < filterLength; ++i)
+        convolutionMatrix.col(i) = vecResized.segment(i, vec.size());
+    return convolutionMatrix * kernel;
+}
+
+std::uint32_t floatBits(float value) {
+    std::uint32_t bits;
+    std::memcpy(&bits, &value, sizeof(bits));
+    return bits;
+}
+
+float floatFromBits(std::uint32_t bits) {
+    float value;
+    std::memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+}
 
 
 class EigenKernelUtilsTests : public QObject
@@ -28,6 +73,7 @@ private Q_SLOTS:
     static void buildMexicanHatFilter1DTest();
     static void calculateNumberOfStridesTest();
     static void convolveVectorWithKernelTest();
+    static void convolutionMatchesFrozenMatrix();
     static void addPaddingToSparseVectorTest();
     static void addPaddingToSparseMatrixRowWiseTest();
     static void addPaddingToMatrixRowWiseTest();
@@ -186,6 +232,50 @@ void EigenKernelUtilsTests::convolveVectorWithKernelTest() {
     QCOMPARE(vecSparseSmoothed.coeff(3), 666.6);
     QCOMPARE(vecSparseSmoothed.coeff(4), 666.6);
     QCOMPARE(vecSparseSmoothed.coeff(5), 666.6);
+}
+
+void EigenKernelUtilsTests::convolutionMatchesFrozenMatrix() {
+    std::mt19937 random(666);
+    std::vector<int> sizes;
+    for (int size = 1; size <= 257; ++size) sizes.push_back(size);
+    for (int size : {511, 512, 513, 1023, 1024, 1025, 2048, 4097}) sizes.push_back(size);
+    for (int size : sizes) {
+        for (int kernelSize : {1, 3, 5, 7, 9, 11, 17}) {
+            for (int pattern = 0; pattern < 6; ++pattern) {
+                Eigen::VectorX<float> input(size), kernel(kernelSize);
+                for (int i = 0; i < size; ++i) {
+                    float value = float(int(random() % 200001) - 100000) / 127.0f;
+                    if (pattern == 1) value = i % 2 ? -0.0f : 0.0f;
+                    if (pattern == 2 && (i < size/3 || i > 2*size/3)) value = 0.0f;
+                    if (pattern == 3) value = floatFromBits(random() & UINT32_C(0xfeffffff));
+                    if (pattern == 4 && i % 13 == 0)
+                        value = floatFromBits(UINT32_C(0x7fc00000)
+                                              | (random() & UINT32_C(0x003fffff)));
+                    if (pattern == 5 && i % 17 == 0)
+                        value = floatFromBits(i % 2 ? UINT32_C(0x7f800000)
+                                                   : UINT32_C(0xff800000));
+                    input.coeffRef(i) = value;
+                }
+                for (int i = 0; i < kernelSize; ++i)
+                    kernel.coeffRef(i) = pattern < 3 ? 1.0f / kernelSize
+                        : float(int(random() % 20001) - 10000) / 10000.0f;
+                Eigen::VectorX<float> expected = input, actual = input;
+                // Repeated smoothing also checks that exactness survives the
+                // three consecutive convolutions used by candidate scoring.
+                for (int pass = 0; pass < 3; ++pass) {
+                    expected = frozenConvolution(expected, kernel);
+                    actual = EigenKernelUtils::convolveVectorWithKernel(actual, kernel);
+                    QCOMPARE(actual.size(), expected.size());
+                    for (int i = 0; i < size; ++i) {
+                        if (floatBits(actual.coeff(i)) == floatBits(expected.coeff(i))) continue;
+                        const auto message = QString("size=%1 kernel=%2 pattern=%3 pass=%4 index=%5")
+                            .arg(size).arg(kernelSize).arg(pattern).arg(pass).arg(i);
+                        QFAIL(qPrintable(message));
+                    }
+                }
+            }
+        }
+    }
 }
 
 void EigenKernelUtilsTests::addPaddingToSparseVectorTest() {

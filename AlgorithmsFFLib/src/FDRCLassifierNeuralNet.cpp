@@ -23,6 +23,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 , m_baggingSize(6)
 , m_nodesFraction(0.5)
 , m_focalLossGamma(0.0)
+, m_shuffleEachEpoch(false)
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
@@ -39,7 +40,8 @@ Err FDRCLassifierNeuralNet::init(
         double learningRate,
         double nodesFraction,
         float focalLossGamma,
-        int threadCount
+        int threadCount,
+        bool shuffleEachEpoch
         ) {
 
     ERR_INIT
@@ -57,6 +59,7 @@ Err FDRCLassifierNeuralNet::init(
     m_threadCount = threadCount;
     m_nodesFraction = nodesFraction;
     m_focalLossGamma = focalLossGamma;
+    m_shuffleEachEpoch = shuffleEachEpoch;
 
     m_isInit = true;
 
@@ -121,6 +124,7 @@ namespace {
         double learningRate = -1.0;
         double nodesFraction = -1.0;
         float focalLossGamma = 0.0;
+        bool shuffleEachEpoch = false;
         int bag = -1;
     };
 
@@ -146,7 +150,8 @@ namespace {
                 input.bag,
                 input.nodesFraction,
                 input.focalLossGamma,
-                verbosity
+                verbosity,
+                input.shuffleEachEpoch
         );
         e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
 
@@ -186,6 +191,7 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         ccpi.learningRate = m_learningRate;
         ccpi.nodesFraction = m_nodesFraction;
         ccpi.focalLossGamma = m_focalLossGamma;
+        ccpi.shuffleEachEpoch = m_shuffleEachEpoch;
         ccpi.bag = bag + S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + seed;
 
         parallelInputs.push_back(ccpi);

@@ -8,6 +8,7 @@
 
 #include <QElapsedTimer>
 #include <QFile>
+#include <QSet>
 #include <QtConcurrent/QtConcurrent>
 
 #include <iostream>
@@ -40,6 +41,8 @@ Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) 
 void MsReaderBase::reset() {
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
+    QMap<FrameNumberTIMS, Ms1FrameTIMS>().swap(m_frameNumberVsMS1FrameTIMS);
+    MzTargetKeyVsMs2FrameTIMS().swap(m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS);
 }
 
 Err MsReaderBase::openFile(const QString &filePath) {
@@ -65,6 +68,8 @@ Err MsReaderBase::closeFile() {
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
     QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
+    QMap<FrameNumberTIMS, Ms1FrameTIMS>().swap(m_frameNumberVsMS1FrameTIMS);
+    MzTargetKeyVsMs2FrameTIMS().swap(m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS);
     return Error::eNoError;
 }
 
@@ -347,6 +352,120 @@ QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
     return scanNumberVsScanTime;
 }
 
+Err MsReaderBase::restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax) {
+
+    ERR_INIT
+
+    if (scanTimeMax <= scanTimeMin) {
+        ERR_RETURN
+    }
+
+    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
+
+    QSet<ScanNumber> keptScanNumbers;
+    QSet<ScanNumber> removedScanNumbers;
+    QMap<ScanNumber, MsScanInfo> filteredScanInfo;
+    for (auto it = m_msScanInfo.constBegin(); it != m_msScanInfo.constEnd(); ++it) {
+        const ScanTime scanTime = it.value().scanTime;
+        if (scanTime < scanTimeMin || scanTime > scanTimeMax) {
+            removedScanNumbers.insert(it.key());
+            continue;
+        }
+
+        keptScanNumbers.insert(it.key());
+        filteredScanInfo.insert(it.key(), it.value());
+    }
+
+    if (filteredScanInfo.isEmpty()) {
+        qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                   << "Scan-time restriction retained no scans; keeping full run"
+                   << scanTimeMin
+                   << scanTimeMax;
+        ERR_RETURN
+    }
+
+    const int originalScanInfoCount = m_msScanInfo.size();
+    const int originalScanPointCount = m_scanPoints.size();
+    const int originalMs1TimsFrameCount = m_frameNumberVsMS1FrameTIMS.size();
+    int originalMs2TimsFrameCount = 0;
+    for (auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constBegin();
+         targetIt != m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd();
+         ++targetIt) {
+        originalMs2TimsFrameCount += targetIt.value().size();
+    }
+
+    m_msScanInfo = filteredScanInfo;
+
+    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end();) {
+        if (keptScanNumbers.contains(it.key())) {
+            ++it;
+        }
+        else {
+            it = m_scanPoints.erase(it);
+        }
+    }
+
+    for (auto it = m_frameNumberVsMS1FrameTIMS.begin(); it != m_frameNumberVsMS1FrameTIMS.end();) {
+        if (keptScanNumbers.contains(it.key())) {
+            ++it;
+        }
+        else {
+            it = m_frameNumberVsMS1FrameTIMS.erase(it);
+        }
+    }
+
+    for (auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.begin();
+         targetIt != m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.end();) {
+        auto &frameNumberVsMs2FrameTIMS = targetIt.value();
+        for (auto frameIt = frameNumberVsMs2FrameTIMS.begin();
+             frameIt != frameNumberVsMs2FrameTIMS.end();) {
+            if (keptScanNumbers.contains(frameIt.key())) {
+                ++frameIt;
+            }
+            else {
+                frameIt = frameNumberVsMs2FrameTIMS.erase(frameIt);
+            }
+        }
+
+        if (frameNumberVsMs2FrameTIMS.isEmpty()) {
+            targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.erase(targetIt);
+        }
+        else {
+            ++targetIt;
+        }
+    }
+
+    m_scanNumberVsScanTime.clear();
+    for (const MsScanInfo &msScanInfo : m_msScanInfo) {
+        m_scanNumberVsScanTime.insert(msScanInfo.scanNumber, msScanInfo.scanTime);
+    }
+
+    m_mzTargetVsScanInfosPntrs.clear();
+    for (auto it = m_msScanInfo.begin(); it != m_msScanInfo.end(); ++it) {
+        if (it.value().msLevel == 2) {
+            m_mzTargetVsScanInfosPntrs[it.value().targetKey()].push_back(&it.value());
+        }
+    }
+
+    int filteredMs2TimsFrameCount = 0;
+    for (auto targetIt = m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constBegin();
+         targetIt != m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS.constEnd();
+         ++targetIt) {
+        filteredMs2TimsFrameCount += targetIt.value().size();
+    }
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Restricted analysis scan-time range"
+             << scanTimeMin
+             << scanTimeMax
+             << "scan_infos" << originalScanInfoCount << "->" << m_msScanInfo.size()
+             << "scan_points" << originalScanPointCount << "->" << m_scanPoints.size()
+             << "tims_ms1_frames" << originalMs1TimsFrameCount << "->" << m_frameNumberVsMS1FrameTIMS.size()
+             << "tims_ms2_frames" << originalMs2TimsFrameCount << "->" << filteredMs2TimsFrameCount;
+
+    ERR_RETURN
+}
+
 Err MsReaderBase::getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi) {
 
     ERR_INIT
@@ -506,4 +625,12 @@ float MsReaderBase::mzMs2Max() const {
 
 QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
     return &m_frameNumberVsMS1FrameTIMS;
+}
+
+MzTargetKeyVsMs2FrameTIMS* MsReaderBase::mzTargetKeyVsFrameNumberVsMS2FrameTIMSPntr() {
+    return &m_mzTargetKeyVsFrameNumberVsMS2FrameTIMS;
+}
+
+const QMap<FrameIndex, double>* MsReaderBase::frameIndexVsDriftTimePntr() const {
+    return &m_frameIndexVsDriftTime;
 }

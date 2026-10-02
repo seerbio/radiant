@@ -15,7 +15,7 @@ class CommandLineParser  : public QCommandLineParser
 public:
 
     struct CliParameters{
-        QString mzMLFilePath;
+        QString msDataFilePath;
     };
 
     CommandLineParser();

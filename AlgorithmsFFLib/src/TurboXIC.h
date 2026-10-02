@@ -89,6 +89,16 @@ public:
             float mzMax
     ) const;
 
+    // Preserves the unbounded query's point order. MS1 windows include their
+    // endpoints; the predicted MS2 frame window uses open endpoints.
+    XICPoints extractPointsXIC(
+            float mzMin,
+            float mzMax,
+            ScanNumber scanNumberMin,
+            ScanNumber scanNumberMax,
+            bool includeEndpoints = true
+    ) const;
+
     /**
     * @brief Retrieves the limits of the RTree in the TurboXIC private implementation.
     *

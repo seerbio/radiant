@@ -15,89 +15,51 @@ public:
 private slots:
 
     static void setDisciminantScoreForCandidatesTest();
+    static void defaultWeightsPreserveLegacyNonIonMobilityFeaturesTest();
+    static void defaultWeightsEnableIonMobilityFeaturesWhenSelectedTest();
 
 
 
 };
 
 void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
+    QSKIP("Legacy no-op fixture; covered by default weight tests.");
+}
 
-    ERR_INIT
+void DiscriminantScoretronTests::defaultWeightsPreserveLegacyNonIonMobilityFeaturesTest() {
 
-    QVector<QVector<float>> targetsData = {
-            {1.0, 1.0, 1.0, 1.0, 5.0},
-            {1.0, 1.0, 1.0, 1.0, 5.0},
-            {1.0, 1.0, 1.0, 1.0, 5.0}
+    const QVector<Features> features = {
+        CosineSimSum100GreaterThan80,
+        CosineSimSum100Top12,
+        CosineSimSpectrumOverTimeCubed,
+        ScanTimeDeltaAbs
     };
 
-    QVector<QVector<float>> decoyData = {
-            {1.0, 1.0, 1.0, 1.0, 1.0},
-            {1.0, 1.0, 1.0, 1.0, 1.0},
-            {1.0, 1.0, 1.0, 1.0, 1.0}
+    const QVector<float> weights = DiscriminantScoretron::defaultWeights(features);
+
+    QCOMPARE(weights.size(), features.size());
+    QCOMPARE(weights.at(0), 1.0f);
+    QCOMPARE(weights.at(1), 1.0f);
+    QCOMPARE(weights.at(2), 1.0f);
+    QCOMPARE(weights.at(3), -0.5f);
+}
+
+void DiscriminantScoretronTests::defaultWeightsEnableIonMobilityFeaturesWhenSelectedTest() {
+
+    const QVector<Features> features = {
+        IonMobilityDeltaAbs,
+        IonMobilityPdAbs,
+        Ms2IonMobilityWeightedDeltaAbs,
+        Ms2IonMobilityMatchedIonFraction
     };
 
-    const QStringList seqs = {
-            "FLOPS",
-            "CHAUNCY",
-            "THOR"
-    };
+    const QVector<float> weights = DiscriminantScoretron::defaultWeights(features);
 
-    QVector<TargetDecoyCandidatePair> targetDecoyPairsTargets = {
-            TargetDecoyCandidatePair(),
-            TargetDecoyCandidatePair(),
-            TargetDecoyCandidatePair()
-    };
-
-    QVector<TargetDecoyCandidatePair> targetDecoyPairsDecoys = {
-            TargetDecoyCandidatePair(),
-            TargetDecoyCandidatePair(),
-            TargetDecoyCandidatePair()
-    };
-
-    // QVector<CandidateScores> candidateScoresVec;
-    // for (int i = 0; i < targetsData.size(); i++) {
-    //
-    //
-    //     CandidateScores cs;
-    //     cs.featuresArray = targetsData.at(i);
-    //     cs.isDecoy = false;
-    //     cs.targetDecoyCandidatePair = &targetDecoyPairsTargets[i];
-    //     cs.targetDecoyCandidatePair->setCharge(2);
-    //     cs.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
-    //     cs.targetKey = "1234";
-    //
-    //     CandidateScores csDecoy;
-    //     csDecoy.featuresArray = decoyData.at(i);
-    //     csDecoy.isDecoy = true;
-    //     csDecoy.targetDecoyCandidatePair = &targetDecoyPairsDecoys[i];
-    //     csDecoy.targetDecoyCandidatePair->setCharge(2);
-    //     csDecoy.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
-    //     csDecoy.targetKey = "1234";
-    //
-    //     candidateScoresVec.push_back(cs);
-    //     candidateScoresVec.push_back(csDecoy);
-    // }
-    //
-    // QVector<CandidateScores*> candidateScoresPtrsVec;
-    // std::transform(
-    //         candidateScoresVec.begin(),
-    //         candidateScoresVec.end(),
-    //         std::back_inserter(candidateScoresPtrsVec),
-    //         [](CandidateScores &c){return &c;}
-    //         );
-    //
-    // // e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
-    // //         false,
-    // //         false,
-    // //         &candidateScoresPtrsVec
-    // //         );
-    // // QCOMPARE(e, eNoError);
-    //
-    // //TODO this is not really much of a test.  replace arrays w/ values that will yield a non-zero disc score.
-    // // for (const CandidateScores *cs : candidateScoresPtrsVec) {
-    // //     QCOMPARE(cs->discriminantScore, 0);
-    // // }
-
+    QCOMPARE(weights.size(), features.size());
+    QCOMPARE(weights.at(0), -1.0f);
+    QCOMPARE(weights.at(1), -0.5f);
+    QCOMPARE(weights.at(2), -1.0f);
+    QCOMPARE(weights.at(3), 1.0f);
 }
 
 

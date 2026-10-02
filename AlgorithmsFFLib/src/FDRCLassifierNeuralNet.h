@@ -121,7 +121,8 @@ public:
             double learningRate,
             double nodesFraction,
             float focalLossGamma,
-            int threadCount
+            int threadCount,
+            bool shuffleEachEpoch = false
             );
 
     /**
@@ -230,6 +231,7 @@ private:
     int m_threadCount;
 
     bool m_isInit;
+    bool m_shuffleEachEpoch;
 
     QVector<CandidateClassifier*> m_candidateClassifiers;
 

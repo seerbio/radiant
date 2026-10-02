@@ -13,9 +13,12 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include <iostream>
 #include <random>
+#include <numeric>
 
 #include "ParallelUtils.h"
 
@@ -104,7 +107,8 @@ public:
             float focalLossGamma,
             int seed,
             double nodeFraction,
-            int verbosity
+            int verbosity,
+            bool shuffleEachEpoch
     );
 
     bool predict(
@@ -156,6 +160,11 @@ namespace {
         return {vec.begin(), vec.end()};
     }
 
+    QMutex &torchSeedAndInitMutex() {
+        static QMutex mutex;
+        return mutex;
+    }
+
     /*!
      * @brief Computes focal loss for binary classification
      * @param predictions: Model predictions (sigmoid output) in range [0,1]
@@ -201,20 +210,13 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         float focalLossGamma,
         int seed,
         double nodeFraction,
-        int verbosity
+        int verbosity,
+        bool shuffleEachEpoch
         ) {
 
-    torch::manual_seed(seed);
-    if (torch::cuda::is_available()) {
-        qDebug() << "CUDA IS AVAILABLE";
-        torch::cuda::manual_seed_all(seed);
-        torch::globalContext().setDeterministicCuDNN(true);
-        torch::globalContext().setBenchmarkCuDNN(false);
-    }
-
+    m_isTrained = false;
     omp_set_num_threads(1);
     torch::set_num_threads(1);
-    std::srand(seed);
 
     torch::data::DataLoaderOptions options;
     options.enforce_ordering(true);
@@ -233,9 +235,27 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     const int nodes = std::max(static_cast<int>(xData.front().size() * nodeFraction), 1);
     constexpr int num_classes = 1;
 
-    m_net = new Net(input_size, nodes, num_classes);
+    {
+        // LibTorch uses process-global RNG state for module initialization.
+        // Keep the seed and initialization atomic when workflow folds train in parallel.
+        QMutexLocker locker(&torchSeedAndInitMutex());
+
+        torch::manual_seed(seed);
+        if (torch::cuda::is_available()) {
+            qDebug() << "CUDA IS AVAILABLE";
+            torch::cuda::manual_seed_all(seed);
+            torch::globalContext().setDeterministicCuDNN(true);
+            torch::globalContext().setBenchmarkCuDNN(false);
+        }
+        std::srand(seed);
+
+        delete m_net;
+        m_net = new Net(input_size, nodes, num_classes);
+    }
 
     std::vector<float> flatData;
+    flatData.reserve(static_cast<std::size_t>(xData.size())
+                     * static_cast<std::size_t>(input_size));
     for (const QVector<float> &innerVec : xData) {
         flatData.insert(flatData.end(), innerVec.begin(), innerVec.end());
     }
@@ -260,7 +280,20 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     QElapsedTimer et;
     et.start();
 
+    // Each model owns its permutation RNG, so parallel folds do not consume
+    // process-global LibTorch random state during training.
+    std::mt19937 epochRng(seed);
+    std::vector<int64_t> epochOrder(xData.size());
+    std::iota(epochOrder.begin(), epochOrder.end(), int64_t(0));
     for (int epoch = 0; epoch < epochsMax; ++epoch) {
+        torch::Tensor epochX = X, epochY = y;
+        if (shuffleEachEpoch) {
+            std::shuffle(epochOrder.begin(), epochOrder.end(), epochRng);
+            const auto indices = torch::from_blob(epochOrder.data(),
+                {static_cast<int64_t>(epochOrder.size())}, torch::kInt64);
+            epochX = X.index_select(0, indices);
+            epochY = y.index_select(0, indices);
+        }
 
         float batchLossSum = 0.0;
         int iters = 0;
@@ -269,8 +302,8 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
             iters++;
 
-            torch::Tensor batchX = X.index({torch::indexing::Slice(i, i + batchSize)});
-            torch::Tensor batchY = y.index({torch::indexing::Slice(i, i + batchSize)});
+            torch::Tensor batchX = epochX.index({torch::indexing::Slice(i, i + batchSize)});
+            torch::Tensor batchY = epochY.index({torch::indexing::Slice(i, i + batchSize)});
 
             const int tensorRows = static_cast<int>(batchY.sizes().at(0));
             if (tensorRows < 2) {
@@ -338,9 +371,14 @@ bool CandidateClassifier::Private::predict(
     }
 
     const int input_size = xData.front().size();
+    // Prediction returns detached scalar values, so its autograd graph is unused.
+    // The guard restores the caller's thread-local gradient mode on return.
+    torch::NoGradGuard noGrad;
     m_net->eval();
 
     std::vector<float> flatData;
+    flatData.reserve(static_cast<std::size_t>(xData.size())
+                     * static_cast<std::size_t>(input_size));
     for (const QVector<float> &innerVec : xData) {
         flatData.insert(flatData.end(), innerVec.begin(), innerVec.end());
     }
@@ -371,7 +409,8 @@ bool CandidateClassifier::trainCandidateClassifier(
         int seed,
         double nodeFraction,
         float focalLossGamma,
-        int verbosity
+        int verbosity,
+        bool shuffleEachEpoch
         ) const {
 
     QVector<QVector<float>> xDataResized = xData;
@@ -392,7 +431,8 @@ bool CandidateClassifier::trainCandidateClassifier(
             focalLossGamma,
             seed,
             nodeFraction,
-            verbosity
+            verbosity,
+            shuffleEachEpoch
             );
 }
 

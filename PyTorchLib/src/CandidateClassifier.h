@@ -41,7 +41,8 @@ public:
             int seed,
             double nodeFraction,
             float focalLossGamma,
-            int verbosity
+            int verbosity,
+            bool shuffleEachEpoch = false
             ) const;
 
     /*!

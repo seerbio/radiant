@@ -6,6 +6,23 @@
 
 #include "BiophysicalCalcs.h"
 
+#include <array>
+#include <cstdint>
+#include <mutex>
+
+namespace {
+std::recursive_mutex &ionCacheMutex(const TargetDecoyCandidatePair *candidate) {
+    // Overlapping isolation windows can visit the same candidate concurrently.
+    // Share a bounded set of locks instead of adding a mutex to every one of
+    // the millions of library candidates. Decoy construction calls the target
+    // getter, so acquisition for the same candidate must be recursive.
+    static std::array<std::recursive_mutex, 256> mutexes;
+    const auto index = reinterpret_cast<std::uintptr_t>(candidate)
+        / sizeof(TargetDecoyCandidatePair) % mutexes.size();
+    return mutexes[index];
+}
+}
+
 TargetDecoyCandidatePair::TargetDecoyCandidatePair()
 : m_peptideStringWithMods("")
 , m_decoyMassDelta(-1.0)
@@ -24,7 +41,12 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 {}
 
 void TargetDecoyCandidatePair::setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr) {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     m_fragLibReaderRowPntr = fragLibReaderRowPntr;
+    m_ms2IonsTargetCacheValid = false;
+    m_ms2IonsDecoyCacheValid = false;
+    m_ms2IonsTargetCache.clear();
+    m_ms2IonsDecoyCache.clear();
 }
 
 QString TargetDecoyCandidatePair::proteinGroups() const {
@@ -86,7 +108,13 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
-    return buildMS2Ions(m_fragLibReaderRowPntr);
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
+    if (!m_ms2IonsTargetCacheValid) {
+        m_ms2IonsTargetCache = buildMS2Ions(m_fragLibReaderRowPntr);
+        m_ms2IonsTargetCacheValid = true;
+    }
+
+    return m_ms2IonsTargetCache;
 }
 
 namespace {
@@ -192,15 +220,20 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
-    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
+    if (!m_ms2IonsDecoyCacheValid) {
+        m_ms2IonsDecoyCache = mutateCandidatePeptideTarget(
             peptideStringWithMods(),
             ms2IonsTarget(),
             m_decoyFragmentShiftMode
             );
-    if (m_decoySharesSequenceWithOtherTarget) {
-        mangleMs2IonsDecoy(&ms2IonsDec);
+        if (m_decoySharesSequenceWithOtherTarget) {
+            mangleMs2IonsDecoy(&m_ms2IonsDecoyCache);
+        }
+        m_ms2IonsDecoyCacheValid = true;
     }
-    return ms2IonsDec;
+
+    return m_ms2IonsDecoyCache;
 }
 
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {
@@ -275,9 +308,15 @@ void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
 }
 
 void TargetDecoyCandidatePair::decoySharesSequenceWithOtherTarget(bool val) {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     m_decoySharesSequenceWithOtherTarget = val;
+    m_ms2IonsDecoyCacheValid = false;
+    m_ms2IonsDecoyCache.clear();
 }
 
 void TargetDecoyCandidatePair::setDecoyFragmentShiftMode(DecoyFragmentShiftMode mode) {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     m_decoyFragmentShiftMode = mode;
+    m_ms2IonsDecoyCacheValid = false;
+    m_ms2IonsDecoyCache.clear();
 }

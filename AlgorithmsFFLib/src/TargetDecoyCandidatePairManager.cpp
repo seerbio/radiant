@@ -133,46 +133,47 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
 
     m_targetDecoyCandidatePairs.reserve(fragLibReaderRows->size()); ree;
 
-#define PARALLEL_FRAGLIB_LOAD
-#ifdef PARALLEL_FRAGLIB_LOAD
-    const auto loadLogicBinder = std::bind(
+    constexpr int parallelFragLibLoadMinRows = 20000;
+    if (fragLibReaderRows->size() >= parallelFragLibLoadMinRows) {
+        const auto loadLogicBinder = std::bind(
             targetDecoyCandidatePairsLoadLogic,
             std::placeholders::_1,
             m_pythiaParameters
-    );
+            );
 
-    QFuture<QPair<Err, TargetDecoyCandidatePair>> futures = QtConcurrent::mapped(
+        QFuture<QPair<Err, TargetDecoyCandidatePair>> futures = QtConcurrent::mapped(
             *fragLibReaderRows,
             loadLogicBinder
             );
-    futures.waitForFinished();
+        futures.waitForFinished();
 
-    for (const QPair<Err, TargetDecoyCandidatePair> &result : futures) {
-        if (result.first == eValueError) {
-            continue;
+        for (const QPair<Err, TargetDecoyCandidatePair> &result : futures) {
+            if (result.first == eValueError) {
+                continue;
+            }
+            e = result.first; ree;
+            const TargetDecoyCandidatePair &tdcp = result.second;
+            m_targetDecoyCandidatePairs.push_back(tdcp);
         }
-        e = result.first; ree;
-        const TargetDecoyCandidatePair &tdcp = result.second;
-        m_targetDecoyCandidatePairs.push_back(tdcp);
     }
-#else
-    for (const FragLibReaderRow &flrr : fragLibReaderRows) {
+    else {
+        for (const FragLibReaderRow &flrr : *fragLibReaderRows) {
 
-        QPair<Err, TargetDecoyCandidatePair> result = targetDecoyCandidatePairsLoadLogic(
+            QPair<Err, TargetDecoyCandidatePair> result = targetDecoyCandidatePairsLoadLogic(
                 flrr,
                 m_pythiaParameters
                 );
 
-        if (result.first == eValueError) {
-            continue;
+            if (result.first == eValueError) {
+                continue;
+            }
+
+            e = result.first; ree;
+
+            const TargetDecoyCandidatePair &tdcp = result.second;
+            m_targetDecoyCandidatePairs.push_back(tdcp);
         }
-
-        e = result.first; ree;
-
-        const TargetDecoyCandidatePair &tdcp = result.second;
-        m_targetDecoyCandidatePairs.push_back(tdcp);
     }
-#endif
 
     e = ErrorUtils::isEqual(fragLibReaderRows->size(), m_targetDecoyCandidatePairs.size()); ree;
     for (int i = 0; i < m_targetDecoyCandidatePairs.size(); i++) {

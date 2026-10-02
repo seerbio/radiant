@@ -211,7 +211,7 @@ namespace {
 
             if (vecFirst.typeName() == QStringLiteral("QByteArray")) {
 
-                st = buildParquetDataArrayFromString<arrow::BinaryBuilder>(stdVec, arrowArr);
+                st = buildParquetDataArrayFromString<arrow::LargeBinaryBuilder>(stdVec, arrowArr);
             }
             else {
                 st = buildParquetDataArrayFromString<arrow::StringBuilder>(stdVec, arrowArr);
@@ -294,7 +294,7 @@ namespace {
                     ) {
 
                 if (typeName == "QByteArray") {
-                    std::shared_ptr<arrow::Field> field = arrow::field(colName.toStdString(), arrow::binary());
+                    std::shared_ptr<arrow::Field> field = arrow::field(colName.toStdString(), arrow::large_binary());
                     fields.push_back(field);
                 }
 
@@ -430,7 +430,8 @@ namespace {
 
         else if (
                 typeName == QStringLiteral("string") ||
-                typeName == QStringLiteral("binary")
+                typeName == QStringLiteral("binary") ||
+                typeName == QStringLiteral("large_binary")
                 ) {
 
             if (typeName == QStringLiteral("binary")) {
@@ -439,6 +440,14 @@ namespace {
                     outputVec->push_back(QByteArray::fromStdString(
                             static_cast<std::string>(arrowArray->Value(i)))
                     );
+                }
+            }
+
+            else if (typeName == QStringLiteral("large_binary")) {
+                auto arrowArray = std::static_pointer_cast<arrow::LargeBinaryArray>(colChunks);
+                for (int64_t i = 0; i < colChunks->length(); ++i) {
+                    const std::string_view value = arrowArray->GetView(i);
+                    outputVec->push_back(QByteArray(value.data(), static_cast<int>(value.size())));
                 }
             }
 
@@ -491,8 +500,13 @@ namespace {
         }
 
         std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
-        const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
-        return readColumnLogic(colChunks, outputVec);
+        for (const std::shared_ptr<arrow::Array> &colChunk : col->chunks()) {
+            if (!readColumnLogic(colChunk, outputVec)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     Err extractColumns(

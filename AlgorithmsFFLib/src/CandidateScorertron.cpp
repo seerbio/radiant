@@ -14,9 +14,17 @@
 #include "MsUtils.h"
 #include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
+#include "TimsMs2IonMobilityIndex.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
 
+#include <QDebug>
+
+#include <algorithm>
+#include <cmath>
+#include <numeric>
+#include <unordered_map>
+#include <utility>
 
 class Q_DECL_HIDDEN CandidateScorertron::Private {
 public:
@@ -28,12 +36,37 @@ public:
     ~Private();
 
     Err init(const PythiaParameters &pythiaParameters);
+    void resetDiagnostics();
+    [[nodiscard]] QString scoringDiagnosticsSummary(const MzTargetKey &mzTargetKey) const;
+    QVector<QPointF> sortedScanPoints(ScanNumber scanNumber, const ScanPoints &points);
 
     Eigen::VectorX<float> m_kernelIntegration;
     Eigen::VectorX<float> m_kernelMs2;
+    int m_zeroPrefixGuard = -1;
+
+    struct ScoringDiagnostics {
+        quint64 scoreCalls = 0;
+        quint64 targetCalls = 0;
+        quint64 decoyCalls = 0;
+        quint64 timsIonMobilityCalls = 0;
+        quint64 zeroIntensityMatrix = 0;
+        quint64 zeroIonCountVector = 0;
+        quint64 zeroProductVector = 0;
+        quint64 emptyPeakIntegrations = 0;
+        quint64 emptyBestCorrelationResults = 0;
+        quint64 lowCorrelationRejected = 0;
+        quint64 noDiscriminantCandidate = 0;
+        quint64 scoredCandidates = 0;
+    };
+
+    ScoringDiagnostics m_scoringDiagnostics;
 
 private:
     PythiaParameters m_pythiaParameters;
+    // Each scorer belongs to one worker and an immutable target frame. Keep
+    // at most 64 MiB of converted observations; init invalidates this cache.
+    std::unordered_map<ScanNumber, QVector<QPointF>> m_sortedScans;
+    std::size_t m_cachedPointCount = 0;
 
 };
 
@@ -46,6 +79,8 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_pythiaParameters = pythiaParameters;
+    m_sortedScans.clear();
+    m_cachedPointCount = 0;
 
     constexpr int order = 1;
     constexpr int derivative = 0;
@@ -63,6 +98,13 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
         ); ree;
     const Eigen::VectorX<float> kernelVec(kernel);
     m_kernelMs2 = kernelVec;
+    m_zeroPrefixGuard = -1;
+    if (kernelVec.size() > 0 && kernelVec.size() % 2 == 1
+        && kernelVec.allFinite() && (kernelVec.array() > 0.0f).all()) {
+        // One count smoothing and three product smoothings. Keep the
+        // original zero padding through all four operations.
+        m_zeroPrefixGuard = 4 * ((kernelVec.size() - 1) / 2) + 1;
+    }
 
     Eigen::MatrixX<float> kernelIntegration;
     e = EigenKernelUtils::buildSavitzkyGolayKernel(
@@ -78,6 +120,60 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
     ERR_RETURN
 }
 
+QVector<QPointF> CandidateScorertron::Private::sortedScanPoints(
+    ScanNumber scanNumber, const ScanPoints &points) {
+    const auto found = m_sortedScans.find(scanNumber);
+    if (found != m_sortedScans.end()) {
+        return found->second;
+    }
+
+    QVector<QPointF> sorted;
+    sorted.reserve(points.size());
+    for (const ScanPoint &point : points) {
+        sorted.push_back(QPointF(static_cast<double>(point.x()),
+                                 static_cast<double>(point.y())));
+    }
+    // Use the original conversion and sort, including its equal-mass order.
+    std::sort(sorted.begin(), sorted.end(),
+              [](const QPointF &left, const QPointF &right) { return left.x() < right.x(); });
+    constexpr std::size_t maxCachedPoints = 64 * 1024 * 1024 / sizeof(QPointF);
+    if (static_cast<std::size_t>(sorted.size()) <= maxCachedPoints) {
+        if (m_cachedPointCount + sorted.size() > maxCachedPoints) {
+            m_sortedScans.clear();
+            m_cachedPointCount = 0;
+        }
+        m_cachedPointCount += sorted.size();
+        m_sortedScans.emplace(scanNumber, sorted);
+    }
+    return sorted;
+}
+
+void CandidateScorertron::Private::resetDiagnostics() {
+    m_scoringDiagnostics = ScoringDiagnostics();
+}
+
+QString CandidateScorertron::Private::scoringDiagnosticsSummary(const MzTargetKey &mzTargetKey) const {
+
+    return QStringLiteral(
+        "Radiant candidate scoring diagnostics target_key=%1 score_calls=%2 target_calls=%3 decoy_calls=%4 tims_im_calls=%5 "
+        "zero_intensity_matrix=%6 zero_ion_count_vector=%7 zero_product_vector=%8 empty_peak_integrations=%9 "
+        "empty_best_correlations=%10 low_correlation_rejected=%11 no_discriminant_candidate=%12 scored_candidates=%13"
+        )
+        .arg(mzTargetKey)
+        .arg(m_scoringDiagnostics.scoreCalls)
+        .arg(m_scoringDiagnostics.targetCalls)
+        .arg(m_scoringDiagnostics.decoyCalls)
+        .arg(m_scoringDiagnostics.timsIonMobilityCalls)
+        .arg(m_scoringDiagnostics.zeroIntensityMatrix)
+        .arg(m_scoringDiagnostics.zeroIonCountVector)
+        .arg(m_scoringDiagnostics.zeroProductVector)
+        .arg(m_scoringDiagnostics.emptyPeakIntegrations)
+        .arg(m_scoringDiagnostics.emptyBestCorrelationResults)
+        .arg(m_scoringDiagnostics.lowCorrelationRejected)
+        .arg(m_scoringDiagnostics.noDiscriminantCandidate)
+        .arg(m_scoringDiagnostics.scoredCandidates);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -86,15 +182,36 @@ CandidateScorertron::CandidateScorertron()
 : m_topNMS2Ions(-1)
 , m_xicPeakManager(nullptr)
 , m_msFrameMzTarget(nullptr)
-, m_msFrameMS1(nullptr)
 , m_turboXicMS1(nullptr)
+, m_msFrameMS1(nullptr)
+, m_msReaderPointerAcc(nullptr)
+, m_timsMs2IonMobilityIndex(nullptr)
 , d_ptr(QScopedPointer<Private>(new Private))
 , m_minPeakCount(3.9)
 , m_scanTimeRange(0)
 , m_useTopNIntegrationsParam(false)
+, m_useAdaptiveTimsMobilityCentering(false)
 {}
 
 CandidateScorertron::~CandidateScorertron() {}
+
+void CandidateScorertron::setUseAdaptiveTimsMobilityCentering(
+    bool useAdaptiveTimsMobilityCentering
+    ) {
+    m_useAdaptiveTimsMobilityCentering = useAdaptiveTimsMobilityCentering;
+}
+
+QString CandidateScorertron::scoringDiagnosticsSummary() const {
+    return d_ptr->scoringDiagnosticsSummary(m_mzTargetKey);
+}
+
+void CandidateScorertron::printScoringDiagnosticsIfEnabled() const {
+    if (!m_pythiaParameters.writeFullCandidateDebug || d_ptr->m_scoringDiagnostics.scoreCalls == 0) {
+        return;
+    }
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << qPrintable(scoringDiagnosticsSummary());
+}
 
 Err CandidateScorertron::init(
     const PythiaParameters &pythiaParameters,
@@ -109,7 +226,9 @@ Err CandidateScorertron::init(
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
     TurboXIC *turboXicMS1,
-    MsFrame *msFrameMS1
+    MsFrame *msFrameMS1,
+    MsReaderPointerAcc *msReaderPointerAcc,
+    TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex
     ) {
 
     ERR_INIT
@@ -148,15 +267,29 @@ Err CandidateScorertron::init(
     m_scanTimeRange = scanTimeRange;
     m_averagineTable = averagineTable;
     m_msFrameMS1 = msFrameMS1;
+    m_msReaderPointerAcc = msReaderPointerAcc;
+    m_timsMs2IonMobilityIndex = timsMs2IonMobilityIndex;
+    m_ms1FrameNumbersTIMS.clear();
     m_features = features;
     m_minPeakCount = minPeakCount;
     m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
+
+    if (m_msReaderPointerAcc != nullptr
+        && !m_msReaderPointerAcc->ptr.isNull()
+        && m_msReaderPointerAcc->ptr->isTIMS()) {
+        const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
+            = m_msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
+        if (frameNumberVsMs1FrameTIMS != nullptr && !frameNumberVsMs1FrameTIMS->isEmpty()) {
+            m_ms1FrameNumbersTIMS = frameNumberVsMs1FrameTIMS->keys().toVector();
+        }
+    }
 
     if (msCalibratomatic.isInitRT()) {
         m_msCalibratomatic = msCalibratomatic;
     }
 
     e = d_ptr->init(m_pythiaParameters); ree;
+    d_ptr->resetDiagnostics();
 
     ERR_RETURN
 }
@@ -165,6 +298,7 @@ class MatriciesAndVecs {
 
 public:
 
+    FrameIndex frameOffset = 0;
     Eigen::MatrixX<float> intensityMatrix100;
     Eigen::MatrixX<float> intensityMatrix100Shadow;
     Eigen::MatrixX<float> intensityMatrix45;
@@ -172,6 +306,7 @@ public:
     Eigen::MatrixX<float> mzMatrix100;
 
     Eigen::VectorX<float> intensityVec;
+    Eigen::VectorX<float> integrationCounts;
     Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
     Eigen::VectorX<float> productVec;
@@ -182,6 +317,21 @@ public:
 
     [[nodiscard]] bool integrationVecIsValid() const {
         return ionCountVec.size() > 0;
+    }
+
+    Eigen::MatrixX<float> globalBlock(
+        const Eigen::MatrixX<float> &matrix, FrameIndex first, int count) const {
+        if (first >= frameOffset) {
+            return matrix.block(first - frameOffset, 0, count, matrix.cols()).eval();
+        }
+        // Correlation windows may extend into the omitted zero prefix.
+        // Preserve their original dimensions and global coordinates.
+        Eigen::MatrixX<float> block = Eigen::MatrixX<float>::Zero(count, matrix.cols());
+        const int overlap = std::max(0, first + count - frameOffset);
+        if (overlap > 0) {
+            block.bottomRows(overlap) = matrix.topRows(overlap);
+        }
+        return block;
     }
 };
 
@@ -219,6 +369,125 @@ public:
 };
 
 namespace {
+
+    constexpr double ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.1;
+    constexpr double ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0 = 0.06;
+    constexpr double ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 = 0.01;
+    constexpr double ALPHADIA_RT_FWHM_SECONDS = 5.0;
+
+    struct LocalIonMobilityPeak {
+        bool isValid = false;
+        float centerDriftTime = -1.0f;
+        ScanTime centerScanTime = -1.0f;
+        float minDriftTime = -1.0f;
+        float maxDriftTime = -1.0f;
+        IonMobilityIndex centerIonMobilityIndex = -1;
+        FrameIndex centerFrameIndex = -1;
+    };
+
+    struct LocalIonMobilityRtEvidencePoint {
+        IonMobilityIndex ionMobilityIndex = -1;
+        FrameIndex frameIndex = -1;
+        float driftTime = -1.0f;
+        ScanTime scanTime = -1.0f;
+        double intensity = 0.0;
+    };
+
+    struct SymmetricProfileLimits {
+        int startIndex = -1;
+        int stopIndex = -1;
+    };
+
+    SymmetricProfileLimits alphaDiaStyleSymmetricLimits1d(
+        const QVector<double> &profile,
+        int centerIndex,
+        double f = 0.95,
+        double centerFraction = 0.01,
+        int minSize = 3,
+        int maxSize = 20
+        ) {
+
+        SymmetricProfileLimits limits;
+
+        if (profile.isEmpty() || centerIndex < 0 || centerIndex >= profile.size()) {
+            return limits;
+        }
+
+        if (profile.size() <= 1) {
+            limits.startIndex = centerIndex;
+            limits.stopIndex = centerIndex;
+            return limits;
+        }
+
+        const double centerIntensity = profile.at(centerIndex);
+        double trailingIntensity = centerIntensity;
+        int limit = std::min(minSize, std::max(centerIndex, profile.size() - centerIndex - 1));
+
+        for (int s = minSize + 1; s < maxSize; ++s) {
+            const int lowerIndex = std::max(centerIndex - s, 0);
+            const int upperIndex = std::min(centerIndex + s, profile.size() - 1);
+            const double intensity = (profile.at(lowerIndex) + profile.at(upperIndex)) / 2.0;
+
+            if (intensity < f * trailingIntensity) {
+                if (intensity > centerIntensity * centerFraction) {
+                    limit = s;
+                    trailingIntensity = intensity;
+                }
+                else {
+                    break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+
+        limits.startIndex = std::max(centerIndex - limit, 0);
+        limits.stopIndex = std::min(centerIndex + limit, profile.size() - 1);
+        return limits;
+    }
+
+    bool containsMs2IonMobilityFeature(const QVector<Features> &features) {
+        return features.contains(Ms2IonMobilityWeightedDelta)
+            || features.contains(Ms2IonMobilityWeightedDeltaAbs)
+            || features.contains(Ms2IonMobilityApexDeltaAbsMean)
+            || features.contains(Ms2IonMobilityApexDeltaAbsStDev)
+            || features.contains(Ms2IonMobilityMatchedIonFraction)
+            || features.contains(Ms2IonMobilityFwhmMean)
+            || features.contains(Ms2IonMobilityFwhmStDev)
+            || features.contains(Ms2IonMobilityRtCosineMean)
+            || features.contains(Ms2IonMobilityRtCosineStDev)
+            || features.contains(Ms2IonMobilityRtApexAgreementFraction);
+    }
+
+    int closestMs1FrameIndexAtOrBefore(
+        const QVector<FrameNumberTIMS> &frameNumbers,
+        FrameNumberTIMS scanNumber
+        ) {
+
+        if (frameNumbers.isEmpty()) {
+            return -1;
+        }
+
+        const auto lower = std::lower_bound(frameNumbers.constBegin(), frameNumbers.constEnd(), scanNumber);
+        if (lower == frameNumbers.constBegin()) {
+            return 0;
+        }
+        if (lower == frameNumbers.constEnd()) {
+            return frameNumbers.size() - 1;
+        }
+
+        const int lowerIndex = static_cast<int>(lower - frameNumbers.constBegin());
+        const int previousIndex = lowerIndex - 1;
+        const FrameNumberTIMS lowerFrameNumber = frameNumbers.at(lowerIndex);
+        const FrameNumberTIMS previousFrameNumber = frameNumbers.at(previousIndex);
+
+        if (std::abs(previousFrameNumber - scanNumber) <= std::abs(lowerFrameNumber - scanNumber)) {
+            return previousIndex;
+        }
+
+        return lowerFrameNumber > scanNumber ? previousIndex : lowerIndex;
+    }
 
     Err sortBestCorrelationResult(QVector<BestCorrelationResult> *bestCorrelationResults) {
 
@@ -280,40 +549,125 @@ namespace {
 
 
 }//namespace
-Err CandidateScorertron::calculateScores(
-    const QVector<MS2Ion> &ms2Ions,
-    const QVector<float> &weights,
-    TargetDecoyCandidatePair* targetDecoyCandidatePair,
-    CandidateScores *candidateScores
-    ) const {
-
+Err CandidateScorertron::initializeCandidate(
+    const QVector<MS2Ion> &ms2Ions, TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    CandidateScores *candidateScores, FrameIndex *frameIndexPredictedMin,
+    FrameIndex *frameIndexPredictedMax) const {
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+    const bool collectScoringDiagnostics = m_pythiaParameters.writeFullCandidateDebug;
+    if (collectScoringDiagnostics) {
+        d_ptr->m_scoringDiagnostics.scoreCalls++;
+        if (candidateScores != nullptr && candidateScores->isDecoy) {
+            d_ptr->m_scoringDiagnostics.decoyCalls++;
+        }
+        else {
+            d_ptr->m_scoringDiagnostics.targetCalls++;
+        }
+        if (m_timsMs2IonMobilityIndex != nullptr
+            && m_timsMs2IonMobilityIndex->isInit()
+            && targetDecoyCandidatePair != nullptr
+            && targetDecoyCandidatePair->iIM() > 0.0f) {
+            d_ptr->m_scoringDiagnostics.timsIonMobilityCalls++;
+        }
+    }
 
     candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
     candidateScores->initFeaturesArray();
     candidateScores->targetKey = m_mzTargetKey;
+    candidateScores->proteinGroup = targetDecoyCandidatePair->proteinGroups();
 
     //Note, target key must be set before peptideSequenceWithModsChargeAndTargetKey
     candidateScores->peptideSequenceWithModsChargeAndTargetKey = buildPeptideSequenceWithModsChargeAndTargetKey(candidateScores);
 
-    FrameIndex frameIndexPredictedMin;
-    FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
         targetDecoyCandidatePair->iRt(candidateScores->isDecoy),
         candidateScores,
-        &frameIndexPredictedMin,
-        &frameIndexPredictedMax
+        frameIndexPredictedMin,
+        frameIndexPredictedMax
         );
 
-    MatriciesAndVecs matriciesAndVecs;
-    e = initMatricesdAndVecs(
-        ms2Ions,
-        frameIndexPredictedMin,
-        frameIndexPredictedMax,
-        &matriciesAndVecs
-        ); ree;
+    ERR_RETURN
+}
+
+Err CandidateScorertron::calculateScores(
+    const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair, CandidateScores *candidateScores) const {
+    ERR_INIT
+    FrameIndex first, last;
+    e = initializeCandidate(ms2Ions, targetDecoyCandidatePair, candidateScores, &first, &last); ree;
+    MatriciesAndVecs matrices;
+    e = initMatricesdAndVecs(targetDecoyCandidatePair, ms2Ions, first, last,
+                            m_minPeakCount, &matrices); ree;
+    e = calculatePreparedScores(ms2Ions, weights, targetDecoyCandidatePair, matrices, candidateScores); ree;
+    ERR_RETURN
+}
+
+Err CandidateScorertron::calculateScoresForFragmentThresholds(
+    const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair, const QVector<float> &minimumCounts,
+    QVector<CandidateScores> *candidateScores) const {
+    ERR_INIT
+    if (minimumCounts.isEmpty() || candidateScores == nullptr
+        || candidateScores->size() != minimumCounts.size()) return eValueError;
+    for (float count : minimumCounts) {
+        if (!std::isfinite(count) || count <= 1.0f) return eValueError;
+    }
+    for (const auto &scores : *candidateScores) {
+        if (scores.isDecoy != candidateScores->first().isDecoy) return eValueError;
+    }
+    const int firstView = std::min_element(minimumCounts.constBegin(), minimumCounts.constEnd())
+                          - minimumCounts.constBegin();
+    MatriciesAndVecs matrices;
+    for (int step = 0; step < minimumCounts.size(); ++step) {
+        // Prepare the least restrictive view first, but preserve output slots.
+        const int view = step == 0 ? firstView : (step <= firstView ? step - 1 : step);
+        CandidateScores &scores = (*candidateScores)[view];
+        FrameIndex first, last;
+        e = initializeCandidate(ms2Ions, targetDecoyCandidatePair, &scores, &first, &last); ree;
+        if (step == 0) {
+            e = initMatricesdAndVecs(targetDecoyCandidatePair, ms2Ions, first, last,
+                                    minimumCounts.at(view), &matrices); ree;
+        } else {
+            e = updateIntegrationVectors(minimumCounts.at(view), &matrices); ree;
+            // Preserve the original path if the first view skipped its 45%
+            // matrix and an alternate view needs it.
+            if (matrices.intensityMatrix45.size() == 0 && !matrices.productVec.isZero(0.0f)) {
+                e = initMatricesdAndVecs(targetDecoyCandidatePair, ms2Ions, first, last,
+                                        minimumCounts.at(view), &matrices); ree;
+            }
+        }
+        e = calculatePreparedScores(ms2Ions, weights, targetDecoyCandidatePair,
+                                    matrices, &scores); ree;
+    }
+    ERR_RETURN
+}
+
+Err CandidateScorertron::calculatePreparedScores(
+    const QVector<MS2Ion> &ms2Ions, const QVector<float> &weights,
+    TargetDecoyCandidatePair *targetDecoyCandidatePair, const MatriciesAndVecs &matriciesAndVecs,
+    CandidateScores *candidateScores) const {
+    ERR_INIT
+    const bool collectScoringDiagnostics = m_pythiaParameters.writeFullCandidateDebug;
+    if (matriciesAndVecs.intensityMatrix100.size() == 0
+        || MathUtils::tZero(matriciesAndVecs.intensityMatrix100.maxCoeff())) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.zeroIntensityMatrix++;
+        }
+    }
+    if (matriciesAndVecs.ionCountVec.size() == 0
+        || MathUtils::tZero(matriciesAndVecs.ionCountVec.maxCoeff())) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.zeroIonCountVector++;
+        }
+    }
+    if (matriciesAndVecs.productVec.size() == 0
+        || MathUtils::tZero(matriciesAndVecs.productVec.maxCoeff())) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.zeroProductVector++;
+        }
+    }
 
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
@@ -324,6 +678,9 @@ Err CandidateScorertron::calculateScores(
         ); ree;
 
     if (peakIntegrationsVsIntensities.isEmpty()) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.emptyPeakIntegrations++;
+        }
         ERR_RETURN
     }
 
@@ -333,6 +690,13 @@ Err CandidateScorertron::calculateScores(
         peakIntegrationsVsIntensities,
         &bestCorrelationResults
         ); ree;
+
+    if (bestCorrelationResults.isEmpty()) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.emptyBestCorrelationResults++;
+        }
+        ERR_RETURN
+    }
 
     constexpr int multiplierForKeySettingByTen = 10;
     const int nominalMass
@@ -346,6 +710,7 @@ Err CandidateScorertron::calculateScores(
 
     e = setCandidateScores(
         targetDecoyCandidatePair,
+        ms2Ions,
         bestCorrelationResults,
         ms1Averagine,
         candidateScores
@@ -356,12 +721,16 @@ Err CandidateScorertron::calculateScores(
     for (const BestCorrelationResult &bcr : bestCorrelationResults) {
 
     	if (bcr.peakCorrelationsSum < 0.1) {
+            if (collectScoringDiagnostics) {
+                d_ptr->m_scoringDiagnostics.lowCorrelationRejected++;
+            }
     		continue;
 		}
 
         CandidateScores cs = *candidateScores;
         e = setCandidateScores(
             targetDecoyCandidatePair,
+            ms2Ions,
             {bcr},
             ms1Averagine,
             &cs
@@ -374,6 +743,16 @@ Err CandidateScorertron::calculateScores(
 
         candidateScoresFeatures.push_back(cs);
         candidateScoresFeatureArrays.push_back(fa);
+    }
+
+    // A seed can be supported by lower-ranked fragments while every proposed
+    // peak fails the leading-fragment correlation check. This is a normal
+    // no-match outcome; an empty classifier input would abort the target batch.
+    if (candidateScoresFeatures.isEmpty()) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.noDiscriminantCandidate++;
+        }
+        ERR_RETURN
     }
 
     QVector<FeaturesArray*> featuresArraysPntrs;
@@ -391,11 +770,18 @@ Err CandidateScorertron::calculateScores(
         threadCount,
         featuresArraysPntrs,
         &discScores
-        );
+        ); ree;
 
     QVector<QPair<float, CandidateScores>> candidateScoresPairs;
     for (int i = 0; i < discScores.size(); ++i) {
         candidateScoresPairs.push_back({discScores[i], candidateScoresFeatures[i]});
+    }
+
+    if (candidateScoresPairs.isEmpty()) {
+        if (collectScoringDiagnostics) {
+            d_ptr->m_scoringDiagnostics.noDiscriminantCandidate++;
+        }
+        ERR_RETURN
     }
 
     std::sort(
@@ -429,6 +815,9 @@ Err CandidateScorertron::calculateScores(
     candidateScores->featuresArray[DiscScoresStDev] = MathUtils::stDev(discScoresSubbed);
 
     e = setFullTheoMs2IonsScores(candidateScores); ree;
+    if (collectScoringDiagnostics) {
+        d_ptr->m_scoringDiagnostics.scoredCandidates++;
+    }
 
 
 #endif
@@ -506,31 +895,352 @@ namespace {
         xicPoints->erase(terminator, xicPoints->end());
     }
 
-    void filterXICPointsByFrameIndex(
+    bool canUseLibraryIonMobilityFilteredMs2(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        float ionMobilityCenter
+        ) {
+
+        if (targetDecoyCandidatePair == nullptr
+            || timsMs2IonMobilityIndex == nullptr
+            || !timsMs2IonMobilityIndex->isInit()
+            || ionMobilityCenter <= 0.0f) {
+            return false;
+        }
+
+        return true;
+    }
+
+    Err extractLibraryIonMobilityFilteredTimsMs2Xic(
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        float ionMobilityMin,
+        float ionMobilityMax,
+        float mzVal,
+        float ppmTol,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
         XICPoints *xicPoints
         ) {
 
-        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](const XICPoint &p) {
-            return !(frameIndexPredictedMin < p.scanNumber && p.scanNumber < frameIndexPredictedMax);
-        };
+        ERR_INIT
 
-        const auto terminator = std::remove_if(
-            xicPoints->begin(),
-            xicPoints->end(),
-            terminatorLogic
+        xicPoints->clear();
+
+        if (timsMs2IonMobilityIndex == nullptr || !timsMs2IonMobilityIndex->isInit()) {
+            ERR_RETURN
+        }
+
+        const float massTol = MathUtils::calculatePPM(mzVal, ppmTol);
+        const float mzMin = mzVal - massTol;
+        const float mzMax = mzVal + massTol;
+
+        *xicPoints = timsMs2IonMobilityIndex->extractPointsXIC(
+            mzMin,
+            mzMax,
+            frameIndexPredictedMin,
+            frameIndexPredictedMax,
+            ionMobilityMin,
+            ionMobilityMax
             );
 
-        xicPoints->erase(terminator, xicPoints->end());
+        ERR_RETURN
     }
 
-    Err getXICs(
+    bool driftTimeFromIonMobilityIndex(
+        const MsReaderPointerAcc *msReaderPointerAcc,
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        IonMobilityIndex ionMobilityIndex,
+        double *driftTime
+        ) {
+
+        if (driftTime == nullptr) {
+            return false;
+        }
+
+        float indexedDriftTime = -1.0f;
+        if (timsMs2IonMobilityIndex != nullptr
+            && timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &indexedDriftTime)) {
+            *driftTime = indexedDriftTime;
+            return true;
+        }
+
+        if (msReaderPointerAcc == nullptr || msReaderPointerAcc->ptr.isNull()) {
+            return false;
+        }
+
+        return msReaderPointerAcc->ptr->driftTimeFromIonMobilityIndex(ionMobilityIndex, driftTime) == eNoError;
+    }
+
+    void updateApexFromSortedScanPoints(
+        const ScanPoints &scanPoints,
+        float mzMin,
+        float mzMax,
+        IonMobilityIndex ionMobilityIndex,
+        double driftTime,
+        float *apexIntensity,
+        IonMobilityIndex *apexIonMobilityIndex,
+        double *apexDriftTime
+        ) {
+
+        const auto lower = std::lower_bound(
+            scanPoints.constBegin(),
+            scanPoints.constEnd(),
+            mzMin,
+            [](const ScanPoint &scanPoint, float mz) {
+                return scanPoint.x() < mz;
+            }
+            );
+
+        for (auto it = lower; it != scanPoints.constEnd() && it->x() <= mzMax; ++it) {
+            const float intensity = it->y();
+            if (intensity <= *apexIntensity) {
+                continue;
+            }
+
+            *apexIntensity = intensity;
+            *apexIonMobilityIndex = ionMobilityIndex;
+            *apexDriftTime = driftTime;
+        }
+    }
+
+    LocalIonMobilityPeak selectLocalIonMobilityPeakForTimsMs2(
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const MsFrame *msFrameMzTarget,
         const QVector<MS2Ion> &ms2Ions,
+        float libraryIonMobility,
+        float ppmTol,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax
+        ) {
+
+        LocalIonMobilityPeak peak;
+
+        if (timsMs2IonMobilityIndex == nullptr
+            || !timsMs2IonMobilityIndex->isInit()
+            || msFrameMzTarget == nullptr
+            || !msFrameMzTarget->isValid()
+            || ms2Ions.isEmpty()) {
+            return peak;
+        }
+
+        const float initialIonMobilityMin = libraryIonMobility - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        const float initialIonMobilityMax = libraryIonMobility + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+
+        QMap<QPair<IonMobilityIndex, FrameIndex>, double> mobilityFrameVsIntensity;
+        for (const MS2Ion &ms2Ion : ms2Ions) {
+
+            const float massTol = MathUtils::calculatePPM(ms2Ion.mz, ppmTol);
+            const XICPoints xicPoints = timsMs2IonMobilityIndex->extractPointsXIC(
+                ms2Ion.mz - massTol,
+                ms2Ion.mz + massTol,
+                frameIndexPredictedMin,
+                frameIndexPredictedMax,
+                initialIonMobilityMin,
+                initialIonMobilityMax
+                );
+
+            for (const XICPoint &xicPoint : xicPoints) {
+                if (xicPoint.ionMobilityIndex < 0 || xicPoint.intensity <= 0.0f) {
+                    continue;
+                }
+                mobilityFrameVsIntensity[{xicPoint.ionMobilityIndex, xicPoint.scanNumber}] += xicPoint.intensity;
+            }
+        }
+
+        if (mobilityFrameVsIntensity.isEmpty()) {
+            return peak;
+        }
+
+        QVector<LocalIonMobilityRtEvidencePoint> evidencePoints;
+        evidencePoints.reserve(mobilityFrameVsIntensity.size());
+        for (auto it = mobilityFrameVsIntensity.constBegin(); it != mobilityFrameVsIntensity.constEnd(); ++it) {
+
+            float driftTime = -1.0f;
+            if (!timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(it.key().first, &driftTime)) {
+                continue;
+            }
+
+            LocalIonMobilityRtEvidencePoint evidencePoint;
+            evidencePoint.ionMobilityIndex = it.key().first;
+            evidencePoint.frameIndex = it.key().second;
+            evidencePoint.driftTime = driftTime;
+            evidencePoint.scanTime = msFrameMzTarget->scanTimeFromFrameIndex(it.key().second);
+            evidencePoint.intensity = it.value();
+            evidencePoints.push_back(evidencePoint);
+        }
+
+        if (evidencePoints.isEmpty()) {
+            return peak;
+        }
+
+        const double mobilitySigma = ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 / 2.3548;
+        const double rtSigma = ALPHADIA_RT_FWHM_SECONDS / 2.3548;
+        const double twoMobilitySigmaSquared = 2.0 * mobilitySigma * mobilitySigma;
+        const double twoRtSigmaSquared = 2.0 * rtSigma * rtSigma;
+        double bestSmoothedIntensity = 0.0;
+
+        for (const LocalIonMobilityRtEvidencePoint &centerPoint : evidencePoints) {
+
+            double smoothedIntensity = 0.0;
+            for (const LocalIonMobilityRtEvidencePoint &evidencePoint : evidencePoints) {
+
+                const double mobilityDelta = evidencePoint.driftTime - centerPoint.driftTime;
+                if (std::abs(mobilityDelta) > (3.0 * mobilitySigma)) {
+                    continue;
+                }
+
+                const double rtDelta = evidencePoint.scanTime - centerPoint.scanTime;
+                if (std::abs(rtDelta) > (3.0 * rtSigma)) {
+                    continue;
+                }
+
+                const double mobilityWeight = std::exp(-(mobilityDelta * mobilityDelta) / twoMobilitySigmaSquared);
+                const double rtWeight = std::exp(-(rtDelta * rtDelta) / twoRtSigmaSquared);
+                smoothedIntensity += evidencePoint.intensity * mobilityWeight * rtWeight;
+            }
+
+            if (smoothedIntensity <= bestSmoothedIntensity) {
+                continue;
+            }
+
+            bestSmoothedIntensity = smoothedIntensity;
+            peak.isValid = true;
+            peak.centerDriftTime = centerPoint.driftTime;
+            peak.centerScanTime = centerPoint.scanTime;
+            peak.centerIonMobilityIndex = centerPoint.ionMobilityIndex;
+            peak.centerFrameIndex = centerPoint.frameIndex;
+        }
+
+        if (!peak.isValid) {
+            return peak;
+        }
+
+        peak.minDriftTime = peak.centerDriftTime - static_cast<float>(ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        peak.maxDriftTime = peak.centerDriftTime + static_cast<float>(ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0);
+
+        return peak;
+    }
+
+    LocalIonMobilityPeak selectMobilityProfilePeakForTimsMs2(
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const QVector<MS2Ion> &ms2Ions,
+        float libraryIonMobility,
+        float ppmTol,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax
+        ) {
+
+        LocalIonMobilityPeak peak;
+
+        if (timsMs2IonMobilityIndex == nullptr
+            || !timsMs2IonMobilityIndex->isInit()
+            || ms2Ions.isEmpty()
+            || libraryIonMobility <= 0.0f) {
+            return peak;
+        }
+
+        constexpr int maxProfileFragments = 6;
+        constexpr double mobilityPriorSigmaOneOverK0 = 0.04;
+        constexpr double minWeightedProfileIntensity = 1.0;
+        constexpr double adaptiveExtractionHalfWidthOneOverK0 = ALPHADIA_TARGET_MOBILITY_TOLERANCE_ONE_OVER_K0;
+
+        const int ionCount = std::min(maxProfileFragments, ms2Ions.size());
+        const float broadIonMobilityMin = libraryIonMobility - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        const float broadIonMobilityMax = libraryIonMobility + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+
+        QMap<IonMobilityIndex, double> summedMobilityProfile;
+        for (int i = 0; i < ionCount; ++i) {
+            const MS2Ion &ms2Ion = ms2Ions.at(i);
+            const float massTol = MathUtils::calculatePPM(ms2Ion.mz, ppmTol);
+
+            QMap<IonMobilityIndex, double> fragmentProfile;
+            float apexIntensity = 0.0f;
+            float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            if (!timsMs2IonMobilityIndex->extractMobilityProfile(
+                    ms2Ion.mz - massTol,
+                    ms2Ion.mz + massTol,
+                    frameIndexPredictedMin,
+                    frameIndexPredictedMax,
+                    broadIonMobilityMin,
+                    broadIonMobilityMax,
+                    libraryIonMobility,
+                    &fragmentProfile,
+                    &apexIntensity,
+                    &apexDeltaAbs
+                    )) {
+                continue;
+            }
+
+            for (auto it = fragmentProfile.constBegin(); it != fragmentProfile.constEnd(); ++it) {
+                summedMobilityProfile[it.key()] += it.value();
+            }
+        }
+
+        if (summedMobilityProfile.isEmpty()) {
+            return peak;
+        }
+
+        const double mobilitySigma = ALPHADIA_MOBILITY_FWHM_ONE_OVER_K0 / 2.3548;
+        const double twoMobilitySigmaSquared = 2.0 * mobilitySigma * mobilitySigma;
+        const double twoPriorSigmaSquared = 2.0 * mobilityPriorSigmaOneOverK0 * mobilityPriorSigmaOneOverK0;
+        double bestWeightedIntensity = 0.0;
+
+        for (auto centerIt = summedMobilityProfile.constBegin(); centerIt != summedMobilityProfile.constEnd(); ++centerIt) {
+            float centerDriftTime = -1.0f;
+            if (!timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(centerIt.key(), &centerDriftTime)) {
+                continue;
+            }
+
+            double smoothedIntensity = 0.0;
+            for (auto profileIt = summedMobilityProfile.constBegin(); profileIt != summedMobilityProfile.constEnd(); ++profileIt) {
+                float driftTime = -1.0f;
+                if (!timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(profileIt.key(), &driftTime)) {
+                    continue;
+                }
+
+                const double mobilityDelta = driftTime - centerDriftTime;
+                if (std::abs(mobilityDelta) > (3.0 * mobilitySigma)) {
+                    continue;
+                }
+
+                const double mobilityWeight = std::exp(-(mobilityDelta * mobilityDelta) / twoMobilitySigmaSquared);
+                smoothedIntensity += profileIt.value() * mobilityWeight;
+            }
+
+            const double libraryDelta = centerDriftTime - libraryIonMobility;
+            const double priorWeight = std::exp(-(libraryDelta * libraryDelta) / twoPriorSigmaSquared);
+            const double weightedIntensity = smoothedIntensity * priorWeight;
+            if (weightedIntensity <= bestWeightedIntensity) {
+                continue;
+            }
+
+            bestWeightedIntensity = weightedIntensity;
+            peak.isValid = true;
+            peak.centerDriftTime = centerDriftTime;
+            peak.centerIonMobilityIndex = centerIt.key();
+        }
+
+        if (!peak.isValid || bestWeightedIntensity < minWeightedProfileIntensity) {
+            return LocalIonMobilityPeak();
+        }
+
+        peak.minDriftTime = peak.centerDriftTime - static_cast<float>(adaptiveExtractionHalfWidthOneOverK0);
+        peak.maxDriftTime = peak.centerDriftTime + static_cast<float>(adaptiveExtractionHalfWidthOneOverK0);
+
+        return peak;
+    }
+
+    Err getLibraryIonMobilityFilteredTimsMs2XICs(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const QVector<MS2Ion> &ms2Ions,
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        const MsFrame *msFrameMzTarget,
+        float ionMobilityCenter,
         float ppmTol,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
-        XICPeakManager *xicPeakManager,
+        float targetedIonMobilityWindowHalfWidth,
+        bool useAdaptiveTimsMobilityCentering,
         QVector<XICPoints> *xicPointsVec100,
         QVector<XICPoints> *xicPointsVec100Shadows,
         QVector<XICPoints> *xicPointsVec45
@@ -544,19 +1254,135 @@ namespace {
         xicPointsVec100Shadows->reserve(ms2Ions.size());
         xicPointsVec45->reserve(ms2Ions.size());
 
+        LocalIonMobilityPeak localIonMobilityPeak;
+        localIonMobilityPeak.isValid = true;
+        localIonMobilityPeak.centerDriftTime = ionMobilityCenter;
+        localIonMobilityPeak.centerScanTime = -1.0f;
+        localIonMobilityPeak.minDriftTime = ionMobilityCenter - targetedIonMobilityWindowHalfWidth;
+        localIonMobilityPeak.maxDriftTime = ionMobilityCenter + targetedIonMobilityWindowHalfWidth;
+
+        if (useAdaptiveTimsMobilityCentering) {
+            const LocalIonMobilityPeak observedMobilityPeak = selectMobilityProfilePeakForTimsMs2(
+                timsMs2IonMobilityIndex,
+                ms2Ions,
+                ionMobilityCenter,
+                ppmTol,
+                frameIndexPredictedMin,
+                frameIndexPredictedMax
+                );
+
+            constexpr float maxAdaptiveCenterShiftOneOverK0 = 0.04f;
+            if (observedMobilityPeak.isValid
+                && std::abs(observedMobilityPeak.centerDriftTime - ionMobilityCenter)
+                       <= maxAdaptiveCenterShiftOneOverK0) {
+                localIonMobilityPeak.centerDriftTime = observedMobilityPeak.centerDriftTime;
+                localIonMobilityPeak.centerIonMobilityIndex = observedMobilityPeak.centerIonMobilityIndex;
+                localIonMobilityPeak.minDriftTime = observedMobilityPeak.centerDriftTime - targetedIonMobilityWindowHalfWidth;
+                localIonMobilityPeak.maxDriftTime = observedMobilityPeak.centerDriftTime + targetedIonMobilityWindowHalfWidth;
+            }
+        }
+
+        for (const MS2Ion &ms2Ion : ms2Ions) {
+
+            XICPoints xicPoints;
+            e = extractLibraryIonMobilityFilteredTimsMs2Xic(
+                timsMs2IonMobilityIndex,
+                localIonMobilityPeak.minDriftTime,
+                localIonMobilityPeak.maxDriftTime,
+                ms2Ion.mz,
+                ppmTol,
+                frameIndexPredictedMin,
+                frameIndexPredictedMax,
+                &xicPoints
+                ); ree;
+
+            XICPoints xicPointsShadows;
+            const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+            e = extractLibraryIonMobilityFilteredTimsMs2Xic(
+                timsMs2IonMobilityIndex,
+                localIonMobilityPeak.minDriftTime,
+                localIonMobilityPeak.maxDriftTime,
+                ms2Ion.mz - isotopeDistanceThomsons,
+                ppmTol,
+                frameIndexPredictedMin,
+                frameIndexPredictedMax,
+                &xicPointsShadows
+                ); ree;
+
+            xicPointsVec100->push_back(xicPoints);
+            xicPointsVec100Shadows->push_back(xicPointsShadows);
+
+            filterXICPointsByAccuracyPPM(
+                ms2Ion.mz,
+                ppmTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
+                &xicPoints
+                );
+            xicPointsVec45->push_back(xicPoints);
+        }
+
+        ERR_RETURN
+    }
+
+    Err getXICs(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const QVector<MS2Ion> &ms2Ions,
+        float ppmTol,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
+        XICPeakManager *xicPeakManager,
+        const MsFrame *msFrameMzTarget,
+        const TimsMs2IonMobilityIndex *timsMs2IonMobilityIndex,
+        float ionMobilityCenter,
+        float targetedIonMobilityWindowHalfWidth,
+        bool useAdaptiveTimsMobilityCentering,
+        QVector<XICPoints> *xicPointsVec100,
+        QVector<XICPoints> *xicPointsVec100Shadows,
+        QVector<XICPoints> *xicPointsVec45
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+
+        if (canUseLibraryIonMobilityFilteredMs2(
+                targetDecoyCandidatePair,
+                timsMs2IonMobilityIndex,
+                ionMobilityCenter
+                )) {
+
+            e = getLibraryIonMobilityFilteredTimsMs2XICs(
+                targetDecoyCandidatePair,
+                ms2Ions,
+                timsMs2IonMobilityIndex,
+                msFrameMzTarget,
+                ionMobilityCenter,
+                ppmTol,
+                frameIndexPredictedMin,
+                frameIndexPredictedMax,
+                targetedIonMobilityWindowHalfWidth,
+                useAdaptiveTimsMobilityCentering,
+                xicPointsVec100,
+                xicPointsVec100Shadows,
+                xicPointsVec45
+                ); ree;
+
+            ERR_RETURN
+        }
+
+        xicPointsVec100->reserve(ms2Ions.size());
+        xicPointsVec100Shadows->reserve(ms2Ions.size());
+        xicPointsVec45->reserve(ms2Ions.size());
+
         for (int i = 0; i < ms2Ions.size(); i++) {
 
             const MS2Ion &ms2Ion = ms2Ions.at(i);
 
             XICPoints xicPoints;
-            e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
-
             if (frameIndexPredictedMax > 0) {
-                filterXICPointsByFrameIndex(
-                frameIndexPredictedMin,
-                frameIndexPredictedMax,
-                &xicPoints
-                );
+                e = xicPeakManager->getXIC(ms2Ion.mz, frameIndexPredictedMin,
+                                         frameIndexPredictedMax, &xicPoints); ree;
+            } else {
+                e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
             }
 
             if (xicPoints.empty()) {
@@ -568,19 +1394,18 @@ namespace {
 
             XICPoints xicPointsShadows;
             const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-            e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
+            if (frameIndexPredictedMax > 0) {
+                e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons,
+                    frameIndexPredictedMin, frameIndexPredictedMax, &xicPointsShadows); ree;
+            } else {
+                e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons,
+                                         &xicPointsShadows); ree;
+            }
             if (xicPointsShadows.empty()) {
                 xicPointsVec100Shadows->push_back({});
             }
             else {
-                if (frameIndexPredictedMax > 0) {
-                    filterXICPointsByFrameIndex(
-                        frameIndexPredictedMin,
-                        frameIndexPredictedMax,
-                        &xicPointsShadows
-                        );
-                }
-                xicPointsVec100Shadows->push_back(xicPointsShadows);
+                xicPointsVec100Shadows->push_back(std::move(xicPointsShadows));
             }
 
             xicPointsVec100->push_back(xicPoints);
@@ -590,7 +1415,7 @@ namespace {
                 ppmTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
                 &xicPoints
                 );
-            xicPointsVec45->push_back(xicPoints);
+            xicPointsVec45->push_back(std::move(xicPoints));
 
         }
 
@@ -622,6 +1447,7 @@ namespace {
         const QVector<XICPoints> &xicPointsVec,
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
+        FrameIndex frameOffset,
         bool buildMzMatrix,
         int smoothCount,
         Eigen::MatrixX<float> *matIntensity,
@@ -633,33 +1459,37 @@ namespace {
 
         const FrameIndex frameIndexBuffer = 2;
 
-        const int rows = frameIndexMax + frameIndexBuffer;
+        const int globalRows = frameIndexMax + frameIndexBuffer;
+        const int rows = globalRows - frameOffset;
 
         matIntensity->resize(rows, xicPointsVec.size());
         matIntensity->setZero();
 
-        matMz->resize(rows, xicPointsVec.size());
-        matMz->setZero();
+        if (buildMzMatrix) {
+            matMz->resize(rows, xicPointsVec.size());
+            matMz->setZero();
+        }
 
         for (int col = 0; col < xicPointsVec.size(); col++) {
 
             const XICPoints &xicPointsCol = xicPointsVec.at(col);
             for (const XICPoint &p : xicPointsCol) {
 
-                if (p.scanNumber >= rows) {
+                if (p.scanNumber >= globalRows) {
                     continue;
                 }
 
-                matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
+                const FrameIndex row = p.scanNumber - frameOffset;
+                matIntensity->coeffRef(row, col) += p.intensity;
                 if (buildMzMatrix) {
 
-                    if (matMz->coeff(p.scanNumber, col) > 0) {
-                        matMz->coeffRef(p.scanNumber, col) += p.mz;
-                        matMz->coeffRef(p.scanNumber, col) /= 2.0;
+                    if (matMz->coeff(row, col) > 0) {
+                        matMz->coeffRef(row, col) += p.mz;
+                        matMz->coeffRef(row, col) /= 2.0;
                         continue;
                     }
 
-                    matMz->coeffRef(p.scanNumber, col) = p.mz;
+                    matMz->coeffRef(row, col) = p.mz;
                 }
             }
         }
@@ -671,12 +1501,10 @@ namespace {
         ERR_RETURN
     }
 
-    Err buildIntegrationVector(
+    Err buildIntegrationCounts(
         const MatriciesAndVecs &matriciesAndVecs,
-        const Eigen::VectorX<float> &kernelIntegration,
-        float minPeakCount,
         int maxAnchorColumnIndex,
-        Eigen::VectorX<float> *ionCountVec
+        Eigen::VectorX<float> *integrationCounts
         ) {
 
         ERR_INIT
@@ -694,7 +1522,21 @@ namespace {
         matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
         EigenUtils::thresholdMatrix(0.0f, &matCount);
 
-        Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
+        *integrationCounts = matCount.rowwise().sum();
+
+        ERR_RETURN
+    }
+
+    Err buildIntegrationVector(
+        const Eigen::VectorX<float> &integrationCounts,
+        const Eigen::VectorX<float> &kernelIntegration,
+        float minPeakCount,
+        Eigen::VectorX<float> *ionCountVec
+        ) {
+
+        ERR_INIT
+
+        Eigen::VectorX<float> integrationVecLocal = integrationCounts;
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
         *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
@@ -753,9 +1595,11 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::initMatricesdAndVecs(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2Ions,
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
+        float minPeakCount,
         MatriciesAndVecs *matriciesAndVecs
         ) const {
 
@@ -777,12 +1621,19 @@ Err CandidateScorertron::initMatricesdAndVecs(
         QVector<XICPoints> xicPointsVec100;
         QVector<XICPoints> xicPointsVec100Shadow;
         QVector<XICPoints> xicPointsVec45;
+        const float calibratedIonMobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
         e = getXICs(
+            targetDecoyCandidatePair,
             ms2IonsResized,
             static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
             frameIndexPredictedMin,
             frameIndexPredictedMax,
             m_xicPeakManager,
+            m_msFrameMzTarget,
+            m_timsMs2IonMobilityIndex,
+            calibratedIonMobilityCenter,
+            static_cast<float>(m_pythiaParameters.timsTargetedMs2IonMobilityWindow),
+            m_useAdaptiveTimsMobilityCentering,
             &xicPointsVec100,
             &xicPointsVec100Shadow,
             &xicPointsVec45
@@ -792,12 +1643,30 @@ Err CandidateScorertron::initMatricesdAndVecs(
         e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
+        matriciesAndVecs->frameOffset = 0;
+        if (d_ptr->m_zeroPrefixGuard >= 0 && m_timsMs2IonMobilityIndex == nullptr
+            && !m_pythiaParameters.writeFullCandidateDebug && frameIndexMax > 0) {
+            FrameIndex firstPoint = frameIndexMax;
+            // Shadows can precede primary evidence. The narrow-mass
+            // points are a subset of primary evidence.
+            for (const auto *columns : {&xicPointsVec100, &xicPointsVec100Shadow}) {
+                for (const XICPoints &points : *columns) {
+                    for (const XICPoint &point : points) {
+                        firstPoint = std::min(firstPoint, point.scanNumber);
+                    }
+                }
+            }
+            // Retain SIMD alignment as well as the convolution's zero guard.
+            matriciesAndVecs->frameOffset
+                = std::max(0, firstPoint - d_ptr->m_zeroPrefixGuard) / 16 * 16;
+        }
 
         constexpr int smoothCount = 1;
         e = buildEigenMatrix(
             xicPointsVec100,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             true,
             smoothCount,
             &matriciesAndVecs->intensityMatrix100,
@@ -817,6 +1686,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             xicPointsVec100Shadow,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             false,
             smoothCount,
             &matriciesAndVecs->intensityMatrix100Shadow,
@@ -830,21 +1700,42 @@ Err CandidateScorertron::initMatricesdAndVecs(
 
         matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
-        e = buildIntegrationVector(
-            *matriciesAndVecs,
+        // These counts precede the view-specific threshold and are identical
+        // for both views of this candidate.
+        e = buildIntegrationCounts(*matriciesAndVecs,
+                                   m_pythiaParameters.maxAnchorColumnIndex,
+                                   &matriciesAndVecs->integrationCounts); ree;
+        e = updateIntegrationVectors(minPeakCount, matriciesAndVecs); ree;
+
+        // An all-zero product yields no integration; the 45% matrix is then
+        // never read. Keep the preceding arithmetic unchanged.
+        if (matriciesAndVecs->productVec.isZero(0.0f)) {
+            ERR_RETURN
+        }
+        constexpr int noSmooths = 0;
+        e = buildEigenMatrix(
+            xicPointsVec45,
             d_ptr->m_kernelMs2,
-            m_minPeakCount,
-            m_pythiaParameters.maxAnchorColumnIndex,
-            &matriciesAndVecs->ionCountVec
+            frameIndexMax,
+            matriciesAndVecs->frameOffset,
+            false,
+            noSmooths,
+            &matriciesAndVecs->intensityMatrix45,
+            &unused
             ); ree;
 
-        // e = buildIntegrationVectorCosineSim(
-        //     *matriciesAndVecs,
-        //     ms2IonsResized,
-        //     d_ptr->m_kernelIntegration,
-        //     m_pythiaParameters.maxAnchorColumnIndex,
-        //     &matriciesAndVecs->integrationVecCosineSim
-        //     ); ree;
+        ERR_RETURN
+    }
+
+Err CandidateScorertron::updateIntegrationVectors(
+    float minPeakCount, MatriciesAndVecs *matriciesAndVecs) const {
+    ERR_INIT
+        e = buildIntegrationVector(
+            matriciesAndVecs->integrationCounts,
+            d_ptr->m_kernelMs2,
+            minPeakCount,
+            &matriciesAndVecs->ionCountVec
+            ); ree;
 
         matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
                                      * matriciesAndVecs->intensityVec.array();
@@ -857,19 +1748,20 @@ Err CandidateScorertron::initMatricesdAndVecs(
 				);
 		}
 
-        constexpr int noSmooths = 0;
-        e = buildEigenMatrix(
-            xicPointsVec45,
-            d_ptr->m_kernelMs2,
-            frameIndexMax,
-            false,
-            noSmooths,
-            &matriciesAndVecs->intensityMatrix45,
-            &unused
-            ); ree;
+        if (matriciesAndVecs->frameOffset > 0) {
+            // Peak finding sorts full vectors, including zero-valued rows.
+            // Restore them before integration so tie order and indexes stay
+            // identical to the original global matrices.
+            for (auto *vector : {&matriciesAndVecs->ionCountVec, &matriciesAndVecs->productVec}) {
+                Eigen::VectorX<float> global = Eigen::VectorX<float>::Zero(
+                    vector->size() + matriciesAndVecs->frameOffset);
+                global.tail(vector->size()) = *vector;
+                vector->swap(global);
+            }
+        }
 
-        ERR_RETURN
-    }
+    ERR_RETURN
+}
 
 Err CandidateScorertron::setPredictedFrameIndexes(
     float iRT,
@@ -907,6 +1799,41 @@ Err CandidateScorertron::setPredictedFrameIndexes(
     *frameIndexPredictedMax = 0;
 
     ERR_RETURN
+}
+
+float CandidateScorertron::ionMobilityCenter(
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair
+    ) const {
+
+    if (targetDecoyCandidatePair == nullptr) {
+        return -1.0f;
+    }
+
+    const float libraryIonMobility = targetDecoyCandidatePair->iIM();
+    if (libraryIonMobility <= 0.0f) {
+        return libraryIonMobility;
+    }
+
+    if (m_msReaderPointerAcc == nullptr
+        || m_msReaderPointerAcc->ptr.isNull()
+        || !m_msReaderPointerAcc->ptr->isTIMS()) {
+        return libraryIonMobility;
+    }
+
+    if (!m_msCalibratomatic.isInitIM()) {
+        return libraryIonMobility;
+    }
+
+    float calibratedIonMobility = -1.0f;
+    const Err e = m_msCalibratomatic.predictIonMobility(
+        libraryIonMobility,
+        &calibratedIonMobility
+        );
+    if (e != eNoError || calibratedIonMobility <= 0.0f) {
+        return libraryIonMobility;
+    }
+
+    return calibratedIonMobility;
 }
 
 namespace {
@@ -1110,7 +2037,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
     e = ErrorUtils::isTrue(matriciesAndVecs.integrationVecIsValid()); ree;
 
-    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
+    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows())
+                       + matriciesAndVecs.frameOffset;
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
     // if (m_useTopNIntegrationsParam) {
     //     peakIntegrationsVsIntensityResized.resize(std::min(
@@ -1128,12 +2056,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const int ogPeakLength = piiWorking.first.second - piiWorking.first.first + 1;
 
-        Eigen::MatrixX<float> matBlock = matriciesAndVecs.intensityMatrix100.block(
-              piiWorking.first.first,
-              0,
-              ogPeakLength,
-              matriciesAndVecs.intensityMatrix100.cols()
-              ).eval();
+        Eigen::MatrixX<float> matBlock = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, piiWorking.first.first, ogPeakLength);
 
         const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);
 
@@ -1187,12 +2111,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const auto frameIndex1p5XMax
             = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier1p5X * ogPeakLength))), maxRows);
         const int peakLength1p5X = frameIndex1p5XMax - frameIndex1p5XMin;
-        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.intensityMatrix100.block(
-              frameIndex1p5XMin,
-              0,
-              peakLength1p5X,
-              matriciesAndVecs.intensityMatrix100.cols()
-              ).eval();
+        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, frameIndex1p5XMin, peakLength1p5X);
 
         constexpr float windowMultiplier2X = 1.0;
         const auto frameIndex2XMin
@@ -1200,12 +2120,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const auto frameIndex2XMax
             = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier2X * ogPeakLength))), maxRows);
         const int peakLength2X = frameIndex2XMax - frameIndex2XMin;
-        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.intensityMatrix100.block(
-                      frameIndex2XMin,
-                      0,
-                      peakLength2X,
-                      matriciesAndVecs.intensityMatrix100.cols()
-                      ).eval();
+        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, frameIndex2XMin, peakLength2X);
 
         // bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
         //     matBlock1p5X,
@@ -1213,7 +2129,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         //     stopThresholdFraction
         //     );
 
-    	bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = std::move(matBlock1p5X);
     	const Eigen::VectorX<float> integrationVecSegment1p5X = matriciesAndVecs.productVec.segment(
 			frameIndex1p5XMin,
 			peakLength1p5X
@@ -1225,7 +2141,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestCorrelationResultPii.peakCorrelationsWindow1p5X
             ); ree;
 
-    	bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = matBlock2X;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = std::move(matBlock2X);
 		const Eigen::VectorX<float> integrationVecSegment2X = matriciesAndVecs.productVec.segment(
 			frameIndex2XMin,
 			peakLength2X
@@ -1245,26 +2161,14 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const PeakIntegrationIndexes &p = piiWorking.first;
         const int pSize = p.second - p.first + 1;
-        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.mzMatrix100.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.mzMatrix100, p.first, pSize);
 
-        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100Shadow, p.first, pSize);
 
-        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix45, p.first, pSize);
 
         e = calculatePeakCorrelations(
 			integrationVecSegment,
@@ -1272,7 +2176,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestCorrelationResultPii.peakCorrelations45
             ); ree;
 
-        bestCorrelationResults->push_back(bestCorrelationResultPii);
+        bestCorrelationResults->push_back(std::move(bestCorrelationResultPii));
 
 // #define OUTPUT_MATS
 #ifdef OUTPUT_MATS
@@ -1886,6 +2790,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    const QVector<MS2Ion> &ms2Ions,
     const QVector<BestCorrelationResult> &bestCorrelationResults,
     const QVector<float> &ms1Averagine,
     CandidateScores *candidateScores
@@ -1899,6 +2804,7 @@ Err CandidateScorertron::setCandidateScores(
     e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
 
     candidateScores->initFeaturesArray();
+    candidateScores->proteinGroup = targetDecoyCandidatePair->proteinGroups();
 
     candidateScores->frameIndex = bestCorrelationResult.peakIntegrationIndexes.first
                                 + bestCorrelationResult.apexStarts.at(bestCorrelationResult.bestAnchorColumnIndex);
@@ -2029,6 +2935,20 @@ Err CandidateScorertron::setCandidateScores(
 			); ree;
 	}
 
+    e = setLibraryIonMobilityRelatedScores(
+        targetDecoyCandidatePair,
+        candidateScores
+        ); ree;
+
+    const bool needsMs2IonMobilityScores = containsMs2IonMobilityFeature(m_features);
+    if (needsMs2IonMobilityScores) {
+        e = setMs2IonMobilityRelatedScores(
+            targetDecoyCandidatePair,
+            ms2Ions,
+            candidateScores
+            ); ree;
+    }
+
     e = setFoundMs2Ions(
         bestCorrelationResults,
         m_topNMS2Ions,
@@ -2078,6 +2998,9 @@ namespace {
     Err calculateMs1Scores(
         const Eigen::VectorX<float> &kernel,
         const Eigen::VectorX<float> &_anchorColumn,
+        const QVector<float> &anchorTimes,
+        const MsFrame *ms1Frame,
+        bool alignByScanTime,
         float mzToExtract,
         float massTol,
         FrameIndex frameIndexMin,
@@ -2106,13 +3029,9 @@ namespace {
 
         XICPoints xicPoints = turboXicMS1->extractPointsXIC(
             mzToExtract - massTol,
-            mzToExtract + massTol
-            );
-
-        TurboXIC::filterXICPointsByScanNumber(
+            mzToExtract + massTol,
             frameIndexMin,
-            frameIndexMax,
-            &xicPoints
+            frameIndexMax
             );
 
         if (xicPoints.empty()) {
@@ -2125,15 +3044,36 @@ namespace {
             frameIndexMax
             ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1).eval();
 
-        if (xicVec.size() < anchorColumn.size()) {
+        if (alignByScanTime) {
+            e = ErrorUtils::isEqual(anchorTimes.size(), static_cast<int>(anchorColumn.size())); ree;
+            Eigen::VectorX<float> alignedAnchor(xicVec.size());
+            alignedAnchor.setZero();
+            for (int index = 0; index < alignedAnchor.size(); ++index) {
+                const float time = ms1Frame->scanTimeFromFrameIndex(frameIndexMin + index);
+                if (time < anchorTimes.first() || time > anchorTimes.last()) continue;
+                const auto upper = std::lower_bound(anchorTimes.constBegin(), anchorTimes.constEnd(), time);
+                const int right = static_cast<int>(upper - anchorTimes.constBegin());
+                if (right == 0 || *upper == time) {
+                    alignedAnchor[index] = anchorColumn[right];
+                } else {
+                    const int left = right - 1;
+                    const float fraction = (time - anchorTimes[left]) / (anchorTimes[right] - anchorTimes[left]);
+                    alignedAnchor[index] = (1.0f - fraction) * anchorColumn[left] + fraction * anchorColumn[right];
+                }
+            }
+            // Preserve the measured MS1 trace and its intensity. Interpolate
+            // only the MS2 reference onto actual MS1 acquisition times.
+            anchorColumn = alignedAnchor;
+        }
+        else if (xicVec.size() < anchorColumn.size()) {
             Eigen::VectorX<float> xicVecResized(anchorColumn.size());
             xicVecResized.setZero();
             const int stepSize = static_cast<int>(std::round(anchorColumn.size() / xicVec.size()));
 
             int ogVecIndex = 0;
-            for(int i = 0; i >= anchorColumn.size(); i += stepSize) {
+            for(int i = 0; i < anchorColumn.size(); i += stepSize) {
 
-                if (ogVecIndex < xicVec.size()) {
+                if (ogVecIndex >= xicVec.size()) {
                     break;
                 }
 
@@ -2226,9 +3166,21 @@ Err CandidateScorertron::setMs1RelatedScores(
     const Eigen::VectorX<float> anchorColumn
             = bestCorrelationResult.matBlockTrimmedIntensity.col(bestCorrelationResult.bestAnchorColumnIndex);
 
+    QVector<float> anchorTimes;
+    if (m_pythiaParameters.alignMs1ScanTimes) {
+        anchorTimes.reserve(anchorColumn.size());
+        for (int row = 0; row < anchorColumn.size(); ++row) {
+            anchorTimes.push_back(m_msFrameMzTarget->scanTimeFromFrameIndex(
+                candidateScores->frameIndexStart + row));
+        }
+    }
+
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        m_pythiaParameters.alignMs1ScanTimes,
         monoIsotopeMz,
         massTol,
         frameIndexMinMS1,
@@ -2246,6 +3198,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        m_pythiaParameters.alignMs1ScanTimes,
         monoIsotopeMz,
         massTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
         frameIndexMinMS1,
@@ -2262,6 +3217,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        m_pythiaParameters.alignMs1ScanTimes,
         monoIsotopeShadowMz,
         massTol,
         frameIndexMinMS1,
@@ -2278,6 +3236,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        m_pythiaParameters.alignMs1ScanTimes,
         c13isotopeMz1,
         massTol,
         frameIndexMinMS1,
@@ -2294,6 +3255,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        m_pythiaParameters.alignMs1ScanTimes,
         c13isotopeMz2,
         massTol,
         frameIndexMinMS1,
@@ -2316,6 +3280,611 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     candidateScores->featuresArray[MonoPreMonoRatio] = std::max(candidateScores->featuresArray[CosineSim100MS1PreMono]
                                                      / std::max(candidateScores->featuresArray[CosineSim100MS1], 1.0f), 1.0f);
+
+    ERR_RETURN
+}
+
+Err CandidateScorertron::setLibraryIonMobilityRelatedScores(
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    CandidateScores *candidateScores
+    ) const {
+
+    ERR_INIT
+
+    if (m_msReaderPointerAcc == nullptr || m_msReaderPointerAcc->ptr.isNull()) {
+        ERR_RETURN
+    }
+
+    if (!m_msReaderPointerAcc->ptr->isTIMS()) {
+        ERR_RETURN
+    }
+
+    const float mobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
+    if (mobilityCenter <= 0.0f) {
+        ERR_RETURN
+    }
+
+    const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsMs1FrameTIMS
+        = m_msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
+    if (frameNumberVsMs1FrameTIMS == nullptr || frameNumberVsMs1FrameTIMS->isEmpty()) {
+        ERR_RETURN
+    }
+
+    const QVector<FrameNumberTIMS> &frameNumbers = m_ms1FrameNumbersTIMS;
+    const int closestIndex = closestMs1FrameIndexAtOrBefore(frameNumbers, candidateScores->scanNumber);
+    if (closestIndex < 0 || closestIndex >= frameNumbers.size()) {
+        ERR_RETURN
+    }
+
+    FrameNumberTIMS ms1FrameNumber = frameNumbers.at(closestIndex);
+    if (ms1FrameNumber > candidateScores->scanNumber && closestIndex > 0) {
+        ms1FrameNumber = frameNumbers.at(closestIndex - 1);
+    }
+
+    const auto ms1FrameIt = frameNumberVsMs1FrameTIMS->constFind(ms1FrameNumber);
+    if (ms1FrameIt == frameNumberVsMs1FrameTIMS->constEnd() || ms1FrameIt.value().isEmpty()) {
+        ERR_RETURN
+    }
+
+    const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
+    const float massTol = MathUtils::calculatePPM(
+        monoIsotopeMz,
+        static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM)
+        );
+    const float mzMin = monoIsotopeMz - massTol;
+    const float mzMax = monoIsotopeMz + massTol;
+
+    float apexIntensity = 0.0f;
+    IonMobilityIndex apexIonMobilityIndex = -1;
+    double apexDriftTime = -1.0;
+    IonMobilityIndex ionMobilityIndexStart = std::numeric_limits<IonMobilityIndex>::max();
+    IonMobilityIndex ionMobilityIndexEnd = -1;
+
+    const Ms1FrameTIMS &ms1FrameTIMS = ms1FrameIt.value();
+    for (auto frameIt = ms1FrameTIMS.constBegin(); frameIt != ms1FrameTIMS.constEnd(); ++frameIt) {
+
+        const IonMobilityIndex ionMobilityIndex = frameIt.key();
+
+        double driftTime = -1.0;
+        if (!driftTimeFromIonMobilityIndex(
+            m_msReaderPointerAcc,
+            m_timsMs2IonMobilityIndex,
+            ionMobilityIndex,
+            &driftTime
+            )) {
+            continue;
+        }
+
+        if (std::abs(driftTime - mobilityCenter) > ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0) {
+            continue;
+        }
+
+        ionMobilityIndexStart = std::min(ionMobilityIndexStart, ionMobilityIndex);
+        ionMobilityIndexEnd = std::max(ionMobilityIndexEnd, ionMobilityIndex);
+
+        const ScanPoints &scanPoints = frameIt.value();
+        updateApexFromSortedScanPoints(
+            scanPoints,
+            mzMin,
+            mzMax,
+            ionMobilityIndex,
+            driftTime,
+            &apexIntensity,
+            &apexIonMobilityIndex,
+            &apexDriftTime
+            );
+    }
+
+    if (ionMobilityIndexEnd >= 0) {
+        candidateScores->ionMobilityIndexStart = ionMobilityIndexStart;
+        candidateScores->ionMobilityIndexEnd = ionMobilityIndexEnd;
+    }
+
+    if (apexIonMobilityIndex < 0) {
+        ERR_RETURN
+    }
+
+    candidateScores->featuresArray[Ms1IntensityFoundApex100IM] = apexIntensity;
+    candidateScores->ionMobilityIndex = apexIonMobilityIndex;
+    candidateScores->imDriftTime = static_cast<float>(apexDriftTime);
+
+    const float ionMobilityDelta = candidateScores->imDriftTime - mobilityCenter;
+    candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
+    candidateScores->featuresArray[IonMobilityDeltaAbs] = std::abs(ionMobilityDelta);
+    candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
+        std::min(
+            static_cast<double>(std::abs(ionMobilityDelta)),
+            ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+            ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+        );
+
+    ERR_RETURN
+}
+
+Err CandidateScorertron::setMs2IonMobilityRelatedScores(
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    const QVector<MS2Ion> &ms2Ions,
+    CandidateScores *candidateScores
+    ) const {
+
+    ERR_INIT
+
+    if (m_timsMs2IonMobilityIndex == nullptr || !m_timsMs2IonMobilityIndex->isInit()) {
+        ERR_RETURN
+    }
+
+    if (m_msReaderPointerAcc == nullptr || m_msReaderPointerAcc->ptr.isNull()) {
+        ERR_RETURN
+    }
+
+    const float mobilityCenter = ionMobilityCenter(targetDecoyCandidatePair);
+    if (mobilityCenter <= 0.0f || ms2Ions.isEmpty()) {
+        ERR_RETURN
+    }
+
+    constexpr int maxMs2IonMobilityFragmentCount = 6;
+    const int topIonCount = std::min({m_topNMS2Ions, ms2Ions.size(), maxMs2IonMobilityFragmentCount});
+    if (topIonCount <= 0 || candidateScores->frameIndexEnd < candidateScores->frameIndexStart) {
+        ERR_RETURN
+    }
+
+    const FrameIndex frameIndexMin = std::max(0, candidateScores->frameIndexStart - 1);
+    const FrameIndex frameIndexMax = candidateScores->frameIndexEnd + 1;
+    const float targetedIonMobilityWindowHalfWidth
+        = static_cast<float>(m_pythiaParameters.timsTargetedMs2IonMobilityWindow);
+    const float ionMobilityMin = mobilityCenter - static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+    const float ionMobilityMax = mobilityCenter + static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+    const IonMobilityIndex broadIonMobilityIndexStart = candidateScores->ionMobilityIndexStart;
+    const IonMobilityIndex broadIonMobilityIndexEnd = candidateScores->ionMobilityIndexEnd;
+
+    QMap<IonMobilityIndex, double> summedMobilityProfile;
+    int matchedIonCount = 0;
+    QVector<float> apexDeltaAbsValues;
+    QVector<float> mobilityFwhmValues;
+    QVector<float> mobilityFwhmWeights;
+    QVector<QMap<IonMobilityIndex, double>> fragmentMobilityProfiles;
+    apexDeltaAbsValues.reserve(topIonCount);
+    mobilityFwhmValues.reserve(topIonCount);
+    mobilityFwhmWeights.reserve(topIonCount);
+    fragmentMobilityProfiles.reserve(topIonCount);
+
+    constexpr float timsRtMobilityCoelutionMinSpectrumOverTime = 0.08f;
+    constexpr float timsRtMobilityCoelutionMinTotalIntensityLog = 8.0f;
+    const bool computeRtMobilityCoelutionFeatures
+        = (m_features.contains(Ms2IonMobilityRtCosineMean)
+           || m_features.contains(Ms2IonMobilityRtCosineStDev)
+           || m_features.contains(Ms2IonMobilityRtApexAgreementFraction))
+          && candidateScores->featuresArray[CosineSimSpectrumOverTimeCubed]
+             >= timsRtMobilityCoelutionMinSpectrumOverTime
+          && candidateScores->featuresArray[TotalIntensityLog]
+             >= timsRtMobilityCoelutionMinTotalIntensityLog;
+
+    if (!computeRtMobilityCoelutionFeatures) {
+        for (int i = 0; i < topIonCount; ++i) {
+            const MS2Ion &ms2Ion = ms2Ions.at(i);
+            const float massTol = MathUtils::calculatePPM(
+                ms2Ion.mz,
+                static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+                );
+
+            float apexIntensity = 0.0f;
+            float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            QMap<IonMobilityIndex, double> fragmentMobilityProfile;
+            const bool hasMobilityProfile = m_timsMs2IonMobilityIndex->extractMobilityProfile(
+                ms2Ion.mz - massTol,
+                ms2Ion.mz + massTol,
+                frameIndexMin,
+                frameIndexMax,
+                ionMobilityMin,
+                ionMobilityMax,
+                mobilityCenter,
+                &fragmentMobilityProfile,
+                &apexIntensity,
+                &apexDeltaAbs
+                );
+
+            if (!hasMobilityProfile) {
+                continue;
+            }
+
+            matchedIonCount++;
+
+            for (auto profileIt = fragmentMobilityProfile.constBegin();
+                 profileIt != fragmentMobilityProfile.constEnd();
+                 ++profileIt) {
+                summedMobilityProfile[profileIt.key()] += profileIt.value();
+            }
+
+            apexDeltaAbsValues.push_back(apexDeltaAbs);
+            fragmentMobilityProfiles.push_back(fragmentMobilityProfile);
+            mobilityFwhmWeights.push_back(std::max(ms2Ion.intensity, 0.0f));
+        }
+    }
+    else {
+        using RtMobilityKey = quint64;
+        constexpr RtMobilityKey invalidRtMobilityKey = std::numeric_limits<RtMobilityKey>::max();
+        const auto makeRtMobilityKey = [](FrameIndex frameIndex, IonMobilityIndex ionMobilityIndex) {
+            return (static_cast<RtMobilityKey>(static_cast<quint32>(frameIndex)) << 32)
+                   | static_cast<quint32>(ionMobilityIndex);
+        };
+        const auto keyFrameIndex = [](RtMobilityKey key) {
+            return static_cast<FrameIndex>(key >> 32);
+        };
+        const auto keyIonMobilityIndex = [](RtMobilityKey key) {
+            return static_cast<IonMobilityIndex>(key & 0xffffffffu);
+        };
+
+        std::unordered_map<RtMobilityKey, double> summedRtMobilityProfile;
+        QVector<std::unordered_map<RtMobilityKey, double>> fragmentRtMobilityProfiles;
+        QVector<RtMobilityKey> fragmentRtMobilityApexes;
+        fragmentRtMobilityProfiles.reserve(topIonCount);
+        fragmentRtMobilityApexes.reserve(topIonCount);
+
+        for (int i = 0; i < topIonCount; ++i) {
+            const MS2Ion &ms2Ion = ms2Ions.at(i);
+            const float massTol = MathUtils::calculatePPM(
+                ms2Ion.mz,
+                static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+                );
+
+            float apexIntensity = 0.0f;
+            float apexDeltaAbs = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+            QMap<IonMobilityIndex, double> fragmentMobilityProfile;
+            std::unordered_map<RtMobilityKey, double> fragmentRtMobilityProfile;
+            RtMobilityKey fragmentApexKey = invalidRtMobilityKey;
+
+            const XICPoints xicPoints = m_timsMs2IonMobilityIndex->extractPointsXIC(
+                ms2Ion.mz - massTol,
+                ms2Ion.mz + massTol,
+                frameIndexMin,
+                frameIndexMax,
+                ionMobilityMin,
+                ionMobilityMax
+                );
+            fragmentRtMobilityProfile.reserve(static_cast<size_t>(xicPoints.size()));
+
+            for (const XICPoint &xicPoint : xicPoints) {
+                if (xicPoint.intensity <= 0.0f || xicPoint.ionMobilityIndex < 0) {
+                    continue;
+                }
+
+                float driftTime = -1.0f;
+                if (!m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                        xicPoint.ionMobilityIndex,
+                        &driftTime
+                        )) {
+                    continue;
+                }
+
+                const double intensity = std::max(0.0f, xicPoint.intensity);
+                fragmentMobilityProfile[xicPoint.ionMobilityIndex] += intensity;
+
+                const RtMobilityKey rtMobilityKey = makeRtMobilityKey(
+                    xicPoint.scanNumber,
+                    xicPoint.ionMobilityIndex
+                    );
+                fragmentRtMobilityProfile[rtMobilityKey] += intensity;
+
+                if (xicPoint.intensity > apexIntensity) {
+                    apexIntensity = xicPoint.intensity;
+                    apexDeltaAbs = std::abs(driftTime - mobilityCenter);
+                    fragmentApexKey = rtMobilityKey;
+                }
+            }
+
+            if (fragmentMobilityProfile.isEmpty() || fragmentRtMobilityProfile.empty()) {
+                continue;
+            }
+
+            matchedIonCount++;
+
+            for (auto profileIt = fragmentMobilityProfile.constBegin();
+                 profileIt != fragmentMobilityProfile.constEnd();
+                 ++profileIt) {
+                summedMobilityProfile[profileIt.key()] += profileIt.value();
+            }
+
+            apexDeltaAbsValues.push_back(apexDeltaAbs);
+            fragmentMobilityProfiles.push_back(fragmentMobilityProfile);
+            mobilityFwhmWeights.push_back(std::max(ms2Ion.intensity, 0.0f));
+            fragmentRtMobilityProfiles.push_back(fragmentRtMobilityProfile);
+            fragmentRtMobilityApexes.push_back(fragmentApexKey);
+
+            for (const auto &profileEntry : fragmentRtMobilityProfile) {
+                summedRtMobilityProfile[profileEntry.first] += profileEntry.second;
+            }
+        }
+
+        if (!summedRtMobilityProfile.empty() && fragmentRtMobilityProfiles.size() > 1) {
+            RtMobilityKey consensusApex = invalidRtMobilityKey;
+            double consensusApexIntensity = 0.0;
+            for (const auto &profileEntry : summedRtMobilityProfile) {
+                if (profileEntry.second > consensusApexIntensity) {
+                    consensusApexIntensity = profileEntry.second;
+                    consensusApex = profileEntry.first;
+                }
+            }
+
+            if (consensusApex != invalidRtMobilityKey && !fragmentRtMobilityApexes.isEmpty()) {
+                if (computeRtMobilityCoelutionFeatures) {
+                    QVector<float> rtMobilityCosines;
+                    rtMobilityCosines.reserve(fragmentRtMobilityProfiles.size());
+
+                    double totalNormSquared = 0.0;
+                    for (const auto &totalEntry : summedRtMobilityProfile) {
+                        totalNormSquared += totalEntry.second * totalEntry.second;
+                    }
+
+                    for (const std::unordered_map<RtMobilityKey, double> &fragmentProfile : fragmentRtMobilityProfiles) {
+                        if (fragmentProfile.empty()) {
+                            continue;
+                        }
+
+                        double fragmentTotalDotProduct = 0.0;
+                        double fragmentNormSquared = 0.0;
+
+                        for (const auto &fragmentEntry : fragmentProfile) {
+                            const double fragmentIntensity = fragmentEntry.second;
+                            const auto totalIt = summedRtMobilityProfile.find(fragmentEntry.first);
+                            const double totalIntensity = totalIt == summedRtMobilityProfile.end()
+                                                              ? 0.0
+                                                              : totalIt->second;
+                            fragmentTotalDotProduct += fragmentIntensity * totalIntensity;
+                            fragmentNormSquared += fragmentIntensity * fragmentIntensity;
+                        }
+
+                        const double dotProduct = fragmentTotalDotProduct - fragmentNormSquared;
+                        const double consensusNormSquared = totalNormSquared
+                                                            - (2.0 * fragmentTotalDotProduct)
+                                                            + fragmentNormSquared;
+                        if (fragmentNormSquared <= 0.0 || consensusNormSquared <= 0.0) {
+                            continue;
+                        }
+
+                        const double cosine = dotProduct / std::sqrt(fragmentNormSquared * consensusNormSquared);
+                        rtMobilityCosines.push_back(static_cast<float>(std::clamp(cosine, 0.0, 1.0)));
+                    }
+
+                    if (!rtMobilityCosines.isEmpty()) {
+                        candidateScores->featuresArray[Ms2IonMobilityRtCosineMean] = MathUtils::mean(rtMobilityCosines);
+                        candidateScores->featuresArray[Ms2IonMobilityRtCosineStDev] = MathUtils::stDev(rtMobilityCosines);
+                    }
+                }
+
+                int agreeingApexCount = 0;
+                const FrameIndex consensusFrameIndex = keyFrameIndex(consensusApex);
+                const IonMobilityIndex consensusIonMobilityIndex = keyIonMobilityIndex(consensusApex);
+                for (const RtMobilityKey &fragmentApex : fragmentRtMobilityApexes) {
+                    if (fragmentApex == invalidRtMobilityKey) {
+                        continue;
+                    }
+
+                    if (std::abs(keyFrameIndex(fragmentApex) - consensusFrameIndex) <= 1
+                        && std::abs(keyIonMobilityIndex(fragmentApex) - consensusIonMobilityIndex) <= 2) {
+                        agreeingApexCount++;
+                    }
+                }
+
+                candidateScores->featuresArray[Ms2IonMobilityRtApexAgreementFraction]
+                    = agreeingApexCount / static_cast<float>(fragmentRtMobilityApexes.size());
+
+            }
+        }
+    }
+
+    candidateScores->featuresArray[Ms2IonMobilityMatchedIonFraction]
+        = matchedIonCount / static_cast<float>(topIonCount);
+
+    double intensitySum = 0.0;
+    double weightedDelta = 0.0;
+    double weightedDeltaAbs = 0.0;
+    if (!summedMobilityProfile.isEmpty()) {
+        QVector<IonMobilityIndex> mobilityIndices = summedMobilityProfile.keys().toVector();
+        std::sort(mobilityIndices.begin(), mobilityIndices.end());
+
+        QVector<double> summedProfile;
+        summedProfile.reserve(mobilityIndices.size());
+        double bestIntensity = -1.0;
+        int bestIndex = -1;
+
+        for (int i = 0; i < mobilityIndices.size(); ++i) {
+            const IonMobilityIndex ionMobilityIndex = mobilityIndices.at(i);
+            const double intensity = summedMobilityProfile.value(ionMobilityIndex);
+            summedProfile.push_back(intensity);
+
+            float driftTime = -1.0f;
+            if (!m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
+                continue;
+            }
+
+            const double delta = driftTime - mobilityCenter;
+            intensitySum += intensity;
+            weightedDelta += intensity * delta;
+            weightedDeltaAbs += intensity * std::abs(delta);
+
+            if (intensity > bestIntensity) {
+                bestIntensity = intensity;
+                bestIndex = i;
+            }
+        }
+
+        SymmetricProfileLimits limits;
+        float observedMobilityForWindow = -1.0f;
+        if (bestIndex >= 0) {
+            const IonMobilityIndex observedIonMobilityIndex = mobilityIndices.at(bestIndex);
+            float observedDriftTime = -1.0f;
+            if (m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                    observedIonMobilityIndex,
+                    &observedDriftTime
+                    )) {
+
+                candidateScores->ionMobilityIndex = observedIonMobilityIndex;
+                candidateScores->imDriftTime = observedDriftTime;
+                observedMobilityForWindow = observedDriftTime;
+
+                const float ionMobilityDelta = observedDriftTime - mobilityCenter;
+                candidateScores->featuresArray[IonMobilityDelta] = ionMobilityDelta;
+                candidateScores->featuresArray[IonMobilityDeltaAbs] = std::abs(ionMobilityDelta);
+                candidateScores->featuresArray[IonMobilityPdAbs] = std::sqrt(
+                    std::min(
+                        static_cast<double>(std::abs(ionMobilityDelta)),
+                        ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                        ) / ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0
+                    );
+            }
+
+            limits = alphaDiaStyleSymmetricLimits1d(summedProfile, bestIndex);
+            if (limits.startIndex >= 0
+                && limits.stopIndex >= limits.startIndex
+                && limits.stopIndex < mobilityIndices.size()) {
+                candidateScores->ionMobilityIndexStart = mobilityIndices.at(limits.startIndex);
+                candidateScores->ionMobilityIndexEnd = mobilityIndices.at(limits.stopIndex);
+            }
+        }
+
+        QVector<IonMobilityIndex> fwhmMobilityIndices;
+        if (observedMobilityForWindow > 0.0f) {
+            const IonMobilityIndex indexStart = broadIonMobilityIndexStart >= 0 && broadIonMobilityIndexEnd >= 0
+                                                    ? std::min(broadIonMobilityIndexStart, broadIonMobilityIndexEnd)
+                                                    : mobilityIndices.front();
+            const IonMobilityIndex indexEnd = broadIonMobilityIndexStart >= 0 && broadIonMobilityIndexEnd >= 0
+                                                  ? std::max(broadIonMobilityIndexStart, broadIonMobilityIndexEnd)
+                                                  : mobilityIndices.back();
+
+            for (IonMobilityIndex ionMobilityIndex = indexStart; ionMobilityIndex <= indexEnd; ++ionMobilityIndex) {
+                float driftTime = -1.0f;
+                if (!m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(ionMobilityIndex, &driftTime)) {
+                    continue;
+                }
+
+                if (std::abs(driftTime - observedMobilityForWindow)
+                    <= targetedIonMobilityWindowHalfWidth) {
+                    fwhmMobilityIndices.push_back(ionMobilityIndex);
+                }
+            }
+        }
+
+        if (fwhmMobilityIndices.isEmpty()
+            && limits.startIndex >= 0
+            && limits.stopIndex >= limits.startIndex
+            && limits.stopIndex < mobilityIndices.size()) {
+            for (int i = limits.startIndex; i <= limits.stopIndex; ++i) {
+                fwhmMobilityIndices.push_back(mobilityIndices.at(i));
+            }
+        }
+
+        if (!fwhmMobilityIndices.isEmpty()) {
+
+            float mobilityStart = -1.0f;
+            float mobilityStop = -1.0f;
+            if (m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                    fwhmMobilityIndices.front(),
+                    &mobilityStart
+                    )
+                && m_timsMs2IonMobilityIndex->driftTimeFromIonMobilityIndex(
+                    fwhmMobilityIndices.back(),
+                    &mobilityStop
+                    )) {
+
+                candidateScores->ionMobilityIndexStart = fwhmMobilityIndices.front();
+                candidateScores->ionMobilityIndexEnd = fwhmMobilityIndices.back();
+
+                const float mobilityWidth = std::abs(mobilityStop - mobilityStart);
+                const int mobilityWindowBinCount = std::max(1, fwhmMobilityIndices.size());
+                const QVector<float> fragmentMobilityProfileWeights = mobilityFwhmWeights;
+                mobilityFwhmWeights.clear();
+                for (int fragmentIndex = 0; fragmentIndex < fragmentMobilityProfiles.size(); ++fragmentIndex) {
+                    const QMap<IonMobilityIndex, double> &fragmentMobilityProfile
+                        = fragmentMobilityProfiles.at(fragmentIndex);
+                    if (fragmentMobilityProfile.isEmpty()) {
+                        continue;
+                    }
+
+                    double apexIntensity = 0.0;
+                    for (IonMobilityIndex ionMobilityIndex : fwhmMobilityIndices) {
+                        apexIntensity = std::max(
+                            apexIntensity,
+                            fragmentMobilityProfile.value(ionMobilityIndex, 0.0)
+                            );
+                    }
+
+                    if (apexIntensity <= 0.0) {
+                        continue;
+                    }
+
+                    const double halfMaxIntensity = apexIntensity / 2.0;
+                    int valuesAboveHalfMax = 0;
+                    for (IonMobilityIndex ionMobilityIndex : fwhmMobilityIndices) {
+                        if (fragmentMobilityProfile.value(ionMobilityIndex, 0.0) > halfMaxIntensity) {
+                            valuesAboveHalfMax++;
+                        }
+                    }
+
+                    const float fractionAboveHalfMax = valuesAboveHalfMax
+                                                       / static_cast<float>(mobilityWindowBinCount);
+                    mobilityFwhmValues.push_back(fractionAboveHalfMax * mobilityWidth);
+                    mobilityFwhmWeights.push_back(fragmentMobilityProfileWeights.at(fragmentIndex));
+                }
+            }
+        }
+
+    }
+
+    if (intensitySum > 0.0) {
+        candidateScores->featuresArray[Ms2IonMobilityWeightedDelta]
+            = static_cast<float>(weightedDelta / intensitySum);
+        candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs]
+            = static_cast<float>(weightedDeltaAbs / intensitySum);
+    }
+    else {
+        candidateScores->featuresArray[Ms2IonMobilityWeightedDelta] = 0.0f;
+        candidateScores->featuresArray[Ms2IonMobilityWeightedDeltaAbs]
+            = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+    }
+
+    if (!apexDeltaAbsValues.isEmpty()) {
+        candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
+            = MathUtils::mean(apexDeltaAbsValues);
+        candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev]
+            = MathUtils::stDev(apexDeltaAbsValues);
+    }
+    else {
+        candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsMean]
+            = static_cast<float>(ALPHADIA_MOBILITY_TOLERANCE_ONE_OVER_K0);
+        candidateScores->featuresArray[Ms2IonMobilityApexDeltaAbsStDev] = 0.0f;
+    }
+
+    if (!mobilityFwhmValues.isEmpty()) {
+        double fwhmWeightSum = std::accumulate(
+            mobilityFwhmWeights.begin(),
+            mobilityFwhmWeights.end(),
+            0.0
+            );
+
+        if (fwhmWeightSum <= 0.0) {
+            fwhmWeightSum = mobilityFwhmValues.size();
+            mobilityFwhmWeights.fill(1.0f);
+        }
+
+        double weightedFwhmSum = 0.0;
+        for (int i = 0; i < mobilityFwhmValues.size(); ++i) {
+            weightedFwhmSum += mobilityFwhmValues.at(i) * mobilityFwhmWeights.at(i);
+        }
+
+        const float weightedFwhmMean = static_cast<float>(weightedFwhmSum / fwhmWeightSum);
+        QVector<float> fwhmResiduals;
+        fwhmResiduals.reserve(mobilityFwhmValues.size());
+        for (const float mobilityFwhmValue : mobilityFwhmValues) {
+            fwhmResiduals.push_back(mobilityFwhmValue - weightedFwhmMean);
+        }
+
+        candidateScores->featuresArray[Ms2IonMobilityFwhmMean] = weightedFwhmMean;
+        candidateScores->featuresArray[Ms2IonMobilityFwhmStDev] = MathUtils::stDev(fwhmResiduals);
+    }
+    else {
+        candidateScores->featuresArray[Ms2IonMobilityFwhmMean] = 0.0f;
+        candidateScores->featuresArray[Ms2IonMobilityFwhmStDev] = 0.0f;
+    }
 
     ERR_RETURN
 }
@@ -2346,7 +3915,7 @@ namespace {
     }
 
     Err extractFullTheoreticalPointsFromScan(
-        const ScanPoints* scanPoints,
+        const QVector<QPointF> &sortedScanPoints,
         const QVector<MS2Ion> &ms2IonsTheoritical,
         double ms2ExtractionWidthPPM,
         QVector<QPair<QPointF, MS2Ion>> *foundPointVsMS2Ions
@@ -2354,15 +3923,8 @@ namespace {
 
         ERR_INIT
 
-        QVector<QPointF> scanPointsQF;
-        std::transform(
-            scanPoints->begin(),
-            scanPoints->end(),
-            std::back_inserter(scanPointsQF),
-            [](const ScanPoint& scanPoint){return QPointF(static_cast<double>(scanPoint.x()), static_cast<double>(scanPoint.y()));}
-            );
-
         QVector<double> mzVals;
+        mzVals.reserve(ms2IonsTheoritical.size());
         std::transform(
             ms2IonsTheoritical.begin(),
             ms2IonsTheoritical.end(),
@@ -2370,8 +3932,8 @@ namespace {
             [](const MS2Ion& ms2Ion){return static_cast<double>(ms2Ion.mz);}
             );
 
-        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromPoints(
-            scanPointsQF,
+        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromSortedPoints(
+            sortedScanPoints,
             mzVals,
             ms2ExtractionWidthPPM,
             true
@@ -2483,6 +4045,8 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     ERR_INIT
 
     const ScanPoints* scanPoints = m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber);
+    const QVector<QPointF> sortedScanPoints = d_ptr->sortedScanPoints(
+        candidateScores->scanNumber, *scanPoints);
 
     const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
                                      ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
@@ -2498,7 +4062,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
 
     QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
     e = extractFullTheoreticalPointsFromScan(
-        scanPoints,
+        sortedScanPoints,
         ms2IonsTheoritical,
         m_pythiaParameters.ms2ExtractionWidthPPM,
         &foundPointVsMS2Ions

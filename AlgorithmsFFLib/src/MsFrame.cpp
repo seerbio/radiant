@@ -13,6 +13,9 @@
 #include "ParallelUtils.h"
 
 #include <nanoflann.hpp>
+#include <algorithm>
+#include <array>
+#include <cstdint>
 
 #include <QElapsedTimer>
 
@@ -97,11 +100,11 @@ Err MsFrame::Private::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *fram
     e = ErrorUtils::isTrue(isInit());
 
     const size_t numResults = 1;
-    std::vector<double> queryPt = {scanTime, 0.0};
-    std::vector<long> retIndex(numResults);
-    std::vector<double> outDistSqr(numResults);
-
-    std::vector<std::pair<Eigen::Index, double>> matches;
+    // Keep the original query and zero-initialized result buffers without
+    // allocating three vectors for each nearest-frame lookup.
+    std::array<double, 2> queryPt = {scanTime, 0.0};
+    std::array<long, 1> retIndex{};
+    std::array<double, 1> outDistSqr{};
 
     const size_t resultsSize = m_kdTree->index->knnSearch(
             queryPt.data(),
@@ -140,6 +143,7 @@ Err MsFrame::init(
     m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     e = buildFrameIndexVsScanNumber(); ree
+    prepareLookupCaches();
     e = initFrameIndexVsScanTimeKDTree(); ree;
 
     ERR_RETURN
@@ -222,6 +226,12 @@ Err MsFrame::writeFrameScans(const QMap<FrameIndex, ScanPoints *> &framesVsScanP
 }
 
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
+    if (!m_scanNumbersByFrame.empty()) {
+        if (frameIndex < 1) return m_scanNumbersByFrame.front();
+        if (static_cast<std::size_t>(frameIndex) >= m_scanNumbersByFrame.size())
+            return m_scanNumbersByFrame.back();
+        return m_scanNumbersByFrame[static_cast<std::size_t>(frameIndex)];
+    }
     if (frameIndex > m_frameIndexVsScanNumber.lastKey()) {
         return m_frameIndexVsScanNumber.last();
     }
@@ -232,6 +242,9 @@ ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
 }
 
 ScanTime MsFrame::scanTimeFromScanNumber(ScanNumber scanNumber) const {
+    const std::int64_t offset = std::int64_t(scanNumber) - m_scanTimeOffset;
+    if (offset >= 0 && static_cast<std::uint64_t>(offset) < m_scanTimeByNumber.size())
+        return m_scanTimeByNumber[static_cast<std::size_t>(offset)];
     return m_scanNumberVsScanTime.value(scanNumber);
 }
 
@@ -311,4 +324,34 @@ Err MsFrame::initFrameIndexVsScanTimeKDTree() {
     d_ptr->init(frameIndexVsScanTime); ree;
 
     ERR_RETURN
+}
+
+void MsFrame::prepareLookupCaches() {
+    m_scanTimeByNumber.clear();
+    m_scanNumbersByFrame.clear();
+    if (!m_scanNumberVsScanTime.empty()) {
+        const auto first = m_scanNumberVsScanTime.firstKey();
+        const std::int64_t span = std::int64_t(m_scanNumberVsScanTime.lastKey()) - first + 1;
+        // Sparse scan identifiers retain the map lookup. Bound both absolute
+        // storage and the number of empty slots copied into the cache.
+        const std::int64_t densityLimit = std::max<std::int64_t>(
+            1024, std::int64_t(m_scanNumberVsScanTime.size()) * 64);
+        if (span > 0 && span <= 1048576 && span <= densityLimit) {
+            m_scanTimeOffset = first;
+            // Missing scan times keep QMap::value's value-initialized default.
+            m_scanTimeByNumber.assign(static_cast<std::size_t>(span), ScanTime{});
+            for (auto it = m_scanNumberVsScanTime.begin(); it != m_scanNumberVsScanTime.end(); ++it)
+                m_scanTimeByNumber[static_cast<std::size_t>(std::int64_t(it.key()) - first)] = it.value();
+        }
+    }
+    // Build from the completed mapping, including its historical behavior
+    // when init() is called more than once.
+    m_scanNumbersByFrame.reserve(m_frameIndexVsScanNumber.size());
+    for (auto it = m_frameIndexVsScanNumber.begin(); it != m_frameIndexVsScanNumber.end(); ++it) {
+        if (it.key() != static_cast<FrameIndex>(m_scanNumbersByFrame.size())) {
+            m_scanNumbersByFrame.clear();
+            break;
+        }
+        m_scanNumbersByFrame.push_back(it.value());
+    }
 }
