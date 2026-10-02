@@ -16,6 +16,7 @@
 #include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
+#include "PostNeuralNetCompetition.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
@@ -468,6 +469,27 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
+    const bool postNeuralNetCompetition =
+        m_pythiaParameters.postNeuralNetSharedFragments > 0;
+    if (postNeuralNetCompetition) {
+        const int before = candidateScoreClassifierPntrs.size();
+        e = PostNeuralNetCompetition::apply(
+            m_pythiaParameters.postNeuralNetSharedFragments,
+            &candidateScoreClassifierPntrs); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Fragment competition after neural net"
+                 << "minimum_shared_fragments"
+                 << m_pythiaParameters.postNeuralNetSharedFragments
+                 << "candidate_rows" << before << "->"
+                 << candidateScoreClassifierPntrs.size()
+                 << "confidence" << "tied +1 precursor q-values";
+        if (candidateScoreClassifierPntrs.isEmpty()) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "No candidates after post-neural-net competition; skipping result write";
+            ERR_RETURN
+        }
+    }
+
     int targetCountBelowFDRThresholdOnePercent;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
         candidateScoreClassifierPntrs,
@@ -479,15 +501,25 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
              << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
-    const bool candidateScoresSortedHiLo = std::is_sorted(
-        candidateScoreClassifierPntrs.begin(),
-        candidateScoreClassifierPntrs.end(),
-        [](const CandidateScores *l, const CandidateScores *r) {
-            if (MathUtils::tSame(l->classifierScore, r->classifierScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                return l->discriminantScore > r->discriminantScore;
-            }
-            return l->classifierScore < r->classifierScore;
-        });
+    const bool candidateScoresSortedHiLo = postNeuralNetCompetition
+        ? std::is_sorted(
+            candidateScoreClassifierPntrs.begin(),
+            candidateScoreClassifierPntrs.end(),
+            [](const CandidateScores *left, const CandidateScores *right) {
+                return left->classifierScore < right->classifierScore;
+            })
+        : std::is_sorted(
+            candidateScoreClassifierPntrs.begin(),
+            candidateScoreClassifierPntrs.end(),
+            [](const CandidateScores *left, const CandidateScores *right) {
+                if (MathUtils::tSame(
+                        left->classifierScore,
+                        right->classifierScore,
+                        S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                    return left->discriminantScore > right->discriminantScore;
+                }
+                return left->classifierScore < right->classifierScore;
+            });
     e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
 
     filterDecoysOrNot(&candidateScoreClassifierPntrs);
@@ -1095,10 +1127,13 @@ Err PythiaDIAFFWorkflow::applyFragmentCompetition(QVector<CandidateScores*> *can
     ERR_INIT
     const int before = candidates->size();
     e = FragmentCompetition::removeCompetingCandidates(
-        m_pythiaParameters.competitionEnabled, candidates); ree;
+        m_pythiaParameters.competitionEnabled,
+        candidates,
+        m_pythiaParameters.ionsSharedToReject); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
              << "Fragment competition before neural net"
              << "enabled" << m_pythiaParameters.competitionEnabled
+             << "minimum_shared_fragments" << m_pythiaParameters.ionsSharedToReject
              << "candidate_rows" << before << "->" << candidates->size();
     ERR_RETURN
 }

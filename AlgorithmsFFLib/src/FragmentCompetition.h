@@ -13,6 +13,11 @@ class CandidateScores;
 
 class ALGORITHMSFFLIB_EXPORTS FragmentCompetition {
 public:
+    enum class TieBreakMetric {
+        DiscriminantScore,
+        ClassifierScore
+    };
+
     // Already searched fragment coordinates; no library filtering or decoy
     // remutation. Priority is used only for equal unshared-evidence ties.
     struct Evidence {
@@ -40,7 +45,9 @@ public:
      * and apex separation <= half the narrower peak width. Each connected
      * group keeps the greatest unshared intensity * cosine^2 evidence.
      * Groups with no unshared evidence are rejected; singletons are retained.
-     * Ties prefer higher LDA, then decoys, peptide, apex, mass, and input order.
+     * Ties prefer the selected metric, then decoys, peptide, apex, mass, and
+     * input order. Classifier scores are interpreted as probabilities, so
+     * lower values have higher priority.
      *
      * Preserves surviving pointers in input order and never edits their scores.
      * Unscored no-peak placeholders pass through to the normal NN input filter.
@@ -49,7 +56,8 @@ public:
     static Error::Err removeCompetingCandidates(
         bool enabled,
         QVector<CandidateScores*> *candidates,
-        int minimumSharedFragments = 4);
+        int minimumSharedFragments = 4,
+        TieBreakMetric tieBreakMetric = TieBreakMetric::DiscriminantScore);
 };
 
 #endif
