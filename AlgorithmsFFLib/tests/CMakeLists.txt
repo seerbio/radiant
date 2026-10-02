@@ -44,6 +44,7 @@ SET(TEST_CLASSES
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
+        TargetDecoyCandidatePairConcurrencyTests
         TimsMs2IonMobilityIndexTests
         TurboXICTests
         TurboXIC2DTests

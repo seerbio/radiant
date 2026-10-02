@@ -6,6 +6,23 @@
 
 #include "BiophysicalCalcs.h"
 
+#include <array>
+#include <cstdint>
+#include <mutex>
+
+namespace {
+std::recursive_mutex &ionCacheMutex(const TargetDecoyCandidatePair *candidate) {
+    // Overlapping isolation windows can visit the same candidate concurrently.
+    // Share a bounded set of locks instead of adding a mutex to every one of
+    // the millions of library candidates. Decoy construction calls the target
+    // getter, so acquisition for the same candidate must be recursive.
+    static std::array<std::recursive_mutex, 256> mutexes;
+    const auto index = reinterpret_cast<std::uintptr_t>(candidate)
+        / sizeof(TargetDecoyCandidatePair) % mutexes.size();
+    return mutexes[index];
+}
+}
+
 TargetDecoyCandidatePair::TargetDecoyCandidatePair()
 : m_peptideStringWithMods("")
 , m_decoyMassDelta(-1.0)
@@ -24,6 +41,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 {}
 
 void TargetDecoyCandidatePair::setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr) {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     m_fragLibReaderRowPntr = fragLibReaderRowPntr;
     m_ms2IonsTargetCacheValid = false;
     m_ms2IonsDecoyCacheValid = false;
@@ -90,6 +108,7 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     if (!m_ms2IonsTargetCacheValid) {
         m_ms2IonsTargetCache = buildMS2Ions(m_fragLibReaderRowPntr);
         m_ms2IonsTargetCacheValid = true;
@@ -201,6 +220,7 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     if (!m_ms2IonsDecoyCacheValid) {
         m_ms2IonsDecoyCache = mutateCandidatePeptideTarget(
             peptideStringWithMods(),
@@ -288,12 +308,14 @@ void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {
 }
 
 void TargetDecoyCandidatePair::decoySharesSequenceWithOtherTarget(bool val) {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     m_decoySharesSequenceWithOtherTarget = val;
     m_ms2IonsDecoyCacheValid = false;
     m_ms2IonsDecoyCache.clear();
 }
 
 void TargetDecoyCandidatePair::setDecoyFragmentShiftMode(DecoyFragmentShiftMode mode) {
+    const std::lock_guard<std::recursive_mutex> lock(ionCacheMutex(this));
     m_decoyFragmentShiftMode = mode;
     m_ms2IonsDecoyCacheValid = false;
     m_ms2IonsDecoyCache.clear();
