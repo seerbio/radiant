@@ -222,7 +222,11 @@ void resolve(
 
 }
 
-bool readCandidate(const CandidateScores &scores, int inputIndex, Candidate *candidate) {
+bool readCandidate(
+    const CandidateScores &scores,
+    int inputIndex,
+    FragmentCompetition::TieBreakMetric tieBreakMetric,
+    Candidate *candidate) {
     if (scores.targetDecoyCandidatePair == nullptr || scores.featuresArray.size() != FeaturesSize
         || scores.integrations.size() < ionCount) return false;
     FragmentCompetition::Evidence e;
@@ -230,7 +234,8 @@ bool readCandidate(const CandidateScores &scores, int inputIndex, Candidate *can
     e.charge = scores.featuresArray.at(Charge);
     e.apex = scores.scanTime;
     e.width = static_cast<double>(scores.scanTimeEnd) - scores.scanTimeStart;
-    e.priority = scores.discriminantScore;
+    e.priority = tieBreakMetric == FragmentCompetition::TieBreakMetric::ClassifierScore
+        ? -scores.classifierScore : scores.discriminantScore;
     e.isDecoy = scores.isDecoy || scores.targetDecoyCandidatePair->isDecoy();
     const auto origin = scores.targetDecoyCandidatePair->peptideStringWithMods();
     e.reportedPeptide = scores.isDecoy
@@ -272,7 +277,10 @@ Error::Err FragmentCompetition::retainEvidence(
 }
 
 Error::Err FragmentCompetition::removeCompetingCandidates(
-    bool enabled, QVector<CandidateScores*> *candidates, int minimumSharedFragments) {
+    bool enabled,
+    QVector<CandidateScores*> *candidates,
+    int minimumSharedFragments,
+    TieBreakMetric tieBreakMetric) {
     if (candidates == nullptr) return Error::eValueError;
     if (!enabled || candidates->isEmpty()) return Error::eNoError;
     if (minimumSharedFragments < 2 || minimumSharedFragments > ionCount)
@@ -287,7 +295,7 @@ Error::Err FragmentCompetition::removeCompetingCandidates(
         }
         if (isNoPeakPlaceholder(*scores)) continue;
         Candidate candidate;
-        if (!readCandidate(*scores, input, &candidate)) {
+        if (!readCandidate(*scores, input, tieBreakMetric, &candidate)) {
             qWarning() << "Invalid candidate for fragment competition at row" << input;
             return Error::eValueError;
         }

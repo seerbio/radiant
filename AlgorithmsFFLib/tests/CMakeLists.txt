@@ -31,6 +31,7 @@ SET(TEST_CLASSES
         MsFrameTests
         MsUtilsTests
         PeakIntegratomaticTests
+        PostNeuralNetCompetitionTests
         QuanTransitionRefinertronTests
         QValueSettertronTests
         SequenceSubstringSearchomaticTests
