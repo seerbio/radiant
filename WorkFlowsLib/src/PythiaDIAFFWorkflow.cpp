@@ -707,10 +707,11 @@ namespace {
 	    ERR_INIT
     	FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
 
-    	constexpr int baggingOverride = 1;
-    	e = fdrcLassifierNeuralNet.init(
+	    // baggingSize controls CV tranches; neuralNetEnsembleSize controls
+	    // the number of classifiers trained within each held-out fold.
+	    e = fdrcLassifierNeuralNet.init(
 				pythiaParameters.epochs,
-				baggingOverride,
+				pythiaParameters.neuralNetEnsembleSize,
 				batchSize,
 				pythiaParameters.learningRate,
 				pythiaParameters.nodesFraction,

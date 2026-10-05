@@ -76,6 +76,7 @@ namespace PythiaParameterReaderConstants {
     const QString kNeuralNetParams = QStringLiteral("NeuralNetParams");
     const QString kEpochs = QStringLiteral("epochs");
     const QString kBaggingSize = QStringLiteral("baggingSize");
+    const QString kNeuralNetEnsembleSize = QStringLiteral("neuralNetEnsembleSize");
     const QString kLearningRate = QStringLiteral("learningRate");
     const QString kNodesFraction = QStringLiteral("nodesFraction");
     const QString kFocalLossGamma = QStringLiteral("focalLossGamma");
@@ -176,6 +177,8 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto neuralNetParamsNode = parser[kNeuralNetParams.toStdString()];
     pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(pythiaParameters->epochs);
     pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);
+    pythiaParameters->neuralNetEnsembleSize
+        = neuralNetParamsNode[kNeuralNetEnsembleSize.toStdString()].value_or(pythiaParameters->neuralNetEnsembleSize);
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->focalLossGamma = neuralNetParamsNode[kFocalLossGamma.toStdString()].value_or(pythiaParameters->focalLossGamma);
