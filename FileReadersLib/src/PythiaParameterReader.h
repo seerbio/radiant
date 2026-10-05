@@ -78,6 +78,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
     extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
+	extern const QString FILEREADERSLIB_EXPORTS kNeuralNetShuffleEachEpoch;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
 
 
@@ -149,6 +150,8 @@ struct PythiaParameters{
     float learningRate = 0.003;
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
+	// Experimental; disabled by default so benchmark comparisons remain unchanged.
+	bool neuralNetShuffleEachEpoch = false;
 	bool parallelNeuralNets = false;
 
     [[nodiscard]] bool isValid() const {
@@ -266,6 +269,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetShuffleEachEpoch) << neuralNetShuffleEachEpoch;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kParallelNeuralNets) << parallelNeuralNets;
 
         qDebug() << QStringLiteral("**********************************************");

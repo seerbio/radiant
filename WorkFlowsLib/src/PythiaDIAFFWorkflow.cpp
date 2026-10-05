@@ -715,7 +715,8 @@ namespace {
 				pythiaParameters.learningRate,
 				pythiaParameters.nodesFraction,
 				pythiaParameters.focalLossGamma,
-				pythiaParameters.threadCount
+				pythiaParameters.threadCount,
+				pythiaParameters.neuralNetShuffleEachEpoch
 		); rree;
 
     	e = fdrcLassifierNeuralNet.trainClassifier(
