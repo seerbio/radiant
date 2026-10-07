@@ -95,6 +95,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kNeuralNetParams;
     extern const QString FILEREADERSLIB_EXPORTS kEpochs;
     extern const QString FILEREADERSLIB_EXPORTS kBaggingSize;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetEnsembleSize;
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
     extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
@@ -192,6 +193,7 @@ struct PythiaParameters{
     //[NeuralNet]
     int epochs = 12;
     int baggingSize = 12;
+    int neuralNetEnsembleSize = 3;
     float learningRate = 0.003;
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
@@ -263,6 +265,12 @@ struct PythiaParameters{
     		qDebug() << baggingSize << PythiaParameterReaderConstants::kBaggingSize;
     		return false;
     	}
+
+        if (neuralNetEnsembleSize < 1) {
+            print();
+            qDebug() << neuralNetEnsembleSize << PythiaParameterReaderConstants::kNeuralNetEnsembleSize;
+            return false;
+        }
 
         return true;
     }
@@ -349,6 +357,7 @@ struct PythiaParameters{
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kNeuralNetParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kEpochs) << epochs;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kBaggingSize) << baggingSize;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetEnsembleSize) << neuralNetEnsembleSize;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
