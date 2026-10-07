@@ -17,6 +17,7 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         ConvertMzMLToParquetWorkFlowTests
         MsCalibratomaticSettertronTests
+        NeuralNetFeatureTransformsTests
         PythiaDIAFFWorkflowTests
 
         PlayGroundTests

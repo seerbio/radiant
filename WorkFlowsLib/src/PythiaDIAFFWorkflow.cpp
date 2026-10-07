@@ -17,6 +17,7 @@
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
 #include "PostNeuralNetCompetition.h"
+#include "NeuralNetFeatureTransforms.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
@@ -1057,6 +1058,11 @@ namespace {
             neuralNetFeatures
             );
 #endif
+
+            NeuralNetFeatureTransforms::logIntensityFeatures(
+                neuralNetFeatures,
+                &karnnNnTarget.scoreVecNormalized
+                );
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
