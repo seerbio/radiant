@@ -24,12 +24,14 @@ SET(TEST_CLASSES
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
         IdLevelQValueAnnotatorTests
+        FragmentCompetitionTests
         IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests
         MsFrameTests
         MsUtilsTests
         PeakIntegratomaticTests
+        PostNeuralNetCompetitionTests
         QuanTransitionRefinertronTests
         QValueSettertronTests
         SequenceSubstringSearchomaticTests

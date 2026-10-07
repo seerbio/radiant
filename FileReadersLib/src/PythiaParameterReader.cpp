@@ -46,7 +46,9 @@ namespace PythiaParameterReaderConstants {
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kFilterLengthIntegration = QStringLiteral("filterLengthIntegration");
     const QString kFilterLengthMS2 = QStringLiteral("filterLengthMS2");
+    const QString kCompetitionEnabled = QStringLiteral("competitionEnabled");
     const QString kIonsSharedToReject = QStringLiteral("ionsSharedToReject");
+    const QString kPostNeuralNetSharedFragments = QStringLiteral("postNeuralNetSharedFragments");
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
     const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
@@ -218,7 +220,9 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
     pythiaParameters->filterLengthIntegration = ms2ParamsNode[kFilterLengthIntegration.toStdString()].value_or(pythiaParameters->filterLengthIntegration);
     pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(pythiaParameters->filterLengthMS2);
+    pythiaParameters->competitionEnabled = ms2ParamsNode[kCompetitionEnabled.toStdString()].value_or(true);
     pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(pythiaParameters->ionsSharedToReject);
+    pythiaParameters->postNeuralNetSharedFragments = ms2ParamsNode[kPostNeuralNetSharedFragments.toStdString()].value_or(0);
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms2ExtractionWidthPPM);
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);

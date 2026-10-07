@@ -45,7 +45,9 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthIntegration;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kCompetitionEnabled;
     extern const QString FILEREADERSLIB_EXPORTS kIonsSharedToReject;
+    extern const QString FILEREADERSLIB_EXPORTS kPostNeuralNetSharedFragments;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPMOverride;
     extern const QString FILEREADERSLIB_EXPORTS kMinMs2FragCount;
@@ -140,7 +142,10 @@ struct PythiaParameters{
     //[MS2Params]
     int filterLengthIntegration = 5;
     int filterLengthMS2 = 3;
+    bool competitionEnabled = true;
     int ionsSharedToReject = 4;
+    // Zero disables post-NN physical competition and confidence recalculation.
+    int postNeuralNetSharedFragments = 0;
     double ms2ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
@@ -226,6 +231,21 @@ struct PythiaParameters{
             return false;
         }
 
+        if (postNeuralNetSharedFragments != 0
+            && (postNeuralNetSharedFragments < 2 || postNeuralNetSharedFragments > 12)) {
+            print();
+            qDebug() << postNeuralNetSharedFragments
+                     << PythiaParameterReaderConstants::kPostNeuralNetSharedFragments;
+            return false;
+        }
+
+        if (competitionEnabled && (ionsSharedToReject < 2 || ionsSharedToReject > 12)) {
+            print();
+            qDebug() << ionsSharedToReject
+                     << PythiaParameterReaderConstants::kIonsSharedToReject;
+            return false;
+        }
+
         if (topNIntegrations <= 0) {
             print();
             qDebug() << topNIntegrations << PythiaParameterReaderConstants::kTopNIntegrations;
@@ -282,7 +302,9 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthIntegration) << filterLengthIntegration;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthMS2) << filterLengthMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kCompetitionEnabled) << competitionEnabled;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kIonsSharedToReject) << ionsSharedToReject;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPostNeuralNetSharedFragments) << postNeuralNetSharedFragments;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPMOverride) << ms2ExtractionWidthPPMOverride;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
