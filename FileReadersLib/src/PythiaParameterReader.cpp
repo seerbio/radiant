@@ -97,6 +97,7 @@ namespace PythiaParameterReaderConstants {
     const QString kLearningRate = QStringLiteral("learningRate");
     const QString kNodesFraction = QStringLiteral("nodesFraction");
     const QString kFocalLossGamma = QStringLiteral("focalLossGamma");
+    const QString kNeuralNetShuffleEachEpoch = QStringLiteral("neuralNetShuffleEachEpoch");
     const QString kNeuralNetCandidateLimit = QStringLiteral("neuralNetCandidateLimit");
     const QString kTimsNeuralNetInferenceCandidateLimit = QStringLiteral("timsNeuralNetInferenceCandidateLimit");
     const QString kNormalizeNeuralNetPredictions = QStringLiteral("normalizeNeuralNetPredictions");
@@ -277,6 +278,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->focalLossGamma = neuralNetParamsNode[kFocalLossGamma.toStdString()].value_or(pythiaParameters->focalLossGamma);
+    pythiaParameters->neuralNetShuffleEachEpoch = neuralNetParamsNode[kNeuralNetShuffleEachEpoch.toStdString()].value_or(pythiaParameters->neuralNetShuffleEachEpoch);
     pythiaParameters->neuralNetCandidateLimit = neuralNetParamsNode[kNeuralNetCandidateLimit.toStdString()].value_or(pythiaParameters->neuralNetCandidateLimit);
     pythiaParameters->timsNeuralNetInferenceCandidateLimit = neuralNetParamsNode[kTimsNeuralNetInferenceCandidateLimit.toStdString()].value_or(pythiaParameters->timsNeuralNetInferenceCandidateLimit);
     pythiaParameters->normalizeNeuralNetPredictions = neuralNetParamsNode[kNormalizeNeuralNetPredictions.toStdString()].value_or(pythiaParameters->normalizeNeuralNetPredictions);

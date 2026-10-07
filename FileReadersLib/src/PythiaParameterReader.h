@@ -96,6 +96,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
     extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetShuffleEachEpoch;
     extern const QString FILEREADERSLIB_EXPORTS kNeuralNetCandidateLimit;
     extern const QString FILEREADERSLIB_EXPORTS kTimsNeuralNetInferenceCandidateLimit;
     extern const QString FILEREADERSLIB_EXPORTS kNormalizeNeuralNetPredictions;
@@ -189,6 +190,8 @@ struct PythiaParameters{
     float learningRate = 0.003;
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
+    // Experimental; disabled by default so benchmark comparisons remain unchanged.
+    bool neuralNetShuffleEachEpoch = false;
     int neuralNetCandidateLimit = 50000;
     int timsNeuralNetInferenceCandidateLimit = 0;
     bool normalizeNeuralNetPredictions = true;
@@ -327,6 +330,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetShuffleEachEpoch) << neuralNetShuffleEachEpoch;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetCandidateLimit) << neuralNetCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsNeuralNetInferenceCandidateLimit) << timsNeuralNetInferenceCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNormalizeNeuralNetPredictions) << normalizeNeuralNetPredictions;

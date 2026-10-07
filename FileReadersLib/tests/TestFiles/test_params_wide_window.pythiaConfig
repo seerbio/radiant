@@ -56,3 +56,6 @@ smoothCount = 3
 [FeatureFinderParams]
 minScanCount = 4
 skipScanCount = 4
+
+[NeuralNetParams]
+neuralNetShuffleEachEpoch = true

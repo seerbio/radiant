@@ -10,7 +10,6 @@
 
 #include <QElapsedTimer>
 #include <QFileInfo>
-
 #include <algorithm>
 
 namespace {

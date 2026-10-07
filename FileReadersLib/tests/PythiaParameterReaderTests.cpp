@@ -77,6 +77,7 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.smoothCount, 3);
     QCOMPARE(pythiaParameters.minScanCount, 4);
     QCOMPARE(pythiaParameters.skipScanCount, 4);
+    QCOMPARE(pythiaParameters.neuralNetShuffleEachEpoch, true);
 
     pythiaParameters.print();
 
