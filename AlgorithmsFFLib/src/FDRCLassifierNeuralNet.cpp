@@ -113,6 +113,64 @@ Err FDRCLassifierNeuralNet::trainClassifier(
     ERR_RETURN
 }
 
+QPair<Err, CandidateClassifier *> FDRCLassifierNeuralNet::trainSingleNeuralNet(
+        const QVector<QVector<float>> &xData,
+        const QVector<float> &yData,
+        int seed,
+        int bag,
+        int verbosity
+        ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_isInit);
+    if (e) {
+        return {e, nullptr};
+    }
+    e = ErrorUtils::isNotEmpty(xData);
+    if (e) {
+        return {e, nullptr};
+    }
+    e = ErrorUtils::isEqual(xData.size(), yData.size());
+    if (e) {
+        return {e, nullptr};
+    }
+    e = ErrorUtils::isTrue(bag >= 0 && bag < m_baggingSize);
+    if (e) {
+        return {e, nullptr};
+    }
+
+    auto *candidateClassifier = new CandidateClassifier();
+    const bool trainingCompletedNoErrors = candidateClassifier->trainCandidateClassifier(
+            xData,
+            yData,
+            m_epochs,
+            m_batchSize,
+            m_learningRate,
+            bag + S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + seed,
+            m_nodesFraction,
+            m_focalLossGamma,
+            verbosity,
+            m_shuffleEachEpoch
+            );
+    if (!trainingCompletedNoErrors) {
+        delete candidateClassifier;
+        return {eError, nullptr};
+    }
+
+    return {eNoError, candidateClassifier};
+}
+
+Err FDRCLassifierNeuralNet::appendCandidateClassifier(CandidateClassifier *candidateClassifier) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(candidateClassifier != nullptr); ree;
+    m_candidateClassifiers.push_back(candidateClassifier);
+
+    ERR_RETURN
+}
+
 namespace {
 
     struct CandidateClassifierParallelInput {

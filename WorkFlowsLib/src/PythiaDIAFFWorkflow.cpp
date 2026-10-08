@@ -32,6 +32,8 @@
 #include <QFileInfo>
 #include <QSet>
 #include <QTextStream>
+#include <QThreadPool>
+#include <QtConcurrent/QtConcurrent>
 
 #include <algorithm>
 
@@ -1077,6 +1079,16 @@ namespace {
         int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
     };
 
+    struct NeuralNetworkEnsembleTrainingTask {
+        const QVector<QVector<float>> *xData = nullptr;
+        const QVector<float> *yData = nullptr;
+        const FDRCLassifierNeuralNet *classifier = nullptr;
+        int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+        int fold = -1;
+        int bag = -1;
+        int verbosity = 0;
+    };
+
 	QPair<Err, FDRCLassifierNeuralNet> trainNeuralNetworkLogic(
         const NeuralNetworkTrainingFoldInput &trainingFoldInput,
 		const PythiaParameters &pythiaParameters,
@@ -1173,26 +1185,81 @@ namespace {
         file.close();
 #endif
 
-		if (pythiaParameters.parallelNeuralNets) {
-			const auto loadLogicBinder = std::bind(
-				trainNeuralNetworkLogic,
-				std::placeholders::_1,
-				pythiaParameters,
-				batchSize
-				);
+        if (pythiaParameters.parallelNeuralNets) {
+            QVector<FDRCLassifierNeuralNet> foldClassifiers(trainingFoldInputs.size());
+            for (int fold = 0; fold < trainingFoldInputs.size(); ++fold) {
+                e = foldClassifiers[fold].init(
+                        pythiaParameters.epochs,
+                        pythiaParameters.neuralNetEnsembleSize,
+                        batchSize,
+                        pythiaParameters.learningRate,
+                        pythiaParameters.nodesFraction,
+                        pythiaParameters.focalLossGamma,
+                        pythiaParameters.threadCount,
+                        pythiaParameters.neuralNetShuffleEachEpoch
+                        ); ree;
+            }
 
-			QFuture<QPair<Err, FDRCLassifierNeuralNet>> future = QtConcurrent::mapped(
-                trainingFoldInputs,
-				loadLogicBinder
-				);
-			future.waitForFinished();
+            QVector<NeuralNetworkEnsembleTrainingTask> tasks;
+            tasks.reserve(trainingFoldInputs.size() * pythiaParameters.neuralNetEnsembleSize);
+            for (int fold = 0; fold < trainingFoldInputs.size(); ++fold) {
+                for (int bag = 0; bag < pythiaParameters.neuralNetEnsembleSize; ++bag) {
+                    NeuralNetworkEnsembleTrainingTask task;
+                    task.xData = &trainingFoldInputs[fold].trainingVecs.first;
+                    task.yData = &trainingFoldInputs[fold].trainingVecs.second;
+                    task.classifier = &foldClassifiers[fold];
+                    task.seed = trainingFoldInputs[fold].seed;
+                    task.fold = fold;
+                    task.bag = bag;
+                    task.verbosity = pythiaParameters.verbosity;
+                    tasks.push_back(task);
+                }
+            }
 
-			for (const QPair<Err, FDRCLassifierNeuralNet> &result : future) {
-				e = result.first; ree;
-				fdrcLassifierNeuralNets->push_back(result.second);
-			}
-		}
-		else {
+            QThreadPool trainingPool;
+            trainingPool.setMaxThreadCount(pythiaParameters.threadCount);
+            trainingPool.setExpiryTimeout(-1);
+
+            QVector<QFuture<QPair<Err, CandidateClassifier *>>> futures;
+            futures.reserve(tasks.size());
+            for (const NeuralNetworkEnsembleTrainingTask &task : tasks) {
+                futures.push_back(QtConcurrent::run(
+                        &trainingPool,
+                        [task]() {
+                            return task.classifier->trainSingleNeuralNet(
+                                    *task.xData,
+                                    *task.yData,
+                                    task.seed,
+                                    task.bag,
+                                    task.verbosity
+                                    );
+                        }
+                        ));
+            }
+
+            QVector<CandidateClassifier *> trainedClassifiers(tasks.size(), nullptr);
+            for (int i = 0; i < futures.size(); ++i) {
+                const QPair<Err, CandidateClassifier *> result = futures[i].result();
+                trainedClassifiers[i] = result.second;
+                if (result.first != eNoError && e == eNoError) {
+                    e = result.first;
+                }
+            }
+            if (e != eNoError) {
+                for (CandidateClassifier *candidateClassifier : trainedClassifiers) {
+                    delete candidateClassifier;
+                }
+                return e;
+            }
+
+            for (int i = 0; i < tasks.size(); ++i) {
+                e = foldClassifiers[tasks[i].fold].appendCandidateClassifier(trainedClassifiers[i]); ree;
+            }
+            for (FDRCLassifierNeuralNet &foldClassifier : foldClassifiers) {
+                fdrcLassifierNeuralNets->push_back(foldClassifier);
+            }
+        }
+        else {
 			for (int i = 0; i < karnnNNTargetsNormTranched.size(); i++) {
 				const QPair<Err, FDRCLassifierNeuralNet> result = trainNeuralNetworkLogic(
                     trainingFoldInputs[i],

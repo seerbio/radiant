@@ -153,6 +153,16 @@ public:
             int verbosity
             );
 
+    QPair<Err, CandidateClassifier *> trainSingleNeuralNet(
+            const QVector<QVector<float>> &xData,
+            const QVector<float> &yData,
+            int seed,
+            int bag,
+            int verbosity
+            ) const;
+
+    Err appendCandidateClassifier(CandidateClassifier *candidateClassifier);
+
     Err predictBaggedClassifiers(
             const QVector<QVector<float>> &allDataVecs,
             QVector<float> *meanPredictions
