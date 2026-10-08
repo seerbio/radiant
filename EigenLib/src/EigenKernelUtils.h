@@ -14,6 +14,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <type_traits>
 
 
 class EIGENLIB_EXPORTS EigenKernelUtils
@@ -240,45 +241,86 @@ public:
     * Note: This function first checks if the length of the vector is smaller than the kernel, if true it returns the original vector. Otherwise, it pads the original vector based on the kernel size.   It then builds a so-called toeplitz (diagonal-constant) matrix for the padded vector. Multiplying this matrix with the kernel provides the convolution result.
     */
     template <typename T>
+    static Eigen::VectorX<T> convolveVectorWithKernelGeneric(
+            const Eigen::VectorX<T> &_vec,
+            const Eigen::VectorX<T> &_kernel
+            ) {
+        if (_vec.size() <= _kernel.size()) return _vec;
+
+        Eigen::VectorX<T> vec = _vec;
+        Eigen::VectorX<T> kernel = _kernel;
+        if (kernel.cols() != 1) kernel = kernel.transpose();
+
+        const int paddingAmount = kernel.size() - 1;
+        Eigen::VectorX<T> vecResized(vec.size() + paddingAmount);
+        const int halfWindow = std::floor(paddingAmount / 2.0);
+        const T frontPadding = static_cast<T>(vec.head(halfWindow + 1).mean());
+        const T backPadding = static_cast<T>(vec.tail(halfWindow + 1).mean());
+        for (int i = 0; i < halfWindow; ++i) {
+            vecResized.coeffRef(i) = frontPadding;
+            vecResized.coeffRef(vecResized.size() - 1 - i) = backPadding;
+        }
+        vecResized.segment(halfWindow, vec.size()) = vec;
+
+        const int filterLength = static_cast<int>(kernel.size());
+        Eigen::MatrixX<T> convolutionMatrix(vec.size(), filterLength);
+        convolutionMatrix.setZero();
+        for (int i = 0; i < filterLength; ++i)
+            convolutionMatrix.col(i) = vecResized.segment(i, vec.size());
+        return convolutionMatrix * kernel;
+    }
+
+    template <typename T>
+    static Eigen::VectorX<T> convolveVectorWithKernelImpl(
+            const Eigen::VectorX<T> &_vec,
+            const Eigen::VectorX<T> &_kernel,
+            std::false_type
+            ) {
+        return convolveVectorWithKernelGeneric(_vec, _kernel);
+    }
+
+    template <typename T>
+    static Eigen::VectorX<T> convolveVectorWithKernelImpl(
+            const Eigen::VectorX<T> &_vec,
+            const Eigen::VectorX<T> &_kernel,
+            std::true_type
+            ) {
+        if (_vec.size() <= _kernel.size()) return _vec;
+
+        Eigen::VectorX<T> vec = _vec;
+        Eigen::VectorX<T> kernel = _kernel;
+        if (kernel.cols() != 1) kernel = kernel.transpose();
+        const int paddingAmount = kernel.size() - 1;
+        Eigen::VectorX<T> vecResized(vec.size() + paddingAmount);
+        const int halfWindow = std::floor(paddingAmount / 2.0);
+        const T frontPadding = static_cast<T>(vec.head(halfWindow + 1).mean());
+        const T backPadding = static_cast<T>(vec.tail(halfWindow + 1).mean());
+        for (int i = 0; i < halfWindow; ++i) {
+            vecResized.coeffRef(i) = frontPadding;
+            vecResized.coeffRef(vecResized.size() - 1 - i) = backPadding;
+        }
+        vecResized.segment(halfWindow, vec.size()) = vec;
+
+        const int filterLength = static_cast<int>(kernel.size());
+        if (filterLength % 2 == 1) {
+            // Preserve the original padding, dimensions and matrix-vector
+            // evaluation while reading overlapping columns directly.
+            using Windows = Eigen::Map<const Eigen::MatrixX<T>,
+                                       Eigen::Unaligned, Eigen::OuterStride<> >;
+            const Windows windows(vecResized.data(), vec.size(), filterLength,
+                                  Eigen::OuterStride<>(1));
+            return windows * kernel;
+        }
+        return convolveVectorWithKernelGeneric(vec, kernel);
+    }
+
+    template <typename T>
     static Eigen::VectorX<T> convolveVectorWithKernel(
             const Eigen::VectorX<T> &_vec,
             const Eigen::VectorX<T> &_kernel
             ) {
-
-        if (_vec.size() <= _kernel.size()){
-            return _vec;
-        }
-
-        Eigen::VectorX<T> vec = _vec;
-        Eigen::VectorX<T> kernel = _kernel;
-
-        if(kernel.cols() != 1){
-            kernel = kernel.transpose();
-        }
-
-        const int paddingAmount = kernel.size() - 1;
-        Eigen::VectorX<T> vecResized(vec.size() + paddingAmount);
-
-        const int halfWindow = std::floor(paddingAmount / 2.0);
-        const T frontPadding = static_cast<T>((vec.head(halfWindow + 1).mean()));
-        const T backPadding = static_cast<T>((vec.tail(halfWindow + 1).mean()));
-        for(int i = 0; i < halfWindow; i++){
-            vecResized.coeffRef(i) = frontPadding;
-            vecResized.coeffRef(vecResized.size() - 1 - i) = backPadding;
-        }
-
-        vecResized.segment(halfWindow, vec.size()) = vec;
-
-        const int filterLength = static_cast<int>(kernel.size());
-
-        Eigen::MatrixX<T> convolutionMatrix(vec.size(), filterLength);
-        convolutionMatrix.setZero();
-
-        for (int i = 0; i < filterLength; ++i) {
-            convolutionMatrix.col(i) = vecResized.segment(i, vec.size());
-        }
-
-        return convolutionMatrix * kernel;
+        return convolveVectorWithKernelImpl(
+            _vec, _kernel, typename std::is_same<T, float>::type());
     }
 
     /*!
