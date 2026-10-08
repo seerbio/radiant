@@ -11,6 +11,8 @@
 
 #include <QtTest/QtTest>
 
+#include <algorithm>
+
 class TurboXICTests : public QObject
 {
     Q_OBJECT
@@ -23,6 +25,7 @@ private Q_SLOTS:
 
     void initTest();
     void extractPointsTest();
+    void scanRestrictedQueryPreservesOrderAndValues();
     void turboXICUtility();
 
 
@@ -91,6 +94,39 @@ void TurboXICTests::extractPointsTest() {
     QVERIFY(MathUtils::tSame(xicPoints.front().intensity, 100.1f));
     QVERIFY(MathUtils::tSame(xicPoints.back().intensity, 100.3f));
 
+}
+
+void TurboXICTests::scanRestrictedQueryPreservesOrderAndValues() {
+    QMap<int, QVector<PointFF>> storage = buildPoints();
+    QMap<ScanNumber, ScanPoints*> points;
+    for (auto it = storage.begin(); it != storage.end(); ++it)
+        points.insert(it.key(), &it.value());
+
+    TurboXIC turboXIC;
+    QCOMPARE(turboXIC.init(points), eNoError);
+    const auto all = turboXIC.extractPointsXIC(100.0f, 100.2f);
+    const auto compareRestricted = [&](ScanNumber minScan, ScanNumber maxScan,
+                                       bool includeEndpoints) {
+        auto expected = all;
+        expected.erase(std::remove_if(expected.begin(), expected.end(),
+            [&](const XICPoint &point) {
+                return includeEndpoints
+                    ? !(minScan <= point.scanNumber && point.scanNumber <= maxScan)
+                    : !(minScan < point.scanNumber && point.scanNumber < maxScan);
+            }), expected.end());
+        const auto actual = turboXIC.extractPointsXIC(
+            100.0f, 100.2f, minScan, maxScan, includeEndpoints);
+        QCOMPARE(actual.size(), expected.size());
+        for (size_t i = 0; i < actual.size(); ++i) {
+            QCOMPARE(actual[i].scanNumber, expected[i].scanNumber);
+            QCOMPARE(actual[i].mz, expected[i].mz);
+            QCOMPARE(actual[i].intensity, expected[i].intensity);
+        }
+    };
+    compareRestricted(1, 3, true);
+    compareRestricted(1, 3, false);
+    compareRestricted(4, 4, true);
+    compareRestricted(4, 4, false);
 }
 
 void TurboXICTests::turboXICUtility() {
