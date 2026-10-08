@@ -25,6 +25,7 @@ private Q_SLOTS:
 
     void extractPointsFromPointsTest();
     static void extractPointsFromPointsSimpleTest();
+    static void sortedSourceMatchesUnsortedExtraction();
 
 private:
 
@@ -214,6 +215,26 @@ void MsUtilsTests::extractPointsFromPointsSimpleTest() {
         QCOMPARE(extractPointsVector.mzFoundVsSearched.at(i), expectedXVals.at(i));
         QCOMPARE(extractPointsVector.intensityFoundVsSearched.at(i), expectedYVals.at(i));
     }
+}
+
+void MsUtilsTests::sortedSourceMatchesUnsortedExtraction() {
+    const QVector<QPointF> points = {
+        {100.002, 4.0}, {99.999, 7.0}, {100.001, 3.0},
+        {100.002, 9.0}, {100.000, 5.0}, {101.0, 11.0}
+    };
+    QVector<QPointF> sorted = points;
+    std::sort(sorted.begin(), sorted.end(),
+              [](const QPointF &left, const QPointF &right) { return left.x() < right.x(); });
+    const QVector<QPointF> targets = {{99.999, 1.0}, {100.001, 1.0}, {100.002, 1.0}};
+
+    const auto expected = MsUtils::extractPointsFromPoints(points, targets, 20.0);
+    const auto actual = MsUtils::extractPointsFromSortedPoints(sorted, targets, 20.0);
+    QCOMPARE(actual.mzFoundVsSearched, expected.mzFoundVsSearched);
+    QCOMPARE(actual.intensityFoundVsSearched, expected.intensityFoundVsSearched);
+
+    const QVector<double> targetMasses = {99.999, 100.001, 100.002};
+    QCOMPARE(MsUtils::extractPointsFromSortedPoints(sorted, targetMasses, 20.0),
+             MsUtils::extractPointsFromPoints(points, targetMasses, 20.0));
 }
 
 
