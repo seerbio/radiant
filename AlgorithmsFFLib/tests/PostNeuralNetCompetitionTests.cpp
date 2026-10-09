@@ -48,13 +48,19 @@ void PostNeuralNetCompetitionTests::rejectsInvalidInputsWithoutMutation() {
         QCOMPARE(PostNeuralNetCompetition::apply(threshold, &rows), eValueError);
         QCOMPARE(rows, original);
     }
-    for (const double score : {-0.1, 1.1, std::numeric_limits<double>::quiet_NaN()}) {
+    for (const double score : {-0.1, std::numeric_limits<double>::quiet_NaN()}) {
         fixture.scores.classifierScore = score;
         QCOMPARE(PostNeuralNetCompetition::apply(2, &rows), eValueError);
         QCOMPARE(rows, original);
         QCOMPARE(fixture.scores.discriminantScore, 1.0);
         QCOMPARE(fixture.scores.qValue, 0.123);
     }
+
+    fixture.scores.classifierScore = 1.1;
+    QCOMPARE(PostNeuralNetCompetition::apply(2, &rows), eNoError);
+    QCOMPARE(rows, original);
+    QCOMPARE(fixture.scores.discriminantScore, 1.0);
+
     fixture.scores.classifierScore = 0.1;
     rows.push_back(&fixture.scores);
     QCOMPARE(PostNeuralNetCompetition::apply(2, &rows), eValueError);

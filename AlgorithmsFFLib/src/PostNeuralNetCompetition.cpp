@@ -42,7 +42,7 @@ Error::Err PostNeuralNetCompetition::apply(
         if (candidate == nullptr || candidate->targetDecoyCandidatePair == nullptr
             || seen.contains(candidate)
             || !std::isfinite(candidate->classifierScore)
-            || candidate->classifierScore < 0.0 || candidate->classifierScore > 1.0) {
+            || candidate->classifierScore < 0.0) {
             return Error::eValueError;
         }
         seen.insert(candidate);
