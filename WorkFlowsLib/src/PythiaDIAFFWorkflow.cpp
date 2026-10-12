@@ -953,7 +953,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
 
-    constexpr float minPeakCount = 3.9f;
+    const float minPeakCount
+        = static_cast<float>(m_pythiaParameters.mainMinSimultaneousFragments) - 0.1f;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             m_ppmOptimizationFeatures,

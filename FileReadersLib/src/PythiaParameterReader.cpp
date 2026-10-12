@@ -53,6 +53,7 @@ namespace PythiaParameterReaderConstants {
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
     const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
+    const QString kMainMinSimultaneousFragments = QStringLiteral("mainMinSimultaneousFragments");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kImWindowStdDevs = QStringLiteral("imWindowStdDevs");
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
@@ -229,6 +230,8 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms2ExtractionWidthPPM);
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
+    pythiaParameters->mainMinSimultaneousFragments
+        = ms2ParamsNode[kMainMinSimultaneousFragments.toStdString()].value_or(4);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
     pythiaParameters->imWindowStdDevs = ms2ParamsNode[kImWindowStdDevs.toStdString()].value_or(pythiaParameters->imWindowStdDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);

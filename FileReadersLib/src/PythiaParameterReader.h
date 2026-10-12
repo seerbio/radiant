@@ -52,6 +52,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPMOverride;
     extern const QString FILEREADERSLIB_EXPORTS kMinMs2FragCount;
+    extern const QString FILEREADERSLIB_EXPORTS kMainMinSimultaneousFragments;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
     extern const QString FILEREADERSLIB_EXPORTS kImWindowStdDevs;
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
@@ -152,6 +153,7 @@ struct PythiaParameters{
     double ms2ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
+    int mainMinSimultaneousFragments = 4;
     int rtBinning = 20;
     int imBinning = 20;
     float scanTimeWindowStDevs = 3;
@@ -274,6 +276,13 @@ struct PythiaParameters{
             return false;
         }
 
+        if (mainMinSimultaneousFragments < 3 || mainMinSimultaneousFragments > 12) {
+            print();
+            qDebug() << mainMinSimultaneousFragments
+                     << PythiaParameterReaderConstants::kMainMinSimultaneousFragments;
+            return false;
+        }
+
         return true;
     }
 
@@ -319,6 +328,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPMOverride) << ms2ExtractionWidthPPMOverride;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMainMinSimultaneousFragments) << mainMinSimultaneousFragments;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kRtBinning) << rtBinning;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kImBinning) << imBinning;
