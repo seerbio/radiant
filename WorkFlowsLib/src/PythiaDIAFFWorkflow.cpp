@@ -863,6 +863,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         0.0
         ); ree;
 
+    if (postNeuralNetCompetition) {
+        for (CandidateScores *candidate : candidateScoreClassifierPntrs) {
+            candidate->precursorQValue = candidate->qValue;
+            candidate->isBestPrecursorCandidate = 1;
+        }
+    }
+
     filterDecoysOrNot(&candidateScoreClassifierPntrs);
 
     if (m_pythiaParameters.writeRadiantDIA) {

@@ -8,6 +8,7 @@
 #include "DiscriminantScoretron.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragmentCompetition.h"
+#include "InterferingCandidatesEliminatomatic.h"
 #include "MsReaderPointerAcc.h"
 #include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
