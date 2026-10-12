@@ -41,6 +41,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPMOverride;
     extern const QString FILEREADERSLIB_EXPORTS kMS1IntensityMinForScoring;
+    extern const QString FILEREADERSLIB_EXPORTS kAlignMs1ScanTimes;
 
     extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthIntegration;
@@ -139,6 +140,7 @@ struct PythiaParameters{
     double ms1ExtractionWidthPPMOverride = -1.0;
     double ms1IntensityMinForScoring = 1e4;
     double precursorExtractionWindowThomsons = 0.0;
+    bool alignMs1ScanTimes = false;
 
     //[MS2Params]
     int filterLengthIntegration = 5;
@@ -305,6 +307,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPM) << ms1ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPMOverride) << ms1ExtractionWidthPPMOverride;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1IntensityMinForScoring) << ms1IntensityMinForScoring;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kAlignMs1ScanTimes) << alignMs1ScanTimes;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS2Params << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;

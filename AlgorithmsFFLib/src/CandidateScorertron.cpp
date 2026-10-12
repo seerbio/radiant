@@ -3112,6 +3112,9 @@ namespace {
     Err calculateMs1Scores(
         const Eigen::VectorX<float> &kernel,
         const Eigen::VectorX<float> &_anchorColumn,
+        const QVector<float> &anchorTimes,
+        const MsFrame *ms1Frame,
+        bool alignByScanTime,
         float mzToExtract,
         float massTol,
         FrameIndex frameIndexMin,
@@ -3155,7 +3158,27 @@ namespace {
             frameIndexMax
             ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1).eval();
 
-        if (xicVec.size() < anchorColumn.size()) {
+        if (alignByScanTime) {
+            e = ErrorUtils::isEqual(anchorTimes.size(), static_cast<int>(anchorColumn.size())); ree;
+            Eigen::VectorX<float> alignedAnchor(xicVec.size());
+            alignedAnchor.setZero();
+            for (int index = 0; index < alignedAnchor.size(); ++index) {
+                const float time = ms1Frame->scanTimeFromFrameIndex(frameIndexMin + index);
+                if (time < anchorTimes.first() || time > anchorTimes.last()) continue;
+                const auto upper = std::lower_bound(anchorTimes.constBegin(), anchorTimes.constEnd(), time);
+                const int right = static_cast<int>(upper - anchorTimes.constBegin());
+                if (right == 0 || *upper == time) {
+                    alignedAnchor[index] = anchorColumn[right];
+                } else {
+                    const int left = right - 1;
+                    const float fraction = (time - anchorTimes[left]) / (anchorTimes[right] - anchorTimes[left]);
+                    alignedAnchor[index] = (1.0f - fraction) * anchorColumn[left] + fraction * anchorColumn[right];
+                }
+            }
+            // Interpolate the MS2 reference onto actual MS1 acquisition times.
+            anchorColumn = alignedAnchor;
+        }
+        else if (xicVec.size() < anchorColumn.size()) {
             Eigen::VectorX<float> xicVecResized(anchorColumn.size());
             xicVecResized.setZero();
             const int stepSize = static_cast<int>(std::round(anchorColumn.size() / xicVec.size()));
@@ -3256,9 +3279,22 @@ Err CandidateScorertron::setMs1RelatedScores(
     const Eigen::VectorX<float> anchorColumn
             = bestCorrelationResult.matBlockTrimmedIntensity.col(bestCorrelationResult.bestAnchorColumnIndex);
 
+    QVector<float> anchorTimes;
+    const bool alignByScanTime = m_pythiaParameters.alignMs1ScanTimes;
+    if (alignByScanTime) {
+        anchorTimes.reserve(anchorColumn.size());
+        for (int row = 0; row < anchorColumn.size(); ++row) {
+            anchorTimes.push_back(m_msFrameMzTarget->scanTimeFromFrameIndex(
+                candidateScores->frameIndexStart + row));
+        }
+    }
+
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         monoIsotopeMz,
         massTol,
         frameIndexMinMS1,
@@ -3276,6 +3312,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         monoIsotopeMz,
         massTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
         frameIndexMinMS1,
@@ -3292,6 +3331,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         monoIsotopeShadowMz,
         massTol,
         frameIndexMinMS1,
@@ -3308,6 +3350,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         c13isotopeMz1,
         massTol,
         frameIndexMinMS1,
@@ -3324,6 +3369,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         c13isotopeMz2,
         massTol,
         frameIndexMinMS1,

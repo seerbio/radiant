@@ -31,6 +31,7 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QScopedValueRollback>
 #include <QSet>
 #include <QTextStream>
 #include <QThreadPool>
@@ -662,6 +663,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &m_neuralNetFeatures
         );
 
+    const bool alignMs1ScanTimes = m_pythiaParameters.alignMs1ScanTimes;
+    QScopedValueRollback<bool> restoreMs1Alignment(m_pythiaParameters.alignMs1ScanTimes, false);
+
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
             &msReaderPointerAcc
@@ -728,6 +732,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyPairPntrs
             ); ree;
     }
+
+    m_pythiaParameters.alignMs1ScanTimes
+        = alignMs1ScanTimes && !msReaderPointerAcc.ptr->hasIonMobility();
+    e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
