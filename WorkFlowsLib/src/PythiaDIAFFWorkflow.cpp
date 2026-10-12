@@ -18,6 +18,7 @@
 #include "MsReaderPointerAcc.h"
 #include "PostNeuralNetCompetition.h"
 #include "NeuralNetFeatureTransforms.h"
+#include "NeuralNetFamilyFolds.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
@@ -1038,6 +1039,45 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildNeuralNetFamilyTranches(
+            const QVector<KarnnNNTarget> &karnnNNTargets,
+            int foldCount,
+            QVector<QVector<KarnnNNTarget>> *tranches
+            ) {
+
+        ERR_INIT
+
+        if (tranches == nullptr || karnnNNTargets.isEmpty() || foldCount < 2
+            || foldCount > karnnNNTargets.size()) {
+            rrr(eValueError);
+        }
+
+        QVector<QString> familyNames;
+        familyNames.reserve(karnnNNTargets.size());
+        for (const KarnnNNTarget &target : karnnNNTargets) {
+            if (target.candidateScores == nullptr
+                || target.candidateScores->targetDecoyCandidatePair == nullptr) {
+                rrr(eValueError);
+            }
+
+            familyNames.push_back(NeuralNetFamilyFolds::canonicalFamily(
+                target.candidateScores->targetDecoyCandidatePair->peptideStringWithMods()));
+        }
+
+        QVector<int> rowFolds;
+        if (!NeuralNetFamilyFolds::buildFoldAssignments(familyNames, foldCount, &rowFolds)) {
+            rrr(eValueError);
+        }
+
+        tranches->clear();
+        tranches->resize(foldCount);
+        for (int row = 0; row < karnnNNTargets.size(); ++row) {
+            (*tranches)[rowFolds.at(row)].push_back(karnnNNTargets.at(row));
+        }
+
+        ERR_RETURN
+    }
+
     Err buildKarnnNNTargetsNormalized(
         const QVector<Features> &neuralNetFeatures,
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoysFDRFiltered,
@@ -1772,7 +1812,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     logNeuralNetStats(karnnNNTargetsNorm);
 
     QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
+    e = buildNeuralNetFamilyTranches(
         karnnNNTargetsNorm,
         m_pythiaParameters.baggingSize,
         &karnnNNTargetsNormTranched
