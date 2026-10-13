@@ -205,23 +205,23 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
     pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms1ExtractionWidthPPM);
     pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
-    pythiaParameters->ms1IntensityMinForScoring = ms1ParamsNode[kMS1IntensityMinForScoring.toStdString()].value_or(pythiaParameters->ms1IntensityMinForScoring);
+    pythiaParameters->ms1IntensityMinForScoring = ms1ParamsNode[kMS1IntensityMinForScoring.toStdString()].value_or(PythiaParameterDefaults::kMS1IntensityMinForScoring);
     pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(pythiaParameters->precursorExtractionWindowThomsons);
-    pythiaParameters->alignMs1ScanTimes = ms1ParamsNode[kAlignMs1ScanTimes.toStdString()].value_or(false);
+    pythiaParameters->alignMs1ScanTimes = ms1ParamsNode[kAlignMs1ScanTimes.toStdString()].value_or(PythiaParameterDefaults::kAlignMs1ScanTimes);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
     pythiaParameters->filterLengthIntegration = ms2ParamsNode[kFilterLengthIntegration.toStdString()].value_or(pythiaParameters->filterLengthIntegration);
     pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(pythiaParameters->filterLengthMS2);
     pythiaParameters->competitionEnabled = ms2ParamsNode[kCompetitionEnabled.toStdString()].value_or(true);
     pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(pythiaParameters->ionsSharedToReject);
-    pythiaParameters->postNeuralNetSharedFragments = ms2ParamsNode[kPostNeuralNetSharedFragments.toStdString()].value_or(0);
+    pythiaParameters->postNeuralNetSharedFragments = ms2ParamsNode[kPostNeuralNetSharedFragments.toStdString()].value_or(PythiaParameterDefaults::kPostNeuralNetSharedFragments);
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms2ExtractionWidthPPM);
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
     pythiaParameters->mainMinSimultaneousFragments
         = ms2ParamsNode[kMainMinSimultaneousFragments.toStdString()].value_or(4);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
-    pythiaParameters->imWindowStdDevs = ms2ParamsNode[kImWindowStdDevs.toStdString()].value_or(pythiaParameters->imWindowStdDevs);
+    pythiaParameters->imWindowStdDevs = ms2ParamsNode[kImWindowStdDevs.toStdString()].value_or(PythiaParameterDefaults::kImWindowStdDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(pythiaParameters->smoothCountMS2);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(pythiaParameters->stopThresholdFractionMS2);
@@ -231,34 +231,34 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->imBinning = ms2ParamsNode[kImBinning.toStdString()].value_or(pythiaParameters->imBinning);
     pythiaParameters->peakCenter = ms2ParamsNode[kPeakCenter.toStdString()].value_or(pythiaParameters->peakCenter);
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(pythiaParameters->topNIntegrations);
-    pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
+    pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(PythiaParameterDefaults::kMaxAnchorColumnIndex);
     pythiaParameters->timsTargetedMs2IonMobilityWindow
         = ms2ParamsNode[kTimsTargetedMs2IonMobilityWindow.toStdString()].value_or(pythiaParameters->timsTargetedMs2IonMobilityWindow);
 
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
-    pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(false);
+    pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(PythiaParameterDefaults::kReportDecoys);
 
     const auto peakIntegrationParamsNode =  parser[kPeakIntegrationParams.toStdString()];
-    pythiaParameters->filterLength = peakIntegrationParamsNode[kFilterLength.toStdString()].value_or(0);
-    pythiaParameters->sigma = peakIntegrationParamsNode[kSigma.toStdString()].value_or(0.0);
-    pythiaParameters->signalToNoiseRatio = peakIntegrationParamsNode[kSignalToNoiseRatio.toStdString()].value_or(0.0);
-    pythiaParameters->smoothCount = peakIntegrationParamsNode[kSmoothCount.toStdString()].value_or(0);
+    pythiaParameters->filterLength = peakIntegrationParamsNode[kFilterLength.toStdString()].value_or(PythiaParameterDefaults::kPeakFilterLength);
+    pythiaParameters->sigma = peakIntegrationParamsNode[kSigma.toStdString()].value_or(PythiaParameterDefaults::kPeakSigma);
+    pythiaParameters->signalToNoiseRatio = peakIntegrationParamsNode[kSignalToNoiseRatio.toStdString()].value_or(PythiaParameterDefaults::kPeakSignalToNoiseRatio);
+    pythiaParameters->smoothCount = peakIntegrationParamsNode[kSmoothCount.toStdString()].value_or(PythiaParameterDefaults::kPeakSmoothCount);
     pythiaParameters->stopThresholdFraction = ms2ParamsNode[kStopThresholdFraction.toStdString()].value_or(pythiaParameters->stopThresholdFraction);
 
     const auto featureFinderParamsNode = parser[kFeatureFinderParams.toStdString()];
-    pythiaParameters->minScanCount = featureFinderParamsNode[kMinScanCount.toStdString()].value_or(0);
-    pythiaParameters->skipScanCount = featureFinderParamsNode[kSkipScanCount.toStdString()].value_or(0);
+    pythiaParameters->minScanCount = featureFinderParamsNode[kMinScanCount.toStdString()].value_or(PythiaParameterDefaults::kMinScanCount);
+    pythiaParameters->skipScanCount = featureFinderParamsNode[kSkipScanCount.toStdString()].value_or(PythiaParameterDefaults::kSkipScanCount);
 
     const auto neuralNetParamsNode = parser[kNeuralNetParams.toStdString()];
-    pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(pythiaParameters->epochs);
-    pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);
+    pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(PythiaParameterDefaults::kEpochs);
+    pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(PythiaParameterDefaults::kBaggingSize);
     pythiaParameters->neuralNetEnsembleSize
         = neuralNetParamsNode[kNeuralNetEnsembleSize.toStdString()].value_or(pythiaParameters->neuralNetEnsembleSize);
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->focalLossGamma = neuralNetParamsNode[kFocalLossGamma.toStdString()].value_or(pythiaParameters->focalLossGamma);
-    pythiaParameters->neuralNetShuffleEachEpoch = neuralNetParamsNode[kNeuralNetShuffleEachEpoch.toStdString()].value_or(pythiaParameters->neuralNetShuffleEachEpoch);
+    pythiaParameters->neuralNetShuffleEachEpoch = neuralNetParamsNode[kNeuralNetShuffleEachEpoch.toStdString()].value_or(PythiaParameterDefaults::kNeuralNetShuffleEachEpoch);
     pythiaParameters->neuralNetCandidateLimit = neuralNetParamsNode[kNeuralNetCandidateLimit.toStdString()].value_or(pythiaParameters->neuralNetCandidateLimit);
     pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 
