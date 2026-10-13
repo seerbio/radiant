@@ -1,84 +1,97 @@
 <p align="center"><img alt="Radiant DIA logo" src="./static/radiant-logo-lockup.png" style="width: 40%;"></p>
 
-**Radiant DIA**™ is a search tool for bottom-up DIA-MS proteomics that offers:
+**Radiant DIA**™ is a fast, peptide-centric search engine for bottom-up DIA-MS
+data. It searches measured fragment-ion data against a spectral library and
+protein database, scores candidate features, and produces native search
+results for downstream analysis.
 
-* cutting-edge DIA processing algorithms, with excellent speed, sensitivity, and quantitative precision/accuracy
-* extensive customizability via a parameters file
-* multi-architecture support (Intel/ARM) for maximum flexibility and efficiency
+Most users should run Radiant DIA through the complete analysis pipeline. For a ready-to-use desktop
+or containerized entry point, see the
+[Radiant-Fulcrum GUI](https://github.com/seerbio/radiant-fulcrum-gui/) or the
+[Radiant-Fulcrum container](https://github.com/seerbio/radiant-fulcrum-container/).
+This repository is primarily for users integrating, developing, or diagnosing
+the Radiant DIA search stage itself.
 
-<p align="center"><img alt="Radiant DIA logo" src="./static/radiant-hero-graphic.png" style="width: 40%; margin-bottom: 0px;"></p>
+## Where Radiant DIA fits
 
-## Using Radiant DIA
+The normal role of Radiant DIA is:
 
-> [!TIP]
-> For desktop users, it's recommended to use the [Radiant-Fulcrum GUI](https://github.com/seerbio/radiant-fulcrum-gui/)
-> or the [Radiant-Fulcrum Docker container](https://github.com/seerbio/radiant-fulcrum-container/) (CLI).
-> 
-> For pipeline developers, or if you're interested in running just the Radiant DIA search engine, continue reading.
-
-Radiant DIA is available as a Docker container or a Linux binary package.
-
-Docker images are available for both Intel (`x86`) and ARM / Apple Silicon (`aarch64`):
-
+```text
+combined analysis pipeline
+        │
+        ├── Radiant DIA search  ◄── this repository
+        │
+        └── downstream analysis and reporting
 ```
-docker run --rm seerbio/radiant-dia:latest 
+
+Radiant DIA produces intermediate search results rather than a complete
+protein-level analysis or final downstream report. Running `RadiantDIA` directly
+is useful for development, integration, and diagnosis; production analyses
+will usually continue through the surrounding pipeline.
+
+## Recommended entry points
+
+- **Desktop users:** start with the [Radiant-Fulcrum GUI](https://github.com/seerbio/radiant-fulcrum-gui/),
+  which provides a complete local workflow.
+- **CLI or server users:** start with the [Radiant-Fulcrum container](https://github.com/seerbio/radiant-fulcrum-container/),
+  which provides a reproducible containerized workflow.
+- **Radiant developers and integrators:** continue below for the native
+  executable, supported inputs, and configuration basics.
+
+## Native executable
+
+Radiant DIA is distributed as a Docker image and as Ubuntu/Debian packages from
+the [Releases page](https://github.com/seerbio/radiant/releases). Docker images
+are available for Intel (`x86_64`) and ARM / Apple Silicon (`aarch64`):
+
+```shell
+docker run --rm seerbio/radiant-dia:latest --help
 ```
 
-You can download Ubuntu/Debian binaries from the [Releases page](https://github.com/seerbio/radiant/releases).
-To install and use, you can then run:
+The package names distinguish the architecture, for example:
 
-On Intel (`x86`):
-
-```
-apt-get install -y radiantdia_<version>+amd64.deb
+```shell
+apt-get install -y radiantdia_<version>+amd64.deb   # Intel
+apt-get install -y radiantdia_<version>+arm64.deb   # ARM / Apple Silicon
 RadiantDIA --help
 ```
 
-On ARM / Apple Silicon (`aarch64`):
+The `RadiantDIA` executable requires four positional arguments:
 
-```
-apt-get install -y radiantdia_<version>+arm64.deb
-RadiantDIA --help
-```
-
-## Fragment competition
-
-One boolean controls fragment competition before calibration fitting and after
-main-pass LDA scoring, before neural-network candidate selection, training, and
-inference:
-
-```toml
-[MS2Params]
-competitionEnabled = true
+```shell
+RadiantDIA [options] <fragment-library> <fasta> <radiant-config> <data>
 ```
 
-The default is `true`, including when the option is omitted. Set it to `false`
-to skip competition at both stages. Fragment competition replaces the previous
-shared-evidence filter at both locations; disabling it does not restore that
-filter. Fulcrum consumes Radiant's output without a Python competition step.
+For example:
 
-Competition links equal-charge, coeluting candidates with neutral masses within
-5 ppm and at least four distinct shared supported fragments within 20 ppm.
-Supported fragments require positive intensity and trace cosine at least 0.5.
-The apex separation must be no greater than half the narrower peak width.
-Each connected group retains the candidate with the greatest unshared
-intensity × cosine-squared evidence. Groups without unshared evidence are
-rejected, while singletons are retained. Unshared means absent from the other
-group members' extracted fragment lists. Equal evidence prefers higher LDA
-score, then decoys, peptide sequence, apex, mass, and input order. The algorithm
-does not use NN scores, q-values, or protein identities to select candidates.
-The old `ionsSharedToReject` setting does not configure fragment competition.
+```shell
+RadiantDIA library.tsv database.fasta config.radiantConfig sample.mzML \
+  --output-folder radiant-results/
+```
 
-Candidates rejected in the main pass remain excluded from NN processing,
-TIMS target-decoy pair completion, and final results. Existing cached results
-are unchanged; use a rebuilt executable and fresh native search outputs.
+The accepted input families are:
+
+- fragment library: `.tsv`, or `.speclib`;
+- protein database: `.fasta` or `.fas`;
+- configuration: `.radiantConfig` (`.toml` files are also accepted);
+- search data: `.mzML`, or a Bruker `.d` data directory.
+
+Run `RadiantDIA --help` for the options available in the installed build. When
+running in a container, paths must be valid in the execution environment—for
+example, they must refer to mounted container paths rather than host path
+names.
+
+## Configuration
+
+Radiant configuration files are TOML-style files. The repository includes an
+[example configuration](example_params.radiantConfig). Use it as a starting
+point. It's recommended to keep custom configuration files with their runs
+so that searches can be reproduced.
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for information about building from sources
-or contributing to development.
-
-For vendored `timsreader`, use:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build and contribution instructions.
+The build also vendors architecture-specific `timsreader` libraries:
 
 ```text
 ThirdPartyLibs/timsreader/include/timsreader.h
