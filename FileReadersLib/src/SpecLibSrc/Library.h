@@ -13,6 +13,7 @@
 #include "Readers.h"
 #include "SpecLibStructures.h"
 
+#include <QDebug>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -89,12 +90,20 @@ public:
 
 	std::vector<Entry> entries;
 
-	static QPair<Err, FragLibReaderRow> convertEntry(
+	struct EntryConversionResult {
+		Err error = eNoError;
+		FragLibReaderRow row;
+		int droppedFragmentCount = 0;
+		bool affectedPrecursor = false;
+	};
+
+	static EntryConversionResult convertEntry(
 		const Entry &entry,
 		const std::string &precursor,
 		const std::vector<PG> &proteinIds
 		) {
 		ERR_INIT
+		EntryConversionResult result;
 
 		FragLibReaderRow flrr;
 		flrr.proteinGroups = QString::fromStdString(proteinIds.at(entry.pidIndex).names);
@@ -122,6 +131,10 @@ public:
 		for (int fragmentIndex = 0; fragmentIndex < fragmentsSize; ++fragmentIndex) {
 			const Product &fragment = entry.target.fragments.at(fragmentIndex);
 			const float intensityVal = fragment.height;
+			if (fragment.charge > flrr.precursorCharge) {
+				result.droppedFragmentCount++;
+				result.affectedPrecursor = true;
+			}
 			if (fragment.charge > flrr.precursorCharge || intensityVal < 0.01f) {
 				continue;
 			}
@@ -140,11 +153,13 @@ public:
 			ionLabelsList.push_back(ionLabel);
 		}
 		flrr.ionLabels = ionLabelsList.join(S_GLOBAL_SETTINGS.SEPARATOR);
-		return {eNoError, flrr};
+		result.error = e;
+		result.row = flrr;
+		return result;
 	}
 
 	struct EntryConverter {
-		typedef QPair<Err, FragLibReaderRow> result_type;
+		typedef EntryConversionResult result_type;
 		const Library *library;
 		result_type operator()(int index) const {
 			return convertEntry(
@@ -237,10 +252,25 @@ public:
 		}
 
 		const EntryConverter convert{this};
-		const QFuture<QPair<Err, FragLibReaderRow>> results = QtConcurrent::mapped(entryIndices, convert);
-		for (const QPair<Err, FragLibReaderRow> &result : results.results()) {
-			e = result.first; ree;
-			fragLibReaderRows->push_back(result.second);
+		int droppedFragmentCount = 0;
+		int affectedPrecursorCount = 0;
+		const QFuture<EntryConversionResult> results = QtConcurrent::mapped(entryIndices, convert);
+		for (const EntryConversionResult &result : results.results()) {
+			e = result.error; ree;
+			droppedFragmentCount += result.droppedFragmentCount;
+			if (result.affectedPrecursor) {
+				affectedPrecursorCount++;
+			}
+			fragLibReaderRows->push_back(result.row);
+		}
+
+		if (droppedFragmentCount > 0) {
+			qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+			           << "Dropped"
+			           << droppedFragmentCount
+			           << "fragments across"
+			           << affectedPrecursorCount
+			           << "precursors because fragment charge exceeded precursor charge while reading speclib";
 		}
 
 		ERR_RETURN

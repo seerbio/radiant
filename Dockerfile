@@ -104,19 +104,10 @@ CMD ["ctest", "--output-on-failure"]
 ################################################
 FROM build AS build-deb
 
-# Install Python and dependencies
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir awscli boto3
-
 # Copy some extra contents into /app/
 RUN cp \
     /src/PythiaDIACpp/control.* \
     /src/PythiaDIACpp/build_deb.sh \
-    /src/PythiaDIACpp/s3_package_uploader.py \
     /app/
 
 #RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
@@ -131,8 +122,8 @@ ENV PACKAGE_NAME=${package_dir}
 # Build the package into this stage's container
 RUN /app/build_deb.sh
 
-# Running this stage will deploy the DEB package
-CMD ["python", "s3_package_uploader.py"]
+# Running this stage will export the DEB package to a mounted output dir.
+CMD ["bash", "-lc", ": \"${LOCAL_DEB_OUTPUT_DIR:?LOCAL_DEB_OUTPUT_DIR is required}\" && cp /app/*.deb \"$LOCAL_DEB_OUTPUT_DIR\"/"]
 
 #################################################
 ##
