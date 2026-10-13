@@ -44,6 +44,10 @@ public:
         XICPoints *xicPoints
         ) const;
 
+    // Open frame interval, matching the native predicted MS2 extraction window.
+    Err getXIC(float mzVal, FrameIndex frameMin, FrameIndex frameMax,
+               XICPoints *xicPoints) const;
+
 
 private:
     int m_filterLength;

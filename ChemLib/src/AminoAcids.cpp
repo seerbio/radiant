@@ -10,7 +10,8 @@ using namespace MolecularFormulas;
 
 QMap<QChar, Molecule> AminoAcids::aminoAcids()
 {
-    QMap<QChar, Molecule> aa = {
+    // The formulas are immutable; returned QMaps still detach on modification.
+    static const QMap<QChar, Molecule> aa = {
        {'A', Molecule(alanineFormula)},
        {'C', Molecule(cysteineFormula)},
        {'D', Molecule(asparticAcidFormula)},
@@ -100,7 +101,7 @@ const QMap<QChar, MolecularFormula> &AminoAcids::fixedModifications() const {
 
 QMap<QChar, double> AminoAcids::diannMutateAminoAcidToMass() {
 
-    QMap<QChar, double> diannMutateAminoAcidToMass = {
+    static const QMap<QChar, double> diannMutateAminoAcidToMass = {
             {'G', Molecule(leucineFormula).monoisotopicMass() - Molecule(glycineFormula).monoisotopicMass()},
             {'A', Molecule(leucineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
             {'V', Molecule(leucineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
@@ -130,7 +131,7 @@ QMap<QChar, double> AminoAcids::diannMutateAminoAcidToMass() {
 
 QMap<QChar, QChar> AminoAcids::diannMutateAminoAcidToResidue() {
 
-    QMap<QChar, QChar> diannMutateAminoAcidToMass = {
+    static const QMap<QChar, QChar> diannMutateAminoAcidToMass = {
             {'G', 'L'},
             {'A', 'L'},
             {'V', 'L'},

@@ -613,38 +613,31 @@ public:
         vec /= vec.maxCoeff();
 
         const int vecSize = static_cast<int>(vec.size());
+        // Each rounded value becomes the next point's left neighbor. Keep
+        // the original normalization, comparisons and returned input bits.
+        int leftPointValue = 0;
+        int centerPointValue = 0;
         for (int index = 0; index < vecSize; index++) {
 
-            const auto centerPointValue = static_cast<int>(std::round(vec.coeff(index) * precision));
-
-            if(index < 1){
-
-                const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
-
-                if (centerPointValue >= rightPointValue) {
-                    apexIndicies.insert(index, _vec.coeff(index));
-                }
-
-                continue;
+            if (index < 1) {
+                centerPointValue = static_cast<int>(std::round(vec.coeff(index) * precision));
             }
 
-            if (index >= vecSize - 1) {
-
-                const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
-
+            if (index >= vecSize - 1 && index >= 1) {
                 if (centerPointValue > leftPointValue) {
                     apexIndicies.insert(index, _vec.coeff(index));
                 }
-
                 continue;
             }
 
-            const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
-            if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
+            if (index < 1 ? centerPointValue >= rightPointValue
+                          : centerPointValue > leftPointValue && centerPointValue >= rightPointValue) {
                 apexIndicies.insert(index, _vec.coeff(index));
             }
+            leftPointValue = centerPointValue;
+            centerPointValue = rightPointValue;
         }
 
         return apexIndicies;

@@ -60,9 +60,11 @@ public:
     Err init(const PythiaParameters &pythiaParameters);
     void resetDiagnostics();
     [[nodiscard]] QString scoringDiagnosticsSummary(const MzTargetKey &mzTargetKey) const;
+    QVector<QPointF> sortedScanPoints(ScanNumber scanNumber, const ScanPoints &points);
 
     Eigen::VectorX<float> m_kernelIntegration;
     Eigen::VectorX<float> m_kernelMs2;
+    int m_zeroPrefixGuard = -1;
 
     struct ScoringDiagnostics {
         quint64 scoreCalls = 0;
@@ -83,6 +85,10 @@ public:
 
 private:
     PythiaParameters m_pythiaParameters;
+    // Each scorer belongs to one worker and an immutable target frame. Keep
+    // at most 16 MiB of converted observations; init invalidates this cache.
+    std::unordered_map<ScanNumber, QVector<QPointF>> m_sortedScans;
+    std::size_t m_cachedPointCount = 0;
 
 };
 
@@ -95,6 +101,8 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_pythiaParameters = pythiaParameters;
+    m_sortedScans.clear();
+    m_cachedPointCount = 0;
 
     constexpr int order = 1;
     constexpr int derivative = 0;
@@ -112,6 +120,13 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
         ); ree;
     const Eigen::VectorX<float> kernelVec(kernel);
     m_kernelMs2 = kernelVec;
+    m_zeroPrefixGuard = -1;
+    if (kernelVec.size() > 0 && kernelVec.size() % 2 == 1
+        && kernelVec.allFinite() && (kernelVec.array() > 0.0f).all()) {
+        // One count smoothing and three product smoothings. Keep the
+        // original zero padding through all four operations.
+        m_zeroPrefixGuard = 4 * ((kernelVec.size() - 1) / 2) + 1;
+    }
 
     Eigen::MatrixX<float> kernelIntegration;
     e = EigenKernelUtils::buildSavitzkyGolayKernel(
@@ -125,6 +140,34 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
     m_kernelIntegration = kernelIntegrationVec;
 
     ERR_RETURN
+}
+
+QVector<QPointF> CandidateScorertron::Private::sortedScanPoints(
+    ScanNumber scanNumber, const ScanPoints &points) {
+    const auto found = m_sortedScans.find(scanNumber);
+    if (found != m_sortedScans.end()) {
+        return found->second;
+    }
+
+    QVector<QPointF> sorted;
+    sorted.reserve(points.size());
+    for (const ScanPoint &point : points) {
+        sorted.push_back(QPointF(static_cast<double>(point.x()),
+                                 static_cast<double>(point.y())));
+    }
+    // Use the original conversion and sort, including its equal-mass order.
+    std::sort(sorted.begin(), sorted.end(),
+              [](const QPointF &left, const QPointF &right) { return left.x() < right.x(); });
+    constexpr std::size_t maxCachedPoints = 16 * 1024 * 1024 / sizeof(QPointF);
+    if (static_cast<std::size_t>(sorted.size()) <= maxCachedPoints) {
+        if (m_cachedPointCount + sorted.size() > maxCachedPoints) {
+            m_sortedScans.clear();
+            m_cachedPointCount = 0;
+        }
+        m_cachedPointCount += sorted.size();
+        m_sortedScans.emplace(scanNumber, sorted);
+    }
+    return sorted;
 }
 
 void CandidateScorertron::Private::resetDiagnostics() {
@@ -270,6 +313,7 @@ class MatriciesAndVecs {
 
 public:
 
+    FrameIndex frameOffset = 0;
     Eigen::MatrixX<float> intensityMatrix100;
     Eigen::MatrixX<float> intensityMatrix100Shadow;
     Eigen::MatrixX<float> intensityMatrix45;
@@ -277,6 +321,7 @@ public:
     Eigen::MatrixX<float> mzMatrix100;
 
     Eigen::VectorX<float> intensityVec;
+    Eigen::VectorX<float> integrationCounts;
     Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
     Eigen::VectorX<float> productVec;
@@ -293,6 +338,19 @@ public:
 
     [[nodiscard]] bool integrationVecIsValid() const {
         return ionCountVec.size() > 0;
+    }
+
+    Eigen::MatrixX<float> globalBlock(
+        const Eigen::MatrixX<float> &matrix, FrameIndex first, int count) const {
+        if (first >= frameOffset) {
+            return matrix.block(first - frameOffset, 0, count, matrix.cols()).eval();
+        }
+        Eigen::MatrixX<float> block = Eigen::MatrixX<float>::Zero(count, matrix.cols());
+        const int overlap = std::max(0, first + count - frameOffset);
+        if (overlap > 0) {
+            block.bottomRows(overlap) = matrix.topRows(overlap);
+        }
+        return block;
     }
 };
 
@@ -912,25 +970,6 @@ namespace {
         xicPoints->erase(terminator, xicPoints->end());
     }
 
-    void filterXICPointsByFrameIndex(
-        FrameIndex frameIndexPredictedMin,
-        FrameIndex frameIndexPredictedMax,
-        XICPoints *xicPoints
-        ) {
-
-        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](const XICPoint &p) {
-            return !(frameIndexPredictedMin < p.scanNumber && p.scanNumber < frameIndexPredictedMax);
-        };
-
-        const auto terminator = std::remove_if(
-            xicPoints->begin(),
-            xicPoints->end(),
-            terminatorLogic
-            );
-
-        xicPoints->erase(terminator, xicPoints->end());
-    }
-
     bool canUseLibraryIonMobilityFilteredMs2(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const Ms2IonMobilityIndexBase *ms2IonMobilityIndex,
@@ -1460,14 +1499,11 @@ namespace {
             const MS2Ion &ms2Ion = ms2Ions.at(i);
 
             XICPoints xicPoints;
-            e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
-
             if (frameIndexPredictedMax > 0) {
-                filterXICPointsByFrameIndex(
-                frameIndexPredictedMin,
-                frameIndexPredictedMax,
-                &xicPoints
-                );
+                e = xicPeakManager->getXIC(ms2Ion.mz, frameIndexPredictedMin,
+                                           frameIndexPredictedMax, &xicPoints); ree;
+            } else {
+                e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
             }
 
             if (xicPoints.empty()) {
@@ -1479,19 +1515,18 @@ namespace {
 
             XICPoints xicPointsShadows;
             const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-            e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
+            if (frameIndexPredictedMax > 0) {
+                e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons,
+                    frameIndexPredictedMin, frameIndexPredictedMax, &xicPointsShadows); ree;
+            } else {
+                e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons,
+                                           &xicPointsShadows); ree;
+            }
             if (xicPointsShadows.empty()) {
                 xicPointsVec100Shadows->push_back({});
             }
             else {
-                if (frameIndexPredictedMax > 0) {
-                    filterXICPointsByFrameIndex(
-                        frameIndexPredictedMin,
-                        frameIndexPredictedMax,
-                        &xicPointsShadows
-                        );
-                }
-                xicPointsVec100Shadows->push_back(xicPointsShadows);
+                xicPointsVec100Shadows->push_back(std::move(xicPointsShadows));
             }
 
             xicPointsVec100->push_back(xicPoints);
@@ -1501,7 +1536,7 @@ namespace {
                 ppmTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
                 &xicPoints
                 );
-            xicPointsVec45->push_back(xicPoints);
+            xicPointsVec45->push_back(std::move(xicPoints));
 
         }
 
@@ -1533,6 +1568,7 @@ namespace {
         const QVector<XICPoints> &xicPointsVec,
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
+        FrameIndex frameOffset,
         bool buildMzMatrix,
         int smoothCount,
         Eigen::MatrixX<float> *matIntensity,
@@ -1544,33 +1580,37 @@ namespace {
 
         const FrameIndex frameIndexBuffer = 2;
 
-        const int rows = frameIndexMax + frameIndexBuffer;
+        const int globalRows = frameIndexMax + frameIndexBuffer;
+        const int rows = globalRows - frameOffset;
 
         matIntensity->resize(rows, xicPointsVec.size());
         matIntensity->setZero();
 
-        matMz->resize(rows, xicPointsVec.size());
-        matMz->setZero();
+        if (buildMzMatrix) {
+            matMz->resize(rows, xicPointsVec.size());
+            matMz->setZero();
+        }
 
         for (int col = 0; col < xicPointsVec.size(); col++) {
 
             const XICPoints &xicPointsCol = xicPointsVec.at(col);
             for (const XICPoint &p : xicPointsCol) {
 
-                if (p.scanNumber >= rows) {
+                if (p.scanNumber >= globalRows) {
                     continue;
                 }
 
-                matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
+                const FrameIndex row = p.scanNumber - frameOffset;
+                matIntensity->coeffRef(row, col) += p.intensity;
                 if (buildMzMatrix) {
 
-                    if (matMz->coeff(p.scanNumber, col) > 0) {
-                        matMz->coeffRef(p.scanNumber, col) += p.mz;
-                        matMz->coeffRef(p.scanNumber, col) /= 2.0;
+                    if (matMz->coeff(row, col) > 0) {
+                        matMz->coeffRef(row, col) += p.mz;
+                        matMz->coeffRef(row, col) /= 2.0;
                         continue;
                     }
 
-                    matMz->coeffRef(p.scanNumber, col) = p.mz;
+                    matMz->coeffRef(row, col) = p.mz;
                 }
             }
         }
@@ -1582,12 +1622,10 @@ namespace {
         ERR_RETURN
     }
 
-    Err buildIntegrationVector(
+    Err buildIntegrationCounts(
         const MatriciesAndVecs &matriciesAndVecs,
-        const Eigen::VectorX<float> &kernelIntegration,
-        float minPeakCount,
         int maxAnchorColumnIndex,
-        Eigen::VectorX<float> *ionCountVec
+        Eigen::VectorX<float> *integrationCounts
         ) {
 
         ERR_INIT
@@ -1605,7 +1643,21 @@ namespace {
         matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
         EigenUtils::thresholdMatrix(0.0f, &matCount);
 
-        Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
+        *integrationCounts = matCount.rowwise().sum();
+
+        ERR_RETURN
+    }
+
+    Err buildIntegrationVector(
+        const Eigen::VectorX<float> &integrationCounts,
+        const Eigen::VectorX<float> &kernelIntegration,
+        float minPeakCount,
+        Eigen::VectorX<float> *ionCountVec
+        ) {
+
+        ERR_INIT
+
+        Eigen::VectorX<float> integrationVecLocal = integrationCounts;
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
         *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
@@ -1717,12 +1769,27 @@ Err CandidateScorertron::initMatricesdAndVecs(
         e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
+        matriciesAndVecs->frameOffset = 0;
+        if (d_ptr->m_zeroPrefixGuard >= 0 && m_ms2IonMobilityIndex == nullptr
+            && !m_pythiaParameters.writeFullCandidateDebug && frameIndexMax > 0) {
+            FrameIndex firstPoint = frameIndexMax;
+            for (const auto *columns : {&xicPointsVec100, &xicPointsVec100Shadow}) {
+                for (const XICPoints &points : *columns) {
+                    for (const XICPoint &point : points) {
+                        firstPoint = std::min(firstPoint, point.scanNumber);
+                    }
+                }
+            }
+            matriciesAndVecs->frameOffset
+                = std::max(0, firstPoint - d_ptr->m_zeroPrefixGuard) / 16 * 16;
+        }
 
         constexpr int smoothCount = 1;
         e = buildEigenMatrix(
             xicPointsVec100,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             true,
             smoothCount,
             &matriciesAndVecs->intensityMatrix100,
@@ -1742,6 +1809,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             xicPointsVec100Shadow,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             false,
             smoothCount,
             &matriciesAndVecs->intensityMatrix100Shadow,
@@ -1755,11 +1823,13 @@ Err CandidateScorertron::initMatricesdAndVecs(
 
         matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
+        e = buildIntegrationCounts(*matriciesAndVecs,
+                                   m_pythiaParameters.maxAnchorColumnIndex,
+                                   &matriciesAndVecs->integrationCounts); ree;
         e = buildIntegrationVector(
-            *matriciesAndVecs,
+            matriciesAndVecs->integrationCounts,
             d_ptr->m_kernelMs2,
             m_minPeakCount,
-            m_pythiaParameters.maxAnchorColumnIndex,
             &matriciesAndVecs->ionCountVec
             ); ree;
 
@@ -1774,11 +1844,24 @@ Err CandidateScorertron::initMatricesdAndVecs(
 				);
 		}
 
+        if (matriciesAndVecs->frameOffset > 0) {
+            // Peak finding uses global frame indexes and relies on zero-valued
+            // prefix rows for tie ordering.
+            for (auto *vector : {&matriciesAndVecs->ionCountVec,
+                                 &matriciesAndVecs->productVec}) {
+                Eigen::VectorX<float> global = Eigen::VectorX<float>::Zero(
+                    vector->size() + matriciesAndVecs->frameOffset);
+                global.tail(vector->size()) = *vector;
+                vector->swap(global);
+            }
+        }
+
         constexpr int noSmooths = 0;
         e = buildEigenMatrix(
             xicPointsVec45,
             d_ptr->m_kernelMs2,
             frameIndexMax,
+            matriciesAndVecs->frameOffset,
             false,
             noSmooths,
             &matriciesAndVecs->intensityMatrix45,
@@ -2057,7 +2140,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
     e = ErrorUtils::isTrue(matriciesAndVecs.integrationVecIsValid()); ree;
 
-    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
+    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows())
+                       + matriciesAndVecs.frameOffset;
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
     // if (m_useTopNIntegrationsParam) {
     //     peakIntegrationsVsIntensityResized.resize(std::min(
@@ -2075,12 +2159,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const int ogPeakLength = piiWorking.first.second - piiWorking.first.first + 1;
 
-        Eigen::MatrixX<float> matBlock = matriciesAndVecs.intensityMatrix100.block(
-              piiWorking.first.first,
-              0,
-              ogPeakLength,
-              matriciesAndVecs.intensityMatrix100.cols()
-              ).eval();
+        Eigen::MatrixX<float> matBlock = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, piiWorking.first.first, ogPeakLength);
 
         const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);
 
@@ -2134,12 +2214,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const auto frameIndex1p5XMax
             = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier1p5X * ogPeakLength))), maxRows);
         const int peakLength1p5X = frameIndex1p5XMax - frameIndex1p5XMin;
-        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.intensityMatrix100.block(
-              frameIndex1p5XMin,
-              0,
-              peakLength1p5X,
-              matriciesAndVecs.intensityMatrix100.cols()
-              ).eval();
+        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, frameIndex1p5XMin, peakLength1p5X);
 
         constexpr float windowMultiplier2X = 1.0;
         const auto frameIndex2XMin
@@ -2147,12 +2223,8 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const auto frameIndex2XMax
             = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier2X * ogPeakLength))), maxRows);
         const int peakLength2X = frameIndex2XMax - frameIndex2XMin;
-        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.intensityMatrix100.block(
-                      frameIndex2XMin,
-                      0,
-                      peakLength2X,
-                      matriciesAndVecs.intensityMatrix100.cols()
-                      ).eval();
+        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100, frameIndex2XMin, peakLength2X);
 
         // bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
         //     matBlock1p5X,
@@ -2160,7 +2232,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         //     stopThresholdFraction
         //     );
 
-    	bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = std::move(matBlock1p5X);
     	const Eigen::VectorX<float> integrationVecSegment1p5X = matriciesAndVecs.productVec.segment(
 			frameIndex1p5XMin,
 			peakLength1p5X
@@ -2172,7 +2244,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestCorrelationResultPii.peakCorrelationsWindow1p5X
             ); ree;
 
-    	bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = matBlock2X;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = std::move(matBlock2X);
 		const Eigen::VectorX<float> integrationVecSegment2X = matriciesAndVecs.productVec.segment(
 			frameIndex2XMin,
 			peakLength2X
@@ -2192,26 +2264,14 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const PeakIntegrationIndexes &p = piiWorking.first;
         const int pSize = p.second - p.first + 1;
-        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.mzMatrix100.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.mzMatrix100, p.first, pSize);
 
-        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix100Shadow, p.first, pSize);
 
-        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
-            p.first,
-            0,
-            pSize,
-            matBlock.cols()
-            ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.globalBlock(
+            matriciesAndVecs.intensityMatrix45, p.first, pSize);
 
         e = calculatePeakCorrelations(
 			integrationVecSegment,
@@ -2219,7 +2279,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestCorrelationResultPii.peakCorrelations45
             ); ree;
 
-        bestCorrelationResults->push_back(bestCorrelationResultPii);
+        bestCorrelationResults->push_back(std::move(bestCorrelationResultPii));
 
 // #define OUTPUT_MATS
 #ifdef OUTPUT_MATS
@@ -3052,6 +3112,9 @@ namespace {
     Err calculateMs1Scores(
         const Eigen::VectorX<float> &kernel,
         const Eigen::VectorX<float> &_anchorColumn,
+        const QVector<float> &anchorTimes,
+        const MsFrame *ms1Frame,
+        bool alignByScanTime,
         float mzToExtract,
         float massTol,
         FrameIndex frameIndexMin,
@@ -3080,13 +3143,9 @@ namespace {
 
         XICPoints xicPoints = turboXicMS1->extractPointsXIC(
             mzToExtract - massTol,
-            mzToExtract + massTol
-            );
-
-        TurboXIC::filterXICPointsByScanNumber(
+            mzToExtract + massTol,
             frameIndexMin,
-            frameIndexMax,
-            &xicPoints
+            frameIndexMax
             );
 
         if (xicPoints.empty()) {
@@ -3099,7 +3158,27 @@ namespace {
             frameIndexMax
             ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1).eval();
 
-        if (xicVec.size() < anchorColumn.size()) {
+        if (alignByScanTime) {
+            e = ErrorUtils::isEqual(anchorTimes.size(), static_cast<int>(anchorColumn.size())); ree;
+            Eigen::VectorX<float> alignedAnchor(xicVec.size());
+            alignedAnchor.setZero();
+            for (int index = 0; index < alignedAnchor.size(); ++index) {
+                const float time = ms1Frame->scanTimeFromFrameIndex(frameIndexMin + index);
+                if (time < anchorTimes.first() || time > anchorTimes.last()) continue;
+                const auto upper = std::lower_bound(anchorTimes.constBegin(), anchorTimes.constEnd(), time);
+                const int right = static_cast<int>(upper - anchorTimes.constBegin());
+                if (right == 0 || *upper == time) {
+                    alignedAnchor[index] = anchorColumn[right];
+                } else {
+                    const int left = right - 1;
+                    const float fraction = (time - anchorTimes[left]) / (anchorTimes[right] - anchorTimes[left]);
+                    alignedAnchor[index] = (1.0f - fraction) * anchorColumn[left] + fraction * anchorColumn[right];
+                }
+            }
+            // Interpolate the MS2 reference onto actual MS1 acquisition times.
+            anchorColumn = alignedAnchor;
+        }
+        else if (xicVec.size() < anchorColumn.size()) {
             Eigen::VectorX<float> xicVecResized(anchorColumn.size());
             xicVecResized.setZero();
             const int stepSize = static_cast<int>(std::round(anchorColumn.size() / xicVec.size()));
@@ -3200,9 +3279,22 @@ Err CandidateScorertron::setMs1RelatedScores(
     const Eigen::VectorX<float> anchorColumn
             = bestCorrelationResult.matBlockTrimmedIntensity.col(bestCorrelationResult.bestAnchorColumnIndex);
 
+    QVector<float> anchorTimes;
+    const bool alignByScanTime = m_pythiaParameters.alignMs1ScanTimes;
+    if (alignByScanTime) {
+        anchorTimes.reserve(anchorColumn.size());
+        for (int row = 0; row < anchorColumn.size(); ++row) {
+            anchorTimes.push_back(m_msFrameMzTarget->scanTimeFromFrameIndex(
+                candidateScores->frameIndexStart + row));
+        }
+    }
+
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         monoIsotopeMz,
         massTol,
         frameIndexMinMS1,
@@ -3220,6 +3312,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         monoIsotopeMz,
         massTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
         frameIndexMinMS1,
@@ -3236,6 +3331,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         monoIsotopeShadowMz,
         massTol,
         frameIndexMinMS1,
@@ -3252,6 +3350,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         c13isotopeMz1,
         massTol,
         frameIndexMinMS1,
@@ -3268,6 +3369,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
         anchorColumn,
+        anchorTimes,
+        m_msFrameMS1,
+        alignByScanTime,
         c13isotopeMz2,
         massTol,
         frameIndexMinMS1,
@@ -3685,7 +3789,7 @@ namespace {
     }
 
     Err extractFullTheoreticalPointsFromScan(
-        const ScanPoints* scanPoints,
+        const QVector<QPointF> &sortedScanPoints,
         const QVector<MS2Ion> &ms2IonsTheoritical,
         double ms2ExtractionWidthPPM,
         QVector<QPair<QPointF, MS2Ion>> *foundPointVsMS2Ions
@@ -3693,15 +3797,8 @@ namespace {
 
         ERR_INIT
 
-        QVector<QPointF> scanPointsQF;
-        std::transform(
-            scanPoints->begin(),
-            scanPoints->end(),
-            std::back_inserter(scanPointsQF),
-            [](const ScanPoint& scanPoint){return QPointF(static_cast<double>(scanPoint.x()), static_cast<double>(scanPoint.y()));}
-            );
-
         QVector<double> mzVals;
+        mzVals.reserve(ms2IonsTheoritical.size());
         std::transform(
             ms2IonsTheoritical.begin(),
             ms2IonsTheoritical.end(),
@@ -3709,8 +3806,8 @@ namespace {
             [](const MS2Ion& ms2Ion){return static_cast<double>(ms2Ion.mz);}
             );
 
-        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromPoints(
-            scanPointsQF,
+        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromSortedPoints(
+            sortedScanPoints,
             mzVals,
             ms2ExtractionWidthPPM,
             true
@@ -3822,6 +3919,8 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     ERR_INIT
 
     const ScanPoints* scanPoints = m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber);
+    const QVector<QPointF> sortedScanPoints = d_ptr->sortedScanPoints(
+        candidateScores->scanNumber, *scanPoints);
 
     const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
                                      ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
@@ -3837,7 +3936,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
 
     QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
     e = extractFullTheoreticalPointsFromScan(
-        scanPoints,
+        sortedScanPoints,
         ms2IonsTheoritical,
         m_pythiaParameters.ms2ExtractionWidthPPM,
         &foundPointVsMS2Ions

@@ -13,8 +13,12 @@
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "IdLevelQValueAnnotator.h"
+#include "FragmentCompetition.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
+#include "PostNeuralNetCompetition.h"
+#include "NeuralNetFeatureTransforms.h"
+#include "NeuralNetFamilyFolds.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
@@ -27,8 +31,11 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QScopedValueRollback>
 #include <QSet>
 #include <QTextStream>
+#include <QThreadPool>
+#include <QtConcurrent/QtConcurrent>
 
 #include <algorithm>
 
@@ -656,6 +663,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &m_neuralNetFeatures
         );
 
+    const bool alignMs1ScanTimes = m_pythiaParameters.alignMs1ScanTimes;
+    QScopedValueRollback<bool> restoreMs1Alignment(m_pythiaParameters.alignMs1ScanTimes, false);
+
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
             &msReaderPointerAcc
@@ -723,6 +733,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     }
 
+    m_pythiaParameters.alignMs1ScanTimes
+        = alignMs1ScanTimes && !msReaderPointerAcc.ptr->hasIonMobility();
+    e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
         &msReaderPointerAcc,
@@ -734,6 +748,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         m_candidateScorePairs,
         &candidateScoresTargetsAndDecoys
         ); ree;
+
+    e = applyFragmentCompetition(&candidateScoresTargetsAndDecoys); ree;
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
 
@@ -773,6 +789,27 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         ERR_RETURN
     }
 
+    const bool postNeuralNetCompetition =
+        m_pythiaParameters.postNeuralNetSharedFragments > 0;
+    if (postNeuralNetCompetition) {
+        const int before = candidateScoreClassifierPntrs.size();
+        e = PostNeuralNetCompetition::apply(
+            m_pythiaParameters.postNeuralNetSharedFragments,
+            &candidateScoreClassifierPntrs); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Fragment competition after neural net"
+                 << "minimum_shared_fragments"
+                 << m_pythiaParameters.postNeuralNetSharedFragments
+                 << "candidate_rows" << before << "->"
+                 << candidateScoreClassifierPntrs.size()
+                 << "confidence" << "tied +1 precursor q-values";
+        if (candidateScoreClassifierPntrs.isEmpty()) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "No candidates after post-neural-net competition; skipping result write";
+            ERR_RETURN
+        }
+    }
+
     int targetCountBelowFDRThresholdOnePercent;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
         candidateScoreClassifierPntrs,
@@ -784,7 +821,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
              << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
-    const bool candidateScoresSortedHiLo = usedDiscriminantFallback
+    const bool candidateScoresSortedHiLo = postNeuralNetCompetition
+        ? std::is_sorted(
+            candidateScoreClassifierPntrs.begin(),
+            candidateScoreClassifierPntrs.end(),
+            [](const CandidateScores *left, const CandidateScores *right) {
+                return left->classifierScore < right->classifierScore;
+            })
+        : usedDiscriminantFallback
         ? std::is_sorted(
             candidateScoreClassifierPntrs.begin(),
             candidateScoreClassifierPntrs.end(),
@@ -803,11 +847,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         : std::is_sorted(
             candidateScoreClassifierPntrs.begin(),
             candidateScoreClassifierPntrs.end(),
-            [](const CandidateScores *l, const CandidateScores *r) {
-                if (MathUtils::tSame(l->classifierScore, r->classifierScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                    return l->discriminantScore > r->discriminantScore;
+            [](const CandidateScores *left, const CandidateScores *right) {
+                if (MathUtils::tSame(
+                        left->classifierScore,
+                        right->classifierScore,
+                        S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                    return left->discriminantScore > right->discriminantScore;
                 }
-                return l->classifierScore < r->classifierScore;
+                return left->classifierScore < right->classifierScore;
             });
     e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
 
@@ -824,6 +871,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         !usedDiscriminantFallback,
         0.0
         ); ree;
+
+    if (postNeuralNetCompetition) {
+        for (CandidateScores *candidate : candidateScoreClassifierPntrs) {
+            candidate->precursorQValue = candidate->qValue;
+            candidate->isBestPrecursorCandidate = 1;
+        }
+    }
 
     filterDecoysOrNot(&candidateScoreClassifierPntrs);
 
@@ -899,7 +953,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
 
-    constexpr float minPeakCount = 3.9f;
+    const float minPeakCount
+        = static_cast<float>(m_pythiaParameters.mainMinSimultaneousFragments) - 0.1f;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             m_ppmOptimizationFeatures,
@@ -993,6 +1048,45 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildNeuralNetFamilyTranches(
+            const QVector<KarnnNNTarget> &karnnNNTargets,
+            int foldCount,
+            QVector<QVector<KarnnNNTarget>> *tranches
+            ) {
+
+        ERR_INIT
+
+        if (tranches == nullptr || karnnNNTargets.isEmpty() || foldCount < 2
+            || foldCount > karnnNNTargets.size()) {
+            rrr(eValueError);
+        }
+
+        QVector<QString> familyNames;
+        familyNames.reserve(karnnNNTargets.size());
+        for (const KarnnNNTarget &target : karnnNNTargets) {
+            if (target.candidateScores == nullptr
+                || target.candidateScores->targetDecoyCandidatePair == nullptr) {
+                rrr(eValueError);
+            }
+
+            familyNames.push_back(NeuralNetFamilyFolds::canonicalFamily(
+                target.candidateScores->targetDecoyCandidatePair->peptideStringWithMods()));
+        }
+
+        QVector<int> rowFolds;
+        if (!NeuralNetFamilyFolds::buildFoldAssignments(familyNames, foldCount, &rowFolds)) {
+            rrr(eValueError);
+        }
+
+        tranches->clear();
+        tranches->resize(foldCount);
+        for (int row = 0; row < karnnNNTargets.size(); ++row) {
+            (*tranches)[rowFolds.at(row)].push_back(karnnNNTargets.at(row));
+        }
+
+        ERR_RETURN
+    }
+
     Err buildKarnnNNTargetsNormalized(
         const QVector<Features> &neuralNetFeatures,
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoysFDRFiltered,
@@ -1023,6 +1117,11 @@ namespace {
             );
 #endif
 
+            NeuralNetFeatureTransforms::logIntensityFeatures(
+                neuralNetFeatures,
+                &karnnNnTarget.scoreVecNormalized
+                );
+
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
@@ -1036,6 +1135,16 @@ namespace {
         int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
     };
 
+    struct NeuralNetworkEnsembleTrainingTask {
+        const QVector<QVector<float>> *xData = nullptr;
+        const QVector<float> *yData = nullptr;
+        const FDRCLassifierNeuralNet *classifier = nullptr;
+        int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+        int fold = -1;
+        int bag = -1;
+        int verbosity = 0;
+    };
+
 	QPair<Err, FDRCLassifierNeuralNet> trainNeuralNetworkLogic(
         const NeuralNetworkTrainingFoldInput &trainingFoldInput,
 		const PythiaParameters &pythiaParameters,
@@ -1044,15 +1153,17 @@ namespace {
 	    ERR_INIT
     	FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
 
-    	constexpr int baggingOverride = 1;
-    	e = fdrcLassifierNeuralNet.init(
+	    // baggingSize controls CV tranches; neuralNetEnsembleSize controls
+	    // the number of classifiers trained within each held-out fold.
+	    e = fdrcLassifierNeuralNet.init(
 				pythiaParameters.epochs,
-				baggingOverride,
+				pythiaParameters.neuralNetEnsembleSize,
 				batchSize,
 				pythiaParameters.learningRate,
 				pythiaParameters.nodesFraction,
 				pythiaParameters.focalLossGamma,
-				pythiaParameters.threadCount
+				pythiaParameters.threadCount,
+				pythiaParameters.neuralNetShuffleEachEpoch
 		); rree;
 
     	e = fdrcLassifierNeuralNet.trainClassifier(
@@ -1130,26 +1241,81 @@ namespace {
         file.close();
 #endif
 
-		if (pythiaParameters.parallelNeuralNets) {
-			const auto loadLogicBinder = std::bind(
-				trainNeuralNetworkLogic,
-				std::placeholders::_1,
-				pythiaParameters,
-				batchSize
-				);
+        if (pythiaParameters.parallelNeuralNets) {
+            QVector<FDRCLassifierNeuralNet> foldClassifiers(trainingFoldInputs.size());
+            for (int fold = 0; fold < trainingFoldInputs.size(); ++fold) {
+                e = foldClassifiers[fold].init(
+                        pythiaParameters.epochs,
+                        pythiaParameters.neuralNetEnsembleSize,
+                        batchSize,
+                        pythiaParameters.learningRate,
+                        pythiaParameters.nodesFraction,
+                        pythiaParameters.focalLossGamma,
+                        pythiaParameters.threadCount,
+                        pythiaParameters.neuralNetShuffleEachEpoch
+                        ); ree;
+            }
 
-			QFuture<QPair<Err, FDRCLassifierNeuralNet>> future = QtConcurrent::mapped(
-                trainingFoldInputs,
-				loadLogicBinder
-				);
-			future.waitForFinished();
+            QVector<NeuralNetworkEnsembleTrainingTask> tasks;
+            tasks.reserve(trainingFoldInputs.size() * pythiaParameters.neuralNetEnsembleSize);
+            for (int fold = 0; fold < trainingFoldInputs.size(); ++fold) {
+                for (int bag = 0; bag < pythiaParameters.neuralNetEnsembleSize; ++bag) {
+                    NeuralNetworkEnsembleTrainingTask task;
+                    task.xData = &trainingFoldInputs[fold].trainingVecs.first;
+                    task.yData = &trainingFoldInputs[fold].trainingVecs.second;
+                    task.classifier = &foldClassifiers[fold];
+                    task.seed = trainingFoldInputs[fold].seed;
+                    task.fold = fold;
+                    task.bag = bag;
+                    task.verbosity = pythiaParameters.verbosity;
+                    tasks.push_back(task);
+                }
+            }
 
-			for (const QPair<Err, FDRCLassifierNeuralNet> &result : future) {
-				e = result.first; ree;
-				fdrcLassifierNeuralNets->push_back(result.second);
-			}
-		}
-		else {
+            QThreadPool trainingPool;
+            trainingPool.setMaxThreadCount(pythiaParameters.threadCount);
+            trainingPool.setExpiryTimeout(-1);
+
+            QVector<QFuture<QPair<Err, CandidateClassifier *>>> futures;
+            futures.reserve(tasks.size());
+            for (const NeuralNetworkEnsembleTrainingTask &task : tasks) {
+                futures.push_back(QtConcurrent::run(
+                        &trainingPool,
+                        [task]() {
+                            return task.classifier->trainSingleNeuralNet(
+                                    *task.xData,
+                                    *task.yData,
+                                    task.seed,
+                                    task.bag,
+                                    task.verbosity
+                                    );
+                        }
+                        ));
+            }
+
+            QVector<CandidateClassifier *> trainedClassifiers(tasks.size(), nullptr);
+            for (int i = 0; i < futures.size(); ++i) {
+                const QPair<Err, CandidateClassifier *> result = futures[i].result();
+                trainedClassifiers[i] = result.second;
+                if (result.first != eNoError && e == eNoError) {
+                    e = result.first;
+                }
+            }
+            if (e != eNoError) {
+                for (CandidateClassifier *candidateClassifier : trainedClassifiers) {
+                    delete candidateClassifier;
+                }
+                return e;
+            }
+
+            for (int i = 0; i < tasks.size(); ++i) {
+                e = foldClassifiers[tasks[i].fold].appendCandidateClassifier(trainedClassifiers[i]); ree;
+            }
+            for (FDRCLassifierNeuralNet &foldClassifier : foldClassifiers) {
+                fdrcLassifierNeuralNets->push_back(foldClassifier);
+            }
+        }
+        else {
 			for (int i = 0; i < karnnNNTargetsNormTranched.size(); i++) {
 				const QPair<Err, FDRCLassifierNeuralNet> result = trainNeuralNetworkLogic(
                     trainingFoldInputs[i],
@@ -1539,6 +1705,21 @@ namespace {
     }
 
 }//namespace
+Err PythiaDIAFFWorkflow::applyFragmentCompetition(QVector<CandidateScores*> *candidates) const {
+    ERR_INIT
+    const int before = candidates->size();
+    e = FragmentCompetition::removeCompetingCandidates(
+        m_pythiaParameters.competitionEnabled,
+        candidates,
+        m_pythiaParameters.ionsSharedToReject); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Fragment competition before neural net"
+             << "enabled" << m_pythiaParameters.competitionEnabled
+             << "minimum_shared_fragments" << m_pythiaParameters.ionsSharedToReject
+             << "candidate_rows" << before << "->" << candidates->size();
+    ERR_RETURN
+}
+
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         const MsReaderPointerAcc *msReaderPointerAcc,
@@ -1631,7 +1812,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     logNeuralNetStats(karnnNNTargetsNorm);
 
     QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
+    e = buildNeuralNetFamilyTranches(
         karnnNNTargetsNorm,
         m_pythiaParameters.baggingSize,
         &karnnNNTargetsNormTranched

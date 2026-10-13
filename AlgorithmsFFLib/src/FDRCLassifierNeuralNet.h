@@ -112,6 +112,7 @@ public:
     * @param nodesFraction nodefraction
     * @param focalLossGamma If positive and finite, use focal loss with this gamma value. For all other values, use standard binary cross-entropy loss.
     * @param threadCount threadCount,
+    * @param shuffleEachEpoch Whether to deterministically reorder training rows before each epoch.
     * @return An Err enum indicating the success or failure of the operation.
     */
     Err init(
@@ -121,7 +122,8 @@ public:
             double learningRate,
             double nodesFraction,
             float focalLossGamma,
-            int threadCount
+            int threadCount,
+            bool shuffleEachEpoch = false
             );
 
     /**
@@ -150,6 +152,16 @@ public:
             int seed,
             int verbosity
             );
+
+    QPair<Err, CandidateClassifier *> trainSingleNeuralNet(
+            const QVector<QVector<float>> &xData,
+            const QVector<float> &yData,
+            int seed,
+            int bag,
+            int verbosity
+            ) const;
+
+    Err appendCandidateClassifier(CandidateClassifier *candidateClassifier);
 
     Err predictBaggedClassifiers(
             const QVector<QVector<float>> &allDataVecs,
@@ -230,6 +242,7 @@ private:
     int m_threadCount;
 
     bool m_isInit;
+    bool m_shuffleEachEpoch;
 
     QVector<CandidateClassifier*> m_candidateClassifiers;
 

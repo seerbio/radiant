@@ -205,7 +205,6 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 MS1Averagine,
                 CosineSimSum100Window1p5X,
                 CosineSimSum100Window2X,
-                TotalIntensityRaw,
                 TargetWindowLocation,
                 IonMobilityDelta,
                 IonMobilityDeltaAbs,

@@ -7,6 +7,10 @@
 #include <QDebug>
 #include <QMap>
 #include <QtTest/QtTest>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <vector>
 
 
 class EigenUtilsTests : public QObject
@@ -34,6 +38,8 @@ private Q_SLOTS:
     void cleanupTestCase();
 
     static void apexesTest();
+    static void apexesKnownPeaks_data();
+    static void apexesKnownPeaks();
     static void troughtsTest();
 
     static void rowWiseCosineSimilarOfMatricesTest();
@@ -617,6 +623,83 @@ void EigenUtilsTests::thresholdVectorTest() {
     QCOMPARE(vec(1), 0.0);
     QCOMPARE(vec(2), 3.0);
     QCOMPARE(vec(3), 4.0);
+}
+
+
+template<typename T>
+void checkExpectedPeaks(const QVector<double> &values, const QVector<int> &indices, int precision) {
+    Eigen::VectorX<T> input(values.size());
+    for (int i = 0; i < values.size(); ++i) input.coeffRef(i) = static_cast<T>(values[i]);
+    const auto actual = EigenUtils::apexes(input, precision);
+    QCOMPARE(actual.keys().toVector(), indices);
+    for (int index : indices) {
+        const T expectedValue = input.coeff(index);
+        const T actualValue = actual.value(index);
+        std::uint64_t expectedBits = 0, actualBits = 0;
+        std::memcpy(&expectedBits, &expectedValue, sizeof(T));
+        std::memcpy(&actualBits, &actualValue, sizeof(T));
+        QCOMPARE(actualBits, expectedBits);
+    }
+}
+
+void EigenUtilsTests::apexesKnownPeaks_data() {
+    QTest::addColumn<QVector<double>>("values");
+    QTest::addColumn<QVector<int>>("indices");
+    QTest::addColumn<int>("precision");
+    QTest::addColumn<bool>("useDouble");
+    struct Fixture {
+        const char *name;
+        QVector<double> values;
+        QVector<int> indices;
+        int precision;
+    };
+    const double belowQuarter = std::nextafter(.25f, 0.f);
+    std::vector<Fixture> fixtures = {
+        {"empty", {}, {}, 10000},
+        {"single-positive-zero", {0.0}, {}, 10000},
+        {"single-negative-zero", {-0.0}, {}, 10000},
+        {"increasing", {0, 1, 2}, {2}, 10000},
+        {"decreasing", {2, 1, 0}, {0}, 10000},
+        {"flat", {1, 1, 1}, {0}, 10000},
+        {"plateau", {0, 1, 1, 0}, {1}, 10000},
+        {"endpoints", {2, 1, 0, 1, 2}, {0, 4}, 10000},
+        {"negative-zero-prefix", {-0.0, 0.0, 1}, {0, 2}, 10000},
+        {"positive-zero-prefix", {0.0, -0.0, 1}, {0, 2}, 10000},
+        {"all-zero", {-0.0, 0.0, -0.0}, {}, 10000},
+        {"canceling-sum", {-1, 1}, {}, 10000},
+        {"negative-values", {-1, -2, -1}, {1}, 10000},
+        {"mixed-signs", {-1, 2, -1, 1}, {1, 3}, 10000},
+        {"zero-precision", {0, 1, 2}, {0}, 0},
+        {"negative-precision", {0, 1, 2}, {0}, -10},
+        {"rounding-tie", {belowQuarter, .25, belowQuarter, 1}, {1, 3}, 2},
+        {"two-increasing", {1, 2}, {1}, 10000},
+        {"two-decreasing", {2, 1}, {0}, 10000},
+        {"two-flat", {2, 2}, {0}, 10000},
+    };
+    QVector<double> late(1425, 0.0);
+    late[0] = -0.0;
+    late[997] = 2;
+    late[998] = 2;
+    late[1023] = 3;
+    late[1424] = 1;
+    fixtures.push_back({"late-peaks-with-zero-prefix", late, {0, 997, 1023, 1424}, 10000});
+    for (bool useDouble : {false, true}) {
+        for (const auto &fixture : fixtures) {
+            const auto name = QStringLiteral("%1-%2")
+                .arg(useDouble ? "double" : "float").arg(fixture.name).toUtf8();
+            QTest::newRow(name.constData())
+                << fixture.values << fixture.indices << fixture.precision << useDouble;
+        }
+    }
+}
+
+void EigenUtilsTests::apexesKnownPeaks() {
+    QFETCH(QVector<double>, values);
+    QFETCH(QVector<int>, indices);
+    QFETCH(int, precision);
+    QFETCH(bool, useDouble);
+    if (useDouble) checkExpectedPeaks<double>(values, indices, precision);
+    else checkExpectedPeaks<float>(values, indices, precision);
 }
 
 

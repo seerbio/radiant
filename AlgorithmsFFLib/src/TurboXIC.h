@@ -89,6 +89,15 @@ public:
             float mzMax
     ) const;
 
+    // Preserves the unbounded query's point order while restricting scans.
+    XICPoints extractPointsXIC(
+            float mzMin,
+            float mzMax,
+            ScanNumber scanNumberMin,
+            ScanNumber scanNumberMax,
+            bool includeEndpoints = true
+    ) const;
+
     /**
     * @brief Retrieves the limits of the RTree in the TurboXIC private implementation.
     *

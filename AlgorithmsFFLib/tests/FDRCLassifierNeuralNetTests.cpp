@@ -5,6 +5,8 @@
 #include "ParquetReader.h"
 
 #include <QElapsedTimer>
+#include <QThreadPool>
+#include <QtConcurrent/QtConcurrent>
 #include <QtTest>
 
 class FDRCLassifierNeuralNetTests : public QObject
@@ -18,6 +20,7 @@ public:
 private slots:
 
     static void playGround();
+    static void parallelSingleModelsMatchSerialEnsemble();
 
 
 };
@@ -189,6 +192,48 @@ namespace {
     }
 
 }//namespace
+
+void FDRCLassifierNeuralNetTests::parallelSingleModelsMatchSerialEnsemble() {
+    const QVector<QVector<float>> xData = {
+            {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f},
+            {0.2f, 0.8f}, {0.8f, 0.2f}, {0.3f, 0.7f}, {0.7f, 0.3f}
+    };
+    const QVector<float> yData = {0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    constexpr int ensembleSize = 2;
+    constexpr int seed = 17;
+
+    FDRCLassifierNeuralNet serialClassifier;
+    QCOMPARE(serialClassifier.init(2, ensembleSize, 4, 0.003, 0.5, 0.0f, 2), eNoError);
+    QCOMPARE(serialClassifier.trainClassifier(xData, yData, seed, 0), eNoError);
+
+    QVector<float> serialPredictions;
+    QCOMPARE(serialClassifier.predictBaggedClassifiers(xData, &serialPredictions), eNoError);
+
+    FDRCLassifierNeuralNet parallelClassifier;
+    QCOMPARE(parallelClassifier.init(2, ensembleSize, 4, 0.003, 0.5, 0.0f, 2), eNoError);
+
+    QThreadPool pool;
+    pool.setMaxThreadCount(2);
+    QVector<QFuture<QPair<Err, CandidateClassifier *>>> futures;
+    for (int bag = 0; bag < ensembleSize; ++bag) {
+        futures.push_back(QtConcurrent::run(
+                &pool,
+                [&parallelClassifier, &xData, &yData, bag]() {
+                    return parallelClassifier.trainSingleNeuralNet(xData, yData, seed, bag, 0);
+                }
+                ));
+    }
+    for (QFuture<QPair<Err, CandidateClassifier *>> &future : futures) {
+        const QPair<Err, CandidateClassifier *> result = future.result();
+        QCOMPARE(result.first, eNoError);
+        QCOMPARE(parallelClassifier.appendCandidateClassifier(result.second), eNoError);
+    }
+
+    QVector<float> parallelPredictions;
+    QCOMPARE(parallelClassifier.predictBaggedClassifiers(xData, &parallelPredictions), eNoError);
+    QCOMPARE(parallelPredictions, serialPredictions);
+}
+
 void FDRCLassifierNeuralNetTests::playGround() {
 
     QSKIP("Skipping as this is for debugging");

@@ -2,6 +2,8 @@
 #include "Molecule.h"
 
 #include <QtTest>
+#include <future>
+#include <vector>
 
 
 class AminoAcidsTests : public QObject
@@ -16,6 +18,9 @@ private slots:
     void checkMassesTest();
     void mutatePenultimatePeptideResiduesTest();
     void validPeptideSequenceTest();
+    void returnedTablesAreIndependent();
+    void fixedModificationsAreInstanceLocal();
+    void concurrentTableReadsAgree();
 
 };
 
@@ -111,6 +116,45 @@ void AminoAcidsTests::validPeptideSequenceTest() {
     QCOMPARE(AminoAcids::validPeptideSequence("X"), false);
     QCOMPARE(AminoAcids::validPeptideSequence("Z"), false);
     QCOMPARE(AminoAcids::validPeptideSequence("AJOX"), false);
+}
+
+void AminoAcidsTests::returnedTablesAreIndependent() {
+    auto aminoAcids = AminoAcids::aminoAcids();
+    auto masses = AminoAcids::diannMutateAminoAcidToMass();
+    auto residues = AminoAcids::diannMutateAminoAcidToResidue();
+    const auto originalMass = masses.value('A');
+    const auto originalResidue = residues.value('A');
+    aminoAcids.remove('A');
+    masses['A'] = 123456.0;
+    residues['A'] = 'Z';
+    QVERIFY(AminoAcids::aminoAcids().contains('A'));
+    QCOMPARE(AminoAcids::diannMutateAminoAcidToMass().value('A'), originalMass);
+    QCOMPARE(AminoAcids::diannMutateAminoAcidToResidue().value('A'), originalResidue);
+}
+
+void AminoAcidsTests::fixedModificationsAreInstanceLocal() {
+    AminoAcids original, modified;
+    const double initial = original.aminoAcid('C').monoisotopicMass();
+    modified.addFixedModification('C', MolecularFormulas::waterFormula);
+    QVERIFY(modified.aminoAcid('C').monoisotopicMass() != initial);
+    QCOMPARE(original.aminoAcid('C').monoisotopicMass(), initial);
+    QCOMPARE(AminoAcids().aminoAcid('C').monoisotopicMass(), initial);
+    QVERIFY(original.fixedModifications().isEmpty());
+}
+
+void AminoAcidsTests::concurrentTableReadsAgree() {
+    const auto expected = AminoAcids::diannMutateAminoAcidToMass();
+    std::vector<std::future<QMap<QChar, double>>> work;
+    for (int i = 0; i < 12; ++i) {
+        work.push_back(std::async(std::launch::async, [] {
+            auto result = AminoAcids::diannMutateAminoAcidToMass();
+            // Mutating one returned copy must not affect any other worker.
+            result['!'] = 1.0;
+            return AminoAcids::diannMutateAminoAcidToMass();
+        }));
+    }
+    for (auto &item : work)
+        QCOMPARE(item.get(), expected);
 }
 
 QTEST_MAIN(AminoAcidsTests)

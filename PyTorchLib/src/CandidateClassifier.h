@@ -27,6 +27,7 @@ public:
     * @param   learningRate: The step-size for the optimizer during training.
     * @param   seed: The seed for generating random numbers, which is needed for initializing the weights in the classifier, for instance.
     * @param focalLossGamma
+    * @param shuffleEachEpoch Whether to deterministically reorder training rows before each epoch.
     * @return  bool: Returns true if the training process is successful and false otherwise. Unsuccessful training could result from invalid input (e.g. "xData" and "yData" not of the same length) or due to not achieving the desired accuracy.
     *
     * Note: This method uses the PyTorch library for building and training the neural network classifier.
@@ -41,7 +42,8 @@ public:
             int seed,
             double nodeFraction,
             float focalLossGamma,
-            int verbosity
+            int verbosity,
+            bool shuffleEachEpoch = false
             ) const;
 
     /*!

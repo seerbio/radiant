@@ -42,14 +42,18 @@ namespace PythiaParameterReaderConstants {
     const QString kMS1ExtractionWidthPPM = QStringLiteral("ms1ExtractionWidthPPM");
     const QString kMS1ExtractionWidthPPMOverride = QStringLiteral("ms1ExtractionWidthPPMOverride");
     const QString kMS1IntensityMinForScoring = QStringLiteral("ms1IntensityMinForScoring");
+    const QString kAlignMs1ScanTimes = QStringLiteral("alignMs1ScanTimes");
 
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kFilterLengthIntegration = QStringLiteral("filterLengthIntegration");
     const QString kFilterLengthMS2 = QStringLiteral("filterLengthMS2");
+    const QString kCompetitionEnabled = QStringLiteral("competitionEnabled");
     const QString kIonsSharedToReject = QStringLiteral("ionsSharedToReject");
+    const QString kPostNeuralNetSharedFragments = QStringLiteral("postNeuralNetSharedFragments");
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
     const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
+    const QString kMainMinSimultaneousFragments = QStringLiteral("mainMinSimultaneousFragments");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kImWindowStdDevs = QStringLiteral("imWindowStdDevs");
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
@@ -84,9 +88,11 @@ namespace PythiaParameterReaderConstants {
     const QString kNeuralNetParams = QStringLiteral("NeuralNetParams");
     const QString kEpochs = QStringLiteral("epochs");
     const QString kBaggingSize = QStringLiteral("baggingSize");
+    const QString kNeuralNetEnsembleSize = QStringLiteral("neuralNetEnsembleSize");
     const QString kLearningRate = QStringLiteral("learningRate");
     const QString kNodesFraction = QStringLiteral("nodesFraction");
     const QString kFocalLossGamma = QStringLiteral("focalLossGamma");
+    const QString kNeuralNetShuffleEachEpoch = QStringLiteral("neuralNetShuffleEachEpoch");
     const QString kNeuralNetCandidateLimit = QStringLiteral("neuralNetCandidateLimit");
     const QString kParallelNeuralNets = QStringLiteral("parallelNeuralNets");
 
@@ -201,14 +207,19 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->ms1IntensityMinForScoring = ms1ParamsNode[kMS1IntensityMinForScoring.toStdString()].value_or(pythiaParameters->ms1IntensityMinForScoring);
     pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(pythiaParameters->precursorExtractionWindowThomsons);
+    pythiaParameters->alignMs1ScanTimes = ms1ParamsNode[kAlignMs1ScanTimes.toStdString()].value_or(false);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
     pythiaParameters->filterLengthIntegration = ms2ParamsNode[kFilterLengthIntegration.toStdString()].value_or(pythiaParameters->filterLengthIntegration);
     pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(pythiaParameters->filterLengthMS2);
+    pythiaParameters->competitionEnabled = ms2ParamsNode[kCompetitionEnabled.toStdString()].value_or(true);
     pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(pythiaParameters->ionsSharedToReject);
+    pythiaParameters->postNeuralNetSharedFragments = ms2ParamsNode[kPostNeuralNetSharedFragments.toStdString()].value_or(0);
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms2ExtractionWidthPPM);
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
+    pythiaParameters->mainMinSimultaneousFragments
+        = ms2ParamsNode[kMainMinSimultaneousFragments.toStdString()].value_or(4);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
     pythiaParameters->imWindowStdDevs = ms2ParamsNode[kImWindowStdDevs.toStdString()].value_or(pythiaParameters->imWindowStdDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
@@ -242,9 +253,12 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto neuralNetParamsNode = parser[kNeuralNetParams.toStdString()];
     pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(pythiaParameters->epochs);
     pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);
+    pythiaParameters->neuralNetEnsembleSize
+        = neuralNetParamsNode[kNeuralNetEnsembleSize.toStdString()].value_or(pythiaParameters->neuralNetEnsembleSize);
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->focalLossGamma = neuralNetParamsNode[kFocalLossGamma.toStdString()].value_or(pythiaParameters->focalLossGamma);
+    pythiaParameters->neuralNetShuffleEachEpoch = neuralNetParamsNode[kNeuralNetShuffleEachEpoch.toStdString()].value_or(pythiaParameters->neuralNetShuffleEachEpoch);
     pythiaParameters->neuralNetCandidateLimit = neuralNetParamsNode[kNeuralNetCandidateLimit.toStdString()].value_or(pythiaParameters->neuralNetCandidateLimit);
     pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 

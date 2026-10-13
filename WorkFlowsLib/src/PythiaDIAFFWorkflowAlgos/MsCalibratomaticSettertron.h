@@ -23,6 +23,8 @@ class WORKFLOWSLIB_EXPORTS MsCalibratomaticSettertron {
 
 public:
 
+    friend class MsCalibratomaticSettertronTests;
+
     MsCalibratomaticSettertron();
     ~MsCalibratomaticSettertron() = default;
 
@@ -44,6 +46,11 @@ public:
 private:
 
     [[nodiscard]] int calculateNumberOfTranches(int verbosity) const;
+
+    Err selectCalibrationCandidates(
+        QVector<CandidateScores*> *candidates,
+        int topNCandidates,
+        QVector<CandidateScores*> *selected) const;
 
     Err honeIRTAndMassCalibration(
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,

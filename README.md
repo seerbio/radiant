@@ -41,6 +41,38 @@ apt-get install -y radiantdia_<version>+arm64.deb
 RadiantDIA --help
 ```
 
+## Fragment competition
+
+One boolean controls fragment competition before calibration fitting and after
+main-pass LDA scoring, before neural-network candidate selection, training, and
+inference:
+
+```toml
+[MS2Params]
+competitionEnabled = true
+```
+
+The default is `true`, including when the option is omitted. Set it to `false`
+to skip competition at both stages. Fragment competition replaces the previous
+shared-evidence filter at both locations; disabling it does not restore that
+filter. Fulcrum consumes Radiant's output without a Python competition step.
+
+Competition links equal-charge, coeluting candidates with neutral masses within
+5 ppm and at least four distinct shared supported fragments within 20 ppm.
+Supported fragments require positive intensity and trace cosine at least 0.5.
+The apex separation must be no greater than half the narrower peak width.
+Each connected group retains the candidate with the greatest unshared
+intensity × cosine-squared evidence. Groups without unshared evidence are
+rejected, while singletons are retained. Unshared means absent from the other
+group members' extracted fragment lists. Equal evidence prefers higher LDA
+score, then decoys, peptide sequence, apex, mass, and input order. The algorithm
+does not use NN scores, q-values, or protein identities to select candidates.
+The old `ionsSharedToReject` setting does not configure fragment competition.
+
+Candidates rejected in the main pass remain excluded from NN processing,
+TIMS target-decoy pair completion, and final results. Existing cached results
+are unchanged; use a rebuilt executable and fresh native search outputs.
+
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for information about building from sources

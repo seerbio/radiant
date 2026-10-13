@@ -43,6 +43,14 @@ public:
             double extractionPPM
     );
 
+    // The source points must have exactly the order produced by sorting the
+    // original observations by x(). Equal-mass order is significant for ties.
+    static ExtractPoints extractPointsFromSortedPoints(
+            const QVector<QPointF> &sortedPoints,
+            const QVector<QPointF> &extractionPoints,
+            double extractionPPM
+    );
+
     /**
     * @brief Extracts data points from a set of points based on specified extraction points and ppm threshold.
     *
@@ -56,6 +64,13 @@ public:
     */
     static QVector<QPointF> extractPointsFromPoints(
             const QVector<QPointF> &points,
+            const QVector<double> &extractionPoints,
+            double extractionPPM,
+            bool removeZeroPoints = true
+    );
+
+    static QVector<QPointF> extractPointsFromSortedPoints(
+            const QVector<QPointF> &sortedPoints,
             const QVector<double> &extractionPoints,
             double extractionPPM,
             bool removeZeroPoints = true

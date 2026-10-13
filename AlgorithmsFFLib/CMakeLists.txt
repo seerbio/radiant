@@ -33,6 +33,7 @@ SET(SOURCE_FILES
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/IdLevelQValueAnnotator.cpp
+        src/FragmentCompetition.cpp
         src/InterferingCandidatesEliminatomatic.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
@@ -41,6 +42,7 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/PostNeuralNetCompetition.cpp
         src/QuanTransitionRefinertron.cpp
         src/QValueSettertron.cpp
         src/SequenceSubstringSearchomatic.cpp
@@ -68,6 +70,7 @@ SET(HEADER_FILES
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
         src/IdLevelQValueAnnotator.h
+        src/FragmentCompetition.h
         src/InterferingCandidatesEliminatomatic.h
         src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
@@ -77,6 +80,7 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
+        src/PostNeuralNetCompetition.h
         src/QuanTransitionRefinertron.h
         src/QValueSettertron.h
         src/SequenceSubstringSearchomatic.h

@@ -29,7 +29,9 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/ConvertMzMLToParquetWorkFlow.h
+        src/NeuralNetFamilyFolds.h
         src/PythiaDIAFFWorkflow.h
+        src/NeuralNetFeatureTransforms.h
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
         src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h
         src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h

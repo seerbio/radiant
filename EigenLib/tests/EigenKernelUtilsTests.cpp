@@ -9,6 +9,24 @@
 #include <QMap>
 #include <QtTest/QtTest>
 
+namespace {
+Eigen::VectorX<float> denseFloatConvolution(
+        const Eigen::VectorX<float> &input,
+        const Eigen::VectorX<float> &kernel) {
+    if (input.size() <= kernel.size()) return input;
+    const int padding = kernel.size() - 1;
+    Eigen::VectorX<float> padded(input.size() + padding);
+    const int halfWindow = std::floor(padding / 2.0);
+    padded.head(halfWindow).setConstant(input.head(halfWindow + 1).mean());
+    padded.tail(halfWindow).setConstant(input.tail(halfWindow + 1).mean());
+    padded.segment(halfWindow, input.size()) = input;
+    Eigen::MatrixX<float> windows(input.size(), kernel.size());
+    for (int i = 0; i < kernel.size(); ++i)
+        windows.col(i) = padded.segment(i, input.size());
+    return windows * kernel;
+}
+}
+
 
 class EigenKernelUtilsTests : public QObject
 {
@@ -28,6 +46,7 @@ private Q_SLOTS:
     static void buildMexicanHatFilter1DTest();
     static void calculateNumberOfStridesTest();
     static void convolveVectorWithKernelTest();
+    static void floatConvolutionMatchesDenseImplementation();
     static void addPaddingToSparseVectorTest();
     static void addPaddingToSparseMatrixRowWiseTest();
     static void addPaddingToMatrixRowWiseTest();
@@ -186,6 +205,23 @@ void EigenKernelUtilsTests::convolveVectorWithKernelTest() {
     QCOMPARE(vecSparseSmoothed.coeff(3), 666.6);
     QCOMPARE(vecSparseSmoothed.coeff(4), 666.6);
     QCOMPARE(vecSparseSmoothed.coeff(5), 666.6);
+}
+
+void EigenKernelUtilsTests::floatConvolutionMatchesDenseImplementation() {
+    for (int size : {10, 31, 128}) {
+        for (int kernelSize : {1, 3, 5, 7}) {
+            Eigen::VectorX<float> input(size), kernel(kernelSize);
+            for (int i = 0; i < size; ++i)
+                input.coeffRef(i) = static_cast<float>((i * 17) % 23 - 11) / 3.0f;
+            for (int i = 0; i < kernelSize; ++i)
+                kernel.coeffRef(i) = static_cast<float>(i + 1) / kernelSize;
+            const auto expected = denseFloatConvolution(input, kernel);
+            const auto actual = EigenKernelUtils::convolveVectorWithKernel(input, kernel);
+            QCOMPARE(actual.size(), expected.size());
+            for (int i = 0; i < size; ++i)
+                QCOMPARE(actual.coeff(i), expected.coeff(i));
+        }
+    }
 }
 
 void EigenKernelUtilsTests::addPaddingToSparseVectorTest() {

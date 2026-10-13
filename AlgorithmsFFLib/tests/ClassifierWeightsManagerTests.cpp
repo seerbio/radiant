@@ -3,6 +3,10 @@
 
 #include "ClassifierWeightsManager.h"
 #include "MathUtils.h"
+#include "ClassifierCovarianceReference.h"
+#include <cmath>
+#include <cstdint>
+#include <cstring>
 
 #include <cstdlib>
 #include <boost/qvm/map_mat_vec.hpp>
@@ -16,6 +20,10 @@ public:
     ~ClassifierWeightsManagerTests() override = default;
 
 private slots:
+
+    static void covarianceMatchesFrozenBits_data();
+
+    static void covarianceMatchesFrozenBits();
 
     static void buildDataClassifier1Test();
 
@@ -271,6 +279,87 @@ void ClassifierWeightsManagerTests::buildClassifierWeights2BigTest() {
         }
     }
 
+}
+
+
+namespace {
+std::uint32_t covarianceBits(float value) {
+    std::uint32_t result;
+    std::memcpy(&result, &value, sizeof(result));
+    return result;
+}
+float covarianceFromBits(std::uint32_t value) {
+    float result;
+    std::memcpy(&result, &value, sizeof(result));
+    return result;
+}
+}
+
+void ClassifierWeightsManagerTests::covarianceMatchesFrozenBits_data() {
+    QTest::addColumn<int>("rows");
+    QTest::addColumn<int>("cols");
+    QTest::addColumn<int>("pattern");
+    for (int rows : {1, 2, 3, 17, 33, 257}) {
+        for (int cols : {1, 4, 8, 31, 32, 64}) {
+            for (int pattern = 0; pattern < 8; ++pattern) {
+                const QByteArray name = QString("rows%1-cols%2-pattern%3")
+                    .arg(rows).arg(cols).arg(pattern).toLatin1();
+                QTest::newRow(name.constData()) << rows << cols << pattern;
+            }
+        }
+    }
+}
+
+void ClassifierWeightsManagerTests::covarianceMatchesFrozenBits() {
+    QFETCH(int, rows);
+    QFETCH(int, cols);
+    QFETCH(int, pattern);
+    std::mt19937 random(666 + rows * 131 + cols * 17 + pattern);
+    QVector<QVector<float>> targetData(rows, QVector<float>(cols));
+    QVector<QVector<float>> decoyData(rows, QVector<float>(cols));
+    auto value = [&](int index) {
+        float x = float(int(random() % 200001) - 100000) / 127.0f;
+        if (pattern == 1) x = index % 2 ? -0.0f : 0.0f;
+        if (pattern == 2) x = covarianceFromBits(random() & UINT32_C(0xfeffffff));
+        if (pattern == 3) x = covarianceFromBits(random() & UINT32_C(0x807fffff));
+        if (pattern == 4 && index % 7 == 0)
+            x = covarianceFromBits(UINT32_C(0x7fc00000) | (random() & UINT32_C(0x003fffff)));
+        if (pattern == 5 && index % 11 == 0)
+            x = covarianceFromBits(index % 2 ? UINT32_C(0x7f800000) : UINT32_C(0xff800000));
+        if (pattern == 6) x *= 1.0e14f;
+        if (pattern == 7) {
+            x = index % 3 == 0 ? std::nextafter(1.0e18f, 0.0f)
+                              : std::nextafter(1.0e18f, std::numeric_limits<float>::infinity());
+            if (index % 2) x = -x;
+        }
+        return x;
+    };
+    QVector<QVector<float>*> targets, decoys;
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            targetData[i][j] = value(i * cols + j);
+            decoyData[i][j] = value(i * cols + j + 1);
+        }
+        targets.push_back(&targetData[i]);
+        decoys.push_back(&decoyData[i]);
+    }
+    QVector<QVector<float>> expectedA, actualA;
+    QVector<float> expectedB, actualB;
+    QCOMPARE(FrozenCovariance::buildDataClassifier2(targets, decoys, &expectedA, &expectedB), eNoError);
+    QCOMPARE(ClassifierWeightsManager::buildDataClassifier2(targets, decoys, &actualA, &actualB), eNoError);
+    QCOMPARE(actualA.size(), expectedA.size());
+    QCOMPARE(actualB.size(), expectedB.size());
+    for (int row = 0; row < expectedA.size(); ++row) {
+        QCOMPARE(covarianceBits(actualB.at(row)), covarianceBits(expectedB.at(row)));
+        QCOMPARE(actualA.at(row).size(), expectedA.at(row).size());
+        for (int col = 0; col < expectedA.at(row).size(); ++col) {
+            const QByteArray message = QString("covariance bits differ at (%1,%2): %3 vs %4")
+                .arg(row).arg(col).arg(covarianceBits(actualA.at(row).at(col)))
+                .arg(covarianceBits(expectedA.at(row).at(col))).toLatin1();
+            QVERIFY2(covarianceBits(actualA.at(row).at(col)) == covarianceBits(expectedA.at(row).at(col)),
+                     message.constData());
+        }
+    }
 }
 
 QTEST_MAIN(ClassifierWeightsManagerTests)

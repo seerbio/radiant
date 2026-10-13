@@ -12,6 +12,8 @@
 #include "Eigen/Sparse"
 
 #include <QtConcurrent/QtConcurrent>
+#include <cmath>
+#include <vector>
 
 Err ClassifierWeightsManager::buildDataClassifier1(
         const QVector<QVector<float>*> &targets,
@@ -69,7 +71,7 @@ namespace {
         Eigen::VectorX<float> matDecoysSumMean;
     };
 
-    Eigen::MatrixX<float> aMatrixParallelLogic(const ParallelLogicInput &input) {
+    EIGEN_DONT_INLINE Eigen::MatrixX<float> aMatrixParallelLogicOriginal(const ParallelLogicInput &input) {
 
         const int rows = input.targets.size();
         const int cols = input.targets.front()->size();
@@ -88,6 +90,57 @@ namespace {
             }
         }
 
+        return matA.cast<float>();
+    }
+
+    bool requiresOriginalCovariance(const ParallelLogicInput &input) {
+        // Keep exceptional arithmetic, including NaN payload propagation, in
+        // the original loop. This bound also prevents float product overflow.
+        constexpr float maxCenteredMagnitude = 1.0e18f;
+        const int cols = input.targets.front()->size();
+        for (int i = 0; i < input.targets.size(); ++i) {
+            for (int j = 0; j < cols; ++j) {
+                const float d = input.decoys[i]->at(j) - input.matDecoysSumMean[j];
+                const float t = input.targets[i]->at(j) - input.matTargetsSumMean[j];
+                if (!std::isfinite(d) || !std::isfinite(t)
+                    || std::abs(d) > maxCenteredMagnitude
+                    || std::abs(t) > maxCenteredMagnitude) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    Eigen::MatrixX<float> aMatrixParallelLogic(const ParallelLogicInput &input) {
+        if (requiresOriginalCovariance(input)) {
+            return aMatrixParallelLogicOriginal(input);
+        }
+        const int rows = input.targets.size();
+        const int cols = input.targets.front()->size();
+        Eigen::MatrixX<double> matA(cols, cols);
+        matA.setZero();
+        std::vector<float> decoyCentered(cols), targetCentered(cols);
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                decoyCentered[j] = input.decoys[i]->at(j) - input.matDecoysSumMean[j];
+                targetCentered[j] = input.targets[i]->at(j) - input.matTargetsSumMean[j];
+            }
+            // Visit contiguous cells while preserving each cell's original
+            // row accumulation order and float expression.
+            for (int k = 0; k < cols; ++k) {
+                for (int j = 0; j <= k; ++j) {
+                    matA.coeffRef(j, k) += 0.5 *
+                        (decoyCentered[j] * decoyCentered[k]
+                         + targetCentered[j] * targetCentered[k]);
+                }
+            }
+        }
+        for (int j = 0; j < cols; ++j) {
+            for (int k = j + 1; k < cols; ++k) {
+                matA.coeffRef(k, j) = matA.coeffRef(j, k);
+            }
+        }
         return matA.cast<float>();
     }
 
