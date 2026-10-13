@@ -58,17 +58,7 @@ namespace PythiaParameterReaderConstants {
     const QString kPeakDifferenceThresholdFraction = QStringLiteral("peakDifferenceThresholdFraction");
     const QString kCalibrationTrainingVolume = QStringLiteral("calibrationTrainingVolume");
     const QString kPeakCenter = QStringLiteral("peakCenter");
-    const QString kTimsMainCandidateBudgetPerTargetKey = QStringLiteral("timsMainCandidateBudgetPerTargetKey");
-    const QString kTimsStratifyCandidateBudget = QStringLiteral("timsStratifyCandidateBudget");
     const QString kTimsTargetedMs2IonMobilityWindow = QStringLiteral("timsTargetedMs2IonMobilityWindow");
-    const QString kTimsHighEvidenceMinCosineSimSum100 = QStringLiteral("timsHighEvidenceMinCosineSimSum100");
-    const QString kTimsHighEvidenceMinCosineSimSpectrumOverTimeCubed = QStringLiteral("timsHighEvidenceMinCosineSimSpectrumOverTimeCubed");
-    const QString kTimsHighEvidenceMaxScanTimeDeltaAbs = QStringLiteral("timsHighEvidenceMaxScanTimeDeltaAbs");
-    const QString kTimsHighEvidenceFilterSweep = QStringLiteral("timsHighEvidenceFilterSweep");
-    const QString kTimsHighEvidenceFilterEnabled = QStringLiteral("timsHighEvidenceFilterEnabled");
-    const QString kTimsSecondStageCandidateRowLimit = QStringLiteral("timsSecondStageCandidateRowLimit");
-    const QString kTimsSecondStageUniquePrecursorLimit = QStringLiteral("timsSecondStageUniquePrecursorLimit");
-    const QString kTimsLocalFdrRtBinSeconds = QStringLiteral("timsLocalFdrRtBinSeconds");
 
     const QString kTopNIntegrations = QStringLiteral("topNIntegrations");
     const QString kMaxAnchorColumnIndex = QStringLiteral("maxAnchorColumnIndex");
@@ -98,8 +88,6 @@ namespace PythiaParameterReaderConstants {
     const QString kNodesFraction = QStringLiteral("nodesFraction");
     const QString kFocalLossGamma = QStringLiteral("focalLossGamma");
     const QString kNeuralNetCandidateLimit = QStringLiteral("neuralNetCandidateLimit");
-    const QString kTimsNeuralNetInferenceCandidateLimit = QStringLiteral("timsNeuralNetInferenceCandidateLimit");
-    const QString kNormalizeNeuralNetPredictions = QStringLiteral("normalizeNeuralNetPredictions");
     const QString kParallelNeuralNets = QStringLiteral("parallelNeuralNets");
 
 }
@@ -233,28 +221,8 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->peakCenter = ms2ParamsNode[kPeakCenter.toStdString()].value_or(pythiaParameters->peakCenter);
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(pythiaParameters->topNIntegrations);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
-    pythiaParameters->timsMainCandidateBudgetPerTargetKey
-        = ms2ParamsNode[kTimsMainCandidateBudgetPerTargetKey.toStdString()].value_or(pythiaParameters->timsMainCandidateBudgetPerTargetKey);
-    pythiaParameters->timsStratifyCandidateBudget
-        = ms2ParamsNode[kTimsStratifyCandidateBudget.toStdString()].value_or(pythiaParameters->timsStratifyCandidateBudget);
     pythiaParameters->timsTargetedMs2IonMobilityWindow
         = ms2ParamsNode[kTimsTargetedMs2IonMobilityWindow.toStdString()].value_or(pythiaParameters->timsTargetedMs2IonMobilityWindow);
-    pythiaParameters->timsHighEvidenceMinCosineSimSum100
-        = ms2ParamsNode[kTimsHighEvidenceMinCosineSimSum100.toStdString()].value_or(pythiaParameters->timsHighEvidenceMinCosineSimSum100);
-    pythiaParameters->timsHighEvidenceMinCosineSimSpectrumOverTimeCubed
-        = ms2ParamsNode[kTimsHighEvidenceMinCosineSimSpectrumOverTimeCubed.toStdString()].value_or(pythiaParameters->timsHighEvidenceMinCosineSimSpectrumOverTimeCubed);
-    pythiaParameters->timsHighEvidenceMaxScanTimeDeltaAbs
-        = ms2ParamsNode[kTimsHighEvidenceMaxScanTimeDeltaAbs.toStdString()].value_or(pythiaParameters->timsHighEvidenceMaxScanTimeDeltaAbs);
-    pythiaParameters->timsHighEvidenceFilterSweep
-        = ms2ParamsNode[kTimsHighEvidenceFilterSweep.toStdString()].value_or(pythiaParameters->timsHighEvidenceFilterSweep);
-    pythiaParameters->timsHighEvidenceFilterEnabled
-        = ms2ParamsNode[kTimsHighEvidenceFilterEnabled.toStdString()].value_or(pythiaParameters->timsHighEvidenceFilterEnabled);
-    pythiaParameters->timsSecondStageCandidateRowLimit
-        = ms2ParamsNode[kTimsSecondStageCandidateRowLimit.toStdString()].value_or(pythiaParameters->timsSecondStageCandidateRowLimit);
-    pythiaParameters->timsSecondStageUniquePrecursorLimit
-        = ms2ParamsNode[kTimsSecondStageUniquePrecursorLimit.toStdString()].value_or(pythiaParameters->timsSecondStageUniquePrecursorLimit);
-    pythiaParameters->timsLocalFdrRtBinSeconds
-        = ms2ParamsNode[kTimsLocalFdrRtBinSeconds.toStdString()].value_or(pythiaParameters->timsLocalFdrRtBinSeconds);
 
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
@@ -278,8 +246,6 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->focalLossGamma = neuralNetParamsNode[kFocalLossGamma.toStdString()].value_or(pythiaParameters->focalLossGamma);
     pythiaParameters->neuralNetCandidateLimit = neuralNetParamsNode[kNeuralNetCandidateLimit.toStdString()].value_or(pythiaParameters->neuralNetCandidateLimit);
-    pythiaParameters->timsNeuralNetInferenceCandidateLimit = neuralNetParamsNode[kTimsNeuralNetInferenceCandidateLimit.toStdString()].value_or(pythiaParameters->timsNeuralNetInferenceCandidateLimit);
-    pythiaParameters->normalizeNeuralNetPredictions = neuralNetParamsNode[kNormalizeNeuralNetPredictions.toStdString()].value_or(pythiaParameters->normalizeNeuralNetPredictions);
     pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 
 	if (pythiaParameters->baggingSize < 2) {
@@ -300,24 +266,6 @@ Err PythiaParameterReader::buildPythiaParameters(
         pythiaParameters->neuralNetCandidateLimit = 50000;
     }
 
-    if (pythiaParameters->timsNeuralNetInferenceCandidateLimit < 0) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS neural net inference candidate limit must be non-negative. It has been adjusted from"
-        << pythiaParameters->timsNeuralNetInferenceCandidateLimit
-        << "to 0.";
-        pythiaParameters->timsNeuralNetInferenceCandidateLimit = 0;
-    }
-
-    if (pythiaParameters->timsMainCandidateBudgetPerTargetKey < 0) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS main candidate budget must be non-negative. It has been adjusted from"
-        << pythiaParameters->timsMainCandidateBudgetPerTargetKey
-        << "to 2000.";
-        pythiaParameters->timsMainCandidateBudgetPerTargetKey = 2000;
-    }
-
     if (pythiaParameters->timsTargetedMs2IonMobilityWindow <= 0.0f) {
         qDebug()
         << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -325,60 +273,6 @@ Err PythiaParameterReader::buildPythiaParameters(
         << pythiaParameters->timsTargetedMs2IonMobilityWindow
         << "to 0.06.";
         pythiaParameters->timsTargetedMs2IonMobilityWindow = 0.06f;
-    }
-
-    if (pythiaParameters->timsHighEvidenceMinCosineSimSum100 < 0.0f) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS high-evidence min cosine sum must be non-negative. It has been adjusted from"
-        << pythiaParameters->timsHighEvidenceMinCosineSimSum100
-        << "to 4.2.";
-        pythiaParameters->timsHighEvidenceMinCosineSimSum100 = 4.2f;
-    }
-
-    if (pythiaParameters->timsHighEvidenceMinCosineSimSpectrumOverTimeCubed < 0.0f) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS high-evidence min time-cubed cosine must be non-negative. It has been adjusted from"
-        << pythiaParameters->timsHighEvidenceMinCosineSimSpectrumOverTimeCubed
-        << "to 0.3.";
-        pythiaParameters->timsHighEvidenceMinCosineSimSpectrumOverTimeCubed = 0.3f;
-    }
-
-    if (pythiaParameters->timsHighEvidenceMaxScanTimeDeltaAbs <= 0.0f) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS high-evidence max scan-time delta must be positive. It has been adjusted from"
-        << pythiaParameters->timsHighEvidenceMaxScanTimeDeltaAbs
-        << "to 70.";
-        pythiaParameters->timsHighEvidenceMaxScanTimeDeltaAbs = 70.0f;
-    }
-
-    if (pythiaParameters->timsSecondStageCandidateRowLimit <= 0) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS second-stage candidate row limit must be positive. It has been adjusted from"
-        << pythiaParameters->timsSecondStageCandidateRowLimit
-        << "to 12000.";
-        pythiaParameters->timsSecondStageCandidateRowLimit = 12000;
-    }
-
-    if (pythiaParameters->timsSecondStageUniquePrecursorLimit <= 0) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS second-stage unique precursor limit must be positive. It has been adjusted from"
-        << pythiaParameters->timsSecondStageUniquePrecursorLimit
-        << "to 6000.";
-        pythiaParameters->timsSecondStageUniquePrecursorLimit = 6000;
-    }
-
-    if (pythiaParameters->timsLocalFdrRtBinSeconds < 0.0) {
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "TIMS local FDR RT bin size must be non-negative. It has been adjusted from"
-        << pythiaParameters->timsLocalFdrRtBinSeconds
-        << "to 120.";
-        pythiaParameters->timsLocalFdrRtBinSeconds = 120.0;
     }
 
     if (pythiaParameters->analysisScanTimeMin >= 0.0

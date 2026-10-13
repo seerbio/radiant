@@ -57,17 +57,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kPeakDifferenceThresholdFraction;
     extern const QString FILEREADERSLIB_EXPORTS kCalibrationTrainingVolume;
     extern const QString FILEREADERSLIB_EXPORTS kPeakCenter;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsMainCandidateBudgetPerTargetKey;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsStratifyCandidateBudget;
     extern const QString FILEREADERSLIB_EXPORTS kTimsTargetedMs2IonMobilityWindow;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsHighEvidenceMinCosineSimSum100;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsHighEvidenceMinCosineSimSpectrumOverTimeCubed;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsHighEvidenceMaxScanTimeDeltaAbs;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsHighEvidenceFilterSweep;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsHighEvidenceFilterEnabled;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsSecondStageCandidateRowLimit;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsSecondStageUniquePrecursorLimit;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsLocalFdrRtBinSeconds;
 
     extern const QString FILEREADERSLIB_EXPORTS kTopNIntegrations;
     extern const QString FILEREADERSLIB_EXPORTS kMaxAnchorColumnIndex;
@@ -97,8 +87,6 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
     extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
     extern const QString FILEREADERSLIB_EXPORTS kNeuralNetCandidateLimit;
-    extern const QString FILEREADERSLIB_EXPORTS kTimsNeuralNetInferenceCandidateLimit;
-    extern const QString FILEREADERSLIB_EXPORTS kNormalizeNeuralNetPredictions;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
     extern const QString FILEREADERSLIB_EXPORTS kImHandlingMode;
 
@@ -156,17 +144,7 @@ struct PythiaParameters{
     int maxAnchorColumnIndex = 6;
     int calibrationTrainingVolume = 1000;
     int peakCenter = -1;
-    int timsMainCandidateBudgetPerTargetKey = 2000;
-    bool timsStratifyCandidateBudget = true;
     float timsTargetedMs2IonMobilityWindow = 0.06f;
-    float timsHighEvidenceMinCosineSimSum100 = 4.2f;
-    float timsHighEvidenceMinCosineSimSpectrumOverTimeCubed = 0.3f;
-    float timsHighEvidenceMaxScanTimeDeltaAbs = 70.0f; // seconds
-    bool timsHighEvidenceFilterSweep = false;
-    bool timsHighEvidenceFilterEnabled = false;
-    int timsSecondStageCandidateRowLimit = 12000;
-    int timsSecondStageUniquePrecursorLimit = 6000;
-    double timsLocalFdrRtBinSeconds = 120.0;
 
     //[FdrParams]
     double percentFDR = 1.0;
@@ -190,8 +168,6 @@ struct PythiaParameters{
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
     int neuralNetCandidateLimit = 50000;
-    int timsNeuralNetInferenceCandidateLimit = 0;
-    bool normalizeNeuralNetPredictions = true;
 	bool parallelNeuralNets = false;
 
     [[nodiscard]] bool isValid() const {
@@ -294,17 +270,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakCenter) << peakCenter;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsMainCandidateBudgetPerTargetKey) << timsMainCandidateBudgetPerTargetKey;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsStratifyCandidateBudget) << timsStratifyCandidateBudget;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsTargetedMs2IonMobilityWindow) << timsTargetedMs2IonMobilityWindow;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsHighEvidenceMinCosineSimSum100) << timsHighEvidenceMinCosineSimSum100;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsHighEvidenceMinCosineSimSpectrumOverTimeCubed) << timsHighEvidenceMinCosineSimSpectrumOverTimeCubed;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsHighEvidenceMaxScanTimeDeltaAbs) << timsHighEvidenceMaxScanTimeDeltaAbs;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsHighEvidenceFilterSweep) << timsHighEvidenceFilterSweep;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsHighEvidenceFilterEnabled) << timsHighEvidenceFilterEnabled;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsSecondStageCandidateRowLimit) << timsSecondStageCandidateRowLimit;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsSecondStageUniquePrecursorLimit) << timsSecondStageUniquePrecursorLimit;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsLocalFdrRtBinSeconds) << timsLocalFdrRtBinSeconds;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;
@@ -328,8 +294,6 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetCandidateLimit) << neuralNetCandidateLimit;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsNeuralNetInferenceCandidateLimit) << timsNeuralNetInferenceCandidateLimit;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kNormalizeNeuralNetPredictions) << normalizeNeuralNetPredictions;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kParallelNeuralNets) << parallelNeuralNets;
 
         qDebug() << QStringLiteral("**********************************************");

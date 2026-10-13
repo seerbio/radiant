@@ -1168,7 +1168,6 @@ namespace {
     QPair<Err, QVector<float>> predictClassiferScoresLogic(
         const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
         FDRCLassifierNeuralNet *fdrcLassifierNeuralNet,
-        bool normalizePredictions,
         bool keepRawPredictionsWhenNoFdrCutoff
         ) {
 
@@ -1189,10 +1188,6 @@ namespace {
             xData,
             &predictions
             ); rree;
-
-        if (!normalizePredictions) {
-            return {e, predictions};
-        }
 
         // Normalize predictions to a standard range, using a linear transformation
         // that fixes a 1% FDR cutoff and the median of decoy scores (in log space).
@@ -1313,7 +1308,6 @@ namespace {
     Err predictClassifierScores(
 		const QVector<QVector<KarnnNNTarget>> &inferenceKarnnVecs,
         QVector<FDRCLassifierNeuralNet> &fdrcLassifierNeuralNets,
-        bool normalizePredictions,
         bool keepRawPredictionsWhenNoFdrCutoff,
         QVector<QVector<float>> *predictions
         ) {
@@ -1328,9 +1322,8 @@ namespace {
             }
 
     		const QPair<Err, QVector<float>> result = predictClassiferScoresLogic(
-    			inferenceKarnnVecs[i],
-    			&fdrcLassifierNeuralNets[i],
-                normalizePredictions,
+                inferenceKarnnVecs[i],
+                &fdrcLassifierNeuralNets[i],
                 keepRawPredictionsWhenNoFdrCutoff
     			);
     		e = result.first; ree;
@@ -1368,7 +1361,6 @@ namespace {
     Err predictClassifierScoresWithAllNets(
         const QVector<KarnnNNTarget> &inferenceKarnnVec,
         QVector<FDRCLassifierNeuralNet> &fdrcLassifierNeuralNets,
-        bool normalizePredictions,
         bool keepRawPredictionsWhenNoFdrCutoff,
         QVector<float> *predictions
         ) {
@@ -1384,7 +1376,6 @@ namespace {
             const QPair<Err, QVector<float>> result = predictClassiferScoresLogic(
                 inferenceKarnnVec,
                 &fdrcLassifierNeuralNet,
-                normalizePredictions,
                 keepRawPredictionsWhenNoFdrCutoff
                 );
             if (result.first != eNoError || result.second.size() != inferenceKarnnVec.size()) {
@@ -1662,7 +1653,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     e = predictClassifierScores(
         inferenceKarnnVecs,
         fdrClassifierNeuralNets,
-        m_pythiaParameters.normalizeNeuralNetPredictions,
         false,
         &predictions
         ); ree;
