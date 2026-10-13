@@ -13,6 +13,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include <iostream>
 #include <random>
@@ -156,6 +158,11 @@ namespace {
         return {vec.begin(), vec.end()};
     }
 
+    QMutex &torchSeedAndInitMutex() {
+        static QMutex mutex;
+        return mutex;
+    }
+
     /*!
      * @brief Computes focal loss for binary classification
      * @param predictions: Model predictions (sigmoid output) in range [0,1]
@@ -204,17 +211,9 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         int verbosity
         ) {
 
-    torch::manual_seed(seed);
-    if (torch::cuda::is_available()) {
-        qDebug() << "CUDA IS AVAILABLE";
-        torch::cuda::manual_seed_all(seed);
-        torch::globalContext().setDeterministicCuDNN(true);
-        torch::globalContext().setBenchmarkCuDNN(false);
-    }
-
+    m_isTrained = false;
     omp_set_num_threads(1);
     torch::set_num_threads(1);
-    std::srand(seed);
 
     torch::data::DataLoaderOptions options;
     options.enforce_ordering(true);
@@ -233,7 +232,23 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     const int nodes = std::max(static_cast<int>(xData.front().size() * nodeFraction), 1);
     constexpr int num_classes = 1;
 
-    m_net = new Net(input_size, nodes, num_classes);
+    {
+        // LibTorch uses process-global RNG state for module initialization.
+        // Keep the seed and initialization atomic when workflow folds train in parallel.
+        QMutexLocker locker(&torchSeedAndInitMutex());
+
+        torch::manual_seed(seed);
+        if (torch::cuda::is_available()) {
+            qDebug() << "CUDA IS AVAILABLE";
+            torch::cuda::manual_seed_all(seed);
+            torch::globalContext().setDeterministicCuDNN(true);
+            torch::globalContext().setBenchmarkCuDNN(false);
+        }
+        std::srand(seed);
+
+        delete m_net;
+        m_net = new Net(input_size, nodes, num_classes);
+    }
 
     std::vector<float> flatData;
     for (const QVector<float> &innerVec : xData) {

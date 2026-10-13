@@ -18,6 +18,7 @@
 using namespace Error;
 
 class TurboXIC;
+class MsFrame;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAFFWorkflowSharedMethods {
 
@@ -54,7 +55,8 @@ public:
             const PythiaParameters &pythiaParameters,
             QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
             QMap<int, int> *fdrVsCounts,
-            QVector<float> *weights
+            QVector<float> *weights,
+            bool useMonotonePairQValues = false
         );
 
     static Err buildTargetDecoyCandidateScorePairsPntrs(
@@ -66,12 +68,14 @@ public:
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         const PythiaParameters &pythiaParameters,
         const QVector<MsScanInfo> &msScanInfos,
+        const MsCalibratomatic *msCalibratomatic,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
         );
 
     static QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic *msCalibratomatic,
         const MsScanInfo &msScanInfo
         );
 

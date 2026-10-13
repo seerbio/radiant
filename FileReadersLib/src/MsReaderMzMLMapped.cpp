@@ -62,6 +62,16 @@ const QString  PRECURSOR_TARGET_MZ = QStringLiteral("MS:1000827");
 const QString  PRECURSOR_LOWER_WINDOW_OFFSET = QStringLiteral("MS:1000828");
 const QString  PRECURSOR_UPPER_WINDOW_OFFSET = QStringLiteral("MS:1000829");
 
+static float scanTimeToSeconds(float scanTime, const QString &unitName) {
+    if (unitName.contains(QStringLiteral("millisecond"), Qt::CaseInsensitive)) {
+        return scanTime / 1000.0f;
+    }
+    if (unitName.contains(QStringLiteral("minute"), Qt::CaseInsensitive)) {
+        return scanTime * 60.0f;
+    }
+    return scanTime;
+}
+
 
 enum TYPES {
     FLOAT32 = 0,
@@ -378,9 +388,10 @@ namespace {
                         &msScanInfoLocal.scanTime
                     ); rree
 
-                    msScanInfoLocal.scanTime = attributes.value("unitName").contains("minute")
-                                             ? msScanInfoLocal.scanTime
-                                             : msScanInfoLocal.scanTime / 60.0f;
+                    msScanInfoLocal.scanTime = scanTimeToSeconds(
+                        msScanInfoLocal.scanTime,
+                        attributes.value("unitName")
+                    );
                 }
                 else if (str.contains(PRECURSOR_TARGET_MZ)) {
                     QMap<QString, QString> attributes = parseAttributes(str);

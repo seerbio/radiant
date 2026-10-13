@@ -10,6 +10,9 @@ APT=${APT:-'sudo apt-get'}
 # The version of CMake to install; must be > 3.17!
 CMAKE_VERSION=${CMAKE_VERSION:-'3.23.2'}
 
+# Keep Arrow and Parquet on the last version compatible with this codebase.
+ARROW_VERSION=${ARROW_VERSION:-'25.0.1-1'}
+
 # If unset, install `cmake` into the current directory
 CMAKE_PREFIX=${CMAKE_PREFIX:-'./cmake'}
 
@@ -27,9 +30,12 @@ DISTRO=${DISTRO:-ubuntu}
 
 CODENAME=$(lsb_release --codename --short)
 
-wget -P /tmp/ "https://apache.jfrog.io/artifactory/arrow/${DISTRO}/apache-arrow-apt-source-latest-${CODENAME}.deb"
-${APT} install -y -V "/tmp/apache-arrow-apt-source-latest-${CODENAME}.deb"
-rm "/tmp/apache-arrow-apt-source-latest-${CODENAME}.deb"
+ARROW_APT_SOURCE_PACKAGE="apache-arrow-apt-source_${ARROW_VERSION}_all.deb"
+ARROW_APT_SOURCE_PATH="/tmp/${ARROW_APT_SOURCE_PACKAGE}"
+wget -P /tmp/ \
+    "https://apache.jfrog.io/artifactory/arrow/${DISTRO}/pool/${CODENAME}/main/a/apache-arrow-apt-source/${ARROW_APT_SOURCE_PACKAGE}"
+${APT} install -y -V "${ARROW_APT_SOURCE_PATH}"
+rm "${ARROW_APT_SOURCE_PATH}"
 ${APT} update
 
 ${APT} install --no-install-recommends -y \
@@ -38,8 +44,8 @@ ${APT} install --no-install-recommends -y \
     unzip \
     libboost-all-dev \
     qtbase5-dev \
-    libarrow-dev \
-    libparquet-dev \
+    "libarrow-dev=${ARROW_VERSION}" \
+    "libparquet-dev=${ARROW_VERSION}" \
     libseqan2-dev \
     libsqlite3-dev \
     libxml2-dev \

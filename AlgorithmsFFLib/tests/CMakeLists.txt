@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         BiophysicalCalcsTests
         CandidateScorertronTests
+        CentroidMs2IonMobilityIndexTests
         CentroidotronTests
         ClassifierWeightsManagerTests
         DeconvolvotronTests
@@ -22,6 +23,7 @@ SET(TEST_CLASSES
         FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
+        IdLevelQValueAnnotatorTests
         IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests

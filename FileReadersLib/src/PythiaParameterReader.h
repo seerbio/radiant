@@ -8,6 +8,7 @@
 #include "AminoAcids.h"
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
+#include "ImHandlingMode.h"
 
 
 using namespace Error;
@@ -18,9 +19,12 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kThreadCount;
     extern const QString FILEREADERSLIB_EXPORTS kVerbosity;
     extern const QString FILEREADERSLIB_EXPORTS kWriteRadiantDIA;
+    extern const QString FILEREADERSLIB_EXPORTS kWriteFullCandidateDebug;
     extern const QString FILEREADERSLIB_EXPORTS kUseLazyLoading;
     extern const QString FILEREADERSLIB_EXPORTS kReannotate;
     extern const QString FILEREADERSLIB_EXPORTS kShortReport;
+    extern const QString FILEREADERSLIB_EXPORTS kAnalysisScanTimeMin;
+    extern const QString FILEREADERSLIB_EXPORTS kAnalysisScanTimeMax;
 
     extern const QString FILEREADERSLIB_EXPORTS kLibraryParams;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
@@ -36,6 +40,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kPrecursorExtractionWindowThomsons;
     extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPMOverride;
+    extern const QString FILEREADERSLIB_EXPORTS kMS1IntensityMinForScoring;
 
     extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLengthIntegration;
@@ -45,12 +50,14 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPMOverride;
     extern const QString FILEREADERSLIB_EXPORTS kMinMs2FragCount;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
+    extern const QString FILEREADERSLIB_EXPORTS kImWindowStdDevs;
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
     extern const QString FILEREADERSLIB_EXPORTS kPeakDifferenceThresholdFraction;
     extern const QString FILEREADERSLIB_EXPORTS kCalibrationTrainingVolume;
     extern const QString FILEREADERSLIB_EXPORTS kPeakCenter;
+    extern const QString FILEREADERSLIB_EXPORTS kTimsTargetedMs2IonMobilityWindow;
 
     extern const QString FILEREADERSLIB_EXPORTS kTopNIntegrations;
     extern const QString FILEREADERSLIB_EXPORTS kMaxAnchorColumnIndex;
@@ -71,6 +78,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSkipScanCount;
 
     extern const QString FILEREADERSLIB_EXPORTS kRtBinning;
+    extern const QString FILEREADERSLIB_EXPORTS kImBinning;
 
     extern const QString FILEREADERSLIB_EXPORTS kNeuralNetParams;
     extern const QString FILEREADERSLIB_EXPORTS kEpochs;
@@ -78,7 +86,9 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
     extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
     extern const QString FILEREADERSLIB_EXPORTS kFocalLossGamma;
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetCandidateLimit;
 	extern const QString FILEREADERSLIB_EXPORTS kParallelNeuralNets;
+    extern const QString FILEREADERSLIB_EXPORTS kImHandlingMode;
 
 
 }
@@ -89,10 +99,14 @@ struct PythiaParameters{
     int threadCount = 8;
     int verbosity = 0;
     bool writeRadiantDIA = true;
+    bool writeFullCandidateDebug = false;
     bool reannotate = false;
     bool useLazyLoading = false;
+    ImHandlingMode imHandlingMode = ImHandlingMode::Centroid;
     bool optimizeMode = false;
     bool shortReport = false;
+    double analysisScanTimeMin = -1.0; // seconds
+    double analysisScanTimeMax = -1.0; // seconds
 
     //[LibraryParams]
     int chargeStateMin = -1;
@@ -107,6 +121,7 @@ struct PythiaParameters{
     //[MS1Params]
     double ms1ExtractionWidthPPM = 20.0;
     double ms1ExtractionWidthPPMOverride = -1.0;
+    double ms1IntensityMinForScoring = 1e4;
     double precursorExtractionWindowThomsons = 0.0;
 
     //[MS2Params]
@@ -117,7 +132,9 @@ struct PythiaParameters{
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
     int rtBinning = 20;
+    int imBinning = 20;
     float scanTimeWindowStDevs = 3;
+    float imWindowStdDevs = 3;
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
@@ -127,6 +144,7 @@ struct PythiaParameters{
     int maxAnchorColumnIndex = 6;
     int calibrationTrainingVolume = 1000;
     int peakCenter = -1;
+    float timsTargetedMs2IonMobilityWindow = 0.06f;
 
     //[FdrParams]
     double percentFDR = 1.0;
@@ -149,6 +167,7 @@ struct PythiaParameters{
     float learningRate = 0.003;
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
+    int neuralNetCandidateLimit = 50000;
 	bool parallelNeuralNets = false;
 
     [[nodiscard]] bool isValid() const {
@@ -208,9 +227,13 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kThreadCount) << threadCount;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kVerbosity) << verbosity;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kWriteRadiantDIA) << writeRadiantDIA;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kWriteFullCandidateDebug) << writeFullCandidateDebug;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kUseLazyLoading) << useLazyLoading;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kImHandlingMode) << imHandlingModeToString(imHandlingMode);
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kReannotate) << reannotate;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kShortReport) << shortReport;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kAnalysisScanTimeMin) << analysisScanTimeMin;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kAnalysisScanTimeMax) << analysisScanTimeMax;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kLibraryParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMin) << chargeStateMin;
@@ -226,6 +249,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons) << precursorExtractionWindowThomsons;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPM) << ms1ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPMOverride) << ms1ExtractionWidthPPMOverride;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1IntensityMinForScoring) << ms1IntensityMinForScoring;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS2Params << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
@@ -237,13 +261,16 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kRtBinning) << rtBinning;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kImBinning) << imBinning;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kImWindowStdDevs) << imWindowStdDevs;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakDifferenceThresholdFraction) << peakDifferenceFractionThreshold;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakCenter) << peakCenter;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kTimsTargetedMs2IonMobilityWindow) << timsTargetedMs2IonMobilityWindow;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;
@@ -266,6 +293,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFocalLossGamma) << focalLossGamma;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNeuralNetCandidateLimit) << neuralNetCandidateLimit;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kParallelNeuralNets) << parallelNeuralNets;
 
         qDebug() << QStringLiteral("**********************************************");

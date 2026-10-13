@@ -20,6 +20,7 @@ private Q_SLOTS:
 
     static void setGetMsScanInfoTest();
     static void setGetScanPointsTest();
+    static void capabilityStateTest();
     static void resetTest();
     static void closeFileTest();
     void filePathTest();
@@ -89,6 +90,21 @@ void MsReaderBaseTests::setGetScanPointsTest() {
     QCOMPARE(msReaderBase.getScanPoints().size(), scanPoints.size());
 }
 
+void MsReaderBaseTests::capabilityStateTest() {
+
+    MsReaderBase msReaderBase;
+
+    QCOMPARE(msReaderBase.hasIonMobility(), false);
+
+    msReaderBase.m_hasIonMobility = true;
+
+    QCOMPARE(msReaderBase.hasIonMobility(), true);
+
+    msReaderBase.reset();
+
+    QCOMPARE(msReaderBase.hasIonMobility(), false);
+}
+
 void MsReaderBaseTests::resetTest() {
 
     QMap<ScanNumber, MsScanInfo> msScanInfos = {
@@ -106,6 +122,7 @@ void MsReaderBaseTests::resetTest() {
     MsReaderBase msReaderBase;
     msReaderBase.setMsScanInfo(msScanInfos);
     msReaderBase.setScanPoints(scanPoints);
+    msReaderBase.m_hasIonMobility = true;
 
     QCOMPARE(msReaderBase.getScanPoints().size(), scanPoints.size());
     QCOMPARE(msReaderBase.getMsScanInfos().size(), msScanInfos.size());
@@ -113,6 +130,7 @@ void MsReaderBaseTests::resetTest() {
     msReaderBase.reset();
     QCOMPARE(msReaderBase.getScanPoints().size(), 0);
     QCOMPARE(msReaderBase.getMsScanInfos().size(), 0);
+    QCOMPARE(msReaderBase.hasIonMobility(), false);
 
 }
 
@@ -133,6 +151,7 @@ void MsReaderBaseTests::closeFileTest() {
     MsReaderBase msReaderBase;
     msReaderBase.setMsScanInfo(msScanInfos);
     msReaderBase.setScanPoints(scanPoints);
+    msReaderBase.m_hasIonMobility = true;
 
     QCOMPARE(msReaderBase.getScanPoints().size(), scanPoints.size());
     QCOMPARE(msReaderBase.getMsScanInfos().size(), msScanInfos.size());
@@ -140,6 +159,7 @@ void MsReaderBaseTests::closeFileTest() {
     msReaderBase.closeFile();
     QCOMPARE(msReaderBase.getScanPoints().size(), 0);
     QCOMPARE(msReaderBase.getMsScanInfos().size(), 0);
+    QCOMPARE(msReaderBase.hasIonMobility(), false);
 
 }
 

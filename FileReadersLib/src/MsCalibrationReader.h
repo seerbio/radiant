@@ -49,7 +49,7 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
 
     PeptideStringWithMods peptideStringWithMods;
     IRT iRTPredicted = -1.0;
-    ScanTime scanTime = -1.0;
+    ScanTime scanTime = -1.0; // seconds
     ScanNumber scanNumber = -1;
     QVector<float> mzSearchedVec;
     QVector<float> mzFoundMeanVec;

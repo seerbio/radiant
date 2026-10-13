@@ -45,6 +45,10 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     MsReaderBase msReaderBase;
     msReaderBase.m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
     msReaderBase.m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
+    msReaderBase.m_hasIonMobility = true;
+
+    constexpr IonMobilityIndex ms2IonMobilityIndex = 123;
+    msReaderBase.m_frameIndexVsDriftTime.insert(ms2IonMobilityIndex, 1.23);
 
     ERR_INIT
 
@@ -77,6 +81,7 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     QCOMPARE(readMsScanInfo.isoWindowUpper, msScanInfo.isoWindowUpper);
     QCOMPARE(readMsScanInfo.ionMobilityDriftTime, msScanInfo.ionMobilityDriftTime);
     QCOMPARE(readMsScanInfo.ionMobilityIndex, msScanInfo.ionMobilityIndex);
+    QCOMPARE(msReaderParquet.hasIonMobility(), true);
 
 
     QPair<Err, ScanPoints*> scanPointsResult = msReaderParquet.getScanPoints(readMsScanInfo.scanNumber);

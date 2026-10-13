@@ -4,6 +4,7 @@
 threadCount = 16
 verbosity = 0
 useLazyLoading = false
+imHandlingMode = "centroid"
 writePythiaDIA = true
 reannotate = false
 shortReport = false
@@ -20,6 +21,7 @@ trancheSizeMax = 2e4
 [MS1Params]
 precursorExtractionWindowThomsons = 0.0
 ms1ExtractionWidthPPM = 20.0
+ms1IntensityMinForScoring = 1e4
 #ms1ExtractionWidthPPMOverride = -1.0
 
 [MS2Params]

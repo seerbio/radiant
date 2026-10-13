@@ -3,10 +3,30 @@
 //
 
 #include "MsReaderPointerAcc.h"
+#include "MsReaderTimsreader.h"
 
+#include <QDir>
+#include <QTemporaryDir>
 #include <QString>
 #include <QtTest/QtTest>
 
+namespace {
+
+struct TestTimsbukInputPaths {
+    QString brukerPath;
+    QString sidecarRootPath;
+};
+
+TestTimsbukInputPaths createMinimalTimsbukInputPaths(const QString &temporaryPath) {
+    TestTimsbukInputPaths paths;
+    paths.brukerPath = QDir(temporaryPath).filePath("run.d");
+    paths.sidecarRootPath = paths.brukerPath + QStringLiteral(".idx");
+
+    QDir().mkpath(paths.brukerPath);
+    return paths;
+}
+
+} // namespace
 
 class MsReaderPointerAccTests : public QObject
 {
@@ -24,8 +44,13 @@ private Q_SLOTS:
     static void openFileTest2();
     static void openFileTest3();
     static void openFileTest4();
-
-
+    static void openFileTest5();
+    static void openFileTest6();
+    static void openFileTest7();
+    static void openFileTest8();
+    static void openFileTest9();
+    static void openFileTest10();
+    static void openFileTest11();
 
 };
 
@@ -114,6 +139,135 @@ void MsReaderPointerAccTests::openFileTest4() {
     // QCOMPARE(msScanInfos.first().scanNumber, 1);
     // QCOMPARE(msScanInfos.first().msLevel, -1);
 
+}
+
+void MsReaderPointerAccTests::openFileTest5() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(sidecarRootPath);
+    QCOMPARE(e, eFileIncorrectTypeError);
+}
+
+void MsReaderPointerAccTests::openFileTest6() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString brukerPath = QDir(temporaryDir.path()).filePath("run.d");
+    QVERIFY(QDir().mkpath(brukerPath));
+
+    const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
+    QVERIFY(QDir().mkpath(sidecarRootPath));
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(brukerPath);
+    QVERIFY(e != eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
+}
+
+void MsReaderPointerAccTests::openFileTest7() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString sidecarRootPath = QDir(temporaryDir.path()).filePath("run.d.idx");
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(sidecarRootPath + QStringLiteral("/"));
+    QCOMPARE(e, eFileIncorrectTypeError);
+}
+
+void MsReaderPointerAccTests::openFileTest8() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString brukerPath = QDir(temporaryDir.path()).filePath("run.d");
+    QVERIFY(QDir().mkpath(brukerPath));
+
+    const QString sidecarRootPath = brukerPath + QStringLiteral(".idx");
+    QVERIFY(QDir().mkpath(sidecarRootPath));
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(brukerPath + QStringLiteral("/"));
+    QVERIFY(e != eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
+}
+
+void MsReaderPointerAccTests::openFileTest9() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString brukerPath = QDir(temporaryDir.path()).filePath("run.d");
+    QVERIFY(QDir().mkpath(brukerPath));
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    msReaderPointerAcc.setImHandlingMode(ImHandlingMode::Raw4D);
+    e = msReaderPointerAcc.openFile(brukerPath);
+    QCOMPARE(e, eFunctionNotImplemented);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
+}
+
+void MsReaderPointerAccTests::openFileTest10() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const TestTimsbukInputPaths paths = createMinimalTimsbukInputPaths(temporaryDir.path());
+    QVERIFY(QDir().mkpath(paths.sidecarRootPath));
+
+    const QStringList inputPaths = {
+        paths.brukerPath,
+        paths.brukerPath + QStringLiteral("/")
+    };
+
+    for (const QString &inputPath : inputPaths) {
+        MsReaderPointerAcc msReaderPointerAcc;
+        e = msReaderPointerAcc.openFile(
+            inputPath,
+            QStringLiteral("scanTime"),
+            {0.0, 0.02}
+            );
+        QVERIFY(e != eNoError);
+        QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
+    }
+}
+
+void MsReaderPointerAccTests::openFileTest11() {
+
+    ERR_INIT
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const TestTimsbukInputPaths paths = createMinimalTimsbukInputPaths(temporaryDir.path());
+    QVERIFY(QDir().mkpath(paths.sidecarRootPath));
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    msReaderPointerAcc.setUseLazyLoading(true);
+    msReaderPointerAcc.setImHandlingMode(ImHandlingMode::NoIM);
+    e = msReaderPointerAcc.openFile(paths.brukerPath);
+    QVERIFY(e != eNoError);
+    QVERIFY(dynamic_cast<MsReaderTimsreader*>(msReaderPointerAcc.ptr.data()) != nullptr);
+    QCOMPARE(msReaderPointerAcc.useLazyLoading(), false);
 }
 
 

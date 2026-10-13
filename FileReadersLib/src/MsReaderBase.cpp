@@ -8,13 +8,14 @@
 
 #include <QElapsedTimer>
 #include <QFile>
+#include <QSet>
 #include <QtConcurrent/QtConcurrent>
 
 #include <iostream>
 
 MsReaderBase::MsReaderBase()
 : m_fileIsCalibrated(false)
-, m_isTIMS(false)
+, m_hasIonMobility(false)
 , m_mzMs1Min(std::numeric_limits<float>::max())
 , m_mzMs1Max(-1.0)
 , m_mzMs2Min(std::numeric_limits<float>::max())
@@ -40,6 +41,10 @@ Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) 
 void MsReaderBase::reset() {
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
+    QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
+    QMap<MzTargetKey, QVector<MsScanInfo*>>().swap(m_mzTargetVsScanInfosPntrs);
+    QMap<FrameIndex, double>().swap(m_frameIndexVsDriftTime);
+    m_hasIonMobility = false;
 }
 
 Err MsReaderBase::openFile(const QString &filePath) {
@@ -65,6 +70,9 @@ Err MsReaderBase::closeFile() {
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
     QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
+    QMap<MzTargetKey, QVector<MsScanInfo*>>().swap(m_mzTargetVsScanInfosPntrs);
+    QMap<FrameIndex, double>().swap(m_frameIndexVsDriftTime);
+    m_hasIonMobility = false;
     return Error::eNoError;
 }
 
@@ -79,6 +87,15 @@ Err MsReaderBase::getMzTargetScanPoints(
     const MzTargetKey &targetKey,
     QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
     ){
+    return eFunctionNotImplemented;
+}
+
+Err MsReaderBase::getMzTargetAlignedPointData(
+    const MzTargetKey &targetKey,
+    QMap<ScanNumber, const MsAlignedPointData*> *scanNumberVsAlignedPointData
+    ) const {
+    Q_UNUSED(targetKey)
+    Q_UNUSED(scanNumberVsAlignedPointData)
     return eFunctionNotImplemented;
 }
 
@@ -116,7 +133,7 @@ bool MsReaderBase::isDIA() {
     return std::all_of(withinCountDistance.begin(), withinCountDistance.end(), [](bool b){return b;});
 }
 
-bool MsReaderBase::isInit() {
+bool MsReaderBase::isInit() const {
     return !m_msScanInfo.isEmpty();
 }
 
@@ -347,6 +364,73 @@ QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
     return scanNumberVsScanTime;
 }
 
+Err MsReaderBase::restrictScanTimeRange(ScanTime scanTimeMin, ScanTime scanTimeMax) {
+
+    ERR_INIT
+
+    if (scanTimeMax <= scanTimeMin) {
+        ERR_RETURN
+    }
+
+    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
+
+    QSet<ScanNumber> keptScanNumbers;
+    QSet<ScanNumber> removedScanNumbers;
+    QMap<ScanNumber, MsScanInfo> filteredScanInfo;
+    for (auto it = m_msScanInfo.constBegin(); it != m_msScanInfo.constEnd(); ++it) {
+        const ScanTime scanTime = it.value().scanTime;
+        if (scanTime < scanTimeMin || scanTime > scanTimeMax) {
+            removedScanNumbers.insert(it.key());
+            continue;
+        }
+
+        keptScanNumbers.insert(it.key());
+        filteredScanInfo.insert(it.key(), it.value());
+    }
+
+    if (filteredScanInfo.isEmpty()) {
+        qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                   << "Scan-time restriction retained no scans; keeping full run"
+                   << scanTimeMin
+                   << scanTimeMax;
+        ERR_RETURN
+    }
+
+    const int originalScanInfoCount = m_msScanInfo.size();
+    const int originalScanPointCount = m_scanPoints.size();
+    m_msScanInfo = filteredScanInfo;
+
+    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end();) {
+        if (keptScanNumbers.contains(it.key())) {
+            ++it;
+        }
+        else {
+            it = m_scanPoints.erase(it);
+        }
+    }
+
+    m_scanNumberVsScanTime.clear();
+    for (const MsScanInfo &msScanInfo : m_msScanInfo) {
+        m_scanNumberVsScanTime.insert(msScanInfo.scanNumber, msScanInfo.scanTime);
+    }
+
+    m_mzTargetVsScanInfosPntrs.clear();
+    for (auto it = m_msScanInfo.begin(); it != m_msScanInfo.end(); ++it) {
+        if (it.value().msLevel == 2) {
+            m_mzTargetVsScanInfosPntrs[it.value().targetKey()].push_back(&it.value());
+        }
+    }
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Restricted analysis scan-time range"
+             << scanTimeMin
+             << scanTimeMax
+             << "scan_infos" << originalScanInfoCount << "->" << m_msScanInfo.size()
+             << "scan_points" << originalScanPointCount << "->" << m_scanPoints.size();
+
+    ERR_RETURN
+}
+
 Err MsReaderBase::getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi) {
 
     ERR_INIT
@@ -492,8 +576,8 @@ Err MsReaderBase::printFileInfo() {
     ERR_RETURN
 }
 
-bool MsReaderBase::isTIMS() const {
-    return m_isTIMS;
+bool MsReaderBase::hasIonMobility() const {
+    return m_hasIonMobility;
 }
 
 float MsReaderBase::mzMs2Min() const {
@@ -504,6 +588,11 @@ float MsReaderBase::mzMs2Max() const {
     return m_mzMs2Max;
 }
 
-QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
-    return &m_frameNumberVsMS1FrameTIMS;
+const MsAlignedPointData *MsReaderBase::alignedPointDataPntr(ScanNumber scanNumber) const {
+    Q_UNUSED(scanNumber)
+    return nullptr;
+}
+
+void MsReaderBase::setHasIonMobility(bool hasIonMobility) {
+    m_hasIonMobility = hasIonMobility;
 }

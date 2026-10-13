@@ -22,6 +22,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/CandidateScores.cpp
         src/CandidateScorertron.cpp
+        src/CentroidMs2IonMobilityIndex.cpp
         src/Centroidotron.cpp
         src/ClassifierWeightsManager.cpp
         src/Deconvolvotron.cpp
@@ -31,7 +32,7 @@ SET(SOURCE_FILES
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
-        src/IonMobilitron.cpp
+        src/IdLevelQValueAnnotator.cpp
         src/InterferingCandidatesEliminatomatic.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
@@ -56,6 +57,7 @@ SET(SOURCE_FILES
 SET(HEADER_FILES
         src/CandidateScores.h
         src/CandidateScorertron.h
+        src/CentroidMs2IonMobilityIndex.h
         src/Centroidotron.h
         src/ClassifierWeightsManager.h
         src/Deconvolvotron.h
@@ -65,10 +67,11 @@ SET(HEADER_FILES
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/IdLevelQValueAnnotator.h
         src/InterferingCandidatesEliminatomatic.h
-        src/IonMobilitron.h
         src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
+        src/Ms2IonMobilityIndexBase.h
         src/Ms2IonFraggertronManager.h
         src/MsCalibratomatic.h
         src/MsFrame.h

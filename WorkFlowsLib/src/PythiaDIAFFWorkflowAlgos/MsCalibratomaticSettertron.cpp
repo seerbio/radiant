@@ -7,7 +7,6 @@
 #include "ErrorUtils.h"
 #include "DiscriminantScoretron.h"
 #include "FDRCLassifierNeuralNet.h"
-#include "IonMobilitron.h"
 #include "InterferingCandidatesEliminatomatic.h"
 #include "MsReaderPointerAcc.h"
 #include "ObjectCSVWriters.h"
@@ -15,6 +14,8 @@
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 #include "QValueSettertron.h"
 #include "TurboXIC.h"
+
+#include <cmath>
 
 MsCalibratomaticSettertron::MsCalibratomaticSettertron()
 : m_msReaderPointerAcc(nullptr)
@@ -48,6 +49,7 @@ Err MsCalibratomaticSettertron::init(
     m_pythiaParameters = pythiaParameters;
     m_targetDecoyCandidatePairScoretron = targetDecoyCandidatePairScoretron;
     m_featuresCalibration = featuresCalibration;
+    m_msCalibratomatic.setPythiaParameters(*pythiaParameters);
 
     e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
         &m_targetDecoyPairPntrs
@@ -59,6 +61,20 @@ Err MsCalibratomaticSettertron::init(
 }
 
 namespace {
+
+    void appendIonMobilityStDevIfValid(
+        const MsCalibratomatic &msCalibratomatic,
+        QVector<float> *ionMobilityStDevs
+        ) {
+        if (ionMobilityStDevs == nullptr || !msCalibratomatic.isInitIM()) {
+            return;
+        }
+
+        const float ionMobilityStDev = msCalibratomatic.ionMobilityStDev();
+        if (ionMobilityStDev > 0.0f) {
+            ionMobilityStDevs->push_back(ionMobilityStDev);
+        }
+    }
 
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
 
@@ -84,18 +100,26 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager->isInit()); ree;
     e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
+    msCalibratomatic->setPythiaParameters(*m_pythiaParameters);
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron->isInit()); ree;
 
     const int numberOfTranches = calculateNumberOfTranches(m_pythiaParameters->verbosity);
 
     const QVector<MsScanInfo> uniqueMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
+    constexpr double calibrationScanInfoFraction = 0.10;
+    constexpr int minUniqueScanInfosTrainingCount = 4;
     constexpr int maxUniqueScanInfosTrainingCount = 16;
+    const int uniqueScanInfosTrainingCount = std::clamp(
+        static_cast<int>(std::ceil(uniqueMsScanInfos.size() * calibrationScanInfoFraction)),
+        minUniqueScanInfosTrainingCount,
+        maxUniqueScanInfosTrainingCount
+        );
     constexpr int offset = 0;
     QVector<MsScanInfo> uniqueMsScanInfosCalibration;
     e = PythiaDIAFFWorkflowSharedMethods::buildUniqueMsScanInfosForProcessing(
         uniqueMsScanInfos,
-        maxUniqueScanInfosTrainingCount,
+        uniqueScanInfosTrainingCount,
         offset,
         &uniqueMsScanInfosCalibration
         ); ree;
@@ -148,6 +172,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 targetDecoyCandidatePairsBatch,
                 *m_pythiaParameters,
                 uniqueMsScanInfosCalibration,
+                &m_msCalibratomatic,
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
@@ -188,7 +213,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             *m_pythiaParameters,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
-            &weights
+            &weights,
+            false
             ); ree;
 
         constexpr int fdrKey = 5;
@@ -206,7 +232,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             ); ree;
 
         m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-        m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
+        appendIonMobilityStDevIfValid(m_msCalibratomatic, &m_ionMobilityStDevs);
         m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
         QString fdrString;
@@ -264,7 +290,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             e = m_msCalibratomatic.setCalibrationCoeffsUsingAllMeans(); ree;
 
             m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-            m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
+            appendIonMobilityStDevIfValid(m_msCalibratomatic, &m_ionMobilityStDevs);
             m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
             e = setMsCalibratomaticMetrics(); ree;
@@ -405,14 +431,6 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         ERR_RETURN
     }
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
-        e = IonMobilitron::assignIonMobilityIndexesToCandidateScores(
-            candidateScoresVecBatchPntrsResized,
-            m_pythiaParameters->ms1ExtractionWidthPPM,
-            m_msReaderPointerAcc
-            ); ree;
-    }
-
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             MSLevelEnum::MS2,
@@ -420,6 +438,32 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
             m_pythiaParameters->verbosity,
             &msCalibrationReaderRows
             ); ree;
+
+    QVector<CandidateScores*> candidateScoresVecBatchPntrsTargets;
+    candidateScoresVecBatchPntrsTargets.reserve(candidateScoresVecBatchPntrsResized.size());
+    std::copy_if(
+            candidateScoresVecBatchPntrsResized.cbegin(),
+            candidateScoresVecBatchPntrsResized.cend(),
+            std::back_inserter(candidateScoresVecBatchPntrsTargets),
+            [](const CandidateScores *cs) {
+                return !cs->isDecoy;
+            }
+            );
+
+    QVector<MsCalibarationReaderRow> msCalibrationReaderRowsTargets;
+    e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
+            MSLevelEnum::MS2,
+            candidateScoresVecBatchPntrsTargets,
+            m_pythiaParameters->verbosity,
+            &msCalibrationReaderRowsTargets
+            ); ree;
+
+    if (m_pythiaParameters->verbosity > 0) {
+        qDebug() << "Using" << msCalibrationReaderRowsTargets.size()
+                 << "target rows for RT/IM calibration; excluded"
+                 << msCalibrationReaderRows.size() - msCalibrationReaderRowsTargets.size()
+                 << "decoy rows";
+    }
 
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
 
@@ -437,14 +481,15 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         m_entered.insert(cs->targetDecoyCandidatePair, true);
     }
 
-    e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
-        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
+    e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRowsTargets); ree;
+    if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
+        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRowsTargets); ree;
     }
 
     if (m_pythiaParameters->verbosity > 0) {
         qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters->scanTimeWindowStDevs
-                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs);
+                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs)
+                 << "seconds";
     }
 
     constexpr int ms2MassRecalCountMin = 200;
@@ -460,12 +505,13 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     ERR_RETURN
 }
-
 Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
 
     ERR_INIT
 
     constexpr int minVecSize = 3;
+    const double defaultIonMobilityToleranceOneOverK0
+        = m_pythiaParameters->timsTargetedMs2IonMobilityWindow;
     std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
     if (m_scanTimeStDevs.size() >= minVecSize) {
         m_scanTimeStDevs.pop_front();
@@ -484,7 +530,8 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         << "ScanTimeWindow Mean|Median|Min"
         << MathUtils::mean(m_scanTimeStDevs)
         << MathUtils::median(m_scanTimeStDevs)
-        << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
+        << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()})
+        << "seconds";
 
         qDebug()
         << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -493,23 +540,32 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         << MathUtils::median(m_ms2PPMStDevs);
     }
 
-    if (m_msReaderPointerAcc->ptr->isTIMS()) {
-        std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
-        if (m_ionMobilityStDevs.size() >= minVecSize) {
-            m_ionMobilityStDevs.pop_front();
-            m_ionMobilityStDevs.pop_back();
+    if (m_msReaderPointerAcc->ptr->hasIonMobility()) {
+        QVector<float> validIonMobilityStDevs = m_ionMobilityStDevs;
+        std::sort(validIonMobilityStDevs.begin(), validIonMobilityStDevs.end());
+        if (validIonMobilityStDevs.size() >= minVecSize) {
+            validIonMobilityStDevs.pop_front();
+            validIonMobilityStDevs.pop_back();
         }
 
-        if (m_pythiaParameters->verbosity >= 0) {
+        if (!validIonMobilityStDevs.isEmpty()) {
+            if (m_pythiaParameters->verbosity >= 0) {
+                qDebug()
+                << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "IonMobilityWindow Mean|Median|Min"
+                << MathUtils::mean(validIonMobilityStDevs)
+                << MathUtils::median(validIonMobilityStDevs)
+                << *std::min({validIonMobilityStDevs.begin(), validIonMobilityStDevs.end()});
+            }
+
+            m_msCalibratomatic.setIonMobilityStDev(validIonMobilityStDevs.front());
+        } else if (m_pythiaParameters->verbosity >= 0) {
             qDebug()
             << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "ScanTimeWindow Mean|Median|Min"
-            << MathUtils::mean(m_ionMobilityStDevs)
-            << MathUtils::median(m_ionMobilityStDevs)
-            << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+            << "IonMobilityWindow calibration unavailable; using fallback width"
+            << defaultIonMobilityToleranceOneOverK0
+            << "1/K0";
         }
-
-        m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
     }
 
     m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());

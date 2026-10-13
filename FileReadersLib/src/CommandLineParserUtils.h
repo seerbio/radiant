@@ -33,6 +33,8 @@ public:
             const QStringList &expectedFileExtensions
     );
 
+    static bool isMassSpectrometryDataPath(const QString &filePath);
+
     /**
     * @brief Retrieve data files with a specific extension from a directory.
     *

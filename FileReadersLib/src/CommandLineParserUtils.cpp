@@ -6,6 +6,7 @@
 
 #include "StringUtils.h"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QDirIterator>
 
@@ -15,7 +16,8 @@ bool CommandLineParserUtils::checkFileNameExtensions(
         const QStringList &expectedFileExtensions
 ) {
 
-    QFileInfo fi(filePath);
+    const QString normalizedPath = QDir::cleanPath(filePath);
+    QFileInfo fi(normalizedPath);
     const QString fileSuffix = fi.suffix().toLower();
 
     return std::any_of(
@@ -23,6 +25,18 @@ bool CommandLineParserUtils::checkFileNameExtensions(
             expectedFileExtensions.end(),
             [fileSuffix](const QString &s){return s.toLower() == fileSuffix;}
             );
+}
+
+bool CommandLineParserUtils::isMassSpectrometryDataPath(const QString &filePath) {
+
+    return checkFileNameExtensions(
+               filePath,
+               {
+                   S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION,
+                   S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION,
+                   S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION
+               }
+               );
 }
 
 Err CommandLineParserUtils::getDataFilesFromDirectory(

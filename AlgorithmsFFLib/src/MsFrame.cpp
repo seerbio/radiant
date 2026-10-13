@@ -16,6 +16,8 @@
 
 #include <QElapsedTimer>
 
+#include <algorithm>
+
 
 class Q_DECL_HIDDEN MsFrame::Private
 {
@@ -31,6 +33,13 @@ public:
     Err init(const QMap<FrameIndex, ScanTime> &frameIndexVsScanTime);
 
     Err frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex);
+
+    Err frameIndexRangeFromScanTime(
+        ScanTime scanTimeMin,
+        ScanTime scanTimeMax,
+        FrameIndex *frameIndexMin,
+        FrameIndex *frameIndexMax
+        );
 
     bool isInit();
 
@@ -111,6 +120,49 @@ Err MsFrame::Private::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *fram
     );
 
     *frameIndex = m_indexVsFrameIndex.value(static_cast<int>(retIndex.front()));
+
+    ERR_RETURN
+}
+
+Err MsFrame::Private::frameIndexRangeFromScanTime(
+    ScanTime scanTimeMin,
+    ScanTime scanTimeMax,
+    FrameIndex *frameIndexMin,
+    FrameIndex *frameIndexMax
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(isInit());
+
+    if (scanTimeMax < scanTimeMin) {
+        std::swap(scanTimeMin, scanTimeMax);
+    }
+
+    const int rowCount = m_mat->rows();
+
+    // Find the first row whose time is not less than value. The lower gate
+    // uses the preceding row, while the upper gate uses this row directly.
+    const auto lowerBoundRow = [this, rowCount](ScanTime value) {
+        int first = 0;
+        int last = rowCount;
+        while (first < last) {
+            const int middle = first + (last - first) / 2;
+            if (m_mat->coeff(middle, 0) < value) {
+                first = middle + 1;
+            } else {
+                last = middle;
+            }
+        }
+        return first;
+    };
+
+    const int lowerBound = lowerBoundRow(scanTimeMin);
+    const int floorRow = std::max(0, lowerBound - 1);
+    const int ceilRow = std::min(rowCount - 1, lowerBoundRow(scanTimeMax));
+
+    *frameIndexMin = m_indexVsFrameIndex.value(floorRow);
+    *frameIndexMax = m_indexVsFrameIndex.value(ceilRow);
 
     ERR_RETURN
 }
@@ -270,6 +322,25 @@ ScanNumber MsFrame::scanNumberFromScanTime(ScanTime scanTime) const {
 Err MsFrame::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex) const {
     ERR_INIT
     e = d_ptr->frameIndexFromScanTime(scanTime, frameIndex); ree;
+    ERR_RETURN
+}
+
+Err MsFrame::frameIndexRangeFromScanTime(
+    ScanTime scanTimeMin,
+    ScanTime scanTimeMax,
+    FrameIndex *frameIndexMin,
+    FrameIndex *frameIndexMax
+    ) const {
+
+    ERR_INIT
+
+    e = d_ptr->frameIndexRangeFromScanTime(
+        scanTimeMin,
+        scanTimeMax,
+        frameIndexMin,
+        frameIndexMax
+        ); ree;
+
     ERR_RETURN
 }
 

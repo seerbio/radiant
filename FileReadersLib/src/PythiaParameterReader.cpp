@@ -19,9 +19,13 @@ namespace PythiaParameterReaderConstants {
     const QString kThreadCount = QStringLiteral("threadCount");
     const QString kVerbosity = QStringLiteral("verbosity");
     const QString kWriteRadiantDIA = QStringLiteral("writeRadiantDIA");
+    const QString kWriteFullCandidateDebug = QStringLiteral("writeFullCandidateDebug");
     const QString kUseLazyLoading = QStringLiteral("useLazyLoading");
+    const QString kImHandlingMode = QStringLiteral("imHandlingMode");
     const QString kReannotate = QStringLiteral("reannotate");
     const QString kShortReport = QStringLiteral("shortReport");
+    const QString kAnalysisScanTimeMin = QStringLiteral("analysisScanTimeMin");
+    const QString kAnalysisScanTimeMax = QStringLiteral("analysisScanTimeMax");
 
     const QString kLibraryParams = QStringLiteral("LibraryParams");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
@@ -37,6 +41,7 @@ namespace PythiaParameterReaderConstants {
     const QString kPrecursorExtractionWindowThomsons = QStringLiteral("precursorExtractionWindowThomsons");
     const QString kMS1ExtractionWidthPPM = QStringLiteral("ms1ExtractionWidthPPM");
     const QString kMS1ExtractionWidthPPMOverride = QStringLiteral("ms1ExtractionWidthPPMOverride");
+    const QString kMS1IntensityMinForScoring = QStringLiteral("ms1IntensityMinForScoring");
 
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kFilterLengthIntegration = QStringLiteral("filterLengthIntegration");
@@ -46,12 +51,14 @@ namespace PythiaParameterReaderConstants {
     const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
+    const QString kImWindowStdDevs = QStringLiteral("imWindowStdDevs");
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
     const QString kStopThresholdFractionMS2 = QStringLiteral("stopThresholdFractionMS2");
     const QString kPeakDifferenceThresholdFraction = QStringLiteral("peakDifferenceThresholdFraction");
     const QString kCalibrationTrainingVolume = QStringLiteral("calibrationTrainingVolume");
     const QString kPeakCenter = QStringLiteral("peakCenter");
+    const QString kTimsTargetedMs2IonMobilityWindow = QStringLiteral("timsTargetedMs2IonMobilityWindow");
 
     const QString kTopNIntegrations = QStringLiteral("topNIntegrations");
     const QString kMaxAnchorColumnIndex = QStringLiteral("maxAnchorColumnIndex");
@@ -72,6 +79,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSkipScanCount = QStringLiteral("skipScanCount");
 
     const QString kRtBinning = QStringLiteral("rtBinning");
+    const QString kImBinning = QStringLiteral("imBinning");
 
     const QString kNeuralNetParams = QStringLiteral("NeuralNetParams");
     const QString kEpochs = QStringLiteral("epochs");
@@ -79,8 +87,50 @@ namespace PythiaParameterReaderConstants {
     const QString kLearningRate = QStringLiteral("learningRate");
     const QString kNodesFraction = QStringLiteral("nodesFraction");
     const QString kFocalLossGamma = QStringLiteral("focalLossGamma");
+    const QString kNeuralNetCandidateLimit = QStringLiteral("neuralNetCandidateLimit");
     const QString kParallelNeuralNets = QStringLiteral("parallelNeuralNets");
 
+}
+
+QString imHandlingModeToString(ImHandlingMode mode) {
+    switch (mode) {
+    case ImHandlingMode::Centroid:
+        return QStringLiteral("centroid");
+    case ImHandlingMode::NoIM:
+        return QStringLiteral("noIM");
+    case ImHandlingMode::Raw4D:
+        return QStringLiteral("raw4d");
+    }
+
+    return QStringLiteral("centroid");
+}
+
+bool imHandlingModeFromString(
+    const QString &text,
+    ImHandlingMode *mode
+    ) {
+
+    if (mode == nullptr) {
+        return false;
+    }
+
+    const QString normalized = text.trimmed().toLower();
+    if (normalized == QStringLiteral("centroid")) {
+        *mode = ImHandlingMode::Centroid;
+        return true;
+    }
+    if (normalized == QStringLiteral("noim")) {
+        *mode = ImHandlingMode::NoIM;
+        return true;
+    }
+    if (normalized == QStringLiteral("raw4d")
+        || normalized == QStringLiteral("raw")
+        || normalized == QStringLiteral("4d")) {
+        *mode = ImHandlingMode::Raw4D;
+        return true;
+    }
+
+    return false;
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -121,9 +171,20 @@ Err PythiaParameterReader::buildPythiaParameters(
     if (pythiaParameters->threadCount <= 0) pythiaParameters->threadCount = ParallelUtils::numberOfAvailableSystemProcessors();
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
     pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
+    if (const auto imHandlingMode
+        = generalNode[kImHandlingMode.toStdString()].value<std::string>()) {
+        const QString imHandlingModeText = QString::fromStdString(*imHandlingMode);
+        if (!imHandlingModeFromString(imHandlingModeText, &pythiaParameters->imHandlingMode)) {
+            qDebug() << "Unsupported imHandlingMode value" << imHandlingModeText
+                     << "defaulting to" << imHandlingModeToString(pythiaParameters->imHandlingMode);
+        }
+    }
     pythiaParameters->writeRadiantDIA = parser[kGeneral.toStdString()][kWriteRadiantDIA.toStdString()].value_or(true);
+    pythiaParameters->writeFullCandidateDebug = parser[kGeneral.toStdString()][kWriteFullCandidateDebug.toStdString()].value_or(false);
     pythiaParameters->reannotate = parser[kGeneral.toStdString()][kReannotate.toStdString()].value_or(false);
     pythiaParameters->shortReport = parser[kGeneral.toStdString()][kShortReport.toStdString()].value_or(false);
+    pythiaParameters->analysisScanTimeMin = parser[kGeneral.toStdString()][kAnalysisScanTimeMin.toStdString()].value_or(pythiaParameters->analysisScanTimeMin);
+    pythiaParameters->analysisScanTimeMax = parser[kGeneral.toStdString()][kAnalysisScanTimeMax.toStdString()].value_or(pythiaParameters->analysisScanTimeMax);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];
     pythiaParameters->chargeStateMin = libraryNode[kChargeStateMin.toStdString()].value_or(0);
@@ -138,6 +199,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
     pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms1ExtractionWidthPPM);
     pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
+    pythiaParameters->ms1IntensityMinForScoring = ms1ParamsNode[kMS1IntensityMinForScoring.toStdString()].value_or(pythiaParameters->ms1IntensityMinForScoring);
     pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(pythiaParameters->precursorExtractionWindowThomsons);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
@@ -148,15 +210,19 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
+    pythiaParameters->imWindowStdDevs = ms2ParamsNode[kImWindowStdDevs.toStdString()].value_or(pythiaParameters->imWindowStdDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(pythiaParameters->smoothCountMS2);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(pythiaParameters->stopThresholdFractionMS2);
     pythiaParameters->peakDifferenceFractionThreshold = ms2ParamsNode[kPeakDifferenceThresholdFraction.toStdString()].value_or(pythiaParameters->peakDifferenceFractionThreshold);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
     pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
+    pythiaParameters->imBinning = ms2ParamsNode[kImBinning.toStdString()].value_or(pythiaParameters->imBinning);
     pythiaParameters->peakCenter = ms2ParamsNode[kPeakCenter.toStdString()].value_or(pythiaParameters->peakCenter);
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(pythiaParameters->topNIntegrations);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
+    pythiaParameters->timsTargetedMs2IonMobilityWindow
+        = ms2ParamsNode[kTimsTargetedMs2IonMobilityWindow.toStdString()].value_or(pythiaParameters->timsTargetedMs2IonMobilityWindow);
 
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
@@ -179,6 +245,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
     pythiaParameters->focalLossGamma = neuralNetParamsNode[kFocalLossGamma.toStdString()].value_or(pythiaParameters->focalLossGamma);
+    pythiaParameters->neuralNetCandidateLimit = neuralNetParamsNode[kNeuralNetCandidateLimit.toStdString()].value_or(pythiaParameters->neuralNetCandidateLimit);
     pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 
 	if (pythiaParameters->baggingSize < 2) {
@@ -189,6 +256,34 @@ Err PythiaParameterReader::buildPythiaParameters(
 		<< "to 2.";
 		pythiaParameters->baggingSize = 2;
 	}
+
+    if (pythiaParameters->neuralNetCandidateLimit <= 0) {
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Neural net candidate limit must be positive. It has been adjusted from"
+        << pythiaParameters->neuralNetCandidateLimit
+        << "to 50000.";
+        pythiaParameters->neuralNetCandidateLimit = 50000;
+    }
+
+    if (pythiaParameters->timsTargetedMs2IonMobilityWindow <= 0.0f) {
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "TIMS targeted MS2 ion mobility window must be positive. It has been adjusted from"
+        << pythiaParameters->timsTargetedMs2IonMobilityWindow
+        << "to 0.06.";
+        pythiaParameters->timsTargetedMs2IonMobilityWindow = 0.06f;
+    }
+
+    if (pythiaParameters->analysisScanTimeMin >= 0.0
+        && pythiaParameters->analysisScanTimeMax >= 0.0
+        && pythiaParameters->analysisScanTimeMax <= pythiaParameters->analysisScanTimeMin) {
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "analysisScanTimeMax must be greater than analysisScanTimeMin. Disabling scan-time truncation.";
+        pythiaParameters->analysisScanTimeMin = -1.0;
+        pythiaParameters->analysisScanTimeMax = -1.0;
+    }
 
     ERR_RETURN
 }

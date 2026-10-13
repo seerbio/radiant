@@ -5,8 +5,8 @@
 #include "MsReaderPointerAcc.h"
 
 #include "GlobalSettings.h"
-// #include "MsReaderBrukerTims.h"
 #include "MsReaderParquet.h"
+#include "MsReaderTimsreader.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
@@ -14,11 +14,63 @@
 #include <QByteArray>
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 
+#include <algorithm>
 
-MsReaderPointerAcc::MsReaderPointerAcc() : m_useLazyLoading(false) {}
+namespace {
+
+    bool isBrukerDirectoryInputPath(const QString &filePath) {
+        const QString normalizedPath = QDir::cleanPath(filePath);
+        const QFileInfo fileInfo(normalizedPath);
+        if (!fileInfo.isDir()) {
+            return false;
+        }
+
+        return StringUtils::stringsMatch(
+            fileInfo.suffix(),
+            S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION,
+            false
+            );
+    }
+
+    Err openBrukerDirectoryReader(
+        const QString &filePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> *filterRange,
+        MsReaderPointerAcc *msReaderPointerAcc
+        ) {
+
+        ERR_INIT
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ timsreader Bruker inputs";
+        msReaderPointerAcc->setUseLazyLoading(false);
+
+        QSharedPointer<MsReaderBase> msReader(
+            new MsReaderTimsreader(
+                msReaderPointerAcc->imHandlingMode(),
+                msReaderPointerAcc->threadCount()
+                )
+            );
+        msReaderPointerAcc->ptr = msReader;
+
+        if (filterRange == nullptr) {
+            e = msReaderPointerAcc->ptr->openFile(filePath); ree;
+        }
+        else {
+            e = msReaderPointerAcc->ptr->openFile(filePath, columnToFilterBy, *filterRange); ree;
+        }
+        ERR_RETURN
+    }
+
+}//namespace
+
+MsReaderPointerAcc::MsReaderPointerAcc()
+    : m_useLazyLoading(false)
+    , m_imHandlingMode(ImHandlingMode::Centroid)
+    , m_threadCount(1) {}
 
 void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
     m_useLazyLoading = useLazyLoading;
@@ -26,6 +78,22 @@ void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
 
 bool MsReaderPointerAcc::useLazyLoading() const {
     return m_useLazyLoading;
+}
+
+void MsReaderPointerAcc::setImHandlingMode(ImHandlingMode imHandlingMode) {
+    m_imHandlingMode = imHandlingMode;
+}
+
+ImHandlingMode MsReaderPointerAcc::imHandlingMode() const {
+    return m_imHandlingMode;
+}
+
+void MsReaderPointerAcc::setThreadCount(int threadCount) {
+    m_threadCount = std::max(1, threadCount);
+}
+
+int MsReaderPointerAcc::threadCount() const {
+    return m_threadCount;
 }
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
@@ -69,16 +137,8 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
         e = ptr->openFile(filePath); ree;
     }
 
-    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-        rrr(eFunctionNotImplemented);
-        // // //TODO uncomment code when ARM is sorted out.
-        //
-        // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
-        // m_useLazyLoading = false;
-        //
-        // QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
-        // ptr = msReader;
-        // e = ptr->openFile(filePath); ree;
+    else if (isBrukerDirectoryInputPath(filePath)) {
+        e = openBrukerDirectoryReader(filePath, QString(), nullptr, this); ree;
     }
 
     else {
@@ -102,6 +162,8 @@ Err MsReaderPointerAcc::openFile(
 
     ERR_INIT
 
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading MsFile";
+
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
 
@@ -120,6 +182,10 @@ Err MsReaderPointerAcc::openFile(
         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
+    }
+
+    else if (isBrukerDirectoryInputPath(filePath)) {
+        e = openBrukerDirectoryReader(filePath, columnToFilterBy, &filterRange, this); ree;
     }
 
     else {
