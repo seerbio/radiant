@@ -99,6 +99,27 @@ namespace PythiaParameterReaderConstants {
 
 }
 
+// Shared by direct parameter construction and radiantConfig parsing.
+namespace PythiaParameterDefaults {
+
+    inline constexpr double kMS1IntensityMinForScoring = 0.0;
+    inline constexpr bool kAlignMs1ScanTimes = true;
+    inline constexpr int kPostNeuralNetSharedFragments = 2;
+    inline constexpr float kImWindowStdDevs = 6.0f;
+    inline constexpr int kMaxAnchorColumnIndex = 6;
+    inline constexpr bool kReportDecoys = true;
+    inline constexpr int kPeakFilterLength = 3;
+    inline constexpr double kPeakSigma = 1.0;
+    inline constexpr double kPeakSignalToNoiseRatio = 2.0;
+    inline constexpr int kPeakSmoothCount = 1;
+    inline constexpr int kMinScanCount = 3;
+    inline constexpr int kSkipScanCount = 3;
+    inline constexpr int kEpochs = 24;
+    inline constexpr int kBaggingSize = 10;
+    inline constexpr bool kNeuralNetShuffleEachEpoch = true;
+
+}
+
 struct PythiaParameters{
 
     //[General]
@@ -127,9 +148,9 @@ struct PythiaParameters{
     //[MS1Params]
     double ms1ExtractionWidthPPM = 20.0;
     double ms1ExtractionWidthPPMOverride = -1.0;
-    double ms1IntensityMinForScoring = 1e4;
+    double ms1IntensityMinForScoring = PythiaParameterDefaults::kMS1IntensityMinForScoring;
     double precursorExtractionWindowThomsons = 0.0;
-    bool alignMs1ScanTimes = false;
+    bool alignMs1ScanTimes = PythiaParameterDefaults::kAlignMs1ScanTimes;
 
     //[MS2Params]
     int filterLengthIntegration = 5;
@@ -137,7 +158,7 @@ struct PythiaParameters{
     bool competitionEnabled = true;
     int ionsSharedToReject = 4;
     // Zero disables post-NN physical competition and confidence recalculation.
-    int postNeuralNetSharedFragments = 0;
+    int postNeuralNetSharedFragments = PythiaParameterDefaults::kPostNeuralNetSharedFragments;
     double ms2ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
@@ -145,42 +166,41 @@ struct PythiaParameters{
     int rtBinning = 20;
     int imBinning = 20;
     float scanTimeWindowStDevs = 3;
-    float imWindowStdDevs = 3;
+    float imWindowStdDevs = PythiaParameterDefaults::kImWindowStdDevs;
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
     float peakDifferenceFractionThreshold = 0.1;
 
     int topNIntegrations = 10;
-    int maxAnchorColumnIndex = 6;
+    int maxAnchorColumnIndex = PythiaParameterDefaults::kMaxAnchorColumnIndex;
     int calibrationTrainingVolume = 1000;
     int peakCenter = -1;
     float timsTargetedMs2IonMobilityWindow = 0.06f;
 
     //[FdrParams]
     double percentFDR = 1.0;
-    bool reportDecoys = false;
+    bool reportDecoys = PythiaParameterDefaults::kReportDecoys;
 
     //[PeakIntegrationParams]
-    int filterLength = -1;
-    double sigma = -1.0;
-    double signalToNoiseRatio = 2.0;
-    int smoothCount = -1;
+    int filterLength = PythiaParameterDefaults::kPeakFilterLength;
+    double sigma = PythiaParameterDefaults::kPeakSigma;
+    double signalToNoiseRatio = PythiaParameterDefaults::kPeakSignalToNoiseRatio;
+    int smoothCount = PythiaParameterDefaults::kPeakSmoothCount;
     float stopThresholdFraction = 0.65;
 
     //[FeatureFinder]
-    int minScanCount = 3;
-    int skipScanCount = 2;
+    int minScanCount = PythiaParameterDefaults::kMinScanCount;
+    int skipScanCount = PythiaParameterDefaults::kSkipScanCount;
 
     //[NeuralNet]
-    int epochs = 12;
-    int baggingSize = 12;
+    int epochs = PythiaParameterDefaults::kEpochs;
+    int baggingSize = PythiaParameterDefaults::kBaggingSize;
     int neuralNetEnsembleSize = 3;
     float learningRate = 0.003;
     double nodesFraction = 0.5;
     float focalLossGamma = 0.0;
-    // Experimental; disabled by default so benchmark comparisons remain unchanged.
-    bool neuralNetShuffleEachEpoch = false;
+    bool neuralNetShuffleEachEpoch = PythiaParameterDefaults::kNeuralNetShuffleEachEpoch;
     int neuralNetCandidateLimit = 50000;
 	bool parallelNeuralNets = false;
 
