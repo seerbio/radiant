@@ -56,7 +56,6 @@ Err FragLibReader::getFragLibReaderRows(
 
     const QStringList viableFileExtensions = {
             FragLibReaderNamespace::FRAG_LIB_FF_SUFFIX.toLower(),
-            FragLibReaderNamespace::FRAG_LIB_CSV_FF_SUFFIX.toLower(),
             FragLibReaderNamespace::FRAG_LIB_TSV_FF_SUFFIX.toLower(),
             FragLibReaderNamespace::SPEC_LIB_CSV_FF_SUFFIX.toLower()
     };

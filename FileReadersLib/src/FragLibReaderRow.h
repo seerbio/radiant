@@ -15,7 +15,6 @@ namespace FragLibReaderNamespace {
 
     const QString FRAG_LIB_FF_SUFFIX = QStringLiteral("fragLibFF");
     const QString FRAG_LIB_TSV_FF_SUFFIX = QStringLiteral("tsv");
-    const QString FRAG_LIB_CSV_FF_SUFFIX = QStringLiteral("csv");
     const QString SPEC_LIB_CSV_FF_SUFFIX = QStringLiteral("speclib");
 
     const QString PEP_SEQ_CHRG_KEY = QStringLiteral("peptideSequenceChargeKey");

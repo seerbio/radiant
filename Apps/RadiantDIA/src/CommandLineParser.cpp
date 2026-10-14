@@ -48,7 +48,6 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             m_cliParams.fragLibFilePath,
             {
                 S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF.mid(1, 9),
-                S_GLOBAL_SETTINGS.DOT_CSV.mid(1,3),
                 S_GLOBAL_SETTINGS.DOT_TSV.mid(1,3),
                 S_GLOBAL_SETTINGS.DOT_SPECLIB.mid(1,7)
             }
