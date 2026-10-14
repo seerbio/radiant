@@ -1,0 +1,18 @@
+Internal ctest changing into directory: /home/ubuntu/git/radiant-thermoraw/build
+Test project /home/ubuntu/git/radiant-thermoraw/build
+    Start 38: CommandLineParserUtilsTests
+1/6 Test #38: CommandLineParserUtilsTests ......   Passed    0.02 sec
+    Start 45: MsReaderBaseTests
+2/6 Test #45: MsReaderBaseTests ................   Passed    0.86 sec
+    Start 46: MsReaderMZMLTests
+3/6 Test #46: MsReaderMZMLTests ................   Passed    0.24 sec
+    Start 50: MsReaderPointerAccTests
+4/6 Test #50: MsReaderPointerAccTests ..........   Passed    0.24 sec
+    Start 51: MsReaderThermoRawTests
+5/6 Test #51: MsReaderThermoRawTests ...........   Passed    0.09 sec
+    Start 53: PythiaParameterReaderTests
+6/6 Test #53: PythiaParameterReaderTests .......   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =   1.48 sec

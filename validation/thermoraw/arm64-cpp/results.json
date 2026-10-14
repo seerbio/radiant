@@ -1,0 +1,27 @@
+[
+  {
+    "object": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/MsReaderThermoRaw.o",
+    "exit_code": 0,
+    "log": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/MsReaderThermoRaw.log"
+  },
+  {
+    "object": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/MsReaderPointerAcc.o",
+    "exit_code": 0,
+    "log": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/MsReaderPointerAcc.log"
+  },
+  {
+    "object": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/CommandLineParserUtils.o",
+    "exit_code": 0,
+    "log": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/CommandLineParserUtils.log"
+  },
+  {
+    "object": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/CommandLineParser.o",
+    "exit_code": 0,
+    "log": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/CommandLineParser.log"
+  },
+  {
+    "object": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/main.o",
+    "exit_code": 0,
+    "log": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/arm64-cpp/main.log"
+  }
+]

@@ -1,0 +1,38 @@
+{
+  "raw": "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/raw/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.raw",
+  "mzml": "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/mzml/single-cell/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.mzML",
+  "protocol": 1,
+  "declared_spectra": 30318,
+  "compared_spectra": 30318,
+  "compared_points": 47485476,
+  "metadata_mismatches": 0,
+  "float64_array_mismatches": 0,
+  "float32_array_mismatches": 0,
+  "first_mismatches": [],
+  "elapsed_seconds": 36.9913273260463,
+  "identical": true,
+  "ms1_spectra": 1890,
+  "ms2_spectra": 28428,
+  "native_centroiding": true,
+  "include_reference_and_exception_data": true,
+  "input_sha256": {
+    "raw": "a39e564c55c1130413f6832bacfa3bef90cbcf657668bed95fcaa153061bbfc4",
+    "mzml": "e2b2b973c58bb14cb105b910a94bd70419fac3326dc8e78afd6c3c52462e88f6"
+  },
+  "parser_package_versions": {
+    "ThermoRawFileParser/2.0.0-dev": "project",
+    "log4net/3.0.1": "package",
+    "ThermoFisher.CommonCore.RawFileReader/8.0.6": "package"
+  },
+  "assembly_sha256": {
+    "ThermoRawFileParser.dll": "9dfd32854c2e8ac397274e01a7058164f5c1ca1d907e0f9fdc905430320cb51f",
+    "ThermoFisher.CommonCore.Data.dll": "e00fb823ea88847c7ca0c10e3b9080baad63cc74d2e6d68a91dec468b16de4e9",
+    "ThermoFisher.CommonCore.RawFileReader.dll": "a9741618ace40dec01fa863fdae1f447add9533edf032da8ae254464f91a7c09",
+    "log4net.dll": "9e2270d0545dc32934643cac66a8dc71244f6ec09da9685d05f372dd0f19e64c"
+  },
+  "helper_sha256": "38c89a77468a62c4d99b535db1d1b30230e8e963ec2bbe3361bf7693a6994ee8",
+  "upstream_source_commit": "cf548e4a3fadcc796291a01fdbd088af986a5d72",
+  "dotnet_sdk": "8.0.426",
+  "dotnet_target": "net8.0",
+  "runtime": "linux-x64"
+}

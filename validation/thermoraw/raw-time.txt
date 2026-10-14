@@ -1,0 +1,23 @@
+	Command being timed: "/home/ubuntu/git/radiant-thermoraw/build/bin/RadiantDIA --thermo-raw-reader /home/ubuntu/git/radiant-thermoraw/build/bin/thermoraw/RadiantThermoRawReader /home/ubuntu/proteomexchange/radiant-single-cell/library/hela_250pg_technical.predicted.speclib /home/ubuntu/proteomexchange/radiant-single-cell/fasta/human_20230804_crap_20231130.fasta /home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/config.radiantConfig /home/ubuntu/proteomexchange/fulcrum-radiant-dev/raw/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.raw --output-folder /home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/raw"
+	User time (seconds): 810.13
+	System time (seconds): 13.00
+	Percent of CPU this job got: 230%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 5:56.81
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 7460108
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 3079883
+	Voluntary context switches: 66835
+	Involuntary context switches: 53072
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 74280
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

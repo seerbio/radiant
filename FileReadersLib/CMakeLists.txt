@@ -11,6 +11,8 @@ SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
 
+SET(THERMO_RAW_READER_EXECUTABLE "" CACHE FILEPATH "Path to the RadiantThermoRawReader executable or DLL")
+
 SET(TIMSREADER_ROOT "${CMAKE_SOURCE_DIR}/ThirdPartyLibs/timsreader" CACHE PATH "Path to the vendored timsreader payload")
 SET(TIMSREADER_INCLUDE_DIR "${TIMSREADER_ROOT}/include" CACHE PATH "Path to timsreader headers")
 SET(TIMSREADER_LIBRARY "" CACHE FILEPATH "Path to the timsreader shared library")
@@ -84,6 +86,7 @@ SET(SOURCE_FILES
         src/MsReaderMzMLLazyLoad.cpp
         src/MsReaderMzMLMapped.cpp
         src/MsReaderPointerAcc.cpp
+        src/MsReaderThermoRaw.cpp
         src/MsReaderTimsreader.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
@@ -112,6 +115,7 @@ SET(HEADER_FILES
         src/MsReaderMzMLLazyLoad.h
         src/MsReaderMzMLMapped.h
         src/MsReaderPointerAcc.h
+        src/MsReaderThermoRaw.h
         src/MsReaderTimsreader.h
         src/ParquetReader.h
         src/PythiaParameterReader.h
@@ -148,6 +152,12 @@ FIND_PACKAGE(Qt5 COMPONENTS
 )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
+IF(NOT THERMO_RAW_READER_EXECUTABLE STREQUAL "")
+    STRING(REPLACE "\\" "\\\\" _THERMO_RAW_READER_PATH "${THERMO_RAW_READER_EXECUTABLE}")
+    STRING(REPLACE "\"" "\\\"" _THERMO_RAW_READER_PATH "${_THERMO_RAW_READER_PATH}")
+    TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE
+            "RADIANT_THERMO_RAW_READER_DEFAULT=\"${_THERMO_RAW_READER_PATH}\"")
+ENDIF()
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib

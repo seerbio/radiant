@@ -74,7 +74,34 @@ The accepted input families are:
 - fragment library: `.tsv`, or `.speclib`;
 - protein database: `.fasta` or `.fas`;
 - configuration: `.radiantConfig` (`.toml` files are also accepted);
-- search data: `.mzML`, or a Bruker `.d` data directory.
+- search data: `.mzML`, Thermo `.raw`, or a Bruker `.d` data directory.
+
+Thermo RAW input uses the direct scan reader built from the
+ThermoRawFileParser library and its Thermo RawFileReader dependencies. It reads
+native centroid spectra and scan metadata into Radiant without converting to
+mzML. Build the reader once from an unpacked .NET 8 ThermoRawFileParser
+distribution:
+
+```shell
+tools/thermo-raw-reader/build.sh --parser-dir=/path/to/ThermoRawFileParser
+build/bin/RadiantDIA library.tsv database.fasta config.radiantConfig sample.raw \
+  --output-folder radiant-results/
+```
+
+The default build places the reader beside Radiant in `build/bin/thermoraw/`,
+where Radiant finds it automatically. For another location, pass
+`--thermo-raw-reader /path/to/RadiantThermoRawReader` or set
+`RADIANT_THERMO_RAW_READER`. The published reader includes its .NET runtime.
+RAW input reads MS1/MS2 scans with native centroiding and uses eager loading;
+`useLazyLoading` applies to mzML input. See the
+[reader build instructions](tools/thermo-raw-reader/README.md) for dependencies
+and the binary scan interface.
+
+On EC2 Graviton, `tools/thermo-raw-reader/build.sh` selects Linux ARM64 and
+prepares compatible AnyCPU Thermo libraries automatically; no `--parser-dir`
+is required. Build Radiant natively on the ARM64 host using the normal
+development instructions. To cross-publish just the scan reader from x86_64,
+use `--runtime=linux-arm64`.
 
 Run `RadiantDIA --help` for the options available in the installed build. When
 running in a container, paths must be valid in the execution environment—for

@@ -1,0 +1,11 @@
+{
+    "exact_equal": true,
+    "ms1_spectra": 1890,
+    "ms2_spectra": 28428,
+    "mzml": "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/mzml/single-cell/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.mzML",
+    "mzml_spectra_sha256": "7478c3ac1de740be0a2b80b1559afff22a8cce5619ba13113f9626a36e45cfec",
+    "raw": "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/raw/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.raw",
+    "raw_spectra_sha256": "7478c3ac1de740be0a2b80b1559afff22a8cce5619ba13113f9626a36e45cfec",
+    "retained_peaks": 47485476,
+    "spectra": 30318
+}
