@@ -56,3 +56,14 @@ application entry point compiled successfully to AArch64 objects with actual
 ARM64 Qt headers. Commands and results are saved in
 [arm64-cpp/commands.json](arm64-cpp/commands.json) and
 [arm64-cpp/results.json](arm64-cpp/results.json).
+
+The ARM64 scan reader was also built from a fresh dependency cache and run
+under QEMU on an existing Thermo RAW blank. All 5,845 spectra and 158,609 peak
+pairs produced a binary stream byte-for-byte identical to the x86 reader;
+see [arm64-stream-comparison.json](arm64-stream-comparison.json). The AnyCPU
+libraries required by ARM64 also matched the full HeLa reference's 30,318
+spectra and 47,485,476 peaks exactly; see
+[portable-stream-comparison.json](portable-stream-comparison.json).
+[arm64-dependencies.json](arm64-dependencies.json) records the verified source
+and vendor package pins. A full Radiant search on a physical Graviton instance
+was not performed.

@@ -15,5 +15,12 @@
   "result_file_sha256": "f4cb39cbe9dddaf1fd89531a5f7fec2c1767bbb08918b69af22ec12543f36f73",
   "byte_identical_result_files": true,
   "library_sha256": "1fa8075fb4f15cdca4c113df1879d36b62432500222702a99c600349bbd8533e",
-  "fasta_sha256": "37944d9ed7e607cac93a8c517d38b33e9e9b7ef8ba2ded630479cdd85625ed6c"
+  "fasta_sha256": "37944d9ed7e607cac93a8c517d38b33e9e9b7ef8ba2ded630479cdd85625ed6c",
+  "arm64_validation": {
+    "changed_cpp_translation_units_compiled": 5,
+    "native_helper_runtime": "linux-arm64 under QEMU; no EC2 instance launched",
+    "raw_stream_exact_equal_to_x86": true,
+    "portable_dependencies_exact_equal_to_reference_mzml": true,
+    "full_radiant_ec2_graviton_run_performed": false
+  }
 }

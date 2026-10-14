@@ -1,0 +1,9 @@
+{
+  "parser_source_commit": "cf548e4a3fadcc796291a01fdbd088af986a5d72",
+  "parser_source_sha256": "dbe5ab5d79ee90f843b46e7e6518aa0b792cb430eb5c8c5db762d33ddc14597a",
+  "parser_platform_target": "AnyCPU",
+  "vendor_source_commit": "47eeda0d54a9ca28ace8e6548b7c01b6843207c2",
+  "rawfilereader_version": "8.0.42",
+  "rawfilereader_package_sha256": "af259d466e24227ba6706872330a0736d6fc2f552ad9d46a78a4697f0f62e1a6",
+  "data_package_sha256": "0b1d2fff2f81532e0c56471b22bc0e2c0c6685f37aa43b0b134ad82ae75ae444"
+}
