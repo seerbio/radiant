@@ -1,0 +1,151 @@
+{
+  "dataset": "HeLa 250 pg · replicate 4",
+  "filter": {
+    "IsDecoy": 0,
+    "q_operator": "<",
+    "q_threshold": 0.01
+  },
+  "protein_group_normalization": "Trim surrounding whitespace; replace commas with spaces, matching Radiant.",
+  "set_sha256_format": "Sorted identifier keys serialized as compact UTF-8 JSON, each followed by LF.",
+  "byte_identical_results": true,
+  "mzml_result": {
+    "path": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/mzml/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.mzML.radiantDIA",
+    "sha256": "f4cb39cbe9dddaf1fd89531a5f7fec2c1767bbb08918b69af22ec12543f36f73",
+    "result_rows": 67080,
+    "result_columns": 188,
+    "target_rows": 49750,
+    "required_column_null_counts": {
+      "IsDecoy": 0,
+      "PeptideStringWithMods": 0,
+      "Charge": 0,
+      "ProteinGroup": 0,
+      "PrecursorQValue": 0,
+      "PeptideQValue": 0,
+      "ProteinQValue": 0
+    },
+    "identifications": {
+      "precursor": {
+        "q_column": "PrecursorQValue",
+        "passing_target_rows": 28131,
+        "unique_identifications": 28131,
+        "excluded_target_rows_with_missing_or_nonfinite_q": 0,
+        "set_sha256": "2eed79951da619a438da5d0453a2090be35d484364a25bfe4737156a42ddc568"
+      },
+      "modified_peptide": {
+        "q_column": "PeptideQValue",
+        "passing_target_rows": 28332,
+        "unique_identifications": 27714,
+        "excluded_target_rows_with_missing_or_nonfinite_q": 0,
+        "set_sha256": "0981a59d16aac660096f8334010f856723b506be0c906f6a663ca2ef3df2d658"
+      },
+      "protein_group": {
+        "q_column": "ProteinQValue",
+        "passing_target_rows": 36120,
+        "unique_identifications": 6057,
+        "excluded_target_rows_with_missing_or_nonfinite_q": 0,
+        "set_sha256": "49650f8fb40b680336cb297cd3999d5bd2e9a7ed17ec1bc570b13bb03c56731f"
+      }
+    }
+  },
+  "raw_result": {
+    "path": "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/raw/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.raw.radiantDIA",
+    "sha256": "f4cb39cbe9dddaf1fd89531a5f7fec2c1767bbb08918b69af22ec12543f36f73",
+    "result_rows": 67080,
+    "result_columns": 188,
+    "target_rows": 49750,
+    "required_column_null_counts": {
+      "IsDecoy": 0,
+      "PeptideStringWithMods": 0,
+      "Charge": 0,
+      "ProteinGroup": 0,
+      "PrecursorQValue": 0,
+      "PeptideQValue": 0,
+      "ProteinQValue": 0
+    },
+    "identifications": {
+      "precursor": {
+        "q_column": "PrecursorQValue",
+        "passing_target_rows": 28131,
+        "unique_identifications": 28131,
+        "excluded_target_rows_with_missing_or_nonfinite_q": 0,
+        "set_sha256": "2eed79951da619a438da5d0453a2090be35d484364a25bfe4737156a42ddc568"
+      },
+      "modified_peptide": {
+        "q_column": "PeptideQValue",
+        "passing_target_rows": 28332,
+        "unique_identifications": 27714,
+        "excluded_target_rows_with_missing_or_nonfinite_q": 0,
+        "set_sha256": "0981a59d16aac660096f8334010f856723b506be0c906f6a663ca2ef3df2d658"
+      },
+      "protein_group": {
+        "q_column": "ProteinQValue",
+        "passing_target_rows": 36120,
+        "unique_identifications": 6057,
+        "excluded_target_rows_with_missing_or_nonfinite_q": 0,
+        "set_sha256": "49650f8fb40b680336cb297cd3999d5bd2e9a7ed17ec1bc570b13bb03c56731f"
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "level": "precursor",
+      "label": "Precursors",
+      "q_column": "PrecursorQValue",
+      "key_columns": [
+        "PeptideStringWithMods",
+        "Charge"
+      ],
+      "raw_total": 28131,
+      "mzml_total": 28131,
+      "raw_only": 0,
+      "shared": 28131,
+      "mzml_only": 0,
+      "union": 28131,
+      "jaccard": 1.0,
+      "identical_sets": true,
+      "raw_only_keys": [],
+      "mzml_only_keys": []
+    },
+    {
+      "level": "modified_peptide",
+      "label": "Modified peptides",
+      "q_column": "PeptideQValue",
+      "key_columns": [
+        "PeptideStringWithMods"
+      ],
+      "raw_total": 27714,
+      "mzml_total": 27714,
+      "raw_only": 0,
+      "shared": 27714,
+      "mzml_only": 0,
+      "union": 27714,
+      "jaccard": 1.0,
+      "identical_sets": true,
+      "raw_only_keys": [],
+      "mzml_only_keys": []
+    },
+    {
+      "level": "protein_group",
+      "label": "Protein groups",
+      "q_column": "ProteinQValue",
+      "key_columns": [
+        "ProteinGroup"
+      ],
+      "raw_total": 6057,
+      "mzml_total": 6057,
+      "raw_only": 0,
+      "shared": 6057,
+      "mzml_only": 0,
+      "union": 6057,
+      "jaccard": 1.0,
+      "identical_sets": true,
+      "raw_only_keys": [],
+      "mzml_only_keys": []
+    }
+  ],
+  "figures": [
+    "raw-vs-mzml-venn.png",
+    "raw-vs-mzml-venn.svg",
+    "raw-vs-mzml-venn.pdf"
+  ]
+}

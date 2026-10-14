@@ -23,6 +23,31 @@ and [native-stream-comparison.json](native-stream-comparison.json).
 | Target precursors, precursor q-value < 0.01 | 28,131 | 28,131 | Exact match |
 | Modified peptides, precursor q-value < 0.01 | 27,799 | 27,799 | Exact match |
 
+The Venn comparison uses target-only identifications and each level's own
+q-value below 0.01: **28,131 precursors**, **27,714 modified peptides**, and
+**6,057 protein groups**. Every identification is shared; both exclusive sets
+are empty. The coincident circles represent the complete overlap.
+
+![Target identification overlap for direct RAW and reference mzML searches](figures/raw-vs-mzml-venn.png)
+
+Figures are available as [PDF](figures/raw-vs-mzml-venn.pdf) and
+[SVG](figures/raw-vs-mzml-venn.svg). The
+[overlap JSON](figures/raw-vs-mzml-overlap.json) and
+[CSV](figures/raw-vs-mzml-overlap.csv) record the level-specific filters,
+counts, and matching set fingerprints. The peptide Venn uses `PeptideQValue`;
+the 27,799-peptide count in the table above uses `PrecursorQValue`.
+
+Reproduce the diagrams from the completed searches:
+
+```shell
+python3 scripts/plot_thermoraw_venn.py \
+  build/thermoraw-validation/mzml/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.mzML.radiantDIA \
+  build/thermoraw-validation/raw/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.raw.radiantDIA \
+  --output-dir validation/thermoraw/figures
+```
+
+The plotting script requires PyArrow, Matplotlib, and matplotlib-venn.
+
 The complete `.radiantDIA` Parquet files are **byte-for-byte identical**.
 Both have SHA-256:
 

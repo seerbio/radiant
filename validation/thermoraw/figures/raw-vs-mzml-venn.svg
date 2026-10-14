@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="756pt" height="367.2pt" viewBox="0 0 756 367.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-14T21:15:27.706136</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 367.2 
+L 756 367.2 
+L 756 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 133.027826 226.795053 
+C 149.330116 226.795053 164.9669 220.318085 176.49436 208.790626 
+C 188.02182 197.263166 194.498788 181.626381 194.498788 165.324092 
+C 194.498788 149.021802 188.02182 133.385017 176.49436 121.857558 
+C 164.9669 110.330098 149.330116 103.85313 133.027826 103.85313 
+C 116.725536 103.85313 101.088752 110.330098 89.561292 121.857558 
+C 78.033833 133.385017 71.556864 149.021802 71.556864 165.324092 
+C 71.556864 181.626381 78.033833 197.263166 89.561292 208.790626 
+C 101.088752 220.318085 116.725536 226.795053 133.027826 226.795053 
+L 133.027826 226.795053 
+z
+" clip-path="url(#p0bf36d31b2)" style="fill: none; stroke: #1976b8; stroke-width: 3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 133.027826 226.795053 
+C 149.330116 226.795053 164.9669 220.318085 176.49436 208.790626 
+C 188.02182 197.263166 194.498788 181.626381 194.498788 165.324092 
+C 194.498788 149.021802 188.02182 133.385017 176.49436 121.857558 
+C 164.9669 110.330098 149.330116 103.85313 133.027826 103.85313 
+C 116.725536 103.85313 101.088752 110.330098 89.561292 121.857558 
+C 78.033833 133.385017 71.556864 149.021802 71.556864 165.324092 
+C 71.556864 181.626381 78.033833 197.263166 89.561292 208.790626 
+C 101.088752 220.318085 116.725536 226.795053 133.027826 226.795053 
+L 133.027826 226.795053 
+z
+" clip-path="url(#p0bf36d31b2)" style="fill: none; stroke-dasharray: 11,6.6; stroke-dashoffset: 0; stroke: #d96912; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 22px; font-family: 'DejaVu Sans'; text-anchor: middle" x="133.027826" y="157.099144" transform="rotate(-0 133.027826 157.099144)">28,131</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: middle" x="133.027826" y="175.783128" transform="rotate(-0 133.027826 175.783128)">shared</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="133.027826" y="196.235771" transform="rotate(-0 133.027826 196.235771)">100% overlap</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #1976b8" transform="translate(62.114976 255.167136)">RAW only</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #1976b8" transform="translate(84.497398 267.48473)">0</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #d96912" transform="translate(148.622708 255.167136)">mzML only</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #d96912" transform="translate(174.559505 267.48473)">0</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: middle" x="133.027826" y="80.128" transform="rotate(-0 133.027826 80.128)">Precursors</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_4">
+    <path d="M 378 226.795053 
+C 394.30229 226.795053 409.939074 220.318085 421.466534 208.790626 
+C 432.993994 197.263166 439.470962 181.626381 439.470962 165.324092 
+C 439.470962 149.021802 432.993994 133.385017 421.466534 121.857558 
+C 409.939074 110.330098 394.30229 103.85313 378 103.85313 
+C 361.69771 103.85313 346.060926 110.330098 334.533466 121.857558 
+C 323.006006 133.385017 316.529038 149.021802 316.529038 165.324092 
+C 316.529038 181.626381 323.006006 197.263166 334.533466 208.790626 
+C 346.060926 220.318085 361.69771 226.795053 378 226.795053 
+L 378 226.795053 
+z
+" clip-path="url(#p441d72529d)" style="fill: none; stroke: #1976b8; stroke-width: 3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 378 226.795053 
+C 394.30229 226.795053 409.939074 220.318085 421.466534 208.790626 
+C 432.993994 197.263166 439.470962 181.626381 439.470962 165.324092 
+C 439.470962 149.021802 432.993994 133.385017 421.466534 121.857558 
+C 409.939074 110.330098 394.30229 103.85313 378 103.85313 
+C 361.69771 103.85313 346.060926 110.330098 334.533466 121.857558 
+C 323.006006 133.385017 316.529038 149.021802 316.529038 165.324092 
+C 316.529038 181.626381 323.006006 197.263166 334.533466 208.790626 
+C 346.060926 220.318085 361.69771 226.795053 378 226.795053 
+L 378 226.795053 
+z
+" clip-path="url(#p441d72529d)" style="fill: none; stroke-dasharray: 11,6.6; stroke-dashoffset: 0; stroke: #d96912; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 22px; font-family: 'DejaVu Sans'; text-anchor: middle" x="378" y="157.099144" transform="rotate(-0 378 157.099144)">27,714</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: middle" x="378" y="175.783128" transform="rotate(-0 378 175.783128)">shared</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="378" y="196.235771" transform="rotate(-0 378 196.235771)">100% overlap</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #1976b8" transform="translate(307.08715 255.167136)">RAW only</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #1976b8" transform="translate(329.469572 267.48473)">0</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #d96912" transform="translate(393.594882 255.167136)">mzML only</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #d96912" transform="translate(419.531678 267.48473)">0</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: middle" x="378" y="80.128" transform="rotate(-0 378 80.128)">Modified peptides</text>
+   </g>
+  </g>
+  <g id="axes_3">
+   <g id="patch_6">
+    <path d="M 622.972174 226.795053 
+C 639.274464 226.795053 654.911248 220.318085 666.438708 208.790626 
+C 677.966167 197.263166 684.443136 181.626381 684.443136 165.324092 
+C 684.443136 149.021802 677.966167 133.385017 666.438708 121.857558 
+C 654.911248 110.330098 639.274464 103.85313 622.972174 103.85313 
+C 606.669884 103.85313 591.0331 110.330098 579.50564 121.857558 
+C 567.97818 133.385017 561.501212 149.021802 561.501212 165.324092 
+C 561.501212 181.626381 567.97818 197.263166 579.50564 208.790626 
+C 591.0331 220.318085 606.669884 226.795053 622.972174 226.795053 
+L 622.972174 226.795053 
+z
+" clip-path="url(#pad65068b9f)" style="fill: none; stroke: #1976b8; stroke-width: 3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 622.972174 226.795053 
+C 639.274464 226.795053 654.911248 220.318085 666.438708 208.790626 
+C 677.966167 197.263166 684.443136 181.626381 684.443136 165.324092 
+C 684.443136 149.021802 677.966167 133.385017 666.438708 121.857558 
+C 654.911248 110.330098 639.274464 103.85313 622.972174 103.85313 
+C 606.669884 103.85313 591.0331 110.330098 579.50564 121.857558 
+C 567.97818 133.385017 561.501212 149.021802 561.501212 165.324092 
+C 561.501212 181.626381 567.97818 197.263166 579.50564 208.790626 
+C 591.0331 220.318085 606.669884 226.795053 622.972174 226.795053 
+L 622.972174 226.795053 
+z
+" clip-path="url(#pad65068b9f)" style="fill: none; stroke-dasharray: 11,6.6; stroke-dashoffset: 0; stroke: #d96912; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 22px; font-family: 'DejaVu Sans'; text-anchor: middle" x="622.972174" y="157.099144" transform="rotate(-0 622.972174 157.099144)">6,057</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: middle" x="622.972174" y="175.783128" transform="rotate(-0 622.972174 175.783128)">shared</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="622.972174" y="196.235771" transform="rotate(-0 622.972174 196.235771)">100% overlap</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #1976b8" transform="translate(552.059324 255.167136)">RAW only</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #1976b8" transform="translate(574.441745 267.48473)">0</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #d96912" transform="translate(638.567055 255.167136)">mzML only</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #d96912" transform="translate(664.503852 267.48473)">0</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: middle" x="622.972174" y="80.128" transform="rotate(-0 622.972174 80.128)">Protein groups</text>
+   </g>
+  </g>
+  <g id="text_19">
+   <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle" x="378" y="23.9079" transform="rotate(-0 378 23.9079)">Radiant search: direct RAW vs mzML</text>
+  </g>
+  <g id="text_20">
+   <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle" x="378" y="34.5168" transform="rotate(-0 378 34.5168)">HeLa 250 pg · replicate 4</text>
+  </g>
+  <g id="text_21">
+   <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #40464d" x="378" y="302.5728" transform="rotate(-0 378 302.5728)">Targets only (IsDecoy = 0), q &lt; 0.01 using precursor, peptide and protein-group q-values, respectively.</text>
+  </g>
+  <g id="text_22">
+   <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #40464d" x="378" y="320.1984" transform="rotate(-0 378 320.1984)">Precursors: modified sequence + charge; peptides: modified sequence; proteins: reported groups.</text>
+  </g>
+  <g id="text_23">
+   <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #40464d" x="378" y="337.824" transform="rotate(-0 378 337.824)">Identical sets have coincident circles. Panels are scaled independently.</text>
+  </g>
+  <g id="legend_1">
+   <g id="line2d_1">
+    <path d="M 226.676953 63.245881 
+L 241.526953 63.245881 
+L 256.376953 63.245881 
+" style="fill: none; stroke: #1976b8; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: start" x="265.176953" y="67.095881" transform="rotate(-0 265.176953 67.095881)">Direct Thermo RAW</text>
+   </g>
+   <g id="line2d_2">
+    <path d="M 399.830703 63.245881 
+L 414.680703 63.245881 
+L 429.530703 63.245881 
+" style="fill: none; stroke-dasharray: 11,6.6; stroke-dashoffset: 0; stroke: #d96912; stroke-width: 2.2"/>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: start" x="438.330703" y="67.095881" transform="rotate(-0 438.330703 67.095881)">Reference mzML</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p0bf36d31b2">
+   <rect x="47.254391" y="88.128" width="171.54687" height="187.272"/>
+  </clipPath>
+  <clipPath id="p441d72529d">
+   <rect x="292.226565" y="88.128" width="171.54687" height="187.272"/>
+  </clipPath>
+  <clipPath id="pad65068b9f">
+   <rect x="537.198739" y="88.128" width="171.54687" height="187.272"/>
+  </clipPath>
+ </defs>
+</svg>
