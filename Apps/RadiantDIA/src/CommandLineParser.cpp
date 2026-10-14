@@ -10,7 +10,7 @@
 #include <QFileInfo>
 
 namespace {
-    const QString ARG_FRAGLIB_PATH = QStringLiteral("fraglibff-path");
+    const QString ARG_LIBRARY_PATH = QStringLiteral("library-path");
     const QString ARG_FASTA_PATH = QStringLiteral("fasta-path");
     const QString ARG_PYTHIA_PARAMS = QStringLiteral("config-path");
     const QString ARG_DATAFILE_PATH = QStringLiteral("data-file-path");
@@ -19,10 +19,10 @@ namespace {
 
 CommandLineParser::CommandLineParser() {
     addHelpOption();
-    addPositionalArgument(ARG_FRAGLIB_PATH, QObject::tr("*.fragLibFF file"));
+    addPositionalArgument(ARG_LIBRARY_PATH, QObject::tr("library file (e.g. *.tsv)"));
     addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.radiantConfig file"));
-    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML, *.prqFF, or Bruker *.d)"));
+    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML or Bruker *.d)"));
 
     addOption(QCommandLineOption(
         {ARG_OUTPUT_FOLDER},
@@ -48,13 +48,12 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             m_cliParams.fragLibFilePath,
             {
                 S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF.mid(1, 9),
-                S_GLOBAL_SETTINGS.DOT_CSV.mid(1,3),
                 S_GLOBAL_SETTINGS.DOT_TSV.mid(1,3),
                 S_GLOBAL_SETTINGS.DOT_SPECLIB.mid(1,7)
             }
             );
     if (!fragLibFilePathIsValid) {
-        qCritical() << QStringLiteral("First command line argument *.fragLibFF, argument invalid");
+        qCritical() << QStringLiteral("First command line argument must be a library file (e.g. *.tsv)");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
@@ -94,7 +93,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.msDataFile = args[4];
     const bool dataFilesPathIsValid = CommandLineParserUtils::isMassSpectrometryDataPath(m_cliParams.msDataFile);
     if (!dataFilesPathIsValid) {
-        qCritical() << QStringLiteral("Fourth command line argument must be *.prqFF, *.mzML, or Bruker *.d");
+        qCritical() << QStringLiteral("Fourth command line argument must be *.mzML or Bruker *.d");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
@@ -121,7 +120,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
 const CommandLineParser::CliParameters &CommandLineParser::getCliParams() const {
 
-    qDebug() << ARG_FRAGLIB_PATH << m_cliParams.fragLibFilePath;
+    qDebug() << ARG_LIBRARY_PATH << m_cliParams.fragLibFilePath;
     qDebug() << ARG_FASTA_PATH << m_cliParams.fastaFilePath;
     qDebug() << ARG_PYTHIA_PARAMS  << m_cliParams.pythiaParametersFilePath;
     qDebug() << ARG_DATAFILE_PATH  << m_cliParams.msDataFile;
