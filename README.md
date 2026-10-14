@@ -74,7 +74,9 @@ The accepted input families are:
 - fragment library: `.tsv`, or `.speclib`;
 - protein database: `.fasta` or `.fas`;
 - configuration: `.radiantConfig` (`.toml` files are also accepted);
-- search data: `.mzML`, or a Bruker `.d` data directory.
+- search data: `.mzML`, Thermo `.raw`, or a Bruker `.d` data directory.
+
+Thermo `.raw` files are supported as search inputs.
 
 Run `RadiantDIA --help` for the options available in the installed build. When
 running in a container, paths must be valid in the execution environment—for

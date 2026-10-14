@@ -34,6 +34,7 @@ bool CommandLineParserUtils::isMassSpectrometryDataPath(const QString &filePath)
                {
                    S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION,
                    S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION,
+                   S_GLOBAL_SETTINGS.THERMO_RAW_FILE_EXTENSION,
                    S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION
                }
                );

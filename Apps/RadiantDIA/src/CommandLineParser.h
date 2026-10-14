@@ -20,6 +20,7 @@ public:
         QString pythiaParametersFilePath;
         QString msDataFile;
         QString outputFolderPath;
+        QString thermoRawReaderPath;
     };
 
     CommandLineParser();

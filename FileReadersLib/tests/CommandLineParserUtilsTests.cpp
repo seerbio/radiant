@@ -51,6 +51,9 @@ void CommandLineParserUtilsTests::checkFileNameExtensionTest() {
 
 void CommandLineParserUtilsTests::isMassSpectrometryDataPathTest() {
 
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath("/tmp/example_run.raw"), true);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath("/tmp/example_run.RAW"), true);
+    QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath("/tmp/example_run.mzML"), true);
     const QString sidecarPathBySuffix = QStringLiteral("/tmp/example_run.d.idx");
     QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix), false);
     QCOMPARE(CommandLineParserUtils::isMassSpectrometryDataPath(sidecarPathBySuffix + QStringLiteral("/")), false);

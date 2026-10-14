@@ -29,6 +29,10 @@ The headers are shared across architectures. `build-local.sh`, Docker builds, an
 ./build-local.sh
 ```
 
+Thermo RAW helper dependencies are built automatically by `build-local.sh` and
+the Docker build. The helper build script is an implementation detail of those
+builds; it does not require a separate developer or CI setup step.
+
 ## Running in CLion IDE
 1. Run the script from **Setting up a development environment**
 2. Run the script from **Running a local build**
