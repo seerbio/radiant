@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/ubuntu/git/radiant-thermoraw/build/bin/RadiantDIA",
+    "/home/ubuntu/proteomexchange/radiant-single-cell/library/hela_250pg_technical.predicted.speclib",
+    "/home/ubuntu/proteomexchange/radiant-single-cell/fasta/human_20230804_crap_20231130.fasta",
+    "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/config.radiantConfig",
+    "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/mzml/single-cell/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.mzML",
+    "--output-folder",
+    "/home/ubuntu/git/radiant-thermoraw/build/thermoraw-validation/mzml"
+  ],
+  "env": {
+    "QT_HASH_SEED": "0",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  }
+}

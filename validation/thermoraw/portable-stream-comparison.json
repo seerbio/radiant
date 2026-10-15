@@ -1,0 +1,48 @@
+{
+  "raw": "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/raw/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.raw",
+  "mzml": "/home/ubuntu/proteomexchange/fulcrum-radiant-dev/mzml/single-cell/20231010_250pgHeLa_240k_20Th_40ms_DDM_50SPD_4.mzML",
+  "protocol": 1,
+  "declared_spectra": 30318,
+  "compared_spectra": 30318,
+  "compared_points": 47485476,
+  "metadata_mismatches": 0,
+  "float64_array_mismatches": 0,
+  "float32_array_mismatches": 0,
+  "first_mismatches": [],
+  "elapsed_seconds": 26.141928681987338,
+  "identical": true,
+  "ms1_spectra": 1890,
+  "ms2_spectra": 28428,
+  "native_centroiding": true,
+  "include_reference_and_exception_data": true,
+  "input_sha256": {
+    "raw": "a39e564c55c1130413f6832bacfa3bef90cbcf657668bed95fcaa153061bbfc4",
+    "mzml": "e2b2b973c58bb14cb105b910a94bd70419fac3326dc8e78afd6c3c52462e88f6"
+  },
+  "dotnet_sdk": "8.0.426",
+  "dotnet_target": "net8.0",
+  "runtime": "linux-x64",
+  "upstream_source_commit": "cf548e4a3fadcc796291a01fdbd088af986a5d72",
+  "assembly_sha256": {
+    "ThermoRawFileParser.dll": "c46bb8abe5befdd3dad268972961d48391a5710edf220c3b5cc811f55d317676",
+    "ThermoFisher.CommonCore.Data.dll": "7cfdd611a491392fe043c5dc98edeba2a664cc3b3f428f0d1eb27d969f47a7d2",
+    "ThermoFisher.CommonCore.RawFileReader.dll": "f18ce8ec58a2d1bca34b04c7b6867a8a4f7c1bdc49ce922c00831ff7bf05bd16",
+    "log4net.dll": "9e2270d0545dc32934643cac66a8dc71244f6ec09da9685d05f372dd0f19e64c"
+  },
+  "helper_sha256": "51911aa8bc810822da64f99ed00d4016d45df09c464f606a9024cf9b52afd68e",
+  "parser_package_versions": {
+    "ThermoRawFileParser": "2.0.0-dev",
+    "ThermoFisher.CommonCore.RawFileReader": "8.0.42",
+    "ThermoFisher.CommonCore.Data": "8.0.42",
+    "log4net": "3.0.1"
+  },
+  "portable_dependency_manifest": {
+    "parser_source_commit": "cf548e4a3fadcc796291a01fdbd088af986a5d72",
+    "rawfilereader_version": "8.0.42",
+    "official_vendor_commit": "47eeda0d54a9ca28ace8e6548b7c01b6843207c2",
+    "packages_sha256": {
+      "data.8.0.42.nupkg": "0b1d2fff2f81532e0c56471b22bc0e2c0c6685f37aa43b0b134ad82ae75ae444",
+      "rawfilereader.8.0.42.nupkg": "af259d466e24227ba6706872330a0736d6fc2f552ad9d46a78a4697f0f62e1a6"
+    }
+  }
+}
