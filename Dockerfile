@@ -64,8 +64,17 @@ RUN chmod u+x /tmp/get-or-build-libtorch.sh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project source into the container
-COPY ./ /src/PythiaDIACpp/
+# Keep native compilation cached when helper or packaging files change.
+COPY CMakeLists.txt /src/PythiaDIACpp/
+COPY AlgorithmsFFLib/ /src/PythiaDIACpp/AlgorithmsFFLib/
+COPY Apps/ /src/PythiaDIACpp/Apps/
+COPY ChemLib/ /src/PythiaDIACpp/ChemLib/
+COPY EigenLib/ /src/PythiaDIACpp/EigenLib/
+COPY FileReadersLib/ /src/PythiaDIACpp/FileReadersLib/
+COPY PyTorchLib/ /src/PythiaDIACpp/PyTorchLib/
+COPY UtilsLib/ /src/PythiaDIACpp/UtilsLib/
+COPY WorkFlowsLib/ /src/PythiaDIACpp/WorkFlowsLib/
+COPY ThirdPartyLibs/ /src/PythiaDIACpp/ThirdPartyLibs/
 
 # Build the project in /app/
 WORKDIR /app/
@@ -73,9 +82,14 @@ ARG BUILD_JOBS=2
 RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PATH="${PYTORCH_PREFIX_PATH}/pytorch" \
     && cmake --build /app/ --parallel "${BUILD_JOBS}"
 
-# Publish only the self-contained RAW reader into the application payload.
+# Publish the RAW reader without duplicating the distro-managed .NET runtime.
 # The SDK, dependency downloads and parser source remain in the build stage.
+COPY tools/thermo-raw-reader/ /src/PythiaDIACpp/tools/thermo-raw-reader/
 RUN /src/PythiaDIACpp/tools/thermo-raw-reader/build.sh --output=/app/bin/thermoraw \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y dotnet-runtime-8.0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
     && /app/bin/thermoraw/RadiantThermoRawReader --version
 
 ################################################
@@ -113,11 +127,8 @@ CMD ["ctest", "--output-on-failure"]
 ################################################
 FROM build AS build-deb
 
-# Copy some extra contents into /app/
-RUN cp \
-    /src/PythiaDIACpp/control.* \
-    /src/PythiaDIACpp/build_deb.sh \
-    /app/
+# Copy package metadata after compilation so metadata edits reuse the build.
+COPY control.* build_deb.sh /app/
 
 #RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
 #RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100

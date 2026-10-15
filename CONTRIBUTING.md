@@ -44,12 +44,20 @@ tools/thermo-raw-reader/build.sh
 
 On both x86_64 and ARM64, this prepares pinned AnyCPU Thermo dependencies and
 uses a local .NET SDK or installs SDK 8.0.426 for the build. The reader passes
-native scan data to Radiant without creating mzML. Its self-contained output,
-including the .NET runtime, goes to `build/bin/thermoraw/`, which the executable
-discovers automatically. Docker and `.deb` builds include this complete helper
-directory; end users need no .NET installation or manual reader selection.
+native scan data to Radiant without creating mzML. Its framework-dependent
+output goes to `build/bin/thermoraw/`, which the executable discovers
+automatically. The SDK supplies the runtime for source development. If the
+script installed the SDK privately, set `DOTNET_ROOT` to its directory before
+running Radiant; see the [reader build guide](tools/thermo-raw-reader/README.md).
+Docker includes the shared runtime, and installing the `.deb` with APT resolves
+its `dotnet-runtime-8.0` dependency automatically. Packaged builds need no manual
+runtime installation or reader selection.
 Alternatively, configure `-DTHERMO_RAW_READER_EXECUTABLE=/path/to/RadiantThermoRawReader`,
 set `RADIANT_THERMO_RAW_READER`, or pass `--thermo-raw-reader` when running.
+The optional `--self-contained` reader build flag bundles a runtime for isolated
+manual deployments; Docker and `.deb` packages use the default shared runtime.
+
+Release `.deb` packaging strips symbols from staged native ELF binaries by default; set `RADIANT_STRIP_BINARIES=0` for debug packages. Managed DLLs are unchanged.
 
 An existing x86_64 ThermoRawFileParser distribution can still be selected with
 `--parser-dir=/path/to/ThermoRawFileParser` or `THERMO_RAW_FILE_PARSER_DIR`.

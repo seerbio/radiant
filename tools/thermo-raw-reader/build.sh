@@ -7,6 +7,7 @@ parser_dir="${THERMO_RAW_FILE_PARSER_DIR:-}"
 output_dir="$repo_dir/build/bin/thermoraw"
 sdk_dir="$repo_dir/build/thermoraw/dotnet"
 sdk_version=8.0.426
+self_contained=false
 host_arch="$(uname -m)"
 case "$host_arch" in
     x86_64|amd64) runtime_id=linux-x64; sdk_arch=x64 ;;
@@ -20,11 +21,13 @@ for argument in "$@"; do
         --output=*) output_dir="${argument#*=}" ;;
         --dotnet=*) sdk_dir="${argument#*=}" ;;
         --runtime=*) runtime_id="${argument#*=}" ;;
+        --self-contained) self_contained=true ;;
         --help|-h)
-            printf 'Usage: %s [--parser-dir=THERMORAWFILEPARSER_DIR] [--output=DIR] [--dotnet=SDK_DIR] [--runtime=RID]\n' "$0"
+            printf 'Usage: %s [--parser-dir=THERMORAWFILEPARSER_DIR] [--output=DIR] [--dotnet=SDK_DIR] [--runtime=RID] [--self-contained]\n' "$0"
             printf 'Default runtime: linux-x64 on x86_64; linux-arm64 on aarch64/arm64 (AWS Graviton).\n'
             printf 'Use --runtime=linux-arm64 to cross-publish from an x86_64 host.\n'
             printf 'Pinned AnyCPU dependencies are prepared automatically; --parser-dir can select an x64 distribution.\n'
+            printf 'Uses the shared .NET 8 runtime by default; --self-contained bundles a private runtime.\n'
             exit 0 ;;
         *) printf 'Unknown argument: %s\n' "$argument" >&2; exit 2 ;;
     esac
@@ -47,7 +50,7 @@ if [[ "$runtime_id" != linux-arm64 && -n "$parser_dir" ]]; then
     done
 fi
 if [[ ! -x "$sdk_dir/dotnet" ]]; then
-    if command -v dotnet >/dev/null; then
+    if command -v dotnet >/dev/null && [[ -n "$(dotnet --list-sdks)" ]]; then
         dotnet_command="$(command -v dotnet)"
     else
         mkdir -p -- "$sdk_dir" "$repo_dir/build/thermoraw"
@@ -70,10 +73,20 @@ if [[ "$runtime_id" == linux-arm64 || -z "$parser_dir" ]]; then
     bash "$source_dir/prepare-arm64-dependencies.sh" "$dotnet_command" "$arm_dependencies_dir"
     parser_dir="$arm_dependencies_dir/parser-anycpu"
 fi
+publish_options=(-p:DebugType=None -p:DebugSymbols=false)
+if [[ "$self_contained" == false ]]; then
+    # Framework-dependent packages must run on Ubuntu's serviced .NET 8 patch,
+    # which may be older than the SDK's private runtime.
+    publish_options+=(-p:RuntimeFrameworkVersion=8.0.0 -p:TargetLatestRuntimePatch=false)
+fi
 "$dotnet_command" publish "$source_dir/RadiantThermoRawReader.csproj" \
-    --configuration Release --runtime "$runtime_id" --self-contained true \
+    --configuration Release --runtime "$runtime_id" --self-contained "$self_contained" \
     --output "$output_dir" \
-    "-p:ThermoRawFileParserDir=$parser_dir" -p:DebugType=None -p:DebugSymbols=false
+    "-p:ThermoRawFileParserDir=$parser_dir" "${publish_options[@]}"
+if [[ "$self_contained" == false && ( -e "$output_dir/libcoreclr.so" || -e "$output_dir/libhostpolicy.so" ) ]]; then
+    printf 'Old bundled runtime files remain in %s. Choose a fresh --output directory or move the previous publish directory.\n' "$output_dir" >&2
+    exit 2
+fi
 for license in LICENSE THERMO_LICENSE; do
     if [[ -f "$parser_dir/$license" ]]; then
         cp -- "$parser_dir/$license" "$output_dir/$license.ThermoRawFileParser"

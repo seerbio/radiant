@@ -11,7 +11,8 @@
 # The created DEB is located at `${package_dir}+${ARCH}.deb`,
 # where `${ARCH}` is (typically) `amd64` or `arm64`.
 # TORCH_LIBRARY_DIR can select an unpacked libtorch or Python wheel's torch/lib.
-# THERMO_RAW_READER_DIR can select a self-contained publish outside bin/thermoraw.
+# THERMO_RAW_READER_DIR can select a framework-dependent publish outside bin/thermoraw.
+# Set RADIANT_STRIP_BINARIES=0 to retain native debug/static symbols in the package.
 
 # "Strict mode"
 set -eu -o pipefail
@@ -44,26 +45,36 @@ echo "Copying DEB contents to package_dir…"
 cp bin/RadiantDIA "$radiant_bin/RadiantDIA"
 cp bin/FeatureOptimizerPrime "$radiant_bin/FeatureOptimizerPrime"
 
-# Keep the complete published helper beside RadiantDIA for automatic discovery.
-# Shipping only its apphost would silently require a separately installed .NET.
+# Keep the published helper beside RadiantDIA for automatic discovery.
+# Its .NET runtime is installed by APT through the package's Depends field.
 THERMO_RAW_READER_DIR="${THERMO_RAW_READER_DIR:-bin/thermoraw}"
 for file in RadiantThermoRawReader RadiantThermoRawReader.dll \
-    RadiantThermoRawReader.runtimeconfig.json libhostpolicy.so libcoreclr.so; do
+    RadiantThermoRawReader.runtimeconfig.json ThermoRawFileParser.dll \
+    ThermoFisher.CommonCore.Data.dll ThermoFisher.CommonCore.RawFileReader.dll log4net.dll; do
     if [ ! -f "${THERMO_RAW_READER_DIR}/${file}" ]; then
-        printf 'Missing self-contained Thermo RAW reader file: %s/%s\n' \
+        printf 'Missing Thermo RAW reader file: %s/%s\n' \
             "$THERMO_RAW_READER_DIR" "$file" >&2
         exit 2
     fi
 done
 if [ ! -x "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader" ] \
-    || ! grep -q '"includedFrameworks"' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json"; then
-    printf 'Thermo RAW reader must be an executable, self-contained .NET publish.\n' >&2
+    || ! grep -Eq '"name"[[:space:]]*:[[:space:]]*"Microsoft.NETCore.App"' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json" \
+    || ! grep -Eq '"version"[[:space:]]*:[[:space:]]*"8[.]0[.]' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json"; then
+    printf 'Thermo RAW reader must be an executable, framework-dependent .NET 8 publish.\n' >&2
+    exit 2
+fi
+if [ -e "${THERMO_RAW_READER_DIR}/libcoreclr.so" ] \
+    || [ -e "${THERMO_RAW_READER_DIR}/libhostpolicy.so" ] \
+    || grep -q '"includedFrameworks"' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json"; then
+    printf 'Thermo RAW reader bundles a runtime; republish without --self-contained.\n' >&2
     exit 2
 fi
 if ! readelf -h "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader" | grep -q "$elf_machine"; then
     printf 'Thermo RAW reader does not match package architecture %s.\n' "$ARCH" >&2
     exit 2
 fi
+# Replace prior publish contents, which may have contained a bundled runtime.
+rm -rf -- "${radiant_bin}/thermoraw"
 mkdir -p "${radiant_bin}/thermoraw"
 cp -a "${THERMO_RAW_READER_DIR}/." "${radiant_bin}/thermoraw/"
 
@@ -120,6 +131,20 @@ if [ -d "$TORCH_EXTRA_LIBRARY_DIR" ]; then
     done
 fi
 
+# Release packages need dynamic symbols, not the large static/debug symbol tables
+# in some LibTorch distributions. Strip staged ELF files only; managed DLLs and
+# the original build/dependency files are left intact.
+if [ "${RADIANT_STRIP_BINARIES:-1}" != 0 ]; then
+    strip --strip-unneeded \
+        "$radiant_bin/RadiantDIA" \
+        "$radiant_bin/FeatureOptimizerPrime" \
+        "$radiant_bin/thermoraw/RadiantThermoRawReader"
+    for f in "${radiant_lib}"/*.so*; do
+        [ -f "$f" ] || continue
+        strip --strip-unneeded "$f"
+    done
+fi
+
 # Create symlinks
 # Must match ${radiant_bin} above, but relative to the target!
 ln -sfn radiant/RadiantDIA "${package_dir}/usr/local/bin/RadiantDIA"
@@ -131,4 +156,5 @@ printf 'activate-noawait ldconfig\n' > "${package_dir}/DEBIAN/triggers"
 
 echo "Building RadiantDIA DEB…"
 
-dpkg-deb --root-owner-group --build "$package_dir"
+# Use a stable compression policy across Ubuntu and Debian package builders.
+dpkg-deb --root-owner-group -Zxz -z6 --build "$package_dir"

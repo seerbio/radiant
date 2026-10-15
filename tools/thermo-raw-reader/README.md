@@ -8,10 +8,11 @@ and profile scan centroiding. Reference and exception centroid data are included
 matching the parser's default. It sends binary spectra directly to Radiant;
 it never invokes the converter or creates XML/mzML.
 
-Docker images and `.deb` packages include the complete self-contained helper
-in a `thermoraw/` directory beside Radiant. Packaged builds discover it
-automatically: end users need no .NET installation or manual
-`--thermo-raw-reader` option.
+Docker images and `.deb` packages include the helper in a `thermoraw/` directory
+beside Radiant and use the shared .NET 8 runtime. Docker includes the runtime;
+installing the `.deb` with APT automatically installs its `dotnet-runtime-8.0`
+dependency. Packaged builds discover the helper automatically, with no manual
+runtime installation or `--thermo-raw-reader` option.
 
 For a source build on x86_64 or ARM64, run:
 
@@ -20,11 +21,24 @@ tools/thermo-raw-reader/build.sh
 ```
 
 The script uses a local .NET SDK or installs SDK 8.0.426 under
-`build/thermoraw/dotnet`, then publishes a self-contained Linux process to
-`build/bin/thermoraw/RadiantThermoRawReader`. A .NET runtime is not required on
-the machine running that published process. It selects `linux-x64` on x86_64
-hosts and `linux-arm64` on aarch64/arm64 hosts, including AWS EC2 Graviton.
-The SDK installer uses the build host's architecture.
+`build/thermoraw/dotnet`, then publishes a framework-dependent Linux helper to
+`build/bin/thermoraw/RadiantThermoRawReader`. It selects `linux-x64` on x86_64
+hosts and `linux-arm64` on aarch64/arm64 hosts, including AWS EC2 Graviton. The
+SDK installer uses the build host's architecture. The SDK includes the runtime
+needed for source development. If the script installed the SDK in its default
+private directory, expose that runtime before running Radiant:
+
+```bash
+export DOTNET_ROOT="$PWD/build/thermoraw/dotnet"
+```
+
+For a manual deployment to a machine without the SDK, install the .NET 8
+runtime there; on Ubuntu, use `sudo apt-get install dotnet-runtime-8.0`.
+For an isolated manual deployment without a shared runtime, optionally publish
+with `--self-contained --output=build/thermoraw/standalone` and deploy that
+complete directory. This bundles a private runtime; Docker and `.deb` packaging
+use the default shared-runtime publish.
+
 Pinned AnyCPU dependencies are prepared automatically on both architectures;
 an unpacked parser distribution is not required. To use an existing x86_64
 ThermoRawFileParser .NET 8 distribution instead:

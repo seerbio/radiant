@@ -40,7 +40,7 @@ will usually continue through the surrounding pipeline.
 
 ## Native executable
 
-Radiant DIA is distributed as a Docker image and as Ubuntu/Debian packages from
+Radiant DIA is distributed as a Docker image and as Ubuntu `.deb` packages from
 the [Releases page](https://github.com/seerbio/radiant/releases). Docker images
 are available for Intel (`x86_64`) and ARM / Apple Silicon (`aarch64`):
 
@@ -51,10 +51,13 @@ docker run --rm seerbio/radiant-dia:latest --help
 The package names distinguish the architecture, for example:
 
 ```shell
-apt-get install -y radiantdia_<version>+amd64.deb   # Intel
-apt-get install -y radiantdia_<version>+arm64.deb   # ARM / Apple Silicon
+apt-get install -y ./radiantdia_<version>+amd64.deb   # Intel
+apt-get install -y ./radiantdia_<version>+arm64.deb   # ARM64 Linux
 RadiantDIA --help
 ```
+
+The package build in this repository targets Ubuntu 22.04. APT resolves its
+dependencies, including the shared .NET 8 runtime, from Ubuntu's repositories.
 
 The `RadiantDIA` executable requires four positional arguments:
 
@@ -79,9 +82,11 @@ The accepted input families are:
 Thermo RAW input uses the direct scan reader built from the
 ThermoRawFileParser library and its Thermo RawFileReader dependencies. It reads
 native centroid spectra and scan metadata into Radiant without converting to
-mzML. Docker images and `.deb` packages include the self-contained reader beside
-Radiant. Packaged builds discover it automatically; end users do not need to
-install .NET or pass `--thermo-raw-reader`:
+mzML. Docker images and `.deb` packages include the reader beside Radiant and
+use the shared .NET 8 runtime. Installing the `.deb` with APT automatically
+installs its `dotnet-runtime-8.0` dependency; Docker includes the runtime.
+Packaged builds discover the reader automatically, with no manual runtime
+installation or `--thermo-raw-reader` option:
 
 ```shell
 RadiantDIA library.tsv database.fasta config.radiantConfig sample.raw \
@@ -90,8 +95,9 @@ RadiantDIA library.tsv database.fasta config.radiantConfig sample.raw \
 
 Source builders run `tools/thermo-raw-reader/build.sh` once. On both x86_64 and
 ARM64, it prepares pinned AnyCPU Thermo dependencies and publishes the reader
-with its .NET runtime to `build/bin/thermoraw/`, where Radiant finds it
-automatically. For another location, pass
+to `build/bin/thermoraw/`, where Radiant finds it automatically. Source builds
+use the runtime provided by the .NET SDK; manual deployments need a .NET 8
+runtime on the target host. For another reader location, pass
 `--thermo-raw-reader /path/to/RadiantThermoRawReader` or set
 `RADIANT_THERMO_RAW_READER`.
 RAW input reads MS1/MS2 scans with native centroiding and uses eager loading;
