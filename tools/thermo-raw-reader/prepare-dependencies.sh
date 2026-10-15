@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Build architecture-neutral parser assemblies for Linux ARM64. Older parser
-# distributions contain x64-only managed assemblies, which ARM64 cannot load.
+# Build architecture-neutral parser assemblies for the Thermo RAW helper.
+# Older parser distributions contain x64-only managed assemblies; this pinned
+# build produces compatible AnyCPU assemblies for all supported targets.
 set -euo pipefail
 
 if [[ "$#" -ne 2 ]]; then
@@ -17,7 +18,7 @@ raw_sha=af259d466e24227ba6706872330a0736d6fc2f552ad9d46a78a4697f0f62e1a6
 data_sha=0b1d2fff2f81532e0c56471b22bc0e2c0c6685f37aa43b0b134ad82ae75ae444
 output_dir="$cache_dir/parser-anycpu"
 cache_key="$parser_commit:$vendor_commit:$vendor_version"
-marker="$output_dir/.radiant-arm64-dependencies"
+marker="$output_dir/.radiant-thermo-dependencies"
 
 if [[ -f "$marker" && "$(cat -- "$marker")" == "$cache_key"
     && -f "$output_dir/ThermoRawFileParser.dll"
@@ -70,7 +71,7 @@ sed -i \
     --source "$cache_dir" --source https://api.nuget.org/v3/index.json \
     -p:PlatformTarget=AnyCPU -p:Platform=AnyCPU -p:UseAppHost=false
 
-cat > "$output_dir/radiant-arm64-dependencies.json" <<EOF
+cat > "$output_dir/radiant-thermo-dependencies.json" <<EOF
 {
   "parser_source_commit": "$parser_commit",
   "parser_source_sha256": "$source_sha",

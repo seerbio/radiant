@@ -21,10 +21,10 @@ for argument in "$@"; do
         --dotnet=*) sdk_dir="${argument#*=}" ;;
         --runtime=*) runtime_id="${argument#*=}" ;;
         --help|-h)
-            printf 'Usage: %s --parser-dir=THERMORAWFILEPARSER_DIR [--output=DIR] [--dotnet=SDK_DIR] [--runtime=RID]\n' "$0"
+            printf 'Usage: %s [--parser-dir=THERMORAWFILEPARSER_DIR] [--output=DIR] [--dotnet=SDK_DIR] [--runtime=RID]\n' "$0"
             printf 'Default runtime: linux-x64 on x86_64; linux-arm64 on aarch64/arm64 (AWS Graviton).\n'
             printf 'Use --runtime=linux-arm64 to cross-publish from an x86_64 host.\n'
-            printf 'ARM64 builds prepare pinned AnyCPU dependencies automatically; --parser-dir is required for x64.\n'
+            printf 'Pinned AnyCPU dependencies are prepared automatically; --parser-dir can select an existing distribution.\n'
             exit 0 ;;
         *) printf 'Unknown argument: %s\n' "$argument" >&2; exit 2 ;;
     esac
@@ -33,9 +33,9 @@ if [[ -z "$runtime_id" ]]; then
     printf 'No default .NET runtime for host architecture %s; provide --runtime=RID.\n' "$host_arch" >&2
     exit 2
 fi
-if [[ "$runtime_id" != linux-arm64 ]]; then
-    if [[ -z "$parser_dir" || ! -f "$parser_dir/ThermoRawFileParser.dll" ]]; then
-        printf 'Provide --parser-dir=DIR for an unpacked .NET 8 ThermoRawFileParser distribution.\n' >&2
+if [[ "$runtime_id" != linux-arm64 && -n "$parser_dir" ]]; then
+    if [[ ! -f "$parser_dir/ThermoRawFileParser.dll" ]]; then
+        printf 'The selected parser directory must contain ThermoRawFileParser.dll.\n' >&2
         exit 2
     fi
     parser_dir="$(cd -- "$parser_dir" && pwd)"
@@ -65,10 +65,10 @@ else
 fi
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_NOLOGO=1
-if [[ "$runtime_id" == linux-arm64 ]]; then
-    arm_dependencies_dir="$repo_dir/build/thermoraw/arm-dependencies"
-    bash "$source_dir/prepare-arm64-dependencies.sh" "$dotnet_command" "$arm_dependencies_dir"
-    parser_dir="$arm_dependencies_dir/parser-anycpu"
+if [[ "$runtime_id" == linux-arm64 || -z "$parser_dir" ]]; then
+    dependencies_dir="$repo_dir/build/thermoraw/dependencies"
+    bash "$source_dir/prepare-dependencies.sh" "$dotnet_command" "$dependencies_dir"
+    parser_dir="$dependencies_dir/parser-anycpu"
 fi
 "$dotnet_command" publish "$source_dir/RadiantThermoRawReader.csproj" \
     --configuration Release --runtime "$runtime_id" --self-contained true \
@@ -79,8 +79,8 @@ for license in LICENSE THERMO_LICENSE; do
         cp -- "$parser_dir/$license" "$output_dir/$license.ThermoRawFileParser"
     fi
 done
-if [[ -f "$parser_dir/radiant-arm64-dependencies.json" ]]; then
-    cp -- "$parser_dir/radiant-arm64-dependencies.json" "$output_dir/"
+if [[ -f "$parser_dir/radiant-thermo-dependencies.json" ]]; then
+    cp -- "$parser_dir/radiant-thermo-dependencies.json" "$output_dir/"
 fi
 printf 'Direct Thermo RAW reader: %s/RadiantThermoRawReader\n' "$output_dir"
 printf 'Target runtime: %s (build host: %s)\n' "$runtime_id" "$host_arch"

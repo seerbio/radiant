@@ -30,6 +30,8 @@ test-local.sh
 build
 cmake
 pytorch
+tools/thermo-raw-reader/bin
+tools/thermo-raw-reader/obj
 
 # Vim buffer files
 .*.s??
