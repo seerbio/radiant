@@ -12,6 +12,13 @@ To set up your environment:
 ./install-build-deps-ubuntu.sh && ./get-or-build-libtorch.sh
 ```
 
+On ARM64, the default PyTorch 2.0.1 setup extracts the C++ headers, CMake files,
+and libraries from a pinned official ARM64 wheel, including its bundled runtime
+libraries. To build that version from source instead, run
+`PYTORCH_BUILD_FROM_SOURCE=1 ./get-or-build-libtorch.sh`. Other PyTorch versions
+on ARM64 use the source build path. x86_64 builds use the prebuilt LibTorch
+distribution.
+
 To enable Bruker `.d` support locally, vendor `timsreader` into:
 
 ```text
@@ -29,23 +36,27 @@ The headers are shared across architectures. `build-local.sh`, Docker builds, an
 ./build-local.sh
 ```
 
-To include direct Thermo RAW input, build the optional scan reader from a
-ThermoRawFileParser .NET 8 distribution:
+To include direct Thermo RAW input in a source build, build the scan reader:
 
 ```shell
-tools/thermo-raw-reader/build.sh --parser-dir=/path/to/ThermoRawFileParser
+tools/thermo-raw-reader/build.sh
 ```
 
-The reader uses the parser's assemblies directly and passes native scan data
-to Radiant without creating mzML. Its self-contained output goes to
-`build/bin/thermoraw/`, which the executable discovers automatically.
+On both x86_64 and ARM64, this prepares pinned AnyCPU Thermo dependencies and
+uses a local .NET SDK or installs SDK 8.0.426 for the build. The reader passes
+native scan data to Radiant without creating mzML. Its self-contained output,
+including the .NET runtime, goes to `build/bin/thermoraw/`, which the executable
+discovers automatically. Docker and `.deb` builds include this complete helper
+directory; end users need no .NET installation or manual reader selection.
 Alternatively, configure `-DTHERMO_RAW_READER_EXECUTABLE=/path/to/RadiantThermoRawReader`,
 set `RADIANT_THERMO_RAW_READER`, or pass `--thermo-raw-reader` when running.
 
-On EC2 Graviton, use `tools/thermo-raw-reader/build.sh` without `--parser-dir`.
-The build selects ARM64, verifies and builds pinned AnyCPU dependencies, and
-publishes a self-contained ARM64 reader. The same script supports
-`--runtime=linux-arm64` for cross-publication from an x86_64 build host.
+An existing x86_64 ThermoRawFileParser distribution can still be selected with
+`--parser-dir=/path/to/ThermoRawFileParser` or `THERMO_RAW_FILE_PARSER_DIR`.
+On EC2 Graviton, the script selects ARM64 automatically. It also supports
+`--runtime=linux-arm64` for cross-publication from an x86_64 build host; ARM64
+always uses the compatible pinned AnyCPU dependencies. See the
+[reader build guide](tools/thermo-raw-reader/README.md) for details.
 
 ## Running in CLion IDE
 1. Run the script from **Setting up a development environment**
