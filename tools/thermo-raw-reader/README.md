@@ -8,30 +8,24 @@ and profile scan centroiding. Reference and exception centroid data are included
 matching the parser's default. It sends binary spectra directly to Radiant;
 it never invokes the converter or creates XML/mzML.
 
-On x86_64, build from an unpacked ThermoRawFileParser .NET 8 distribution:
-
-```bash
-tools/thermo-raw-reader/build.sh \
-  --parser-dir=/path/to/ThermoRawFileParser
-```
-
-The script uses a local .NET SDK or installs SDK 8.0.426 under
-`build/thermoraw/dotnet`, then publishes a self-contained Linux process to
-`build/bin/thermoraw/RadiantThermoRawReader`. A .NET runtime is not required on
-the machine running that published process. It selects `linux-x64` on x86_64
-hosts and `linux-arm64` on aarch64/arm64 hosts, including AWS EC2 Graviton.
-The SDK installer uses the build host's architecture.
-Set `THERMO_RAW_FILE_PARSER_DIR`
-instead of supplying `--parser-dir` if convenient. `--output`, `--dotnet` and
-`--runtime` allow other publish locations, SDK locations and runtime targets.
-The input distribution assemblies are copied during publishing and retain
-their existing licenses; binaries are build artifacts and are not committed.
-
-On EC2 Graviton, build directly with:
+Build the helper as part of a normal local or Docker build:
 
 ```bash
 tools/thermo-raw-reader/build.sh
 ```
+
+`build-local.sh` and Docker invoke the script automatically. It uses a local
+.NET SDK or installs SDK 8.0.426 under `build/thermoraw/dotnet`, prepares pinned
+AnyCPU dependencies, and publishes a framework-dependent helper to
+`build/bin/thermoraw/RadiantThermoRawReader`. It selects `linux-x64` on x86_64
+hosts and `linux-arm64` on aarch64/arm64 hosts. The target machine needs the
+shared .NET 8 runtime; `.deb` packages declare `dotnet-runtime-8.0` and Docker
+installs it with the package.
+
+Set `THERMO_RAW_FILE_PARSER_DIR` or pass `--parser-dir=DIR` to use an existing
+parser distribution. `--output`, `--dotnet`, and `--runtime` select alternate
+publish locations, SDKs, and target runtimes. `build/` and the helper's
+`bin/obj` directories are build outputs and must not be committed.
 
 To cross-publish the ARM64 reader from an x86_64 build host:
 
@@ -45,16 +39,15 @@ Deploy the complete output directory to the Graviton instance, then select
 its executable with `RADIANT_THERMO_RAW_READER` or `--thermo-raw-reader`.
 The ARM64 reader must run with an ARM64 Radiant build.
 
-ARM64 builds prepare compatible dependencies automatically instead of using
-`--parser-dir`: older x64 distributions cannot load on ARM64. The preparation
-script downloads ThermoRawFileParser source commit
+ARM64 builds prepare compatible dependencies automatically instead of using an
+x64 distribution. The preparation script downloads ThermoRawFileParser source commit
 `cf548e4a3fadcc796291a01fdbd088af986a5d72`, rebuilds its assembly with
 `PlatformTarget=AnyCPU`, and uses official Thermo RawFileReader/Data 8.0.42
 packages from vendor commit `47eeda0d54a9ca28ace8e6548b7c01b6843207c2`.
 These packages provide AnyCPU assemblies. Source and package SHA256 values
 are checked before building; cached outputs live in
-`build/thermoraw/arm-dependencies/`. The published
-`radiant-arm64-dependencies.json` records the dependency pins. Vendor assemblies
+`build/thermoraw/dependencies/`. The published
+`radiant-thermo-dependencies.json` records the dependency pins. Vendor assemblies
 are used as supplied. First builds require network access, `curl`, `tar`,
 `sha256sum`, and the .NET SDK.
 

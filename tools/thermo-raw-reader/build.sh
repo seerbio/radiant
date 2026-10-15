@@ -71,8 +71,10 @@ if [[ "$runtime_id" == linux-arm64 || -z "$parser_dir" ]]; then
     parser_dir="$dependencies_dir/parser-anycpu"
 fi
 "$dotnet_command" publish "$source_dir/RadiantThermoRawReader.csproj" \
-    --configuration Release --runtime "$runtime_id" --self-contained true \
+    --configuration Release --runtime "$runtime_id" \
     --output "$output_dir" \
+    -p:RuntimeFrameworkVersion=8.0.0 \
+    -p:TargetLatestRuntimePatch=false \
     "-p:ThermoRawFileParserDir=$parser_dir"
 for license in LICENSE THERMO_LICENSE; do
     if [[ -f "$parser_dir/$license" ]]; then

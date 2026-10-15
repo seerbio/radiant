@@ -15,3 +15,4 @@ set -euo pipefail
 
 cmake/bin/cmake -DCMAKE_BUILD_TYPE=Release -S . -B build/ -DPYTORCH_PATH="$(realpath ./pytorch/)"
 make -C build/ -j
+tools/thermo-raw-reader/build.sh --output="$(pwd)/build/bin/thermoraw"
