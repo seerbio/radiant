@@ -350,3 +350,25 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Thermo RAW scan count" << m_msScanInfo.size();
     return eNoError;
 }
+
+Err MsReaderThermoRaw::openFile(
+        const QString &filePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> &filterRange
+        ) {
+
+    ERR_INIT
+
+    if (!columnToFilterBy.isEmpty()
+        && columnToFilterBy.compare(QStringLiteral("scanTime"), Qt::CaseInsensitive) != 0) {
+        rrr(eFunctionNotImplemented);
+    }
+
+    e = openFile(filePath); ree;
+    e = restrictScanTimeRange(
+        static_cast<ScanTime>(filterRange.first),
+        static_cast<ScanTime>(filterRange.second)
+        ); ree;
+
+    ERR_RETURN
+}

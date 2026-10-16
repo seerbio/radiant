@@ -84,6 +84,7 @@ class MsReaderThermoRawTests : public QObject {
 
 private Q_SLOTS:
     void nativeStreamAndRouting();
+    void filteredReadPath();
     void rejectsIncompleteOrFailedReader_data();
     void rejectsIncompleteOrFailedReader();
     void failedReopenClearsState();
@@ -140,6 +141,27 @@ void MsReaderThermoRawTests::nativeStreamAndRouting() {
     QCOMPARE(reader.closeFile(), eNoError);
     QVERIFY(!reader.isInit());
     QVERIFY(reader.getScanPoints().isEmpty());
+}
+
+void MsReaderThermoRawTests::filteredReadPath() {
+#ifdef Q_OS_WIN
+    QSKIP("The fake helper uses a POSIX shell.");
+#endif
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString rawPath = QDir(directory.path()).filePath("test.raw");
+    QVERIFY(writeFile(rawPath, "raw fixture"));
+    QVERIFY(writeFile(QDir(directory.path()).filePath("payload.bin"), makeStream()));
+    const QString helper = makeHelper(directory);
+    QVERIFY(!helper.isEmpty());
+
+    MsReaderThermoRaw reader(helper);
+    QCOMPARE(reader.openFile(rawPath, QStringLiteral("scanTime"), qMakePair(29.0, 31.0)), eNoError);
+    QCOMPARE(reader.getMsScanInfos().size(), 1);
+    QCOMPARE(reader.getMsScanInfos().first().scanTime, 30.0f);
+    QCOMPARE(reader.getScanPoints().size(), 1);
+    QVERIFY(reader.getScanPoints().contains(1));
+    QVERIFY(!reader.getScanPoints().contains(2));
 }
 
 void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader_data() {
