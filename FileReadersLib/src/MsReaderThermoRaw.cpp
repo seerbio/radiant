@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
@@ -125,10 +126,12 @@ ReaderInvocation readerInvocation(const QString &explicitPath) {
 
 class BinaryProcessReader {
 public:
-    explicit BinaryProcessReader(QProcess &process)
-        : m_process(process) {}
+    BinaryProcessReader(QProcess &process, int timeoutMs)
+        : m_process(process), m_timeoutMs(timeoutMs) {}
 
     bool readBytes(int byteCount, QByteArray *bytes) {
+        QElapsedTimer timeout;
+        timeout.start();
         while (m_buffer.size() - m_offset < byteCount) {
             compactBuffer();
             collectDiagnostics();
@@ -141,7 +144,12 @@ public:
                 collectDiagnostics();
                 return false;
             }
-            m_process.waitForReadyRead(1000);
+            const qint64 remainingMs = m_timeoutMs - timeout.elapsed();
+            if (remainingMs <= 0) {
+                m_timedOut = true;
+                return false;
+            }
+            m_process.waitForReadyRead(static_cast<int>(std::min<qint64>(remainingMs, 1000)));
         }
         *bytes = m_buffer.mid(m_offset, byteCount);
         m_offset += byteCount;
@@ -149,8 +157,15 @@ public:
     }
 
     bool finish() {
+        QElapsedTimer timeout;
+        timeout.start();
         while (m_process.state() != QProcess::NotRunning) {
-            m_process.waitForFinished(1000);
+            const qint64 remainingMs = m_timeoutMs - timeout.elapsed();
+            if (remainingMs <= 0) {
+                m_timedOut = true;
+                return false;
+            }
+            m_process.waitForFinished(static_cast<int>(std::min<qint64>(remainingMs, 1000)));
             collectDiagnostics();
             if (!m_process.read(streamBufferSize).isEmpty()) {
                 return false;
@@ -161,6 +176,10 @@ public:
             && m_process.readAllStandardOutput().isEmpty()
             && m_process.exitStatus() == QProcess::NormalExit
             && m_process.exitCode() == 0;
+    }
+
+    bool timedOut() const {
+        return m_timedOut;
     }
 
     QString diagnostics() {
@@ -186,7 +205,9 @@ private:
     QProcess &m_process;
     QByteArray m_buffer;
     QByteArray m_diagnostics;
+    int m_timeoutMs;
     int m_offset = 0;
+    bool m_timedOut = false;
 };
 
 void stopProcess(QProcess *process) {
@@ -201,8 +222,9 @@ void stopProcess(QProcess *process) {
 
 } // namespace
 
-MsReaderThermoRaw::MsReaderThermoRaw(const QString &readerPath)
-    : m_readerPath(readerPath) {}
+MsReaderThermoRaw::MsReaderThermoRaw(const QString &readerPath, int processTimeoutMs)
+    : m_readerPath(readerPath)
+    , m_processTimeoutMs(std::max(1, processTimeoutMs)) {}
 
 Err MsReaderThermoRaw::closeFile() {
     MsReaderBase::closeFile();
@@ -242,10 +264,13 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         return eFileError;
     }
 
-    BinaryProcessReader reader(process);
+    BinaryProcessReader reader(process, m_processTimeoutMs);
     const auto fail = [&](const QString &message) {
         stopProcess(&process);
-        qCritical().noquote() << "Thermo RAW reader:" << message;
+        const QString failure = reader.timedOut()
+            ? QStringLiteral("Timed out waiting for the reader process.")
+            : message;
+        qCritical().noquote() << "Thermo RAW reader:" << failure;
         const QString diagnostics = reader.diagnostics();
         if (!diagnostics.isEmpty()) {
             qCritical().noquote() << diagnostics;
