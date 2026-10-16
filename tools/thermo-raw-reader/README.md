@@ -14,9 +14,9 @@ Build the helper as part of a normal local or Docker build:
 tools/thermo-raw-reader/build.sh
 ```
 
-`build-local.sh` and Docker invoke the script automatically. It uses a local
-.NET SDK or installs SDK 8.0.426 under `build/thermoraw/dotnet`, prepares pinned
-AnyCPU dependencies, and publishes a framework-dependent helper to
+`build-local.sh` and Docker invoke the script automatically. Install the .NET 8
+SDK with `install-build-deps-ubuntu.sh`; the helper then prepares pinned AnyCPU
+dependencies and publishes a framework-dependent helper to
 `build/bin/thermoraw/RadiantThermoRawReader`. It selects `linux-x64` on x86_64
 hosts and `linux-arm64` on aarch64/arm64 hosts. The target machine needs the
 shared .NET 8 runtime; `.deb` packages declare `dotnet-runtime-8.0` and Docker

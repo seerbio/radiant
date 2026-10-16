@@ -5,13 +5,12 @@ source_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd -- "$source_dir/../.." && pwd)"
 parser_dir="${THERMO_RAW_FILE_PARSER_DIR:-}"
 output_dir="$repo_dir/build/bin/thermoraw"
-sdk_dir="$repo_dir/build/thermoraw/dotnet"
-sdk_version=8.0.426
+sdk_dir=""
 host_arch="$(uname -m)"
 case "$host_arch" in
-    x86_64|amd64) runtime_id=linux-x64; sdk_arch=x64 ;;
-    aarch64|arm64) runtime_id=linux-arm64; sdk_arch=arm64 ;;
-    *) runtime_id=""; sdk_arch="" ;;
+    x86_64|amd64) runtime_id=linux-x64 ;;
+    aarch64|arm64) runtime_id=linux-arm64 ;;
+    *) runtime_id="" ;;
 esac
 
 for argument in "$@"; do
@@ -46,22 +45,21 @@ if [[ "$runtime_id" != linux-arm64 && -n "$parser_dir" ]]; then
         fi
     done
 fi
-if [[ ! -x "$sdk_dir/dotnet" ]]; then
-    if command -v dotnet >/dev/null; then
-        dotnet_command="$(command -v dotnet)"
-    else
-        mkdir -p -- "$sdk_dir" "$repo_dir/build/thermoraw"
-        installer="$repo_dir/build/thermoraw/dotnet-install.sh"
-        curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$installer"
-        sdk_arguments=(--version "$sdk_version" --install-dir "$sdk_dir" --no-path)
-        if [[ -n "$sdk_arch" ]]; then
-            sdk_arguments+=(--architecture "$sdk_arch")
-        fi
-        bash "$installer" "${sdk_arguments[@]}"
-        dotnet_command="$sdk_dir/dotnet"
+if [[ -n "$sdk_dir" ]]; then
+    dotnet_command="$sdk_dir/dotnet"
+    if [[ ! -x "$dotnet_command" ]]; then
+        printf 'Configured .NET SDK directory does not contain an executable dotnet: %s\n' "$sdk_dir" >&2
+        exit 2
     fi
 else
-    dotnet_command="$sdk_dir/dotnet"
+    if ! dotnet_command="$(command -v dotnet)"; then
+        printf 'A .NET 8 SDK is required. Run install-build-deps-ubuntu.sh first or use --dotnet=SDK_DIR.\n' >&2
+        exit 2
+    fi
+fi
+if ! "$dotnet_command" --list-sdks 2>/dev/null | awk '$1 ~ /^8\./ { found = 1 } END { exit !found }'; then
+    printf 'The selected dotnet does not provide a .NET 8 SDK: %s\n' "$dotnet_command" >&2
+    exit 2
 fi
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_NOLOGO=1

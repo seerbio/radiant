@@ -41,6 +41,7 @@ ${APT} update
 ${APT} install --no-install-recommends -y \
     git \
     build-essential \
+    dotnet-sdk-8.0 \
     unzip \
     libboost-all-dev \
     qtbase5-dev \
