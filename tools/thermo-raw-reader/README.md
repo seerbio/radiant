@@ -6,7 +6,9 @@ public `ScanTrailer` and `SpectrumWriter.GetReaction` utilities and follows
 `SpectrumWriter.ReadMZData` for native centroid streams, segmented centroid data,
 and profile scan centroiding. Reference and exception centroid data are included,
 matching the parser's default. It sends binary spectra directly to Radiant;
-it never invokes the converter or creates XML/mzML.
+it never invokes the converter or creates XML/mzML. RAW loading is eager: the
+helper emits the complete MS1/MS2 stream, and Radiant stores all emitted scans.
+It does not provide random access or mzML-style lazy loading.
 
 Build the helper as part of a normal local or Docker build:
 
@@ -54,16 +56,17 @@ are checked before building; cached outputs live in
 are used as supplied. First builds require network access, `curl`, `tar`,
 `sha256sum`, and the .NET SDK.
 
-The ARM64 helper was run under QEMU on a real RAW file and produced the same
-binary metadata and peak stream as the x86_64 helper, byte for byte. The AnyCPU
-dependencies were also checked against an existing mzML containing 30,318
-spectra and 47,485,476 peak pairs, with no metadata or peak differences.
-
-The implementation was checked against ThermoRawFileParser 2.0.0.0 and upstream
-source commit `cf548e4a3fadcc796291a01fdbd088af986a5d72`. The dependency is the
-parser's `ThermoRawFileParser.dll`, `ThermoFisher.CommonCore.Data.dll`,
+The implementation uses ThermoRawFileParser source commit
+`cf548e4a3fadcc796291a01fdbd088af986a5d72`. The dependency is the parser's
+`ThermoRawFileParser.dll`, `ThermoFisher.CommonCore.Data.dll`,
 `ThermoFisher.CommonCore.RawFileReader.dll`, and `log4net.dll`. Upstream source:
 `https://github.com/compomics/ThermoRawFileParser`.
+
+Automated tests use synthetic binary streams and do not require Thermo RAW data.
+Real-RAW parity qualification is an external release check: it should compare
+the current helper and dependency hashes with a paired mzML input and inspect
+both scan-level data and downstream Radiant results. The branch does not claim
+that synthetic protocol tests establish general Thermo RAW correctness.
 
 Protocol 1 uses little-endian numeric fields:
 
@@ -75,7 +78,9 @@ Protocol 1 uses little-endian numeric fields:
 
 MS1 fields without precursor/activation metadata are `-1`. Only MS1 and MS2
 spectra are included. Radiant receives the sequential scan number used by its
-mapped mzML reader; the native scan number is carried for diagnostics. Retention
+mapped mzML reader; the native scan number is carried for diagnostics. A
+scan-time filter is applied after the complete RAW stream has been loaded.
+Retention
 times are cast to float minutes before conversion to seconds in Radiant, matching
 the mapped mzML reader's operation order. Per-scan memory is bounded by a maximum
 of ten million peaks. A missing footer or nonzero process exit indicates failure.
