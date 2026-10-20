@@ -22,6 +22,11 @@ constexpr quint32 streamVersion = 1;
 constexpr quint32 metadataByteCount = 36;
 constexpr quint32 pointByteCount = 16;
 constexpr quint32 maxPointsPerScan = 10'000'000;
+#ifdef RADIANT_THERMO_RAW_TEST_TIMEOUT_MS
+constexpr int thermoRawReaderTimeoutMs = RADIANT_THERMO_RAW_TEST_TIMEOUT_MS;
+#else
+constexpr int thermoRawReaderTimeoutMs = 30'000;
+#endif
 
 template<typename T>
 T readLittleEndian(const char *data) {
@@ -222,9 +227,8 @@ void stopProcess(QProcess *process) {
 
 } // namespace
 
-MsReaderThermoRaw::MsReaderThermoRaw(const QString &readerPath, int processTimeoutMs)
-    : m_readerPath(readerPath)
-    , m_processTimeoutMs(std::max(1, processTimeoutMs)) {}
+MsReaderThermoRaw::MsReaderThermoRaw(const QString &readerPath)
+    : m_readerPath(readerPath) {}
 
 Err MsReaderThermoRaw::closeFile() {
     MsReaderBase::closeFile();
@@ -264,7 +268,7 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         return eFileError;
     }
 
-    BinaryProcessReader reader(process, m_processTimeoutMs);
+    BinaryProcessReader reader(process, thermoRawReaderTimeoutMs);
     const auto fail = [&](const QString &message) {
         stopProcess(&process);
         const QString failure = reader.timedOut()

@@ -179,7 +179,7 @@ void MsReaderThermoRawTests::timesOutWaitingForReader() {
     const QString helper = makeHelper(directory, 0, true);
     QVERIFY(!helper.isEmpty());
 
-    MsReaderThermoRaw reader(helper, 25);
+    MsReaderThermoRaw reader(helper);
     QVERIFY(reader.openFile(rawPath) != eNoError);
     QVERIFY(!reader.isInit());
 }

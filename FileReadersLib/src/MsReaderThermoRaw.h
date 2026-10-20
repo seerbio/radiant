@@ -12,7 +12,7 @@
  */
 class FILEREADERSLIB_EXPORTS MsReaderThermoRaw : public MsReaderBase {
 public:
-    explicit MsReaderThermoRaw(const QString &readerPath = QString(), int processTimeoutMs = 30'000);
+    explicit MsReaderThermoRaw(const QString &readerPath = QString());
     ~MsReaderThermoRaw() override = default;
 
     using MsReaderBase::openFile;
@@ -28,7 +28,6 @@ private:
     Q_DISABLE_COPY(MsReaderThermoRaw)
 
     QString m_readerPath;
-    int m_processTimeoutMs;
 };
 
 #endif // MSREADERTHERMORAW_H
