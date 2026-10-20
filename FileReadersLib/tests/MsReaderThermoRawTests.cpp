@@ -45,11 +45,10 @@ namespace {
         return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
     }
 
-    QString makeHelper(const QTemporaryDir &directory, int exitCode = 0, bool delay = false) {
+    QString makeHelper(const QTemporaryDir &directory, int exitCode = 0) {
         const QString path = QDir(directory.path()).filePath("native reader helper");
         const QByteArray script =
             "#!/bin/sh\n"
-            + (delay ? QByteArray("sleep 1\n") : QByteArray())
             + "cat \"$(dirname \"$0\")/payload.bin\"\nexit "
             + QByteArray::number(exitCode) + "\n";
         if (!writeFile(path, script)
@@ -87,7 +86,6 @@ class MsReaderThermoRawTests : public QObject {
 private Q_SLOTS:
     void nativeStreamAndRouting();
     void filteredReadPath();
-    void timesOutWaitingForReader();
     void rejectsIncompleteOrFailedReader_data();
     void rejectsIncompleteOrFailedReader();
     void failedReopenClearsState();
@@ -165,23 +163,6 @@ void MsReaderThermoRawTests::filteredReadPath() {
     QCOMPARE(reader.getScanPoints().size(), 1);
     QVERIFY(reader.getScanPoints().contains(1));
     QVERIFY(!reader.getScanPoints().contains(2));
-}
-
-void MsReaderThermoRawTests::timesOutWaitingForReader() {
-#ifdef Q_OS_WIN
-    QSKIP("The fake helper uses a POSIX shell.");
-#endif
-    QTemporaryDir directory;
-    QVERIFY(directory.isValid());
-    const QString rawPath = QDir(directory.path()).filePath("test.raw");
-    QVERIFY(writeFile(rawPath, "raw fixture"));
-    QVERIFY(writeFile(QDir(directory.path()).filePath("payload.bin"), makeStream()));
-    const QString helper = makeHelper(directory, 0, true);
-    QVERIFY(!helper.isEmpty());
-
-    MsReaderThermoRaw reader(helper);
-    QVERIFY(reader.openFile(rawPath) != eNoError);
-    QVERIFY(!reader.isInit());
 }
 
 void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader_data() {

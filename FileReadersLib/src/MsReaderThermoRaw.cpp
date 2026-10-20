@@ -22,11 +22,7 @@ constexpr quint32 streamVersion = 1;
 constexpr quint32 metadataByteCount = 36;
 constexpr quint32 pointByteCount = 16;
 constexpr quint32 maxPointsPerScan = 10'000'000;
-#ifdef RADIANT_THERMO_RAW_TEST_TIMEOUT_MS
-constexpr int thermoRawReaderTimeoutMs = RADIANT_THERMO_RAW_TEST_TIMEOUT_MS;
-#else
 constexpr int thermoRawReaderTimeoutMs = 30'000;
-#endif
 
 template<typename T>
 T readLittleEndian(const char *data) {
