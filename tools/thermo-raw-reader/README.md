@@ -23,7 +23,10 @@ shared .NET 8 runtime; `.deb` packages declare `dotnet-runtime-8.0` and Docker
 installs it with the package.
 
 Set `THERMO_RAW_FILE_PARSER_DIR` or pass `--parser-dir=DIR` to use an existing
-parser distribution. `--output`, `--dotnet`, and `--runtime` select alternate
+parser distribution for any target runtime. The selected directory is always
+validated and used; automatic dependency preparation is performed only when no
+parser directory is supplied. An ARM64 parser directory must contain
+`radiant-thermo-dependencies.json` declaring AnyCPU assemblies. `--output`, `--dotnet`, and `--runtime` select alternate
 publish locations, SDKs, and target runtimes. `build/` and the helper's
 `bin/obj` directories are build outputs and must not be committed.
 
@@ -39,8 +42,8 @@ Deploy the complete output directory to the Graviton instance, then select
 its executable with `RADIANT_THERMO_RAW_READER` or `--thermo-raw-reader`.
 The ARM64 reader must run with an ARM64 Radiant build.
 
-ARM64 builds prepare compatible dependencies automatically instead of using an
-x64 distribution. The preparation script downloads ThermoRawFileParser source commit
+When no parser directory is supplied, the preparation script downloads
+compatible dependencies automatically. It downloads ThermoRawFileParser source commit
 `cf548e4a3fadcc796291a01fdbd088af986a5d72`, rebuilds its assembly with
 `PlatformTarget=AnyCPU`, and uses official Thermo RawFileReader/Data 8.0.42
 packages from vendor commit `47eeda0d54a9ca28ace8e6548b7c01b6843207c2`.

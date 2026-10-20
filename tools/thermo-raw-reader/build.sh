@@ -23,7 +23,8 @@ for argument in "$@"; do
             printf 'Usage: %s [--parser-dir=THERMORAWFILEPARSER_DIR] [--output=DIR] [--dotnet=SDK_DIR] [--runtime=RID]\n' "$0"
             printf 'Default runtime: linux-x64 on x86_64; linux-arm64 on aarch64/arm64 (AWS Graviton).\n'
             printf 'Use --runtime=linux-arm64 to cross-publish from an x86_64 host.\n'
-            printf 'Pinned AnyCPU dependencies are prepared automatically; --parser-dir can select an existing distribution.\n'
+            printf 'Pinned AnyCPU dependencies are prepared automatically when --parser-dir is not set.\n'
+            printf 'An ARM64 --parser-dir must contain a dependency manifest declaring AnyCPU assemblies.\n'
             exit 0 ;;
         *) printf 'Unknown argument: %s\n' "$argument" >&2; exit 2 ;;
     esac
@@ -32,7 +33,7 @@ if [[ -z "$runtime_id" ]]; then
     printf 'No default .NET runtime for host architecture %s; provide --runtime=RID.\n' "$host_arch" >&2
     exit 2
 fi
-if [[ "$runtime_id" != linux-arm64 && -n "$parser_dir" ]]; then
+if [[ -n "$parser_dir" ]]; then
     if [[ ! -f "$parser_dir/ThermoRawFileParser.dll" ]]; then
         printf 'The selected parser directory must contain ThermoRawFileParser.dll.\n' >&2
         exit 2
@@ -44,6 +45,13 @@ if [[ "$runtime_id" != linux-arm64 && -n "$parser_dir" ]]; then
             exit 2
         fi
     done
+    if [[ "$runtime_id" == linux-arm64 ]]; then
+        manifest="$parser_dir/radiant-thermo-dependencies.json"
+        if [[ ! -f "$manifest" ]] || ! awk '/"parser_platform_target"[[:space:]]*:[[:space:]]*"AnyCPU"/ { found = 1 } END { exit !found }' "$manifest"; then
+            printf 'An ARM64 parser directory must include radiant-thermo-dependencies.json declaring AnyCPU assemblies.\n' >&2
+            exit 2
+        fi
+    fi
 fi
 if [[ -n "$sdk_dir" ]]; then
     dotnet_command="$sdk_dir/dotnet"
@@ -63,7 +71,7 @@ if ! "$dotnet_command" --list-sdks 2>/dev/null | awk '$1 ~ /^8\./ { found = 1 } 
 fi
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_NOLOGO=1
-if [[ "$runtime_id" == linux-arm64 || -z "$parser_dir" ]]; then
+if [[ -z "$parser_dir" ]]; then
     dependencies_dir="$repo_dir/build/thermoraw/dependencies"
     bash "$source_dir/prepare-dependencies.sh" "$dotnet_command" "$dependencies_dir"
     parser_dir="$dependencies_dir/parser-anycpu"
