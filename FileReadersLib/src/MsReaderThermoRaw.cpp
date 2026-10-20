@@ -128,7 +128,14 @@ ReaderInvocation readerInvocation(const QString &explicitPath) {
 class BinaryProcessReader {
 public:
     BinaryProcessReader(QProcess &process, int timeoutMs)
-        : m_process(process), m_timeoutMs(timeoutMs) {}
+        : m_process(process), m_timeoutMs(timeoutMs) {
+        QObject::connect(
+            &m_process,
+            &QProcess::readyReadStandardError,
+            &m_process,
+            [this]() { collectDiagnostics(); }
+            );
+    }
 
     bool readBytes(int byteCount, QByteArray *bytes) {
         QElapsedTimer timeout;
@@ -258,13 +265,13 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
     process.setProcessChannelMode(QProcess::SeparateChannels);
     QStringList arguments = invocation.arguments;
     arguments.append(inputInfo.absoluteFilePath());
+    BinaryProcessReader reader(process, thermoRawReaderTimeoutMs);
     process.start(invocation.program, arguments, QIODevice::ReadOnly);
     if (!process.waitForStarted(10000)) {
         qCritical() << "Cannot start Thermo RAW reader:" << process.errorString();
         return eFileError;
     }
 
-    BinaryProcessReader reader(process, thermoRawReaderTimeoutMs);
     const auto fail = [&](const QString &message) {
         stopProcess(&process);
         const QString failure = reader.timedOut()
