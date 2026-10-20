@@ -112,8 +112,10 @@ void MsReaderThermoRawTests::nativeStreamAndRouting() {
     const auto points = reader.getScanPoints();
     QCOMPARE(infos.size(), 2);
     QCOMPARE(infos[1].msLevel, 1);
+    QCOMPARE(infos[1].nativeScanNumber, 11);
     QCOMPARE(infos[1].scanTime, 30.0f);
     QCOMPARE(infos[2].msLevel, 2);
+    QCOMPARE(infos[2].nativeScanNumber, 12);
     QCOMPARE(infos[2].scanTime, 60.0f);
     QCOMPARE(infos[2].collisionEnergy, 30.0f);
     QCOMPARE(infos[2].precursorTargetMz, 500.0f);

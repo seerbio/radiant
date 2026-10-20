@@ -302,6 +302,7 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         MsScanInfo scanInfo;
         scanInfo.scanNumber = readLittleEndian<qint32>(bytes.constData());
         const qint32 nativeScanNumber = readLittleEndian<qint32>(bytes.constData() + 4);
+        scanInfo.nativeScanNumber = nativeScanNumber;
         scanInfo.msLevel = readLittleEndian<qint32>(bytes.constData() + 8);
         const float retentionTimeMinutes = readLittleEndian<float>(bytes.constData() + 12);
         scanInfo.scanTime = retentionTimeMinutes * 60.0f;
