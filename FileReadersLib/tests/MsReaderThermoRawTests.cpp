@@ -48,7 +48,7 @@ namespace {
     QString makeHelper(const QTemporaryDir &directory, int exitCode = 0) {
         const QString path = QDir(directory.path()).filePath("native reader helper");
         const QByteArray script =
-            "#!/bin/sh\n"
+            QByteArray("#!/bin/sh\n")
             + "cat \"$(dirname \"$0\")/payload.bin\"\nexit "
             + QByteArray::number(exitCode) + "\n";
         if (!writeFile(path, script)
