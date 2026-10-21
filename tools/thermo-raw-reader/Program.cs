@@ -155,9 +155,6 @@ internal static class Program
         {
             return (Array.Empty<double>(), Array.Empty<double>());
         }
-        var unsortedMasses = (double[])masses.Clone();
-        Array.Sort((double[])unsortedMasses.Clone(), masses);
-        Array.Sort((double[])unsortedMasses.Clone(), intensities);
         return (masses, intensities);
     }
 }

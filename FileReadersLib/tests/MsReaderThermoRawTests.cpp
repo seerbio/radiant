@@ -31,9 +31,9 @@ namespace {
                    << float(scan == 1 ? -1 : 10);
             stream << quint32(3);
             stream.setFloatingPointPrecision(QDataStream::DoublePrecision);
-            stream << double(200.125) << double(100.5)
+            stream << double(400.5) << double(250.75)
                    << double(300.25) << double(0)
-                   << double(400.5) << double(250.75);
+                   << double(200.125) << double(100.5);
         }
         stream.writeRawData("RAWDONE1", 8);
         stream << quint32(2);
@@ -122,10 +122,10 @@ void MsReaderThermoRawTests::nativeStreamAndRouting() {
     QCOMPARE(infos[2].isoWindowLower, 10.0f);
     QCOMPARE(infos[2].isoWindowUpper, 10.0f);
     QCOMPARE(points[1].size(), 2);
-    QCOMPARE(points[1][0].x(), 200.125f);
-    QCOMPARE(points[1][0].y(), 100.5f);
-    QCOMPARE(points[1][1].x(), 400.5f);
-    QCOMPARE(points[1][1].y(), 250.75f);
+    QCOMPARE(points[1][0].x(), 400.5f);
+    QCOMPARE(points[1][0].y(), 250.75f);
+    QCOMPARE(points[1][1].x(), 200.125f);
+    QCOMPARE(points[1][1].y(), 100.5f);
 
     const QByteArray previous = qgetenv("RADIANT_THERMO_RAW_READER");
     qputenv("RADIANT_THERMO_RAW_READER", helper.toUtf8());
