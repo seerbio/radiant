@@ -95,7 +95,7 @@ internal static class Program
                 if (reaction == null)
                     throw new IOException($"MS2 scan {nativeNumber} has no activation reaction.");
                 var trailer = new ScanTrailer(raw.GetTrailerExtraInformation(nativeNumber));
-                double? width = trailer.AsDouble("MS2 Isolation Width:") ?? reaction.IsolationWidth;
+                double? width = reaction.IsolationWidth >= 0 ? reaction.IsolationWidth : trailer.AsDouble("MS2 Isolation Width:");
                 precursor = (float)reaction.PrecursorMass;
                 if (width.HasValue && width.Value >= 0)
                 {
