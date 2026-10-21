@@ -10,6 +10,8 @@ using ThermoRawFileParser.Writer;
 // protocol; all diagnostics go to standard error. It never writes mzML or XML.
 internal static class Program
 {
+    private readonly record struct ScanDescriptor(int NativeNumber, int MsLevel, IScanEvent ScanEvent);
+
     private const uint ProtocolVersion = 2;
     private const int MaxPointsPerScan = 10_000_000;
     private static readonly byte[] Magic = Encoding.ASCII.GetBytes("RDRRAW01");
@@ -60,28 +62,30 @@ internal static class Program
         // default. RawFileReader's default differs and can omit valid peaks.
         raw.IncludeReferenceAndExceptionData = true;
 
-        // Keep only scan identifiers, so the process uses one spectrum's arrays
-        // at a time while declaring an independently checked stream count.
-        var scanNumbers = new List<int>();
+        // Keep one scan event per emitted scan. Its MS order is sufficient for
+        // discovery and the event is reused for centroid and MS2 metadata.
+        var scans = new List<ScanDescriptor>();
         for (int scan = raw.RunHeaderEx.FirstSpectrum; scan <= raw.RunHeaderEx.LastSpectrum; ++scan)
         {
-            int level = (int)raw.GetFilterForScanNumber(scan).MSOrder;
+            var scanEvent = raw.GetScanEventForScanNumber(scan);
+            int level = (int)scanEvent.MSOrder;
             if (level is 1 or 2)
-                scanNumbers.Add(scan);
+                scans.Add(new ScanDescriptor(scan, level, scanEvent));
         }
-        if (scanNumbers.Count == 0)
+        if (scans.Count == 0)
             throw new IOException("The RAW file contains no MS1 or MS2 spectra.");
 
         using var buffer = new BufferedStream(Console.OpenStandardOutput(), 1024 * 1024);
         using var writer = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true);
         writer.Write(Magic);
         writer.Write(ProtocolVersion);
-        writer.Write(checked((uint)scanNumbers.Count));
+        writer.Write(checked((uint)scans.Count));
         uint sequentialNumber = 0;
-        foreach (int nativeNumber in scanNumbers)
+        foreach (var descriptor in scans)
         {
-            var scanEvent = raw.GetScanEventForScanNumber(nativeNumber);
-            int level = (int)raw.GetFilterForScanNumber(nativeNumber).MSOrder;
+            int nativeNumber = descriptor.NativeNumber;
+            int level = descriptor.MsLevel;
+            var scanEvent = descriptor.ScanEvent;
             var (masses, intensities) = ReadCentroids(raw, scanEvent, nativeNumber);
             if (masses.Length != intensities.Length || masses.Length > MaxPointsPerScan)
                 throw new IOException($"Invalid centroid array sizes at scan {nativeNumber}.");
