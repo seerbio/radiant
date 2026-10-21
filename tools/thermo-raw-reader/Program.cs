@@ -10,7 +10,7 @@ using ThermoRawFileParser.Writer;
 // protocol; all diagnostics go to standard error. It never writes mzML or XML.
 internal static class Program
 {
-    private const uint ProtocolVersion = 1;
+    private const uint ProtocolVersion = 2;
     private const int MaxPointsPerScan = 10_000_000;
     private static readonly byte[] Magic = Encoding.ASCII.GetBytes("RDRRAW01");
     private static readonly byte[] Footer = Encoding.ASCII.GetBytes("RAWDONE1");
@@ -21,7 +21,7 @@ internal static class Program
         CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
         if (args.Length == 1 && args[0] == "--version")
         {
-            Console.WriteLine("RadiantThermoRawReader 1.0.0; binary protocol 1");
+            Console.WriteLine("RadiantThermoRawReader 1.0.0; binary protocol 2");
             Console.WriteLine("ThermoRawFileParser scan utilities and ThermoFisher CommonCore RawFileReader");
             Console.WriteLine("RawFileReader reading tool. Copyright © 2016 by Thermo Fisher Scientific, Inc. All rights reserved.");
             return 0;
@@ -120,8 +120,8 @@ internal static class Program
             writer.Write(checked((uint)masses.Length));
             for (int point = 0; point < masses.Length; ++point)
             {
-                writer.Write(masses[point]);
-                writer.Write(intensities[point]);
+                writer.Write((float)masses[point]);
+                writer.Write((float)intensities[point]);
             }
         }
         writer.Write(Footer);

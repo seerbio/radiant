@@ -68,12 +68,12 @@ the current helper and dependency hashes with a paired mzML input and inspect
 both scan-level data and downstream Radiant results. The branch does not claim
 that synthetic protocol tests establish general Thermo RAW correctness.
 
-Protocol 1 uses little-endian numeric fields:
+Protocol 2 uses little-endian numeric fields:
 
 | Part | Fields |
 | --- | --- |
-| Header | 8 bytes `RDRRAW01`, uint32 version `1`, uint32 MS1/MS2 spectrum count |
-| Scan | uint32 payload bytes `36 + 16 * points`; int32 sequential scan number, native scan number, MS level; float32 retention time in minutes, collision energy, precursor target m/z, lower isolation offset, upper isolation offset; uint32 point count; pairs of float64 m/z and intensity |
+| Header | 8 bytes `RDRRAW01`, uint32 version `2`, uint32 MS1/MS2 spectrum count |
+| Scan | uint32 payload bytes `36 + 8 * points`; int32 sequential scan number, native scan number, MS level; float32 retention time in minutes, collision energy, precursor target m/z, lower isolation offset, upper isolation offset; uint32 point count; pairs of float32 m/z and intensity |
 | Footer | 8 bytes `RAWDONE1`, uint32 emitted spectrum count |
 
 MS1 fields without precursor/activation metadata are `-1`. Only MS1 and MS2

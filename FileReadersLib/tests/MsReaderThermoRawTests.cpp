@@ -20,9 +20,9 @@ namespace {
         QDataStream stream(&bytes, QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
         stream.writeRawData("RDRRAW01", 8);
-        stream << quint32(1) << quint32(2);
+        stream << quint32(2) << quint32(2);
         for (qint32 scan = 1; scan <= 2; ++scan) {
-            stream << quint32(36 + 3 * 16);
+            stream << quint32(36 + 3 * 8);
             stream << scan << qint32(scan + 10) << scan;
             stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
             stream << float(scan * 0.5) << float(scan == 1 ? -1 : 30)
@@ -30,10 +30,10 @@ namespace {
                    << float(scan == 1 ? -1 : 10)
                    << float(scan == 1 ? -1 : 10);
             stream << quint32(3);
-            stream.setFloatingPointPrecision(QDataStream::DoublePrecision);
-            stream << double(400.5) << double(250.75)
-                   << double(300.25) << double(0)
-                   << double(200.125) << double(100.5);
+            stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+            stream << float(400.5) << float(250.75)
+                   << float(300.25) << float(0)
+                   << float(200.125) << float(100.5);
         }
         stream.writeRawData("RAWDONE1", 8);
         stream << quint32(2);
@@ -184,7 +184,7 @@ void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader_data() {
     wrongFrame[16] = 1;
     QTest::newRow("invalid-frame-size") << wrongFrame << 0;
     QByteArray wrongVersion = makeStream();
-    wrongVersion[8] = 2;
+    wrongVersion[8] = 3;
     QTest::newRow("unsupported-version") << wrongVersion << 0;
 }
 

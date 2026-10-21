@@ -18,9 +18,9 @@ namespace {
 
 constexpr int streamBufferSize = 64 * 1024;
 constexpr int diagnosticLimit = 64 * 1024;
-constexpr quint32 streamVersion = 1;
+constexpr quint32 streamVersion = 2;
 constexpr quint32 metadataByteCount = 36;
-constexpr quint32 pointByteCount = 16;
+constexpr quint32 pointByteCount = 8;
 constexpr quint32 maxPointsPerScan = 10'000'000;
 constexpr int thermoRawReaderTimeoutMs = 30'000;
 
@@ -345,8 +345,8 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
             }
             for (quint32 i = 0; i < pointsToRead; ++i) {
                 const char *point = bytes.constData() + i * pointByteCount;
-                const float mz = static_cast<float>(readLittleEndian<double>(point));
-                const float intensity = static_cast<float>(readLittleEndian<double>(point + 8));
+                const float mz = readLittleEndian<float>(point);
+                const float intensity = readLittleEndian<float>(point + 4);
                 if (!std::isfinite(mz) || !std::isfinite(intensity)) {
                     return fail(QStringLiteral("Non-finite value in spectrum point data."));
                 }
