@@ -11,7 +11,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <condition_variable>
+#include <deque>
 #include <limits>
+#include <mutex>
+#include <thread>
 #include <utility>
 
 namespace {
@@ -222,6 +226,182 @@ void stopProcess(QProcess *process) {
     }
 }
 
+class ThermoRawFrameQueue {
+public:
+    explicit ThermoRawFrameQueue(size_t capacity)
+        : m_capacity(capacity) {}
+
+    bool push(QByteArray frame) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_notFull.wait(lock, [this]() {
+            return m_frames.size() < m_capacity || m_aborted;
+        });
+        if (m_aborted) {
+            return false;
+        }
+        m_frames.push_back(std::move(frame));
+        m_notEmpty.notify_one();
+        return true;
+    }
+
+    bool pop(QByteArray *frame) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_notEmpty.wait(lock, [this]() {
+            return !m_frames.empty() || m_closed;
+        });
+        if (m_frames.empty()) {
+            return false;
+        }
+        *frame = std::move(m_frames.front());
+        m_frames.pop_front();
+        m_notFull.notify_one();
+        return true;
+    }
+
+    void close(bool success, QString error, QString diagnostics, quint32 emittedCount) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_success = success;
+        m_error = std::move(error);
+        m_diagnostics = std::move(diagnostics);
+        m_emittedCount = emittedCount;
+        m_closed = true;
+        m_notEmpty.notify_all();
+        m_notFull.notify_all();
+    }
+
+    void abort() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_aborted = true;
+        m_notEmpty.notify_all();
+        m_notFull.notify_all();
+    }
+
+    bool success() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_success;
+    }
+
+    QString error() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_error;
+    }
+
+    QString diagnostics() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_diagnostics;
+    }
+
+    quint32 emittedCount() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_emittedCount;
+    }
+
+private:
+    const size_t m_capacity;
+    mutable std::mutex m_mutex;
+    std::condition_variable m_notEmpty;
+    std::condition_variable m_notFull;
+    std::deque<QByteArray> m_frames;
+    QString m_error;
+    QString m_diagnostics;
+    quint32 m_emittedCount = 0;
+    bool m_closed = false;
+    bool m_aborted = false;
+    bool m_success = false;
+};
+
+void produceThermoRawFrames(
+        const ReaderInvocation &invocation,
+        const QString &filePath,
+        ThermoRawFrameQueue *queue) {
+    QProcess process;
+    process.setProcessChannelMode(QProcess::SeparateChannels);
+    QStringList arguments = invocation.arguments;
+    arguments.append(filePath);
+    BinaryProcessReader reader(process, thermoRawReaderTimeoutMs);
+    process.start(invocation.program, arguments, QIODevice::ReadOnly);
+    if (!process.waitForStarted(10000)) {
+        queue->close(false, QStringLiteral("Cannot start Thermo RAW reader: %1").arg(process.errorString()), {}, 0);
+        return;
+    }
+
+    const auto fail = [&](const QString &message) {
+        stopProcess(&process);
+        queue->close(false, message, reader.diagnostics(), 0);
+    };
+
+    QByteArray bytes;
+    if (!reader.readBytes(16, &bytes)
+            || bytes.left(8) != QByteArrayLiteral("RDRRAW01")) {
+        fail(QStringLiteral("Missing or unsupported binary stream header."));
+        return;
+    }
+    const quint32 version = readLittleEndian<quint32>(bytes.constData() + 8);
+    const quint32 spectrumCount = readLittleEndian<quint32>(bytes.constData() + 12);
+    const bool streaming = version == streamingStreamVersion
+        && spectrumCount == unknownSpectrumCount;
+    if ((version != fixedCountStreamVersion && version != streamingStreamVersion)
+        || (!streaming && (spectrumCount == 0
+                           || spectrumCount > static_cast<quint32>(std::numeric_limits<int>::max())))
+        || (version == fixedCountStreamVersion && spectrumCount == unknownSpectrumCount)) {
+        fail(QStringLiteral("Invalid spectrum count in binary stream."));
+        return;
+    }
+
+    quint32 emittedCount = 0;
+    bool footerSeen = false;
+    while (streaming || emittedCount < spectrumCount) {
+        if (!reader.readBytes(4, &bytes)) {
+            fail(QStringLiteral("Truncated spectrum frame."));
+            return;
+        }
+        if (streaming && bytes == QByteArrayLiteral("RAWD")) {
+            QByteArray footerBytes;
+            if (!reader.readBytes(8, &footerBytes)
+                || footerBytes.left(4) != QByteArrayLiteral("ONE1")
+                || readLittleEndian<quint32>(footerBytes.constData() + 4) != emittedCount) {
+                fail(QStringLiteral("Missing or incorrect binary stream footer."));
+                return;
+            }
+            footerSeen = true;
+            break;
+        }
+
+        const quint32 frameByteCount = readLittleEndian<quint32>(bytes.constData());
+        if (frameByteCount < metadataByteCount
+            || frameByteCount > metadataByteCount + maxPointsPerScan * pointByteCount) {
+            fail(QStringLiteral("Invalid spectrum frame size."));
+            return;
+        }
+        QByteArray frame;
+        frame.reserve(static_cast<int>(4 + frameByteCount));
+        frame.append(bytes);
+        if (!reader.readBytes(static_cast<int>(frameByteCount), &bytes)) {
+            fail(QStringLiteral("Truncated spectrum frame."));
+            return;
+        }
+        frame.append(bytes);
+        if (!queue->push(std::move(frame))) {
+            stopProcess(&process);
+            return;
+        }
+        ++emittedCount;
+    }
+
+    if ((!streaming && (!reader.readBytes(12, &bytes)
+                        || bytes.left(8) != QByteArrayLiteral("RAWDONE1")
+                        || readLittleEndian<quint32>(bytes.constData() + 8) != spectrumCount))
+        || (streaming && !footerSeen)) {
+        fail(QStringLiteral("Missing or incorrect binary stream footer."));
+        return;
+    }
+    if (!reader.finish()) {
+        fail(QStringLiteral("Reader failed or emitted data after its footer (exit code %1).").arg(process.exitCode()));
+        return;
+    }
+    queue->close(true, {}, {}, emittedCount);
+}
+
 } // namespace
 
 MsReaderThermoRaw::MsReaderThermoRaw(const QString &readerPath)
@@ -255,24 +435,17 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         return eFileError;
     }
 
-    QProcess process;
-    process.setProcessChannelMode(QProcess::SeparateChannels);
-    QStringList arguments = invocation.arguments;
-    arguments.append(inputInfo.absoluteFilePath());
-    BinaryProcessReader reader(process, thermoRawReaderTimeoutMs);
-    process.start(invocation.program, arguments, QIODevice::ReadOnly);
-    if (!process.waitForStarted(10000)) {
-        qCritical() << "Cannot start Thermo RAW reader:" << process.errorString();
-        return eFileError;
-    }
-
+    ThermoRawFrameQueue frameQueue(8);
+    std::thread producer([&frameQueue, &invocation, inputPath = inputInfo.absoluteFilePath()]() {
+        produceThermoRawFrames(invocation, inputPath, &frameQueue);
+    });
     const auto fail = [&](const QString &message) {
-        stopProcess(&process);
-        const QString failure = reader.timedOut()
-            ? QStringLiteral("Timed out waiting for the reader process.")
-            : message;
-        qCritical().noquote() << "Thermo RAW reader:" << failure;
-        const QString diagnostics = reader.diagnostics();
+        frameQueue.abort();
+        if (producer.joinable()) {
+            producer.join();
+        }
+        qCritical().noquote() << "Thermo RAW reader:" << message;
+        const QString diagnostics = frameQueue.diagnostics();
         if (!diagnostics.isEmpty()) {
             qCritical().noquote() << diagnostics;
         }
@@ -280,56 +453,30 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         return eFileError;
     };
 
-    QByteArray bytes;
-    if (!reader.readBytes(16, &bytes)
-            || bytes.left(8) != QByteArrayLiteral("RDRRAW01")
-            || (readLittleEndian<quint32>(bytes.constData() + 8) != fixedCountStreamVersion
-                && readLittleEndian<quint32>(bytes.constData() + 8) != streamingStreamVersion)) {
-        return fail(QStringLiteral("Missing or unsupported binary stream header."));
-    }
-    const quint32 streamVersion = readLittleEndian<quint32>(bytes.constData() + 8);
-    const quint32 spectrumCount = readLittleEndian<quint32>(bytes.constData() + 12);
-    const bool streaming = streamVersion == streamingStreamVersion
-        && spectrumCount == unknownSpectrumCount;
-    if ((!streaming && (spectrumCount == 0
-                        || spectrumCount > static_cast<quint32>(std::numeric_limits<int>::max())))
-        || (streamVersion == fixedCountStreamVersion && spectrumCount == unknownSpectrumCount)) {
-        return fail(QStringLiteral("Invalid spectrum count in binary stream."));
-    }
-
+    QByteArray frame;
     quint32 emittedSpectrumCount = 0;
-    bool footerSeen = false;
-    while (streaming || emittedSpectrumCount < spectrumCount) {
-        if (!reader.readBytes(4, &bytes)) {
-            return fail(QStringLiteral("Truncated spectrum frame."));
-        }
-        if (streaming && bytes == QByteArrayLiteral("RAWD")) {
-            QByteArray footerBytes;
-            if (!reader.readBytes(8, &footerBytes)
-                || footerBytes.left(4) != QByteArrayLiteral("ONE1")
-                || readLittleEndian<quint32>(footerBytes.constData() + 4) != emittedSpectrumCount) {
-                return fail(QStringLiteral("Missing or incorrect binary stream footer."));
-            }
-            footerSeen = true;
-            break;
-        }
-        const quint32 frameByteCount = readLittleEndian<quint32>(bytes.constData());
-        if (frameByteCount < metadataByteCount || !reader.readBytes(metadataByteCount, &bytes)) {
+    while (frameQueue.pop(&frame)) {
+        if (frame.size() < static_cast<int>(4 + metadataByteCount)) {
             return fail(QStringLiteral("Invalid or truncated spectrum metadata."));
         }
-
+        const quint32 frameByteCount = readLittleEndian<quint32>(frame.constData());
+        if (frameByteCount < metadataByteCount
+            || frame.size() != static_cast<int>(4 + frameByteCount)) {
+            return fail(QStringLiteral("Invalid or truncated spectrum frame."));
+        }
+        const char *metadata = frame.constData() + 4;
         MsScanInfo scanInfo;
-        scanInfo.scanNumber = readLittleEndian<qint32>(bytes.constData());
-        const qint32 nativeScanNumber = readLittleEndian<qint32>(bytes.constData() + 4);
+        scanInfo.scanNumber = readLittleEndian<qint32>(metadata);
+        const qint32 nativeScanNumber = readLittleEndian<qint32>(metadata + 4);
         scanInfo.nativeScanNumber = nativeScanNumber;
-        scanInfo.msLevel = readLittleEndian<qint32>(bytes.constData() + 8);
-        const float retentionTimeMinutes = readLittleEndian<float>(bytes.constData() + 12);
+        scanInfo.msLevel = readLittleEndian<qint32>(metadata + 8);
+        const float retentionTimeMinutes = readLittleEndian<float>(metadata + 12);
         scanInfo.scanTime = retentionTimeMinutes * 60.0f;
-        scanInfo.collisionEnergy = readLittleEndian<float>(bytes.constData() + 16);
-        scanInfo.precursorTargetMz = readLittleEndian<float>(bytes.constData() + 20);
-        scanInfo.isoWindowLower = readLittleEndian<float>(bytes.constData() + 24);
-        scanInfo.isoWindowUpper = readLittleEndian<float>(bytes.constData() + 28);
-        const quint32 pointCount = readLittleEndian<quint32>(bytes.constData() + 32);
+        scanInfo.collisionEnergy = readLittleEndian<float>(metadata + 16);
+        scanInfo.precursorTargetMz = readLittleEndian<float>(metadata + 20);
+        scanInfo.isoWindowLower = readLittleEndian<float>(metadata + 24);
+        scanInfo.isoWindowUpper = readLittleEndian<float>(metadata + 28);
+        const quint32 pointCount = readLittleEndian<quint32>(metadata + 32);
         const quint64 expectedFrameBytes = metadataByteCount + static_cast<quint64>(pointCount) * pointByteCount;
         if (frameByteCount != expectedFrameBytes
                 || pointCount > maxPointsPerScan
@@ -349,38 +496,33 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         // Read bounded groups of points instead of retaining a second whole scan.
         ScanPoints scanPoints;
         scanPoints.reserve(static_cast<int>(pointCount));
-        constexpr quint32 pointsPerBuffer = streamBufferSize / pointByteCount;
-        for (quint32 pointIndex = 0; pointIndex < pointCount;) {
-            const quint32 pointsToRead = std::min(pointsPerBuffer, pointCount - pointIndex);
-            if (!reader.readBytes(static_cast<int>(pointsToRead * pointByteCount), &bytes)) {
-                return fail(QStringLiteral("Truncated spectrum point data."));
+        const char *points = metadata + metadataByteCount;
+        for (quint32 pointIndex = 0; pointIndex < pointCount; ++pointIndex) {
+            const char *point = points + pointIndex * pointByteCount;
+            const float mz = readLittleEndian<float>(point);
+            const float intensity = readLittleEndian<float>(point + 4);
+            if (!std::isfinite(mz) || !std::isfinite(intensity)) {
+                return fail(QStringLiteral("Non-finite value in spectrum point data."));
             }
-            for (quint32 i = 0; i < pointsToRead; ++i) {
-                const char *point = bytes.constData() + i * pointByteCount;
-                const float mz = readLittleEndian<float>(point);
-                const float intensity = readLittleEndian<float>(point + 4);
-                if (!std::isfinite(mz) || !std::isfinite(intensity)) {
-                    return fail(QStringLiteral("Non-finite value in spectrum point data."));
-                }
-                if (!MathUtils::tZero(intensity)) {
-                    scanPoints.append(ScanPoint(mz, intensity));
-                }
+            if (!MathUtils::tZero(intensity)) {
+                scanPoints.append(ScanPoint(mz, intensity));
             }
-            pointIndex += pointsToRead;
         }
         m_msScanInfo.insert(scanInfo.scanNumber, scanInfo);
         m_scanPoints.insert(scanInfo.scanNumber, std::move(scanPoints));
         ++emittedSpectrumCount;
     }
 
-    if ((!streaming && (!reader.readBytes(12, &bytes)
-                        || bytes.left(8) != QByteArrayLiteral("RAWDONE1")
-                        || readLittleEndian<quint32>(bytes.constData() + 8) != spectrumCount))
-        || (streaming && !footerSeen)) {
-        return fail(QStringLiteral("Missing or incorrect binary stream footer."));
+    if (producer.joinable()) {
+        producer.join();
     }
-    if (!reader.finish()) {
-        return fail(QStringLiteral("Reader failed or emitted data after its footer (exit code %1).").arg(process.exitCode()));
+    if (!frameQueue.success()) {
+        return fail(frameQueue.error().isEmpty()
+            ? QStringLiteral("Thermo RAW reader failed.")
+            : frameQueue.error());
+    }
+    if (emittedSpectrumCount != frameQueue.emittedCount()) {
+        return fail(QStringLiteral("Thermo RAW reader frame count mismatch."));
     }
 
     m_filePath = filePath;
