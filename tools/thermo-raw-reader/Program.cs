@@ -110,7 +110,7 @@ internal static class Program
                 if (reaction.CollisionEnergyValid)
                     collision = (float)reaction.CollisionEnergy;
             }
-            writer.Write(checked(36u + (uint)masses.Length * 16u));
+            writer.Write(checked(36u + (uint)masses.Length * 8u));
             writer.Write(checked((int)++sequentialNumber));
             writer.Write(nativeNumber);
             writer.Write(level);
