@@ -100,23 +100,28 @@ internal static class Program
                 if (reaction.CollisionEnergyValid)
                     collision = (float)reaction.CollisionEnergy;
             }
-            writer.Write(checked(36u + (uint)masses.Length * 8u));
-            writer.Write(checked((int)++sequentialNumber));
-            writer.Write(nativeNumber);
-            writer.Write(level);
+
+            using var frame = new MemoryStream(checked(40 + masses.Length * 8));
+            using var frameWriter = new BinaryWriter(frame, Encoding.UTF8, leaveOpen: true);
+            frameWriter.Write(checked(36u + (uint)masses.Length * 8u));
+            frameWriter.Write(checked((int)++sequentialNumber));
+            frameWriter.Write(nativeNumber);
+            frameWriter.Write(level);
             // The mapped mzML reader first parses minutes to float and then
             // multiplies by 60. Preserve that order of operations in C++.
-            writer.Write((float)raw.RetentionTimeFromScanNumber(nativeNumber));
-            writer.Write(collision);
-            writer.Write(precursor);
-            writer.Write(lower);
-            writer.Write(upper);
-            writer.Write(checked((uint)masses.Length));
+            frameWriter.Write((float)raw.RetentionTimeFromScanNumber(nativeNumber));
+            frameWriter.Write(collision);
+            frameWriter.Write(precursor);
+            frameWriter.Write(lower);
+            frameWriter.Write(upper);
+            frameWriter.Write(checked((uint)masses.Length));
             for (int point = 0; point < masses.Length; ++point)
             {
-                writer.Write((float)masses[point]);
-                writer.Write((float)intensities[point]);
+                frameWriter.Write((float)masses[point]);
+                frameWriter.Write((float)intensities[point]);
             }
+            frameWriter.Flush();
+            writer.Write(frame.GetBuffer(), 0, checked((int)frame.Length));
         }
         if (sequentialNumber == 0)
             throw new IOException("The RAW file contains no MS1 or MS2 spectra.");
