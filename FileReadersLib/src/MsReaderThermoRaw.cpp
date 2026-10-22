@@ -400,7 +400,10 @@ void produceThermoRawFrames(
 
     const auto fail = [&](const QString &message) {
         stopProcess(&process);
-        queue->close(false, message, reader.diagnostics(), 0);
+        const QString failure = reader.timedOut()
+            ? QStringLiteral("Timed out waiting for the reader process.")
+            : message;
+        queue->close(false, failure, reader.diagnostics(), 0);
     };
 
     QByteArray bytes;
