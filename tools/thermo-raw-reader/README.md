@@ -68,18 +68,22 @@ the current helper and dependency hashes with a paired mzML input and inspect
 both scan-level data and downstream Radiant results. The branch does not claim
 that synthetic protocol tests establish general Thermo RAW correctness.
 
-Protocol 2 uses little-endian numeric fields:
+The helper emits protocol 4. Numeric fields are little-endian:
 
 | Part | Fields |
 | --- | --- |
-| Header | 8 bytes `RDRRAW01`, uint32 version `2` with a fixed count or version `3` with count `0xffffffff` for streaming |
-| Scan | uint32 payload bytes `36 + 8 * points`; int32 sequential scan number, native scan number, MS level; float32 retention time in minutes, collision energy, precursor target m/z, lower isolation offset, upper isolation offset; uint32 point count; pairs of float32 m/z and intensity |
+| Header | 8 bytes `RDRRAW01`, uint32 version `4`, uint32 count `0xffffffff` for streaming |
+| Batch | uint32 payload byte count, uint32 scan count, then that many bytes of concatenated scan records |
+| Scan | uint32 payload bytes `36 + 8 * points`; int32 native scan number in both scan-number fields, MS level; float32 retention time in minutes, collision energy, precursor target m/z, lower isolation offset, upper isolation offset; uint32 point count; pairs of float32 m/z and intensity |
 | Footer | 8 bytes `RAWDONE1`, uint32 emitted spectrum count |
 
 MS1 fields without precursor/activation metadata are `-1`. Only MS1 and MS2
-spectra are included. Radiant receives the sequential scan number used by its
-mapped mzML reader; the native scan number is carried for diagnostics. A
-scan-time filter is applied after the complete RAW stream has been loaded.
+spectra are included. Independent reader workers process disjoint native scan
+ranges and publish bounded batches to one stdout serializer. Batches can arrive
+out of order; Radiant sorts by native scan number and assigns the same sequential
+scan numbers used by its mapped mzML reader. Older fixed-count protocol 2 and
+ordered streaming protocol 3 are still accepted by Radiant. A scan-time filter
+is applied after the complete RAW stream has been loaded.
 Retention
 times are cast to float minutes before conversion to seconds in Radiant, matching
 the mapped mzML reader's operation order. Per-scan memory is bounded by a maximum

@@ -6,9 +6,11 @@
 #include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
+#include <QVector>
 #include <QtEndian>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <condition_variable>
@@ -28,11 +30,16 @@ constexpr int streamBufferSize = 64 * 1024;
 constexpr int diagnosticLimit = 64 * 1024;
 constexpr quint32 fixedCountStreamVersion = 2;
 constexpr quint32 streamingStreamVersion = 3;
+constexpr quint32 nativeKeyedStreamVersion = 4;
 constexpr quint32 unknownSpectrumCount = std::numeric_limits<quint32>::max();
 constexpr quint32 metadataByteCount = 36;
 constexpr quint32 pointByteCount = 8;
 constexpr quint32 maxPointsPerScan = 10'000'000;
+constexpr quint32 maxScansPerBatch = 64;
+constexpr quint32 maxBytesPerBatch = 4 * 1024 * 1024;
 constexpr int thermoRawReaderTimeoutMs = 30'000;
+
+using ThermoRawFrameBatch = QVector<QByteArray>;
 
 template<typename T>
 T readLittleEndian(const char *data) {
@@ -239,29 +246,29 @@ public:
     explicit ThermoRawFrameQueue(size_t capacity)
         : m_capacity(capacity) {}
 
-    bool push(QByteArray frame) {
+    bool push(ThermoRawFrameBatch batch) {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_notFull.wait(lock, [this]() {
-            return m_frames.size() < m_capacity || m_aborted;
+            return m_batches.size() < m_capacity || m_aborted;
         });
         if (m_aborted) {
             return false;
         }
-        m_frames.push_back(std::move(frame));
+        m_batches.push_back(std::move(batch));
         m_notEmpty.notify_one();
         return true;
     }
 
-    bool pop(QByteArray *frame) {
+    bool pop(ThermoRawFrameBatch *batch) {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_notEmpty.wait(lock, [this]() {
-            return !m_frames.empty() || m_closed;
+            return !m_batches.empty() || m_closed;
         });
-        if (m_frames.empty()) {
+        if (m_batches.empty()) {
             return false;
         }
-        *frame = std::move(m_frames.front());
-        m_frames.pop_front();
+        *batch = std::move(m_batches.front());
+        m_batches.pop_front();
         m_notFull.notify_one();
         return true;
     }
@@ -275,6 +282,16 @@ public:
         m_closed = true;
         m_notEmpty.notify_all();
         m_notFull.notify_all();
+    }
+
+    void setNativeKeyedScanNumbers(bool nativeKeyed) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_nativeKeyedScanNumbers = nativeKeyed;
+    }
+
+    bool nativeKeyedScanNumbers() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_nativeKeyedScanNumbers;
     }
 
     void abort() {
@@ -309,13 +326,14 @@ private:
     mutable std::mutex m_mutex;
     std::condition_variable m_notEmpty;
     std::condition_variable m_notFull;
-    std::deque<QByteArray> m_frames;
+    std::deque<ThermoRawFrameBatch> m_batches;
     QString m_error;
     QString m_diagnostics;
     quint32 m_emittedCount = 0;
     bool m_closed = false;
     bool m_aborted = false;
     bool m_success = false;
+    bool m_nativeKeyedScanNumbers = false;
 };
 
 struct ParsedThermoRawFrame {
@@ -334,7 +352,8 @@ struct ThermoRawFrameParseResult {
 
 ThermoRawFrameParseResult parseThermoRawFrame(
         const QByteArray &frame,
-        quint32 emittedSpectrumCount) {
+        quint32 emittedSpectrumCount,
+        bool nativeKeyedScanNumbers) {
     if (frame.size() < static_cast<int>(4 + metadataByteCount)) {
         return {QStringLiteral("Invalid or truncated spectrum metadata."), {}};
     }
@@ -359,9 +378,12 @@ ThermoRawFrameParseResult parseThermoRawFrame(
     const quint32 pointCount = readLittleEndian<quint32>(metadata + 32);
     const quint64 expectedFrameBytes = metadataByteCount
         + static_cast<quint64>(pointCount) * pointByteCount;
+    const bool validScanNumber = nativeKeyedScanNumbers
+        ? scanInfo.scanNumber == nativeScanNumber
+        : scanInfo.scanNumber == static_cast<int>(emittedSpectrumCount + 1);
     if (frameByteCount != expectedFrameBytes
         || pointCount > maxPointsPerScan
-        || scanInfo.scanNumber != static_cast<int>(emittedSpectrumCount + 1)
+        || !validScanNumber
         || nativeScanNumber <= 0
         || (scanInfo.msLevel != 1 && scanInfo.msLevel != 2)
         || !std::isfinite(scanInfo.scanTime)
@@ -427,10 +449,13 @@ public:
         }
     }
 
-    std::future<ThermoRawFrameParseResult> submit(QByteArray frame, quint32 frameNumber) {
+    std::future<ThermoRawFrameParseResult> submit(
+            QByteArray frame,
+            quint32 frameNumber,
+            bool nativeKeyedScanNumbers) {
         auto task = std::make_shared<std::packaged_task<ThermoRawFrameParseResult()>>(
-            [frame = std::move(frame), frameNumber]() {
-                return parseThermoRawFrame(frame, frameNumber);
+            [frame = std::move(frame), frameNumber, nativeKeyedScanNumbers]() {
+                return parseThermoRawFrame(frame, frameNumber, nativeKeyedScanNumbers);
             }
             );
         std::future<ThermoRawFrameParseResult> result = task->get_future();
@@ -499,15 +524,21 @@ void produceThermoRawFrames(
     }
     const quint32 version = readLittleEndian<quint32>(bytes.constData() + 8);
     const quint32 spectrumCount = readLittleEndian<quint32>(bytes.constData() + 12);
-    const bool streaming = version == streamingStreamVersion
+    const bool streamingVersion = version == streamingStreamVersion
+        || version == nativeKeyedStreamVersion;
+    const bool streaming = streamingVersion
         && spectrumCount == unknownSpectrumCount;
-    if ((version != fixedCountStreamVersion && version != streamingStreamVersion)
+    if ((version != fixedCountStreamVersion
+         && version != streamingStreamVersion
+         && version != nativeKeyedStreamVersion)
         || (!streaming && (spectrumCount == 0
                            || spectrumCount > static_cast<quint32>(std::numeric_limits<int>::max())))
-        || (version == fixedCountStreamVersion && spectrumCount == unknownSpectrumCount)) {
+        || (version == fixedCountStreamVersion && spectrumCount == unknownSpectrumCount)
+        || (version == nativeKeyedStreamVersion && !streaming)) {
         fail(QStringLiteral("Invalid spectrum count in binary stream."));
         return;
     }
+    queue->setNativeKeyedScanNumbers(version == nativeKeyedStreamVersion);
 
     quint32 emittedCount = 0;
     bool footerSeen = false;
@@ -529,6 +560,68 @@ void produceThermoRawFrames(
         }
 
         const quint32 frameByteCount = readLittleEndian<quint32>(bytes.constData());
+        if (version == nativeKeyedStreamVersion) {
+            QByteArray batchCountBytes;
+            if (!reader.readBytes(4, &batchCountBytes)) {
+                fail(QStringLiteral("Truncated spectrum batch header."));
+                return;
+            }
+            const quint32 batchFrameCount = readLittleEndian<quint32>(batchCountBytes.constData());
+            const quint64 maxBatchBytes = maxBytesPerBatch
+                + 4 + metadataByteCount
+                + static_cast<quint64>(maxPointsPerScan) * pointByteCount;
+            if (batchFrameCount == 0
+                || batchFrameCount > maxScansPerBatch
+                || frameByteCount < batchFrameCount * (4 + metadataByteCount)
+                || frameByteCount > maxBatchBytes
+                || frameByteCount > static_cast<quint32>(std::numeric_limits<int>::max())) {
+                fail(QStringLiteral("Invalid spectrum batch size."));
+                return;
+            }
+
+            QByteArray batchBytes;
+            batchBytes.resize(static_cast<int>(frameByteCount));
+            if (!reader.readBytes(static_cast<int>(frameByteCount), batchBytes.data())) {
+                fail(QStringLiteral("Truncated spectrum batch."));
+                return;
+            }
+            ThermoRawFrameBatch batch;
+            batch.reserve(static_cast<int>(batchFrameCount));
+            quint32 batchOffset = 0;
+            for (quint32 frameIndex = 0; frameIndex < batchFrameCount; ++frameIndex) {
+                if (frameByteCount - batchOffset < 4) {
+                    fail(QStringLiteral("Truncated spectrum frame in batch."));
+                    return;
+                }
+                const quint32 innerFrameBytes = readLittleEndian<quint32>(
+                    batchBytes.constData() + batchOffset);
+                const quint64 fullFrameBytes = 4 + static_cast<quint64>(innerFrameBytes);
+                if (innerFrameBytes < metadataByteCount
+                    || innerFrameBytes > metadataByteCount + maxPointsPerScan * pointByteCount
+                    || fullFrameBytes > frameByteCount - batchOffset) {
+                    fail(QStringLiteral("Invalid spectrum frame in batch."));
+                    return;
+                }
+                batch.push_back(batchBytes.mid(
+                    static_cast<int>(batchOffset), static_cast<int>(fullFrameBytes)));
+                batchOffset += static_cast<quint32>(fullFrameBytes);
+            }
+            if (batchOffset != frameByteCount) {
+                fail(QStringLiteral("Spectrum batch contains trailing data."));
+                return;
+            }
+            if (batchFrameCount > std::numeric_limits<quint32>::max() - emittedCount) {
+                fail(QStringLiteral("Spectrum count exceeds the binary protocol limit."));
+                return;
+            }
+            if (!queue->push(std::move(batch))) {
+                stopProcess(&process);
+                return;
+            }
+            emittedCount += batchFrameCount;
+            continue;
+        }
+
         if (frameByteCount < metadataByteCount
             || frameByteCount > metadataByteCount + maxPointsPerScan * pointByteCount) {
             fail(QStringLiteral("Invalid spectrum frame size."));
@@ -541,7 +634,9 @@ void produceThermoRawFrames(
             fail(QStringLiteral("Truncated spectrum frame."));
             return;
         }
-        if (!queue->push(std::move(frame))) {
+        ThermoRawFrameBatch batch;
+        batch.push_back(std::move(frame));
+        if (!queue->push(std::move(batch))) {
             stopProcess(&process);
             return;
         }
@@ -613,8 +708,11 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         return eFileError;
     };
 
-    QByteArray frame;
+    ThermoRawFrameBatch frameBatch;
     quint32 emittedSpectrumCount = 0;
+    quint32 submittedSpectrumCount = 0;
+    bool nativeKeyedScanNumbers = false;
+    bool scanNumberModeKnown = false;
     const unsigned int hardwareThreads = std::thread::hardware_concurrency();
     const size_t workerCount = std::max<size_t>(
         1,
@@ -632,22 +730,43 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         ++emittedSpectrumCount;
         return eNoError;
     };
-    while (frameQueue.pop(&frame)) {
-        const quint32 frameNumber = emittedSpectrumCount
-            + static_cast<quint32>(pendingFrames.size());
-        pendingFrames.push_back(parserPool.submit(std::move(frame), frameNumber));
-        if (pendingFrames.size() >= workerCount) {
-            if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
-                return eFileError;
+    const auto consumeAnyPendingFrame = [&]() {
+        auto ready = std::find_if(
+            pendingFrames.begin(),
+            pendingFrames.end(),
+            [](std::future<ThermoRawFrameParseResult> &future) {
+                return future.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
             }
-            pendingFrames.pop_front();
+            );
+        if (ready == pendingFrames.end()) {
+            ready = pendingFrames.begin();
+        }
+        Err result = consumeFrame(std::move(*ready));
+        if (result == eNoError) {
+            pendingFrames.erase(ready);
+        }
+        return result;
+    };
+    while (frameQueue.pop(&frameBatch)) {
+        for (QByteArray &frame : frameBatch) {
+            if (!scanNumberModeKnown) {
+                nativeKeyedScanNumbers = frameQueue.nativeKeyedScanNumbers();
+                scanNumberModeKnown = true;
+            }
+            const quint32 frameNumber = submittedSpectrumCount++;
+            pendingFrames.push_back(parserPool.submit(
+                std::move(frame), frameNumber, nativeKeyedScanNumbers));
+            if (pendingFrames.size() >= workerCount) {
+                if (consumeAnyPendingFrame() != eNoError) {
+                    return eFileError;
+                }
+            }
         }
     }
     while (!pendingFrames.empty()) {
-        if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
+        if (consumeAnyPendingFrame() != eNoError) {
             return eFileError;
         }
-        pendingFrames.pop_front();
     }
 
     if (producer.joinable()) {
@@ -658,8 +777,31 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
             ? QStringLiteral("Thermo RAW reader failed.")
             : frameQueue.error());
     }
-    if (emittedSpectrumCount != frameQueue.emittedCount()) {
+    if (emittedSpectrumCount != frameQueue.emittedCount()
+        || submittedSpectrumCount != frameQueue.emittedCount()) {
         return fail(QStringLiteral("Thermo RAW reader frame count mismatch."));
+    }
+    if (m_msScanInfo.size() != static_cast<int>(emittedSpectrumCount)
+        || m_scanPoints.size() != static_cast<int>(emittedSpectrumCount)) {
+        return fail(QStringLiteral("Thermo RAW reader emitted duplicate scan numbers."));
+    }
+
+    if (nativeKeyedScanNumbers) {
+        QMap<ScanNumber, MsScanInfo> sequentialScanInfo;
+        QMap<ScanNumber, ScanPoints> sequentialScanPoints;
+        ScanNumber sequentialNumber = 0;
+        for (auto it = m_msScanInfo.cbegin(); it != m_msScanInfo.cend(); ++it) {
+            auto pointsIt = m_scanPoints.find(it.key());
+            if (pointsIt == m_scanPoints.end()) {
+                return fail(QStringLiteral("Thermo RAW reader emitted unmatched scan data."));
+            }
+            MsScanInfo scanInfo = it.value();
+            scanInfo.scanNumber = ++sequentialNumber;
+            sequentialScanInfo.insert(sequentialNumber, scanInfo);
+            sequentialScanPoints.insert(sequentialNumber, std::move(pointsIt.value()));
+        }
+        m_msScanInfo.swap(sequentialScanInfo);
+        m_scanPoints.swap(sequentialScanPoints);
     }
 
     m_filePath = filePath;
