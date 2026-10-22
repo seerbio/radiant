@@ -18,7 +18,9 @@ namespace {
 
 constexpr int streamBufferSize = 64 * 1024;
 constexpr int diagnosticLimit = 64 * 1024;
-constexpr quint32 streamVersion = 2;
+constexpr quint32 fixedCountStreamVersion = 2;
+constexpr quint32 streamingStreamVersion = 3;
+constexpr quint32 unknownSpectrumCount = std::numeric_limits<quint32>::max();
 constexpr quint32 metadataByteCount = 36;
 constexpr quint32 pointByteCount = 8;
 constexpr quint32 maxPointsPerScan = 10'000'000;
@@ -289,17 +291,35 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
     QByteArray bytes;
     if (!reader.readBytes(16, &bytes)
             || bytes.left(8) != QByteArrayLiteral("RDRRAW01")
-            || readLittleEndian<quint32>(bytes.constData() + 8) != streamVersion) {
+            || (readLittleEndian<quint32>(bytes.constData() + 8) != fixedCountStreamVersion
+                && readLittleEndian<quint32>(bytes.constData() + 8) != streamingStreamVersion)) {
         return fail(QStringLiteral("Missing or unsupported binary stream header."));
     }
+    const quint32 streamVersion = readLittleEndian<quint32>(bytes.constData() + 8);
     const quint32 spectrumCount = readLittleEndian<quint32>(bytes.constData() + 12);
-    if (spectrumCount == 0 || spectrumCount > static_cast<quint32>(std::numeric_limits<int>::max())) {
+    const bool streaming = streamVersion == streamingStreamVersion
+        && spectrumCount == unknownSpectrumCount;
+    if ((!streaming && (spectrumCount == 0
+                        || spectrumCount > static_cast<quint32>(std::numeric_limits<int>::max())))
+        || (streamVersion == fixedCountStreamVersion && spectrumCount == unknownSpectrumCount)) {
         return fail(QStringLiteral("Invalid spectrum count in binary stream."));
     }
 
-    for (quint32 spectrumIndex = 0; spectrumIndex < spectrumCount; ++spectrumIndex) {
+    quint32 emittedSpectrumCount = 0;
+    bool footerSeen = false;
+    while (streaming || emittedSpectrumCount < spectrumCount) {
         if (!reader.readBytes(4, &bytes)) {
             return fail(QStringLiteral("Truncated spectrum frame."));
+        }
+        if (streaming && bytes == QByteArrayLiteral("RAWD")) {
+            QByteArray footerBytes;
+            if (!reader.readBytes(8, &footerBytes)
+                || footerBytes.left(4) != QByteArrayLiteral("ONE1")
+                || readLittleEndian<quint32>(footerBytes.constData() + 4) != emittedSpectrumCount) {
+                return fail(QStringLiteral("Missing or incorrect binary stream footer."));
+            }
+            footerSeen = true;
+            break;
         }
         const quint32 frameByteCount = readLittleEndian<quint32>(bytes.constData());
         if (frameByteCount < metadataByteCount || !reader.readBytes(metadataByteCount, &bytes)) {
@@ -321,7 +341,7 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         const quint64 expectedFrameBytes = metadataByteCount + static_cast<quint64>(pointCount) * pointByteCount;
         if (frameByteCount != expectedFrameBytes
                 || pointCount > maxPointsPerScan
-                || scanInfo.scanNumber != static_cast<int>(spectrumIndex + 1)
+                || scanInfo.scanNumber != static_cast<int>(emittedSpectrumCount + 1)
                 || nativeScanNumber <= 0
                 || (scanInfo.msLevel != 1 && scanInfo.msLevel != 2)
                 || !std::isfinite(scanInfo.scanTime)
@@ -358,11 +378,13 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         }
         m_msScanInfo.insert(scanInfo.scanNumber, scanInfo);
         m_scanPoints.insert(scanInfo.scanNumber, std::move(scanPoints));
+        ++emittedSpectrumCount;
     }
 
-    if (!reader.readBytes(12, &bytes)
-            || bytes.left(8) != QByteArrayLiteral("RAWDONE1")
-            || readLittleEndian<quint32>(bytes.constData() + 8) != spectrumCount) {
+    if ((!streaming && (!reader.readBytes(12, &bytes)
+                        || bytes.left(8) != QByteArrayLiteral("RAWDONE1")
+                        || readLittleEndian<quint32>(bytes.constData() + 8) != spectrumCount))
+        || (streaming && !footerSeen)) {
         return fail(QStringLiteral("Missing or incorrect binary stream footer."));
     }
     if (!reader.finish()) {

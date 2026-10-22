@@ -72,7 +72,7 @@ Protocol 2 uses little-endian numeric fields:
 
 | Part | Fields |
 | --- | --- |
-| Header | 8 bytes `RDRRAW01`, uint32 version `2`, uint32 MS1/MS2 spectrum count |
+| Header | 8 bytes `RDRRAW01`, uint32 version `2` with a fixed count or version `3` with count `0xffffffff` for streaming |
 | Scan | uint32 payload bytes `36 + 8 * points`; int32 sequential scan number, native scan number, MS level; float32 retention time in minutes, collision energy, precursor target m/z, lower isolation offset, upper isolation offset; uint32 point count; pairs of float32 m/z and intensity |
 | Footer | 8 bytes `RAWDONE1`, uint32 emitted spectrum count |
 

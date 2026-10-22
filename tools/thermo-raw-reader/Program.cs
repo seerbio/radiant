@@ -10,9 +10,8 @@ using ThermoRawFileParser.Writer;
 // protocol; all diagnostics go to standard error. It never writes mzML or XML.
 internal static class Program
 {
-    private readonly record struct ScanDescriptor(int NativeNumber, int MsLevel, IScanEvent ScanEvent);
-
-    private const uint ProtocolVersion = 2;
+    private const uint ProtocolVersion = 3;
+    private const uint UnknownSpectrumCount = uint.MaxValue;
     private const int MaxPointsPerScan = 10_000_000;
     private static readonly byte[] Magic = Encoding.ASCII.GetBytes("RDRRAW01");
     private static readonly byte[] Footer = Encoding.ASCII.GetBytes("RAWDONE1");
@@ -62,30 +61,21 @@ internal static class Program
         // default. RawFileReader's default differs and can omit valid peaks.
         raw.IncludeReferenceAndExceptionData = true;
 
-        // Keep one scan event per emitted scan. Its MS order is sufficient for
-        // discovery and the event is reused for centroid and MS2 metadata.
-        var scans = new List<ScanDescriptor>();
-        for (int scan = raw.RunHeaderEx.FirstSpectrum; scan <= raw.RunHeaderEx.LastSpectrum; ++scan)
-        {
-            var scanEvent = raw.GetScanEventForScanNumber(scan);
-            int level = (int)scanEvent.MSOrder;
-            if (level is 1 or 2)
-                scans.Add(new ScanDescriptor(scan, level, scanEvent));
-        }
-        if (scans.Count == 0)
-            throw new IOException("The RAW file contains no MS1 or MS2 spectra.");
-
         using var buffer = new BufferedStream(Console.OpenStandardOutput(), 1024 * 1024);
         using var writer = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true);
         writer.Write(Magic);
         writer.Write(ProtocolVersion);
-        writer.Write(checked((uint)scans.Count));
+        writer.Write(UnknownSpectrumCount);
         uint sequentialNumber = 0;
-        foreach (var descriptor in scans)
+        for (int nativeNumber = raw.RunHeaderEx.FirstSpectrum;
+             nativeNumber <= raw.RunHeaderEx.LastSpectrum;
+             ++nativeNumber)
         {
-            int nativeNumber = descriptor.NativeNumber;
-            int level = descriptor.MsLevel;
-            var scanEvent = descriptor.ScanEvent;
+            var scanEvent = raw.GetScanEventForScanNumber(nativeNumber);
+            int level = (int)scanEvent.MSOrder;
+            if (level is not (1 or 2))
+                continue;
+
             var (masses, intensities) = ReadCentroids(raw, scanEvent, nativeNumber);
             if (masses.Length != intensities.Length || masses.Length > MaxPointsPerScan)
                 throw new IOException($"Invalid centroid array sizes at scan {nativeNumber}.");
@@ -128,6 +118,9 @@ internal static class Program
                 writer.Write((float)intensities[point]);
             }
         }
+        if (sequentialNumber == 0)
+            throw new IOException("The RAW file contains no MS1 or MS2 spectra.");
+
         writer.Write(Footer);
         writer.Write(sequentialNumber);
         writer.Flush();

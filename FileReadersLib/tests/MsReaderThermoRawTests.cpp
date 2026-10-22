@@ -40,6 +40,16 @@ namespace {
         return bytes;
     }
 
+    QByteArray makeStreamingStream() {
+        QByteArray bytes = makeStream();
+        bytes[8] = 3;
+        bytes[12] = static_cast<char>(0xff);
+        bytes[13] = static_cast<char>(0xff);
+        bytes[14] = static_cast<char>(0xff);
+        bytes[15] = static_cast<char>(0xff);
+        return bytes;
+    }
+
     bool writeFile(const QString &path, const QByteArray &bytes) {
         QFile file(path);
         return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
@@ -85,6 +95,7 @@ class MsReaderThermoRawTests : public QObject {
 
 private Q_SLOTS:
     void nativeStreamAndRouting();
+    void streamingNativeStream();
     void filteredReadPath();
     void rejectsIncompleteOrFailedReader_data();
     void rejectsIncompleteOrFailedReader();
@@ -146,6 +157,24 @@ void MsReaderThermoRawTests::nativeStreamAndRouting() {
     QVERIFY(reader.getScanPoints().isEmpty());
 }
 
+void MsReaderThermoRawTests::streamingNativeStream() {
+#ifdef Q_OS_WIN
+    QSKIP("The fake helper uses a POSIX shell.");
+#endif
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString rawPath = QDir(directory.path()).filePath("test.raw");
+    QVERIFY(writeFile(rawPath, "raw fixture"));
+    QVERIFY(writeFile(QDir(directory.path()).filePath("payload.bin"), makeStreamingStream()));
+    const QString helper = makeHelper(directory);
+    QVERIFY(!helper.isEmpty());
+
+    MsReaderThermoRaw reader(helper);
+    QCOMPARE(reader.openFile(rawPath), eNoError);
+    QCOMPARE(reader.getMsScanInfos().size(), 2);
+    QCOMPARE(reader.getScanPoints().size(), 2);
+}
+
 void MsReaderThermoRawTests::filteredReadPath() {
 #ifdef Q_OS_WIN
     QSKIP("The fake helper uses a POSIX shell.");
@@ -184,7 +213,7 @@ void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader_data() {
     wrongFrame[16] = 1;
     QTest::newRow("invalid-frame-size") << wrongFrame << 0;
     QByteArray wrongVersion = makeStream();
-    wrongVersion[8] = 3;
+    wrongVersion[8] = 4;
     QTest::newRow("unsupported-version") << wrongVersion << 0;
 }
 
