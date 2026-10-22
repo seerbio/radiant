@@ -63,6 +63,8 @@ internal static class Program
 
         using var buffer = new BufferedStream(Console.OpenStandardOutput(), 1024 * 1024);
         using var writer = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true);
+        using var frame = new MemoryStream();
+        using var frameWriter = new BinaryWriter(frame, Encoding.UTF8, leaveOpen: true);
         writer.Write(Magic);
         writer.Write(ProtocolVersion);
         writer.Write(UnknownSpectrumCount);
@@ -101,8 +103,7 @@ internal static class Program
                     collision = (float)reaction.CollisionEnergy;
             }
 
-            using var frame = new MemoryStream(checked(40 + masses.Length * 8));
-            using var frameWriter = new BinaryWriter(frame, Encoding.UTF8, leaveOpen: true);
+            frame.SetLength(0);
             frameWriter.Write(checked(36u + (uint)masses.Length * 8u));
             frameWriter.Write(checked((int)++sequentialNumber));
             frameWriter.Write(nativeNumber);

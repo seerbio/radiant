@@ -144,14 +144,18 @@ public:
     }
 
     bool readBytes(int byteCount, QByteArray *bytes) {
+        bytes->resize(byteCount);
+        return readBytes(byteCount, bytes->data());
+    }
+
+    bool readBytes(int byteCount, char *destination) {
         QElapsedTimer timeout;
         timeout.start();
-        bytes->resize(byteCount);
         int bytesRead = 0;
         while (bytesRead < byteCount) {
             collectDiagnostics();
             const qint64 incoming = m_process.read(
-                bytes->data() + bytesRead,
+                destination + bytesRead,
                 byteCount - bytesRead
                 );
             if (incoming > 0) {
@@ -449,13 +453,12 @@ void produceThermoRawFrames(
             return;
         }
         QByteArray frame;
-        frame.reserve(static_cast<int>(4 + frameByteCount));
-        frame.append(bytes);
-        if (!reader.readBytes(static_cast<int>(frameByteCount), &bytes)) {
+        frame.resize(static_cast<int>(4 + frameByteCount));
+        std::memcpy(frame.data(), bytes.constData(), 4);
+        if (!reader.readBytes(static_cast<int>(frameByteCount), frame.data() + 4)) {
             fail(QStringLiteral("Truncated spectrum frame."));
             return;
         }
-        frame.append(bytes);
         if (!queue->push(std::move(frame))) {
             stopProcess(&process);
             return;
