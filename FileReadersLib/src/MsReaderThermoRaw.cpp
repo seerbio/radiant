@@ -13,7 +13,6 @@
 #include <cstring>
 #include <condition_variable>
 #include <deque>
-#include <future>
 #include <limits>
 #include <mutex>
 #include <thread>
@@ -531,43 +530,14 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
 
     QByteArray frame;
     quint32 emittedSpectrumCount = 0;
-    const unsigned int hardwareThreads = std::thread::hardware_concurrency();
-    const size_t workerCount = std::max<size_t>(
-        1,
-        std::min<size_t>(4, hardwareThreads == 0 ? 1 : hardwareThreads)
-        );
-    std::deque<std::future<ThermoRawFrameParseResult>> pendingFrames;
-    const auto consumeFrame = [&](std::future<ThermoRawFrameParseResult> future) {
-        ThermoRawFrameParseResult result = future.get();
+    while (frameQueue.pop(&frame)) {
+        ThermoRawFrameParseResult result = parseThermoRawFrame(frame, emittedSpectrumCount);
         if (!result.success()) {
             return fail(result.error);
         }
         m_msScanInfo.insert(result.frame.scanInfo.scanNumber, result.frame.scanInfo);
         m_scanPoints.insert(result.frame.scanInfo.scanNumber, std::move(result.frame.scanPoints));
         ++emittedSpectrumCount;
-        return eNoError;
-    };
-    while (frameQueue.pop(&frame)) {
-        const quint32 frameNumber = emittedSpectrumCount
-            + static_cast<quint32>(pendingFrames.size());
-        pendingFrames.push_back(std::async(
-            std::launch::async,
-            [frame = std::move(frame), frameNumber]() {
-                return parseThermoRawFrame(frame, frameNumber);
-            }
-            ));
-        if (pendingFrames.size() >= workerCount) {
-            if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
-                return eFileError;
-            }
-            pendingFrames.pop_front();
-        }
-    }
-    while (!pendingFrames.empty()) {
-        if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
-            return eFileError;
-        }
-        pendingFrames.pop_front();
     }
 
     if (producer.joinable()) {
