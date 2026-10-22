@@ -13,10 +13,14 @@
 #include <cstring>
 #include <condition_variable>
 #include <deque>
+#include <functional>
+#include <future>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -386,6 +390,84 @@ ThermoRawFrameParseResult parseThermoRawFrame(
     return {{}, {scanInfo, std::move(scanPoints)}};
 }
 
+class ThermoRawFrameParserPool {
+public:
+    explicit ThermoRawFrameParserPool(size_t workerCount) {
+        m_workers.reserve(workerCount);
+        try {
+            for (size_t i = 0; i < workerCount; ++i) {
+                m_workers.emplace_back([this]() { processTasks(); });
+            }
+        }
+        catch (...) {
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_stopping = true;
+            }
+            m_taskAvailable.notify_all();
+            for (std::thread &worker : m_workers) {
+                if (worker.joinable()) {
+                    worker.join();
+                }
+            }
+            throw;
+        }
+    }
+
+    ~ThermoRawFrameParserPool() {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_stopping = true;
+        }
+        m_taskAvailable.notify_all();
+        for (std::thread &worker : m_workers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+    }
+
+    std::future<ThermoRawFrameParseResult> submit(QByteArray frame, quint32 frameNumber) {
+        auto task = std::make_shared<std::packaged_task<ThermoRawFrameParseResult()>>(
+            [frame = std::move(frame), frameNumber]() {
+                return parseThermoRawFrame(frame, frameNumber);
+            }
+            );
+        std::future<ThermoRawFrameParseResult> result = task->get_future();
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_tasks.emplace_back([task]() { (*task)(); });
+        }
+        m_taskAvailable.notify_one();
+        return result;
+    }
+
+private:
+    void processTasks() {
+        while (true) {
+            std::function<void()> task;
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                m_taskAvailable.wait(lock, [this]() {
+                    return m_stopping || !m_tasks.empty();
+                });
+                if (m_stopping && m_tasks.empty()) {
+                    return;
+                }
+                task = std::move(m_tasks.front());
+                m_tasks.pop_front();
+            }
+            task();
+        }
+    }
+
+    std::mutex m_mutex;
+    std::condition_variable m_taskAvailable;
+    std::deque<std::function<void()>> m_tasks;
+    std::vector<std::thread> m_workers;
+    bool m_stopping = false;
+};
+
 void produceThermoRawFrames(
         const ReaderInvocation &invocation,
         const QString &filePath,
@@ -533,14 +615,39 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
 
     QByteArray frame;
     quint32 emittedSpectrumCount = 0;
-    while (frameQueue.pop(&frame)) {
-        ThermoRawFrameParseResult result = parseThermoRawFrame(frame, emittedSpectrumCount);
+    const unsigned int hardwareThreads = std::thread::hardware_concurrency();
+    const size_t workerCount = std::max<size_t>(
+        1,
+        std::min<size_t>(4, hardwareThreads == 0 ? 1 : hardwareThreads)
+        );
+    ThermoRawFrameParserPool parserPool(workerCount);
+    std::deque<std::future<ThermoRawFrameParseResult>> pendingFrames;
+    const auto consumeFrame = [&](std::future<ThermoRawFrameParseResult> future) {
+        ThermoRawFrameParseResult result = future.get();
         if (!result.success()) {
             return fail(result.error);
         }
         m_msScanInfo.insert(result.frame.scanInfo.scanNumber, result.frame.scanInfo);
         m_scanPoints.insert(result.frame.scanInfo.scanNumber, std::move(result.frame.scanPoints));
         ++emittedSpectrumCount;
+        return eNoError;
+    };
+    while (frameQueue.pop(&frame)) {
+        const quint32 frameNumber = emittedSpectrumCount
+            + static_cast<quint32>(pendingFrames.size());
+        pendingFrames.push_back(parserPool.submit(std::move(frame), frameNumber));
+        if (pendingFrames.size() >= workerCount) {
+            if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
+                return eFileError;
+            }
+            pendingFrames.pop_front();
+        }
+    }
+    while (!pendingFrames.empty()) {
+        if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
+            return eFileError;
+        }
+        pendingFrames.pop_front();
     }
 
     if (producer.joinable()) {
