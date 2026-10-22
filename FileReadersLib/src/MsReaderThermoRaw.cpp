@@ -142,12 +142,16 @@ public:
     bool readBytes(int byteCount, QByteArray *bytes) {
         QElapsedTimer timeout;
         timeout.start();
-        while (m_buffer.size() - m_offset < byteCount) {
-            compactBuffer();
+        bytes->resize(byteCount);
+        int bytesRead = 0;
+        while (bytesRead < byteCount) {
             collectDiagnostics();
-            const QByteArray incoming = m_process.read(streamBufferSize);
-            if (!incoming.isEmpty()) {
-                m_buffer.append(incoming);
+            const qint64 incoming = m_process.read(
+                bytes->data() + bytesRead,
+                byteCount - bytesRead
+                );
+            if (incoming > 0) {
+                bytesRead += static_cast<int>(incoming);
                 continue;
             }
             if (m_process.state() == QProcess::NotRunning) {
@@ -161,8 +165,6 @@ public:
             }
             m_process.waitForReadyRead(static_cast<int>(std::min<qint64>(remainingMs, 1000)));
         }
-        *bytes = m_buffer.mid(m_offset, byteCount);
-        m_offset += byteCount;
         return true;
     }
 
@@ -177,13 +179,12 @@ public:
             }
             m_process.waitForFinished(static_cast<int>(std::min<qint64>(remainingMs, 1000)));
             collectDiagnostics();
-            if (!m_process.read(streamBufferSize).isEmpty()) {
+            if (!m_process.readAllStandardOutput().isEmpty()) {
                 return false;
             }
         }
         collectDiagnostics();
-        return m_buffer.size() == m_offset
-            && m_process.readAllStandardOutput().isEmpty()
+        return m_process.readAllStandardOutput().isEmpty()
             && m_process.exitStatus() == QProcess::NormalExit
             && m_process.exitCode() == 0;
     }
@@ -198,13 +199,6 @@ public:
     }
 
 private:
-    void compactBuffer() {
-        if (m_offset != 0) {
-            m_buffer.remove(0, m_offset);
-            m_offset = 0;
-        }
-    }
-
     void collectDiagnostics() {
         m_diagnostics.append(m_process.readAllStandardError());
         if (m_diagnostics.size() > diagnosticLimit) {
@@ -213,10 +207,8 @@ private:
     }
 
     QProcess &m_process;
-    QByteArray m_buffer;
     QByteArray m_diagnostics;
     int m_timeoutMs;
-    int m_offset = 0;
     bool m_timedOut = false;
 };
 
