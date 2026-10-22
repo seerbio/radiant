@@ -13,6 +13,7 @@
 #include <cstring>
 #include <condition_variable>
 #include <deque>
+#include <future>
 #include <limits>
 #include <mutex>
 #include <thread>
@@ -310,6 +311,78 @@ private:
     bool m_success = false;
 };
 
+struct ParsedThermoRawFrame {
+    MsScanInfo scanInfo;
+    ScanPoints scanPoints;
+};
+
+struct ThermoRawFrameParseResult {
+    QString error;
+    ParsedThermoRawFrame frame;
+
+    bool success() const {
+        return error.isEmpty();
+    }
+};
+
+ThermoRawFrameParseResult parseThermoRawFrame(
+        const QByteArray &frame,
+        quint32 emittedSpectrumCount) {
+    if (frame.size() < static_cast<int>(4 + metadataByteCount)) {
+        return {QStringLiteral("Invalid or truncated spectrum metadata."), {}};
+    }
+    const quint32 frameByteCount = readLittleEndian<quint32>(frame.constData());
+    if (frameByteCount < metadataByteCount
+        || frame.size() != static_cast<int>(4 + frameByteCount)) {
+        return {QStringLiteral("Invalid or truncated spectrum frame."), {}};
+    }
+
+    const char *metadata = frame.constData() + 4;
+    MsScanInfo scanInfo;
+    scanInfo.scanNumber = readLittleEndian<qint32>(metadata);
+    const qint32 nativeScanNumber = readLittleEndian<qint32>(metadata + 4);
+    scanInfo.nativeScanNumber = nativeScanNumber;
+    scanInfo.msLevel = readLittleEndian<qint32>(metadata + 8);
+    const float retentionTimeMinutes = readLittleEndian<float>(metadata + 12);
+    scanInfo.scanTime = retentionTimeMinutes * 60.0f;
+    scanInfo.collisionEnergy = readLittleEndian<float>(metadata + 16);
+    scanInfo.precursorTargetMz = readLittleEndian<float>(metadata + 20);
+    scanInfo.isoWindowLower = readLittleEndian<float>(metadata + 24);
+    scanInfo.isoWindowUpper = readLittleEndian<float>(metadata + 28);
+    const quint32 pointCount = readLittleEndian<quint32>(metadata + 32);
+    const quint64 expectedFrameBytes = metadataByteCount
+        + static_cast<quint64>(pointCount) * pointByteCount;
+    if (frameByteCount != expectedFrameBytes
+        || pointCount > maxPointsPerScan
+        || scanInfo.scanNumber != static_cast<int>(emittedSpectrumCount + 1)
+        || nativeScanNumber <= 0
+        || (scanInfo.msLevel != 1 && scanInfo.msLevel != 2)
+        || !std::isfinite(scanInfo.scanTime)
+        || retentionTimeMinutes < 0.0f
+        || !std::isfinite(scanInfo.collisionEnergy)
+        || !std::isfinite(scanInfo.precursorTargetMz)
+        || !std::isfinite(scanInfo.isoWindowLower)
+        || !std::isfinite(scanInfo.isoWindowUpper)) {
+        return {QStringLiteral("Invalid spectrum metadata or frame size."), {}};
+    }
+
+    ScanPoints scanPoints;
+    scanPoints.reserve(static_cast<int>(pointCount));
+    const char *points = metadata + metadataByteCount;
+    for (quint32 pointIndex = 0; pointIndex < pointCount; ++pointIndex) {
+        const char *point = points + pointIndex * pointByteCount;
+        const float mz = readLittleEndian<float>(point);
+        const float intensity = readLittleEndian<float>(point + 4);
+        if (!std::isfinite(mz) || !std::isfinite(intensity)) {
+            return {QStringLiteral("Non-finite value in spectrum point data."), {}};
+        }
+        if (!MathUtils::tZero(intensity)) {
+            scanPoints.append(ScanPoint(mz, intensity));
+        }
+    }
+    return {{}, {scanInfo, std::move(scanPoints)}};
+}
+
 void produceThermoRawFrames(
         const ReaderInvocation &invocation,
         const QString &filePath,
@@ -455,62 +528,43 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
 
     QByteArray frame;
     quint32 emittedSpectrumCount = 0;
-    while (frameQueue.pop(&frame)) {
-        if (frame.size() < static_cast<int>(4 + metadataByteCount)) {
-            return fail(QStringLiteral("Invalid or truncated spectrum metadata."));
+    const unsigned int hardwareThreads = std::thread::hardware_concurrency();
+    const size_t workerCount = std::max<size_t>(
+        1,
+        std::min<size_t>(4, hardwareThreads == 0 ? 1 : hardwareThreads)
+        );
+    std::deque<std::future<ThermoRawFrameParseResult>> pendingFrames;
+    const auto consumeFrame = [&](std::future<ThermoRawFrameParseResult> future) {
+        ThermoRawFrameParseResult result = future.get();
+        if (!result.success()) {
+            return fail(result.error);
         }
-        const quint32 frameByteCount = readLittleEndian<quint32>(frame.constData());
-        if (frameByteCount < metadataByteCount
-            || frame.size() != static_cast<int>(4 + frameByteCount)) {
-            return fail(QStringLiteral("Invalid or truncated spectrum frame."));
-        }
-        const char *metadata = frame.constData() + 4;
-        MsScanInfo scanInfo;
-        scanInfo.scanNumber = readLittleEndian<qint32>(metadata);
-        const qint32 nativeScanNumber = readLittleEndian<qint32>(metadata + 4);
-        scanInfo.nativeScanNumber = nativeScanNumber;
-        scanInfo.msLevel = readLittleEndian<qint32>(metadata + 8);
-        const float retentionTimeMinutes = readLittleEndian<float>(metadata + 12);
-        scanInfo.scanTime = retentionTimeMinutes * 60.0f;
-        scanInfo.collisionEnergy = readLittleEndian<float>(metadata + 16);
-        scanInfo.precursorTargetMz = readLittleEndian<float>(metadata + 20);
-        scanInfo.isoWindowLower = readLittleEndian<float>(metadata + 24);
-        scanInfo.isoWindowUpper = readLittleEndian<float>(metadata + 28);
-        const quint32 pointCount = readLittleEndian<quint32>(metadata + 32);
-        const quint64 expectedFrameBytes = metadataByteCount + static_cast<quint64>(pointCount) * pointByteCount;
-        if (frameByteCount != expectedFrameBytes
-                || pointCount > maxPointsPerScan
-                || scanInfo.scanNumber != static_cast<int>(emittedSpectrumCount + 1)
-                || nativeScanNumber <= 0
-                || (scanInfo.msLevel != 1 && scanInfo.msLevel != 2)
-                || !std::isfinite(scanInfo.scanTime)
-                || retentionTimeMinutes < 0.0f
-                || !std::isfinite(scanInfo.collisionEnergy)
-                || !std::isfinite(scanInfo.precursorTargetMz)
-                || !std::isfinite(scanInfo.isoWindowLower)
-                || !std::isfinite(scanInfo.isoWindowUpper)) {
-            return fail(QStringLiteral("Invalid spectrum metadata or frame size."));
-        }
-
-        // Match the mzML reader: cast each value to float before filtering zeros.
-        // Read bounded groups of points instead of retaining a second whole scan.
-        ScanPoints scanPoints;
-        scanPoints.reserve(static_cast<int>(pointCount));
-        const char *points = metadata + metadataByteCount;
-        for (quint32 pointIndex = 0; pointIndex < pointCount; ++pointIndex) {
-            const char *point = points + pointIndex * pointByteCount;
-            const float mz = readLittleEndian<float>(point);
-            const float intensity = readLittleEndian<float>(point + 4);
-            if (!std::isfinite(mz) || !std::isfinite(intensity)) {
-                return fail(QStringLiteral("Non-finite value in spectrum point data."));
-            }
-            if (!MathUtils::tZero(intensity)) {
-                scanPoints.append(ScanPoint(mz, intensity));
-            }
-        }
-        m_msScanInfo.insert(scanInfo.scanNumber, scanInfo);
-        m_scanPoints.insert(scanInfo.scanNumber, std::move(scanPoints));
+        m_msScanInfo.insert(result.frame.scanInfo.scanNumber, result.frame.scanInfo);
+        m_scanPoints.insert(result.frame.scanInfo.scanNumber, std::move(result.frame.scanPoints));
         ++emittedSpectrumCount;
+        return eNoError;
+    };
+    while (frameQueue.pop(&frame)) {
+        const quint32 frameNumber = emittedSpectrumCount
+            + static_cast<quint32>(pendingFrames.size());
+        pendingFrames.push_back(std::async(
+            std::launch::async,
+            [frame = std::move(frame), frameNumber]() {
+                return parseThermoRawFrame(frame, frameNumber);
+            }
+            ));
+        if (pendingFrames.size() >= workerCount) {
+            if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
+                return eFileError;
+            }
+            pendingFrames.pop_front();
+        }
+    }
+    while (!pendingFrames.empty()) {
+        if (consumeFrame(std::move(pendingFrames.front())) != eNoError) {
+            return eFileError;
+        }
+        pendingFrames.pop_front();
     }
 
     if (producer.joinable()) {
