@@ -20,7 +20,7 @@ CMAKE_PREFIX=${CMAKE_PREFIX:-'./cmake'}
 set -euo pipefail
 
 # Get initial requirements
-${APT} install --no-install-recommends -y ca-certificates lsb-release wget
+${APT} install --no-install-recommends -y ca-certificates curl lsb-release wget
 
 # Allow overriding the distribution name -- on Pop!OS run with `DISTRO=`.
 # If DISTRO is unset, use `lsb_release` to determine the distribution name.
@@ -41,6 +41,7 @@ ${APT} update
 ${APT} install --no-install-recommends -y \
     git \
     build-essential \
+    dotnet-sdk-8.0 \
     unzip \
     libboost-all-dev \
     qtbase5-dev \

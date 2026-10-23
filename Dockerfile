@@ -69,6 +69,10 @@ WORKDIR /app/
 RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PATH="${PYTORCH_PREFIX_PATH}/pytorch" \
     && make -j
 
+# Build the framework-dependent Thermo RAW helper as part of the normal image
+# build. Its shared .NET runtime is installed in the final image via the DEB.
+RUN /src/PythiaDIACpp/tools/thermo-raw-reader/build.sh --output=/app/bin/thermoraw
+
 ################################################
 #
 # Test stage

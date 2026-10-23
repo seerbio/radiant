@@ -27,6 +27,7 @@ SET(TEST_CLASSES
         MsReaderMZMLMappedTests
         MsReaderParquetTests
         MsReaderPointerAccTests
+        MsReaderThermoRawTests
         ParquetReaderTests
         PythiaParameterReaderTests
         SpecLibReaderTests

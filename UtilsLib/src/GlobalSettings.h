@@ -127,6 +127,7 @@ public:
     const QString FASTA_FILE_EXTENSION = QStringLiteral("fasta");
     const QString HDF_FILE_EXTENSION = QStringLiteral("hdf");
     const QString MZML_FILE_EXTENSION = QStringLiteral("mzml");
+    const QString THERMO_RAW_FILE_EXTENSION = QStringLiteral("raw");
     const QString PRQ_FILE_EXTENSION = QStringLiteral("prqFF");
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");

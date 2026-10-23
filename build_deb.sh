@@ -10,6 +10,7 @@
 #
 # The created DEB should be located at `${package_dir}-${ARCH}.deb`,
 # where `${ARCH}` is (typically) `amd64` or `arm64`.
+# THERMO_RAW_READER_DIR can select a helper output outside bin/thermoraw.
 
 # "Strict mode"
 set -eu -o pipefail
@@ -36,6 +37,33 @@ echo "Copying DEB contents to package_dir…"
 #cp bin/OrpheusFastaShredder "$radiant_bin/OrpheusFastaShredder"
 cp bin/RadiantDIA "$radiant_bin/RadiantDIA"
 cp bin/FeatureOptimizerPrime "$radiant_bin/FeatureOptimizerPrime"
+
+# Keep the framework-dependent helper beside RadiantDIA for automatic discovery.
+# The package dependency supplies its shared .NET runtime.
+THERMO_RAW_READER_DIR="${THERMO_RAW_READER_DIR:-bin/thermoraw}"
+for file in RadiantThermoRawReader RadiantThermoRawReader.dll \
+    RadiantThermoRawReader.runtimeconfig.json ThermoRawFileParser.dll \
+    ThermoFisher.CommonCore.Data.dll ThermoFisher.CommonCore.RawFileReader.dll log4net.dll; do
+    if [ ! -f "${THERMO_RAW_READER_DIR}/${file}" ]; then
+        printf 'Missing Thermo RAW reader file: %s/%s\n' \
+            "$THERMO_RAW_READER_DIR" "$file" >&2
+        exit 2
+    fi
+done
+if [ ! -x "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader" ] \
+    || ! grep -Eq '"name"[[:space:]]*:[[:space:]]*"Microsoft.NETCore.App"' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json" \
+    || ! grep -Eq '"version"[[:space:]]*:[[:space:]]*"8[.]0[.]' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json"; then
+    printf 'Thermo RAW reader must be an executable, framework-dependent .NET 8 publish.\n' >&2
+    exit 2
+fi
+if [ -e "${THERMO_RAW_READER_DIR}/libcoreclr.so" ] \
+    || [ -e "${THERMO_RAW_READER_DIR}/libhostpolicy.so" ] \
+    || grep -q '"includedFrameworks"' "${THERMO_RAW_READER_DIR}/RadiantThermoRawReader.runtimeconfig.json"; then
+    printf 'Thermo RAW reader bundles a runtime; republish without --self-contained.\n' >&2
+    exit 2
+fi
+mkdir -p "${radiant_bin}/thermoraw"
+cp -a "${THERMO_RAW_READER_DIR}/." "${radiant_bin}/thermoraw/"
 cp AlgorithmsFFLib/libAlgorithmsFFLib.so "$radiant_lib/libAlgorithmsFFLib.so"
 cp ChemLib/libChemLib.so "$radiant_lib/libChemLib.so"
 cp EigenLib/libEigenLib.so "$radiant_lib/libEigenLib.so"

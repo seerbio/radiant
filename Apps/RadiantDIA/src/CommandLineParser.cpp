@@ -15,6 +15,7 @@ namespace {
     const QString ARG_PYTHIA_PARAMS = QStringLiteral("config-path");
     const QString ARG_DATAFILE_PATH = QStringLiteral("data-file-path");
     const QString ARG_OUTPUT_FOLDER = QStringLiteral("output-folder");
+    const QString ARG_THERMO_RAW_READER = QStringLiteral("thermo-raw-reader");
 } // END NAMESPACE
 
 CommandLineParser::CommandLineParser() {
@@ -22,11 +23,17 @@ CommandLineParser::CommandLineParser() {
     addPositionalArgument(ARG_LIBRARY_PATH, QObject::tr("library file (e.g. *.tsv)"));
     addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.radiantConfig file"));
-    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML or Bruker *.d)"));
+    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML, Thermo *.raw, or Bruker *.d)"));
 
     addOption(QCommandLineOption(
         {ARG_OUTPUT_FOLDER},
         QObject::tr("Set the output folder path."),
+        QObject::tr("path")
+    ));
+    addOption(QCommandLineOption(
+        {ARG_THERMO_RAW_READER},
+        QObject::tr("RadiantThermoRawReader executable or assembly path for direct Thermo RAW input "
+                    "(default: RADIANT_THERMO_RAW_READER or PATH)."),
         QObject::tr("path")
     ));
 }
@@ -36,14 +43,15 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     this->process(args);
 
     QStringList argumentsLocal(args);
-    if (argumentsLocal.size() < 5) {
-        qCritical() << QStringLiteral("Expected 4 arguments.  Received %1").arg(argumentsLocal.size() - 1);
+    const QStringList positional = positionalArguments();
+    if (positional.size() < 4) {
+        qCritical() << QStringLiteral("Expected 4 arguments.  Received %1").arg(positional.size());
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
     }
 
-    m_cliParams.fragLibFilePath = args[1];
+    m_cliParams.fragLibFilePath = positional[0];
     const bool fragLibFilePathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.fragLibFilePath,
             {
@@ -59,7 +67,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
         return false;
     }
 
-    m_cliParams.fastaFilePath = args[2];
+    m_cliParams.fastaFilePath = positional[1];
     const bool fragLibBackgroundFilePathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.fastaFilePath,
             {
@@ -74,7 +82,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
         return false;
     }
 
-    m_cliParams.pythiaParametersFilePath = args[3];
+    m_cliParams.pythiaParametersFilePath = positional[2];
     const bool pythiaPathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.pythiaParametersFilePath,
             {
@@ -90,14 +98,16 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
         return false;
     }
 
-    m_cliParams.msDataFile = args[4];
+    m_cliParams.msDataFile = positional[3];
     const bool dataFilesPathIsValid = CommandLineParserUtils::isMassSpectrometryDataPath(m_cliParams.msDataFile);
     if (!dataFilesPathIsValid) {
-        qCritical() << QStringLiteral("Fourth command line argument must be *.mzML or Bruker *.d");
+        qCritical() << QStringLiteral("Fourth command line argument must be *.mzML, Thermo *.raw, or Bruker *.d");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
     }
+
+    m_cliParams.thermoRawReaderPath = value(ARG_THERMO_RAW_READER);
 
     if (isSet(ARG_OUTPUT_FOLDER)) {
         m_cliParams.outputFolderPath = value(ARG_OUTPUT_FOLDER);
@@ -125,6 +135,9 @@ const CommandLineParser::CliParameters &CommandLineParser::getCliParams() const 
     qDebug() << ARG_PYTHIA_PARAMS  << m_cliParams.pythiaParametersFilePath;
     qDebug() << ARG_DATAFILE_PATH  << m_cliParams.msDataFile;
     qDebug() << ARG_OUTPUT_FOLDER  << m_cliParams.outputFolderPath;
+    if (!m_cliParams.thermoRawReaderPath.isEmpty()) {
+        qDebug() << ARG_THERMO_RAW_READER << m_cliParams.thermoRawReaderPath;
+    }
 
     return m_cliParams;
 }

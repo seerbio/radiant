@@ -9,6 +9,7 @@
 #include "MsReaderTimsreader.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
+#include "MsReaderThermoRaw.h"
 #include "StringUtils.h"
 
 #include <QByteArray>
@@ -124,6 +125,14 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
 
     }
 
+    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.THERMO_RAW_FILE_EXTENSION, false) && fi.isFile()) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading Thermo RAW spectra directly";
+        m_useLazyLoading = false;
+        QSharedPointer<MsReaderBase> msReader(new MsReaderThermoRaw);
+        ptr = msReader;
+        e = ptr->openFile(filePath); ree;
+    }
+
     else if (
             (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
                 || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
@@ -170,6 +179,13 @@ Err MsReaderPointerAcc::openFile(
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
+        ptr = msReader;
+        e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
+    }
+
+    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.THERMO_RAW_FILE_EXTENSION, false) && fi.isFile()) {
+        m_useLazyLoading = false;
+        QSharedPointer<MsReaderBase> msReader(new MsReaderThermoRaw);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
     }

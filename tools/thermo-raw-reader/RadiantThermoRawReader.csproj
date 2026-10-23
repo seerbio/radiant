@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RadiantThermoRawReader</AssemblyName>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ThermoRawFileParser">
+      <HintPath>$(ThermoRawFileParserDir)/ThermoRawFileParser.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="ThermoFisher.CommonCore.Data">
+      <HintPath>$(ThermoRawFileParserDir)/ThermoFisher.CommonCore.Data.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="ThermoFisher.CommonCore.RawFileReader">
+      <HintPath>$(ThermoRawFileParserDir)/ThermoFisher.CommonCore.RawFileReader.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>$(ThermoRawFileParserDir)/log4net.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="ValidateParserDistribution" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(ThermoRawFileParserDir)/ThermoRawFileParser.dll')"
+           Text="Set ThermoRawFileParserDir to an unpacked .NET 8 ThermoRawFileParser distribution." />
+  </Target>
+</Project>

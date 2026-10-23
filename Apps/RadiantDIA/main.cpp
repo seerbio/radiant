@@ -35,6 +35,10 @@ int main(int argc, char *argv[]) {
 
     const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
 
+    if (!cliParameters.thermoRawReaderPath.isEmpty()) {
+        qputenv("RADIANT_THERMO_RAW_READER", cliParameters.thermoRawReaderPath.toUtf8());
+    }
+
     const QString &fragLibPath = cliParameters.fragLibFilePath;
     const QString &fastaFilePath = cliParameters.fastaFilePath;
     const QString &pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;

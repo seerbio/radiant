@@ -41,8 +41,8 @@ public:
     * @brief Opens a file using MsReaderPointerAcc with optional column filtering.
     *
     * This function initializes the MsReaderPointerAcc based on the file type determined by
-    * the file extension. If the file is of type MzML, it creates an instance of MsReaderMzML,
-    * and if it is of type Parquet or Cached, it creates an instance of MsReaderParquet.
+    * the file extension. MzML files use the mzML reader, Thermo RAW files use the
+    * direct binary Thermo RAW reader, and Parquet or Cached files use MsReaderParquet.
     * The MsReaderPointer is then set to the corresponding MsReader instance, and the file is
     * opened with optional column filtering based on the specified `columnToFilterBy` and
     * `filterRange`. Any encountered errors during the process are indicated by the returned Err code.
