@@ -275,15 +275,15 @@ internal static class Program
     private static (double[] Masses, double[] Intensities) ReadCentroids(
         IRawDataPlus raw, IScanEvent scanEvent, int scanNumber)
     {
-        var scanStatistics = raw.GetScanStatsForScanNumber(scanNumber);
-        if (scanStatistics.IsCentroidScan
-            && scanStatistics.SpectrumPacketType == SpectrumPacketType.FtCentroid)
+        if (scanEvent.ScanData == ScanDataType.Centroid
+            && (scanEvent.MassAnalyzer == MassAnalyzerType.MassAnalyzerFTMS
+                || scanEvent.MassAnalyzer == MassAnalyzerType.MassAnalyzerASTMS))
         {
-            // Read native FT centroid data directly instead of constructing a
-            // Scan object for every spectrum. This is the RawFileReader fast
-            // path and returns the same centroid stream selected by Scan.FromFile.
+            // Read native FT/Astral centroid data directly without an additional
+            // scan-stats lookup or constructing a Scan object.
             var centroidStream = raw.GetCentroidStream(scanNumber, true);
-            return (centroidStream.Masses, centroidStream.Intensities);
+            if (centroidStream.Length > 0)
+                return (centroidStream.Masses, centroidStream.Intensities);
         }
 
         // Preserve the parser's scan-object path for other packet types,

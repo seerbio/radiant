@@ -2,11 +2,11 @@
 
 `RadiantThermoRawReader` opens Thermo `.raw` files with the RawFileReader API
 provided by the ThermoRawFileParser distribution. It calls the parser library's
-public `ScanTrailer` and `SpectrumWriter.GetReaction` utilities. Native FT
-centroid scans use RawFileReader's direct centroid stream API; other packet types
-retain the parser's `Scan.FromFile` path for segmented data and profile scan
-centroiding. Reference and exception centroid data are included, matching the
-parser's default. It sends binary spectra directly to Radiant;
+public `ScanTrailer` and `SpectrumWriter.GetReaction` utilities. Native FT and
+Astral centroid scans use RawFileReader's direct centroid stream API; other
+packet types retain the parser's `Scan.FromFile` path for segmented data and
+profile scan centroiding. Reference and exception centroid data are included,
+matching the parser's default. It sends binary spectra directly to Radiant;
 it never invokes the converter or creates XML/mzML. RAW loading is eager: the
 helper emits the complete MS1/MS2 stream, and Radiant stores all emitted scans.
 It does not provide random access or mzML-style lazy loading.
