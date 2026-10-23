@@ -15,6 +15,7 @@
 #include <cstring>
 #include <condition_variable>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <future>
 #include <limits>
@@ -332,6 +333,36 @@ private:
     bool m_aborted = false;
     bool m_success = false;
     bool m_nativeKeyedScanNumbers = false;
+};
+
+class ThermoRawProducerGuard {
+public:
+    ThermoRawProducerGuard(ThermoRawFrameQueue &queue, std::thread &producer)
+        : m_queue(queue)
+        , m_producer(producer) {}
+
+    ~ThermoRawProducerGuard() {
+        abortAndJoin();
+    }
+
+    void abortAndJoin() {
+        if (m_producer.joinable()) {
+            m_queue.abort();
+            m_producer.join();
+        }
+    }
+
+    void join() {
+        if (m_producer.joinable()) {
+            m_producer.join();
+        }
+    }
+
+private:
+    Q_DISABLE_COPY(ThermoRawProducerGuard)
+
+    ThermoRawFrameQueue &m_queue;
+    std::thread &m_producer;
 };
 
 struct ParsedThermoRawFrame {
@@ -653,14 +684,27 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
     }
 
     ThermoRawFrameQueue frameQueue(8);
-    std::thread producer([&frameQueue, &invocation, inputPath = inputInfo.absoluteFilePath()]() {
-        produceThermoRawFrames(invocation, inputPath, &frameQueue);
-    });
+    std::thread producer;
+    try {
+        producer = std::thread(
+            [&frameQueue, &invocation, inputPath = inputInfo.absoluteFilePath()]() {
+                produceThermoRawFrames(invocation, inputPath, &frameQueue);
+            }
+            );
+    }
+    catch (const std::exception &error) {
+        qCritical() << "Cannot start Thermo RAW reader producer:" << error.what();
+        closeFile();
+        return eFileError;
+    }
+    catch (...) {
+        qCritical() << "Cannot start Thermo RAW reader producer.";
+        closeFile();
+        return eFileError;
+    }
+    ThermoRawProducerGuard producerGuard(frameQueue, producer);
     const auto fail = [&](const QString &message) {
-        frameQueue.abort();
-        if (producer.joinable()) {
-            producer.join();
-        }
+        producerGuard.abortAndJoin();
         qCritical().noquote() << "Thermo RAW reader:" << message;
         const QString diagnostics = frameQueue.diagnostics();
         if (!diagnostics.isEmpty()) {
@@ -680,7 +724,17 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         1,
         std::min<size_t>(4, hardwareThreads == 0 ? 1 : hardwareThreads)
         );
-    ThermoRawFrameParserPool parserPool(workerCount);
+    std::unique_ptr<ThermoRawFrameParserPool> parserPool;
+    try {
+        parserPool = std::make_unique<ThermoRawFrameParserPool>(workerCount);
+    }
+    catch (const std::exception &error) {
+        return fail(QStringLiteral("Cannot initialize Thermo RAW frame parser workers: %1")
+                        .arg(QString::fromLocal8Bit(error.what())));
+    }
+    catch (...) {
+        return fail(QStringLiteral("Cannot initialize Thermo RAW frame parser workers."));
+    }
     std::deque<std::future<ThermoRawFrameParseResult>> pendingFrames;
     const auto consumeFrame = [&](std::future<ThermoRawFrameParseResult> future) {
         ThermoRawFrameParseResult result = future.get();
@@ -716,7 +770,7 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
                 scanNumberModeKnown = true;
             }
             const quint32 frameNumber = submittedSpectrumCount++;
-            pendingFrames.push_back(parserPool.submit(
+            pendingFrames.push_back(parserPool->submit(
                 std::move(frame), frameNumber, nativeKeyedScanNumbers));
             if (pendingFrames.size() >= workerCount) {
                 if (consumeAnyPendingFrame() != eNoError) {
@@ -731,9 +785,7 @@ Err MsReaderThermoRaw::openFile(const QString &filePath) {
         }
     }
 
-    if (producer.joinable()) {
-        producer.join();
-    }
+    producerGuard.join();
     if (!frameQueue.success()) {
         return fail(frameQueue.error().isEmpty()
             ? QStringLiteral("Thermo RAW reader failed.")
