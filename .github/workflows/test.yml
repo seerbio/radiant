@@ -58,6 +58,10 @@ jobs:
   lint-container:
     name: Lint Container
     runs-on: ubuntu-24.04 # x86_64
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
     steps:
       - uses: actions/checkout@v6
       - name: hadolint
@@ -68,6 +72,10 @@ jobs:
   lint-actions:
     name: Lint Actions Config
     runs-on: ubuntu-24.04 # x86_64
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
     steps:
       - uses: actions/checkout@v6
       - name: actionlint
@@ -78,6 +86,10 @@ jobs:
   lint-scripts:
     name: Lint Shell Scripts
     runs-on: ubuntu-24.04 # x86_64
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
     steps:
       - uses: actions/checkout@v6
       - uses: reviewdog/action-shellcheck@v1
