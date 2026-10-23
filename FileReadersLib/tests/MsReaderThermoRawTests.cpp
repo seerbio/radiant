@@ -12,42 +12,143 @@
 #include <QtTest/QtTest>
 
 #include <cstring>
+#include <limits>
 
 namespace {
 
-    QByteArray makeStream() {
-        QByteArray bytes;
-        QDataStream stream(&bytes, QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::LittleEndian);
-        stream.writeRawData("RDRRAW01", 8);
-        stream << quint32(2) << quint32(2);
-        for (qint32 scan = 1; scan <= 2; ++scan) {
-            stream << quint32(36 + 3 * 8);
-            stream << scan << qint32(scan + 10) << scan;
-            stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-            stream << float(scan * 0.5) << float(scan == 1 ? -1 : 30)
-                   << float(scan == 1 ? -1 : 500)
-                   << float(scan == 1 ? -1 : 10)
-                   << float(scan == 1 ? -1 : 10);
-            stream << quint32(3);
-            stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-            stream << float(400.5) << float(250.75)
-                   << float(300.25) << float(0)
-                   << float(200.125) << float(100.5);
+    struct NativeScanFixture {
+        qint32 nativeScanNumber;
+        qint32 msLevel;
+        float retentionTimeMinutes;
+        float collisionEnergy;
+        float precursorTargetMz;
+        float isoWindowLower;
+        float isoWindowUpper;
+        QVector<QPair<float, float>> peaks;
+    };
+
+    void appendLittleEndianUInt32(QByteArray *bytes, quint32 value) {
+        for (int byte = 0; byte < 4; ++byte) {
+            bytes->append(static_cast<char>((value >> (byte * 8)) & 0xff));
         }
-        stream.writeRawData("RAWDONE1", 8);
-        stream << quint32(2);
+    }
+
+    quint32 littleEndianUInt32(const QByteArray &bytes, int offset) {
+        quint32 value = 0;
+        for (int byte = 0; byte < 4; ++byte) {
+            value |= static_cast<quint32>(static_cast<unsigned char>(bytes[offset + byte]))
+                << (byte * 8);
+        }
+        return value;
+    }
+
+    void setLittleEndianUInt32(QByteArray *bytes, int offset, quint32 value) {
+        for (int byte = 0; byte < 4; ++byte) {
+            (*bytes)[offset + byte] = static_cast<char>((value >> (byte * 8)) & 0xff);
+        }
+    }
+
+    NativeScanFixture makeNativeScan(
+            qint32 nativeScanNumber,
+            qint32 msLevel,
+            float retentionTimeMinutes,
+            float mz,
+            float intensity) {
+        const bool isMs2 = msLevel == 2;
+        NativeScanFixture scan{
+            nativeScanNumber,
+            msLevel,
+            retentionTimeMinutes,
+            isMs2 ? 30.0f : -1.0f,
+            isMs2 ? 500.0f : -1.0f,
+            isMs2 ? 10.0f : -1.0f,
+            isMs2 ? 10.0f : -1.0f,
+            {}
+        };
+        scan.peaks.append(qMakePair(mz, intensity));
+        return scan;
+    }
+
+    QByteArray makeNativeFrame(const NativeScanFixture &scan) {
+        QByteArray frame;
+        QDataStream stream(&frame, QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+        stream << quint32(36 + scan.peaks.size() * 8)
+               << scan.nativeScanNumber << scan.nativeScanNumber << scan.msLevel
+               << scan.retentionTimeMinutes << scan.collisionEnergy
+               << scan.precursorTargetMz << scan.isoWindowLower << scan.isoWindowUpper
+               << quint32(scan.peaks.size());
+        for (const auto &peak : scan.peaks) {
+            stream << peak.first << peak.second;
+        }
+        return frame;
+    }
+
+    QByteArray makeNativeBatch(const QList<NativeScanFixture> &scans) {
+        QByteArray batchFrames;
+        for (const NativeScanFixture &scan : scans) {
+            batchFrames.append(makeNativeFrame(scan));
+        }
+
+        QByteArray batch;
+        appendLittleEndianUInt32(&batch, static_cast<quint32>(batchFrames.size()));
+        appendLittleEndianUInt32(&batch, static_cast<quint32>(scans.size()));
+        batch.append(batchFrames);
+        return batch;
+    }
+
+    QByteArray makeNativeKeyedStream(const QList<QList<NativeScanFixture>> &batches) {
+        QByteArray bytes("RDRRAW01", 8);
+        appendLittleEndianUInt32(&bytes, 4);
+        appendLittleEndianUInt32(&bytes, std::numeric_limits<quint32>::max());
+
+        quint32 scanCount = 0;
+        for (const QList<NativeScanFixture> &batch : batches) {
+            bytes.append(makeNativeBatch(batch));
+            scanCount += static_cast<quint32>(batch.size());
+        }
+        bytes.append("RAWDONE1", 8);
+        appendLittleEndianUInt32(&bytes, scanCount);
         return bytes;
     }
 
-    QByteArray makeStreamingStream() {
-        QByteArray bytes = makeStream();
-        bytes[8] = 3;
-        bytes[12] = static_cast<char>(0xff);
-        bytes[13] = static_cast<char>(0xff);
-        bytes[14] = static_cast<char>(0xff);
-        bytes[15] = static_cast<char>(0xff);
+    QByteArray makeUnsupportedVersionHeader(quint32 version, quint32 spectrumCount) {
+        QByteArray bytes("RDRRAW01", 8);
+        appendLittleEndianUInt32(&bytes, version);
+        appendLittleEndianUInt32(&bytes, spectrumCount);
         return bytes;
+    }
+
+    QByteArray makeStream() {
+        NativeScanFixture ms1 = makeNativeScan(11, 1, 0.5f, 400.5f, 250.75f);
+        ms1.peaks.append(qMakePair(300.25f, 0.0f));
+        ms1.peaks.append(qMakePair(200.125f, 100.5f));
+        NativeScanFixture ms2 = makeNativeScan(12, 2, 1.0f, 400.5f, 250.75f);
+        ms2.peaks.append(qMakePair(300.25f, 0.0f));
+        ms2.peaks.append(qMakePair(200.125f, 100.5f));
+        return makeNativeKeyedStream({{ms1, ms2}});
+    }
+
+    QByteArray makeOutOfOrderMultiBatchStream() {
+        QList<QList<NativeScanFixture>> batches;
+        batches.append({
+            makeNativeScan(90, 2, 9.0f, 900.25f, 9000.5f),
+            makeNativeScan(10, 1, 1.0f, 100.25f, 1000.5f)
+        });
+        batches.append({makeNativeScan(70, 2, 7.0f, 700.25f, 7000.5f)});
+        batches.append({
+            makeNativeScan(30, 1, 3.0f, 300.25f, 3000.5f),
+            makeNativeScan(50, 2, 5.0f, 500.25f, 5000.5f)
+        });
+        return makeNativeKeyedStream(batches);
+    }
+
+    QByteArray makeDuplicateNativeScanStream() {
+        QList<QList<NativeScanFixture>> batches;
+        batches.append({makeNativeScan(42, 1, 1.0f, 420.25f, 4200.5f)});
+        batches.append({makeNativeScan(42, 2, 2.0f, 421.25f, 4210.5f)});
+        return makeNativeKeyedStream(batches);
     }
 
     bool writeFile(const QString &path, const QByteArray &bytes) {
@@ -95,10 +196,12 @@ class MsReaderThermoRawTests : public QObject {
 
 private Q_SLOTS:
     void nativeStreamAndRouting();
-    void streamingNativeStream();
+    void protocol4BatchesPreserveNativeIdsAndPeakAssociations();
     void filteredReadPath();
     void rejectsIncompleteOrFailedReader_data();
     void rejectsIncompleteOrFailedReader();
+    void rejectsNonEmittedProtocolVersions_data();
+    void rejectsNonEmittedProtocolVersions();
     void failedReopenClearsState();
     void realRawMzMLExactEquality();
 };
@@ -157,7 +260,7 @@ void MsReaderThermoRawTests::nativeStreamAndRouting() {
     QVERIFY(reader.getScanPoints().isEmpty());
 }
 
-void MsReaderThermoRawTests::streamingNativeStream() {
+void MsReaderThermoRawTests::protocol4BatchesPreserveNativeIdsAndPeakAssociations() {
 #ifdef Q_OS_WIN
     QSKIP("The fake helper uses a POSIX shell.");
 #endif
@@ -165,14 +268,32 @@ void MsReaderThermoRawTests::streamingNativeStream() {
     QVERIFY(directory.isValid());
     const QString rawPath = QDir(directory.path()).filePath("test.raw");
     QVERIFY(writeFile(rawPath, "raw fixture"));
-    QVERIFY(writeFile(QDir(directory.path()).filePath("payload.bin"), makeStreamingStream()));
+    QVERIFY(writeFile(
+        QDir(directory.path()).filePath("payload.bin"),
+        makeOutOfOrderMultiBatchStream()));
     const QString helper = makeHelper(directory);
     QVERIFY(!helper.isEmpty());
 
     MsReaderThermoRaw reader(helper);
     QCOMPARE(reader.openFile(rawPath), eNoError);
-    QCOMPARE(reader.getMsScanInfos().size(), 2);
-    QCOMPARE(reader.getScanPoints().size(), 2);
+    const auto infos = reader.getMsScanInfos();
+    const auto points = reader.getScanPoints();
+    const qint32 expectedNativeScanNumbers[] = {10, 30, 50, 70, 90};
+    const float expectedMz[] = {100.25f, 300.25f, 500.25f, 700.25f, 900.25f};
+    const float expectedIntensity[] = {1000.5f, 3000.5f, 5000.5f, 7000.5f, 9000.5f};
+    const float expectedScanTimes[] = {60.0f, 180.0f, 300.0f, 420.0f, 540.0f};
+    QCOMPARE(infos.size(), 5);
+    QCOMPARE(points.size(), 5);
+    for (int index = 0; index < 5; ++index) {
+        const ScanNumber sequentialScanNumber = index + 1;
+        const MsScanInfo &scanInfo = infos[sequentialScanNumber];
+        QCOMPARE(scanInfo.scanNumber, sequentialScanNumber);
+        QCOMPARE(scanInfo.nativeScanNumber, expectedNativeScanNumbers[index]);
+        QCOMPARE(scanInfo.scanTime, expectedScanTimes[index]);
+        QCOMPARE(points[sequentialScanNumber].size(), 1);
+        QCOMPARE(points[sequentialScanNumber][0].x(), expectedMz[index]);
+        QCOMPARE(points[sequentialScanNumber][0].y(), expectedIntensity[index]);
+    }
 }
 
 void MsReaderThermoRawTests::filteredReadPath() {
@@ -206,15 +327,31 @@ void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader_data() {
     QTest::newRow("missing-footer") << makeStream().chopped(12) << 0;
     QTest::newRow("extra-output") << (makeStream() + "unexpected") << 0;
     QTest::newRow("helper-failure") << makeStream() << 7;
-    QByteArray wrongCount = makeStream();
-    wrongCount[12] = 3;
-    QTest::newRow("count-mismatch") << wrongCount << 0;
-    QByteArray wrongFrame = makeStream();
-    wrongFrame[16] = 1;
-    QTest::newRow("invalid-frame-size") << wrongFrame << 0;
-    QByteArray wrongVersion = makeStream();
-    wrongVersion[8] = 4;
-    QTest::newRow("unsupported-version") << wrongVersion << 0;
+    QByteArray zeroBatchCount = makeStream();
+    setLittleEndianUInt32(&zeroBatchCount, 20, 0);
+    QTest::newRow("zero-batch-count") << zeroBatchCount << 0;
+    QByteArray excessiveBatchCount = makeStream();
+    setLittleEndianUInt32(&excessiveBatchCount, 20, 3);
+    QTest::newRow("batch-count-exceeds-frames") << excessiveBatchCount << 0;
+    QByteArray shortBatchLength = makeStream();
+    setLittleEndianUInt32(
+        &shortBatchLength, 16,
+        littleEndianUInt32(shortBatchLength, 16) - 1);
+    QTest::newRow("truncated-batch-length") << shortBatchLength << 0;
+    QByteArray longBatchLength = makeStream();
+    setLittleEndianUInt32(
+        &longBatchLength, 16,
+        littleEndianUInt32(longBatchLength, 16) + 1);
+    QTest::newRow("batch-length-includes-extra-byte") << longBatchLength << 0;
+    QByteArray understatedBatchCount = makeStream();
+    setLittleEndianUInt32(&understatedBatchCount, 20, 1);
+    QTest::newRow("batch-count-understates-payload") << understatedBatchCount << 0;
+    QByteArray invalidBatchLength = makeStream();
+    setLittleEndianUInt32(&invalidBatchLength, 16, 1);
+    QTest::newRow("invalid-batch-length") << invalidBatchLength << 0;
+    QTest::newRow("protocol4-fixed-count-header")
+        << makeUnsupportedVersionHeader(4, 2) << 0;
+    QTest::newRow("duplicate-native-scan") << makeDuplicateNativeScanStream() << 0;
 }
 
 void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader() {
@@ -230,6 +367,35 @@ void MsReaderThermoRawTests::rejectsIncompleteOrFailedReader() {
     QVERIFY(writeFile(QDir(directory.path()).filePath("payload.bin"), payload));
     const QString helper = makeHelper(directory, exitCode);
     QVERIFY(!helper.isEmpty());
+    MsReaderThermoRaw reader(helper);
+    QVERIFY(reader.openFile(rawPath) != eNoError);
+    QVERIFY(!reader.isInit());
+    QVERIFY(reader.getMsScanInfos().isEmpty());
+    QVERIFY(reader.getScanPoints().isEmpty());
+}
+
+void MsReaderThermoRawTests::rejectsNonEmittedProtocolVersions_data() {
+    QTest::addColumn<QByteArray>("payload");
+    QTest::newRow("protocol-2") << makeUnsupportedVersionHeader(2, 1);
+    QTest::newRow("protocol-3")
+        << makeUnsupportedVersionHeader(3, std::numeric_limits<quint32>::max());
+    QTest::newRow("unknown-protocol")
+        << makeUnsupportedVersionHeader(5, std::numeric_limits<quint32>::max());
+}
+
+void MsReaderThermoRawTests::rejectsNonEmittedProtocolVersions() {
+#ifdef Q_OS_WIN
+    QSKIP("The fake helper uses a POSIX shell.");
+#endif
+    QFETCH(QByteArray, payload);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString rawPath = QDir(directory.path()).filePath("test.raw");
+    QVERIFY(writeFile(rawPath, "raw fixture"));
+    QVERIFY(writeFile(QDir(directory.path()).filePath("payload.bin"), payload));
+    const QString helper = makeHelper(directory);
+    QVERIFY(!helper.isEmpty());
+
     MsReaderThermoRaw reader(helper);
     QVERIFY(reader.openFile(rawPath) != eNoError);
     QVERIFY(!reader.isInit());

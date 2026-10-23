@@ -28,8 +28,6 @@ namespace {
 
 constexpr int streamBufferSize = 64 * 1024;
 constexpr int diagnosticLimit = 64 * 1024;
-constexpr quint32 fixedCountStreamVersion = 2;
-constexpr quint32 streamingStreamVersion = 3;
 constexpr quint32 nativeKeyedStreamVersion = 4;
 constexpr quint32 unknownSpectrumCount = std::numeric_limits<quint32>::max();
 constexpr quint32 metadataByteCount = 36;
@@ -524,30 +522,20 @@ void produceThermoRawFrames(
     }
     const quint32 version = readLittleEndian<quint32>(bytes.constData() + 8);
     const quint32 spectrumCount = readLittleEndian<quint32>(bytes.constData() + 12);
-    const bool streamingVersion = version == streamingStreamVersion
-        || version == nativeKeyedStreamVersion;
-    const bool streaming = streamingVersion
-        && spectrumCount == unknownSpectrumCount;
-    if ((version != fixedCountStreamVersion
-         && version != streamingStreamVersion
-         && version != nativeKeyedStreamVersion)
-        || (!streaming && (spectrumCount == 0
-                           || spectrumCount > static_cast<quint32>(std::numeric_limits<int>::max())))
-        || (version == fixedCountStreamVersion && spectrumCount == unknownSpectrumCount)
-        || (version == nativeKeyedStreamVersion && !streaming)) {
-        fail(QStringLiteral("Invalid spectrum count in binary stream."));
+    if (version != nativeKeyedStreamVersion || spectrumCount != unknownSpectrumCount) {
+        fail(QStringLiteral("Unsupported Thermo RAW stream version or spectrum count."));
         return;
     }
-    queue->setNativeKeyedScanNumbers(version == nativeKeyedStreamVersion);
+    queue->setNativeKeyedScanNumbers(true);
 
     quint32 emittedCount = 0;
     bool footerSeen = false;
-    while (streaming || emittedCount < spectrumCount) {
+    while (true) {
         if (!reader.readBytes(4, &bytes)) {
             fail(QStringLiteral("Truncated spectrum frame."));
             return;
         }
-        if (streaming && bytes == QByteArrayLiteral("RAWD")) {
+        if (bytes == QByteArrayLiteral("RAWD")) {
             QByteArray footerBytes;
             if (!reader.readBytes(8, &footerBytes)
                 || footerBytes.left(4) != QByteArrayLiteral("ONE1")
@@ -560,93 +548,67 @@ void produceThermoRawFrames(
         }
 
         const quint32 frameByteCount = readLittleEndian<quint32>(bytes.constData());
-        if (version == nativeKeyedStreamVersion) {
-            QByteArray batchCountBytes;
-            if (!reader.readBytes(4, &batchCountBytes)) {
-                fail(QStringLiteral("Truncated spectrum batch header."));
-                return;
-            }
-            const quint32 batchFrameCount = readLittleEndian<quint32>(batchCountBytes.constData());
-            const quint64 maxBatchBytes = maxBytesPerBatch
-                + 4 + metadataByteCount
-                + static_cast<quint64>(maxPointsPerScan) * pointByteCount;
-            if (batchFrameCount == 0
-                || batchFrameCount > maxScansPerBatch
-                || frameByteCount < batchFrameCount * (4 + metadataByteCount)
-                || frameByteCount > maxBatchBytes
-                || frameByteCount > static_cast<quint32>(std::numeric_limits<int>::max())) {
-                fail(QStringLiteral("Invalid spectrum batch size."));
-                return;
-            }
-
-            QByteArray batchBytes;
-            batchBytes.resize(static_cast<int>(frameByteCount));
-            if (!reader.readBytes(static_cast<int>(frameByteCount), batchBytes.data())) {
-                fail(QStringLiteral("Truncated spectrum batch."));
-                return;
-            }
-            ThermoRawFrameBatch batch;
-            batch.reserve(static_cast<int>(batchFrameCount));
-            quint32 batchOffset = 0;
-            for (quint32 frameIndex = 0; frameIndex < batchFrameCount; ++frameIndex) {
-                if (frameByteCount - batchOffset < 4) {
-                    fail(QStringLiteral("Truncated spectrum frame in batch."));
-                    return;
-                }
-                const quint32 innerFrameBytes = readLittleEndian<quint32>(
-                    batchBytes.constData() + batchOffset);
-                const quint64 fullFrameBytes = 4 + static_cast<quint64>(innerFrameBytes);
-                if (innerFrameBytes < metadataByteCount
-                    || innerFrameBytes > metadataByteCount + maxPointsPerScan * pointByteCount
-                    || fullFrameBytes > frameByteCount - batchOffset) {
-                    fail(QStringLiteral("Invalid spectrum frame in batch."));
-                    return;
-                }
-                batch.push_back(batchBytes.mid(
-                    static_cast<int>(batchOffset), static_cast<int>(fullFrameBytes)));
-                batchOffset += static_cast<quint32>(fullFrameBytes);
-            }
-            if (batchOffset != frameByteCount) {
-                fail(QStringLiteral("Spectrum batch contains trailing data."));
-                return;
-            }
-            if (batchFrameCount > std::numeric_limits<quint32>::max() - emittedCount) {
-                fail(QStringLiteral("Spectrum count exceeds the binary protocol limit."));
-                return;
-            }
-            if (!queue->push(std::move(batch))) {
-                stopProcess(&process);
-                return;
-            }
-            emittedCount += batchFrameCount;
-            continue;
-        }
-
-        if (frameByteCount < metadataByteCount
-            || frameByteCount > metadataByteCount + maxPointsPerScan * pointByteCount) {
-            fail(QStringLiteral("Invalid spectrum frame size."));
+        QByteArray batchCountBytes;
+        if (!reader.readBytes(4, &batchCountBytes)) {
+            fail(QStringLiteral("Truncated spectrum batch header."));
             return;
         }
-        QByteArray frame;
-        frame.resize(static_cast<int>(4 + frameByteCount));
-        std::memcpy(frame.data(), bytes.constData(), 4);
-        if (!reader.readBytes(static_cast<int>(frameByteCount), frame.data() + 4)) {
-            fail(QStringLiteral("Truncated spectrum frame."));
+        const quint32 batchFrameCount = readLittleEndian<quint32>(batchCountBytes.constData());
+        const quint64 maxBatchBytes = maxBytesPerBatch
+            + 4 + metadataByteCount
+            + static_cast<quint64>(maxPointsPerScan) * pointByteCount;
+        if (batchFrameCount == 0
+            || batchFrameCount > maxScansPerBatch
+            || frameByteCount < batchFrameCount * (4 + metadataByteCount)
+            || frameByteCount > maxBatchBytes
+            || frameByteCount > static_cast<quint32>(std::numeric_limits<int>::max())) {
+            fail(QStringLiteral("Invalid spectrum batch size."));
+            return;
+        }
+
+        QByteArray batchBytes;
+        batchBytes.resize(static_cast<int>(frameByteCount));
+        if (!reader.readBytes(static_cast<int>(frameByteCount), batchBytes.data())) {
+            fail(QStringLiteral("Truncated spectrum batch."));
             return;
         }
         ThermoRawFrameBatch batch;
-        batch.push_back(std::move(frame));
+        batch.reserve(static_cast<int>(batchFrameCount));
+        quint32 batchOffset = 0;
+        for (quint32 frameIndex = 0; frameIndex < batchFrameCount; ++frameIndex) {
+            if (frameByteCount - batchOffset < 4) {
+                fail(QStringLiteral("Truncated spectrum frame in batch."));
+                return;
+            }
+            const quint32 innerFrameBytes = readLittleEndian<quint32>(
+                batchBytes.constData() + batchOffset);
+            const quint64 fullFrameBytes = 4 + static_cast<quint64>(innerFrameBytes);
+            if (innerFrameBytes < metadataByteCount
+                || innerFrameBytes > metadataByteCount + maxPointsPerScan * pointByteCount
+                || fullFrameBytes > frameByteCount - batchOffset) {
+                fail(QStringLiteral("Invalid spectrum frame in batch."));
+                return;
+            }
+            batch.push_back(batchBytes.mid(
+                static_cast<int>(batchOffset), static_cast<int>(fullFrameBytes)));
+            batchOffset += static_cast<quint32>(fullFrameBytes);
+        }
+        if (batchOffset != frameByteCount) {
+            fail(QStringLiteral("Spectrum batch contains trailing data."));
+            return;
+        }
+        if (batchFrameCount > std::numeric_limits<quint32>::max() - emittedCount) {
+            fail(QStringLiteral("Spectrum count exceeds the binary protocol limit."));
+            return;
+        }
         if (!queue->push(std::move(batch))) {
             stopProcess(&process);
             return;
         }
-        ++emittedCount;
+        emittedCount += batchFrameCount;
     }
 
-    if ((!streaming && (!reader.readBytes(12, &bytes)
-                        || bytes.left(8) != QByteArrayLiteral("RAWDONE1")
-                        || readLittleEndian<quint32>(bytes.constData() + 8) != spectrumCount))
-        || (streaming && !footerSeen)) {
+    if (!footerSeen) {
         fail(QStringLiteral("Missing or incorrect binary stream footer."));
         return;
     }
