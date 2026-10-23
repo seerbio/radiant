@@ -115,7 +115,7 @@ namespace PythiaParameterDefaults {
     inline constexpr int kMinScanCount = 3;
     inline constexpr int kSkipScanCount = 3;
     inline constexpr int kEpochs = 24;
-    inline constexpr int kBaggingSize = 10;
+    inline constexpr int kBaggingSize = 4;
     inline constexpr bool kNeuralNetShuffleEachEpoch = true;
 
 }
