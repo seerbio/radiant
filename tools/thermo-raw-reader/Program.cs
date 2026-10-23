@@ -273,11 +273,21 @@ internal static class Program
     }
 
     private static (double[] Masses, double[] Intensities) ReadCentroids(
-        IRawData raw, IScanEvent scanEvent, int scanNumber)
+        IRawDataPlus raw, IScanEvent scanEvent, int scanNumber)
     {
-        // SpectrumWriter.ReadMZData is private protected in the parser library.
-        // This is its native-centroid selection and array ordering, using the
-        // identical RawFileReader API. No centroid algorithm is implemented here.
+        var scanStatistics = raw.GetScanStatsForScanNumber(scanNumber);
+        if (scanStatistics.IsCentroidScan
+            && scanStatistics.SpectrumPacketType == SpectrumPacketType.FtCentroid)
+        {
+            // Read native FT centroid data directly instead of constructing a
+            // Scan object for every spectrum. This is the RawFileReader fast
+            // path and returns the same centroid stream selected by Scan.FromFile.
+            var centroidStream = raw.GetCentroidStream(scanNumber, true);
+            return (centroidStream.Masses, centroidStream.Intensities);
+        }
+
+        // Preserve the parser's scan-object path for other packet types,
+        // including segmented data and profile scans that need centroiding.
         var scan = Scan.FromFile(raw, scanNumber);
         double[] masses;
         double[] intensities;
