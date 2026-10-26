@@ -30,12 +30,14 @@ CommandLineParser::CommandLineParser() {
         QObject::tr("Set the output folder path."),
         QObject::tr("path")
     ));
-    addOption(QCommandLineOption(
+    QCommandLineOption thermoRawReaderOption(
         {ARG_THERMO_RAW_READER},
         QObject::tr("RadiantThermoRawReader executable or assembly path for direct Thermo RAW input "
                     "(default: RADIANT_THERMO_RAW_READER or PATH)."),
         QObject::tr("path")
-    ));
+    );
+    thermoRawReaderOption.setFlags(QCommandLineOption::HiddenFromHelp);
+    addOption(thermoRawReaderOption);
 }
 
 bool CommandLineParser::validateArguments(const QStringList &args) {
