@@ -18,7 +18,7 @@ class BatchCliTests(unittest.TestCase):
         self.addCleanup(temporary_directory.cleanup)
         self.work_directory = Path(temporary_directory.name)
 
-    def run_batch(self, inputs, output_folder=None, library_path=None):
+    def run_batch(self, inputs, output_folder=None, library_path=None, per_file_logs=False):
         if library_path is None:
             library_path = self.fixtures / "FragLibReaderTests.fragLibFF"
         command = [
@@ -30,6 +30,8 @@ class BatchCliTests(unittest.TestCase):
         ]
         if output_folder is not None:
             command.extend(["--output-folder", str(output_folder)])
+        if per_file_logs:
+            command.append("--per-file-logs")
         return subprocess.run(
             command,
             cwd=self.work_directory,
@@ -74,6 +76,26 @@ class BatchCliTests(unittest.TestCase):
             '<mzML>\n<spectrum id="scan=1" index="0" invalid>\n</mzML>\n',
             encoding="utf-8",
         )
+
+    def assert_isolated_per_file_log(self, log_path, path, inputs, index):
+        self.assertTrue(log_path.is_file(), f"Missing per-file log: {log_path}")
+        text = log_path.read_text(encoding="utf-8")
+        for shared_path in [
+            self.fixtures / "FragLibReaderTests.fragLibFF",
+            self.fixtures / "human_plasma_entrapment_super_trunc.fasta",
+            self.fixtures / "test_params_wide_window.pythiaConfig",
+        ]:
+            self.assertIn(str(shared_path), text)
+        self.assertIn(str(path), text)
+        self.assertIn(f"Processing file {index}/{len(inputs)}: {path}", text)
+        self.assertIn(f"FAILED: {path}", text)
+        for other_input in inputs:
+            if other_input != path:
+                self.assertNotIn(str(other_input), text)
+        self.assertNotIn("Reading library", text)
+        self.assertNotIn("Finished reading library", text)
+        self.assertNotIn("Batch summary:", text)
+        return text
 
     def test_unsupported_and_missing_inputs_both_report_failure(self):
         unsupported = self.work_directory / "unsupported.txt"
@@ -159,6 +181,134 @@ class BatchCliTests(unittest.TestCase):
         result = self.run_batch(inputs)
 
         self.assert_all_inputs_failed_in_order(result, inputs)
+
+    def test_default_does_not_create_per_file_logs(self):
+        corrupt = self.work_directory / "corrupt.mzML"
+        self.write_corrupt_mzml(corrupt)
+        inputs = [
+            corrupt,
+            self.work_directory / "missing.mzML",
+            self.work_directory / "unsupported.txt",
+        ]
+
+        result = self.run_batch(inputs)
+
+        self.assert_all_inputs_failed_in_order(result, inputs)
+        self.assertEqual(list(self.work_directory.rglob("*.log")), [])
+
+    def test_opt_in_logs_isolate_each_input_and_keep_console_diagnostics(self):
+        corrupt = self.work_directory / "corrupt.mzML"
+        self.write_corrupt_mzml(corrupt)
+        inputs = [
+            corrupt,
+            self.work_directory / "missing.mzML",
+            self.work_directory / "unsupported.txt",
+        ]
+        output_folder = self.work_directory / "results"
+
+        result = self.run_batch(inputs, output_folder=output_folder, per_file_logs=True)
+
+        self.assert_all_inputs_failed_in_order(result, inputs)
+        expected_logs = {output_folder / f"{path.name}.log" for path in inputs}
+        self.assertEqual(set(self.work_directory.rglob("*.log")), expected_logs)
+        texts = [
+            self.assert_isolated_per_file_log(
+                output_folder / f"{path.name}.log", path, inputs, index
+            )
+            for index, path in enumerate(inputs, start=1)
+        ]
+        self.assertIn("XML error:", texts[0])
+        self.assertNotIn("XML error:", texts[1])
+        self.assertNotIn("XML error:", texts[2])
+        suffix_diagnostic = "expected mzML, Thermo raw, Bruker d, or prqFF input"
+        self.assertIn(suffix_diagnostic, texts[2])
+        self.assertNotIn(suffix_diagnostic, texts[0])
+        self.assertNotIn(suffix_diagnostic, texts[1])
+        self.assertIn("XML error:", result.stdout)
+        self.assertIn(suffix_diagnostic, result.stdout)
+
+    def test_logs_default_to_input_parent_without_output_folder(self):
+        input_folder = self.work_directory / "inputs"
+        input_folder.mkdir()
+        corrupt = input_folder / "corrupt.mzML"
+        self.write_corrupt_mzml(corrupt)
+        inputs = [corrupt, input_folder / "missing.mzML"]
+
+        result = self.run_batch(inputs, per_file_logs=True)
+
+        self.assert_all_inputs_failed_in_order(result, inputs)
+        expected_logs = {input_folder / f"{path.name}.log" for path in inputs}
+        self.assertEqual(set(self.work_directory.rglob("*.log")), expected_logs)
+        self.assertEqual(list(self.work_directory.glob("*.log")), [])
+        for index, path in enumerate(inputs, start=1):
+            self.assert_isolated_per_file_log(
+                input_folder / f"{path.name}.log", path, inputs, index
+            )
+
+    def test_duplicate_log_names_for_missing_or_unsupported_inputs_rejected(self):
+        for filename in ["missing.mzML", "unsupported.txt"]:
+            with self.subTest(filename=filename):
+                inputs = []
+                for directory_name in ["first", "second"]:
+                    directory = self.work_directory / f"{filename}-{directory_name}"
+                    directory.mkdir()
+                    path = directory / filename
+                    if path.suffix == ".txt":
+                        path.write_text("unsupported input", encoding="utf-8")
+                    inputs.append(path)
+                output_folder = self.work_directory / f"{filename}-results"
+
+                result = self.run_batch(
+                    inputs, output_folder=output_folder, per_file_logs=True
+                )
+
+                self.assertEqual(result.returncode, 1, result.stdout)
+                self.assertIn("Batch inputs would overwrite the same log:", result.stdout)
+                self.assertNotIn("Reading library", result.stdout)
+                self.assertNotIn("Processing file", result.stdout)
+                self.assertEqual(list(output_folder.iterdir()), [])
+
+    def test_log_directory_open_failure_does_not_prevent_later_input(self):
+        first = self.work_directory / "missing.mzML"
+        later = self.work_directory / "later-corrupt.mzML"
+        self.write_corrupt_mzml(later)
+        inputs = [first, later]
+        output_folder = self.work_directory / "results"
+        output_folder.mkdir()
+        blocked_log = output_folder / f"{first.name}.log"
+        blocked_log.mkdir()
+
+        result = self.run_batch(inputs, output_folder=output_folder, per_file_logs=True)
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertEqual(result.stdout.count("Reading library"), 1, result.stdout)
+        self.assertIn("Cannot open per-file log:", result.stdout)
+        self.assertIn(f"FAILED: {first}", result.stdout)
+        self.assertIn("Batch summary: 0 completed, 2 failed, 2 total", result.stdout)
+        self.assertTrue(blocked_log.is_dir())
+        text = self.assert_isolated_per_file_log(
+            output_folder / f"{later.name}.log", later, inputs, 2
+        )
+        self.assertIn("XML error:", text)
+        self.assertNotIn("Cannot open per-file log:", text)
+
+    def test_missing_input_parent_cannot_fall_back_to_cwd_log(self):
+        first = self.work_directory / "absent-parent" / "missing.mzML"
+        later = self.work_directory / "later-unsupported.txt"
+        inputs = [first, later]
+
+        result = self.run_batch(inputs, per_file_logs=True)
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertEqual(result.stdout.count("Reading library"), 1, result.stdout)
+        self.assertIn("Cannot open per-file log:", result.stdout)
+        self.assertIn(f"FAILED: {first}", result.stdout)
+        self.assertIn("Batch summary: 0 completed, 2 failed, 2 total", result.stdout)
+        self.assertFalse(first.parent.exists())
+        self.assertFalse((self.work_directory / f"{first.name}.log").exists())
+        self.assert_isolated_per_file_log(
+            self.work_directory / f"{later.name}.log", later, inputs, 2
+        )
 
 
 def main():

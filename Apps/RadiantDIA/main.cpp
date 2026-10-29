@@ -3,6 +3,7 @@
 //
 
 #include "src/CommandLineParser.h"
+#include "src/PerFileLog.h"
 #include "CommandLineParserUtils.h"
 #include "Error.h"
 #include "PythiaParameterReader.h"
@@ -10,6 +11,7 @@
 #include "StringUtils.h"
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
 #include <QSet>
@@ -18,6 +20,22 @@
 
 using namespace Error;
 
+namespace {
+QString logPathForInput(const QString &input, const QString &outputFolder) {
+    const QFileInfo inputInfo(QDir::cleanPath(input));
+    const QDir destination = outputFolder.isEmpty()
+        ? inputInfo.dir() : QDir(outputFolder);
+    return destination.absoluteFilePath(inputInfo.fileName() + QStringLiteral(".log"));
+}
+
+QString resolvedDestination(const QString &path) {
+    const QFileInfo info(path);
+    // Resolve directory aliases while preserving the input's filename.
+    const QString canonicalParent = info.dir().canonicalPath();
+    return canonicalParent.isEmpty() ? info.absoluteFilePath()
+        : QDir(canonicalParent).filePath(info.fileName());
+}
+}
 
 int main(int argc, char *argv[]) {
 
@@ -46,6 +64,20 @@ int main(int argc, char *argv[]) {
     const QString &pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
     const QStringList &msDataFiles = cliParameters.msDataFiles;
     const QString &outputFolderPath = cliParameters.outputFolderPath;
+
+    // Failure logs are also requested for missing or unsupported inputs.
+    if (cliParameters.perFileLogs) {
+        QSet<QString> logPaths;
+        for (const QString &msDataFile : msDataFiles) {
+            const QString logPath = resolvedDestination(
+                logPathForInput(msDataFile, outputFolderPath));
+            if (logPaths.contains(logPath)) {
+                qCritical().noquote() << "Batch inputs would overwrite the same log:" << logPath;
+                return 1;
+            }
+            logPaths.insert(logPath);
+        }
+    }
 
     // Reject colliding destinations before processing so a batch cannot silently overwrite itself.
     QSet<QString> outputPaths;
@@ -93,22 +125,46 @@ int main(int argc, char *argv[]) {
     int failedCount = 0;
     for (int index = 0; index < msDataFiles.size(); ++index) {
         const QString &msDataFile = msDataFiles[index];
+        PerFileLog fileLog;
+        if (cliParameters.perFileLogs) {
+            const QString logPath = logPathForInput(msDataFile, outputFolderPath);
+            if (!fileLog.open(logPath)) {
+                qCritical().noquote() << "FAILED:" << msDataFile
+                                     << "- Cannot open per-file log:" << logPath
+                                     << "-" << fileLog.errorString();
+                ++failedCount;
+                continue;
+            }
+            qInfo().noquote() << "Input:" << msDataFile;
+            qInfo().noquote() << "Library (shared for batch):" << fragLibPath;
+            qInfo().noquote() << "FASTA:" << fastaFilePath;
+            qInfo().noquote() << "Configuration:" << pythiaParamsFilePath;
+        }
         qInfo().noquote() << QStringLiteral("Processing file %1/%2: %3")
                             .arg(index + 1).arg(msDataFiles.size()).arg(msDataFile);
+        bool succeeded = false;
         if (!CommandLineParserUtils::isMassSpectrometryDataPath(msDataFile)) {
             qCritical().noquote() << "FAILED:" << msDataFile
                                  << "- expected mzML, Thermo raw, Bruker d, or prqFF input";
-            ++failedCount;
-            continue;
+        } else {
+            e = pythiaDiaFFWorkflow.processFile(msDataFile);
+            if (e != eNoError) {
+                qCritical().noquote() << "FAILED:" << msDataFile << "- error" << static_cast<int>(e);
+            } else {
+                qInfo().noquote() << "COMPLETED:" << msDataFile;
+                succeeded = true;
+            }
         }
-        e = pythiaDiaFFWorkflow.processFile(msDataFile);
-        if (e != eNoError) {
-            qCritical().noquote() << "FAILED:" << msDataFile << "- error" << static_cast<int>(e);
-            ++failedCount;
-            continue;
+        if (!fileLog.close()) {
+            qCritical().noquote() << "FAILED:" << msDataFile
+                                 << "- Cannot finish per-file log:" << fileLog.errorString();
+            succeeded = false;
         }
-        qInfo().noquote() << "COMPLETED:" << msDataFile;
-        ++completedCount;
+        if (succeeded) {
+            ++completedCount;
+        } else {
+            ++failedCount;
+        }
     }
 
     qInfo().noquote() << QStringLiteral("Batch summary: %1 completed, %2 failed, %3 total")

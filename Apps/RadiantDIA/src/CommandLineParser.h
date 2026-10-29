@@ -21,6 +21,7 @@ public:
         QStringList msDataFiles;
         QString outputFolderPath;
         QString thermoRawReaderPath;
+        bool perFileLogs = false;
     };
 
     CommandLineParser();

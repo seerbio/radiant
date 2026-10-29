@@ -26,6 +26,9 @@ private Q_SLOTS:
     void acceptsAllDataPathsInInputOrder();
     void rejectsInvalidSharedArguments_data();
     void rejectsInvalidSharedArguments();
+    void perFileLogsFlagAppliesToBatch_data();
+    void perFileLogsFlagAppliesToBatch();
+    void perFileLogsOptionIsAdvertised();
     void defersIndividualDataPathValidation();
     void sharedOptionsApplyToEntireBatch();
     void endOfOptionsAllowsHyphenLeadingInput();
@@ -49,6 +52,7 @@ void RadiantCommandLineParserTests::singleFileArgumentsRemainCompatible() {
     QCOMPARE(parameters.msDataFiles, QStringList{input});
     QVERIFY(parameters.outputFolderPath.isEmpty());
     QVERIFY(parameters.thermoRawReaderPath.isEmpty());
+    QVERIFY(!parameters.perFileLogs);
 }
 
 void RadiantCommandLineParserTests::acceptsAllDataPathsInInputOrder_data() {
@@ -101,6 +105,38 @@ void RadiantCommandLineParserTests::rejectsInvalidSharedArguments() {
     QFETCH(QStringList, arguments);
     CommandLineParser parser;
     QVERIFY(!parser.validateArguments(arguments));
+}
+
+void RadiantCommandLineParserTests::perFileLogsFlagAppliesToBatch_data() {
+    QTest::addColumn<bool>("flagBeforeInputs");
+    QTest::newRow("before-inputs") << true;
+    QTest::newRow("after-inputs") << false;
+}
+
+void RadiantCommandLineParserTests::perFileLogsFlagAppliesToBatch() {
+    QFETCH(bool, flagBeforeInputs);
+    const QStringList inputs = {
+        QStringLiteral("first.mzML"),
+        QStringLiteral("second.raw")
+    };
+    QStringList args = sharedArguments();
+    if (flagBeforeInputs) {
+        args.append(QStringLiteral("--per-file-logs"));
+    }
+    args.append(inputs);
+    if (!flagBeforeInputs) {
+        args.append(QStringLiteral("--per-file-logs"));
+    }
+
+    CommandLineParser parser;
+    QVERIFY(parser.validateArguments(args));
+    QVERIFY(parser.getCliParams().perFileLogs);
+    QCOMPARE(parser.getCliParams().msDataFiles, inputs);
+}
+
+void RadiantCommandLineParserTests::perFileLogsOptionIsAdvertised() {
+    CommandLineParser parser;
+    QVERIFY(parser.helpText().contains(QStringLiteral("--per-file-logs")));
 }
 
 void RadiantCommandLineParserTests::defersIndividualDataPathValidation() {

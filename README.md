@@ -89,6 +89,25 @@ With it, results are placed in the shared output folder. A batch whose inputs
 would produce the same output path is rejected before any file is processed.
 Use distinct input filenames or separate invocations for those inputs.
 
+Add `--per-file-logs` to also save each input's Radiant processing diagnostics
+to `<input-filename>.log` beside its native output:
+
+```shell
+RadiantDIA library.tsv database.fasta config.radiantConfig \
+  sample1.mzML sample2.mzML --output-folder radiant-results/ --per-file-logs
+```
+
+This writes `sample1.mzML.log` and `sample2.mzML.log`. Each log contains its input
+and shared library/configuration paths, processing diagnostics, and outcome.
+Console diagnostics remain available for existing stdout/stderr redirection.
+Library initialization and the batch summary stay in the combined console log;
+messages written directly by native dependencies to stdout/stderr also stay
+there. Log files are replaced on each invocation. Duplicate log destinations
+are rejected before initialization, including those for missing or unsupported
+inputs. A file whose requested log cannot be opened is skipped and reported as
+failed; log write errors also cause a failed outcome. Later inputs continue.
+Without this option, Radiant does not create per-file logs.
+
 An unsupported, missing, or failed data file is reported as `FAILED`, and
 processing continues with the remaining files. Every successful workflow is
 reported as `COMPLETED`; the final batch summary lists completed and failed

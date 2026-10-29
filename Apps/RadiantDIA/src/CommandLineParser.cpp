@@ -16,6 +16,7 @@ namespace {
     const QString ARG_DATAFILE_PATH = QStringLiteral("data-file-path");
     const QString ARG_OUTPUT_FOLDER = QStringLiteral("output-folder");
     const QString ARG_THERMO_RAW_READER = QStringLiteral("thermo-raw-reader");
+    const QString ARG_PER_FILE_LOGS = QStringLiteral("per-file-logs");
 } // END NAMESPACE
 
 CommandLineParser::CommandLineParser() {
@@ -32,6 +33,11 @@ CommandLineParser::CommandLineParser() {
         {ARG_OUTPUT_FOLDER},
         QObject::tr("Set the output folder path."),
         QObject::tr("path")
+    ));
+    addOption(QCommandLineOption(
+        {ARG_PER_FILE_LOGS},
+        QObject::tr("Also write each input's processing diagnostics to "
+                    "<input-filename>.log alongside its output.")
     ));
     QCommandLineOption thermoRawReaderOption(
         {ARG_THERMO_RAW_READER},
@@ -102,6 +108,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.msDataFiles = positional.mid(3);
 
     m_cliParams.thermoRawReaderPath = value(ARG_THERMO_RAW_READER);
+    m_cliParams.perFileLogs = isSet(ARG_PER_FILE_LOGS);
 
     if (isSet(ARG_OUTPUT_FOLDER)) {
         m_cliParams.outputFolderPath = value(ARG_OUTPUT_FOLDER);

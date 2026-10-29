@@ -23,6 +23,29 @@ SET_TARGET_PROPERTIES(RadiantCommandLineParserTests PROPERTIES
 
 ADD_TEST(NAME RadiantCommandLineParserTests COMMAND RadiantCommandLineParserTests)
 
+ADD_EXECUTABLE(RadiantPerFileLogTests
+        PerFileLogTests.cpp
+        ../src/PerFileLog.cpp
+        )
+
+TARGET_INCLUDE_DIRECTORIES(RadiantPerFileLogTests PRIVATE
+        ../src
+        )
+
+TARGET_LINK_LIBRARIES(RadiantPerFileLogTests PRIVATE
+        Qt5::Core
+        Qt5::Test
+        )
+
+SET_TARGET_PROPERTIES(RadiantPerFileLogTests PROPERTIES
+        AUTOMOC ON
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        CXX_STANDARD 17
+        CXX_EXTENSIONS OFF
+        )
+
+ADD_TEST(NAME RadiantPerFileLogTests COMMAND RadiantPerFileLogTests)
+
 FIND_PACKAGE(Python3 COMPONENTS Interpreter QUIET)
 IF(Python3_Interpreter_FOUND)
     ADD_TEST(NAME RadiantBatchCliTests
