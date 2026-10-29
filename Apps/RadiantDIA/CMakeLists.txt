@@ -12,11 +12,13 @@ FIND_PACKAGE(Qt5 COMPONENTS
 
 SET(SOURCE_FILES
         src/CommandLineParser.cpp
+        src/PerFileLog.cpp
         main.cpp
      )
 
 SET(HEADER_FILES
         src/CommandLineParser.h
+        src/PerFileLog.h
     )
 
 INCLUDE_DIRECTORIES(
@@ -72,3 +74,5 @@ if (WIN32)
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
 endif ()
+
+ADD_SUBDIRECTORY("tests")

@@ -56,10 +56,11 @@ apt-get install -y radiantdia_<version>+arm64.deb   # ARM / Apple Silicon
 RadiantDIA --help
 ```
 
-The `RadiantDIA` executable requires four positional arguments:
+The `RadiantDIA` executable requires a library, FASTA, configuration, and one or
+more explicit data paths:
 
 ```shell
-RadiantDIA [options] <fragment-library> <fasta> <radiant-config> <data>
+RadiantDIA [options] <fragment-library> <fasta> <radiant-config> <data> [data ...]
 ```
 
 For example:
@@ -68,6 +69,53 @@ For example:
 RadiantDIA library.tsv database.fasta config.radiantConfig sample.mzML \
   --output-folder radiant-results/
 ```
+
+To process a batch with the same library and configuration:
+
+```shell
+RadiantDIA library.tsv database.fasta config.radiantConfig \
+  sample1.mzML sample2.mzML sample3.mzML --output-folder radiant-results/
+```
+
+Data paths are processed sequentially in the order supplied, with no fixed
+batch-size limit. The spectral library and library-derived candidate pairs are
+loaded once for the process. Each file starts with its own reader, calibration,
+mass-accuracy optimization, candidate scores, and classifier state; fitted
+settings from one file are not used for the next file.
+
+Native outputs retain the existing `<input-filename>.radiantDIA` naming and
+format. Without `--output-folder`, results are written alongside each input.
+With it, results are placed in the shared output folder. A batch whose inputs
+would produce the same output path is rejected before any file is processed.
+Use distinct input filenames or separate invocations for those inputs.
+
+Add `--per-file-logs` to also save each input's Radiant processing diagnostics
+to `<input-filename>.log` beside its native output:
+
+```shell
+RadiantDIA library.tsv database.fasta config.radiantConfig \
+  sample1.mzML sample2.mzML --output-folder radiant-results/ --per-file-logs
+```
+
+This writes `sample1.mzML.log` and `sample2.mzML.log`. Each log contains its input
+and shared library/configuration paths, processing diagnostics, and outcome.
+Console diagnostics remain available for existing stdout/stderr redirection.
+Library initialization and the batch summary stay in the combined console log;
+messages written directly by native dependencies to stdout/stderr also stay
+there. Log files are replaced on each invocation. Duplicate log destinations
+are rejected before initialization, including those for missing or unsupported
+inputs. A file whose requested log cannot be opened is skipped and reported as
+failed; log write errors also cause a failed outcome. Later inputs continue.
+Without this option, Radiant does not create per-file logs.
+
+An unsupported, missing, or failed data file is reported as `FAILED`, and
+processing continues with the remaining files. Every successful workflow is
+reported as `COMPLETED`; the final batch summary lists completed and failed
+counts. Exit status is zero only when all files succeed. Library or configuration
+initialization errors stop the entire invocation. Fatal process failures, such
+as termination by the operating system, cannot be recovered within the batch.
+As in single-file runs, a successful workflow with no writable candidates may
+produce no native result file.
 
 The accepted input families are:
 

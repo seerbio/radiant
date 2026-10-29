@@ -26,6 +26,8 @@ private Q_SLOTS:
     void adaptiveSliceCountsRespectMinimumChunkSizeTest();
     void adaptiveSliceCountsReachOversubscriptionTargetTest();
     void sliceBoundsReconstructOriginalOrderingTest();
+    void repeatedInitializationClearsPreviousFile();
+    void invalidInitializationClearsPreviousFile();
     void loadModelTest();
 
 
@@ -184,6 +186,63 @@ void TargetDecoyCandidatePairScoretronTests::sliceBoundsReconstructOriginalOrder
     for (int itemIndex = 0; itemIndex < reconstructedIndexes.size(); ++itemIndex) {
         QCOMPARE(reconstructedIndexes.at(itemIndex), itemIndex);
     }
+}
+
+void TargetDecoyCandidatePairScoretronTests::repeatedInitializationClearsPreviousFile() {
+    const QString dataFile = QDir(qApp->applicationDirPath())
+        .filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
+    const PythiaParameters parameters = PythiaParameterReader::genericPythiaParametersForTests();
+    MsReaderPointerAcc firstReader;
+    QCOMPARE(firstReader.openFile(dataFile), eNoError);
+    TargetDecoyCandidatePairScoretron2 scorer;
+    QCOMPARE(scorer.init(parameters, &firstReader), eNoError);
+    QVERIFY(scorer.isInit());
+    QVERIFY(!scorer.diaTargetFrames()->isEmpty());
+    QVERIFY(!scorer.mzTargetKeyVsMsFramePntr().isEmpty());
+
+    // A lazy reader starts without DIA frames. Earlier eager frames must vanish.
+    MsReaderPointerAcc secondReader;
+    secondReader.setUseLazyLoading(true);
+    const QString secondFile = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
+    QCOMPARE(secondReader.openFile(secondFile), eNoError);
+    QVERIFY(secondReader.useLazyLoading());
+    QCOMPARE(scorer.init(parameters, &secondReader), eNoError);
+    QVERIFY(scorer.isInit());
+    QVERIFY(scorer.diaTargetFrames()->isEmpty());
+    QVERIFY(scorer.mzTargetKeyVsMsFramePntr().isEmpty());
+
+    QMap<ScanNumber, ScanPoints> expectedMs1;
+    QCOMPARE(secondReader.ptr->getMzTargetScanPoints(S_GLOBAL_SETTINGS.MS1Key, &expectedMs1), eNoError);
+    QCOMPARE(scorer.ms1ScanNumberVsScanPoints()->size(), expectedMs1.size());
+
+    scorer.reset();
+    QVERIFY(!scorer.isInit());
+    QVERIFY(scorer.diaTargetFrames()->isEmpty());
+    QVERIFY(scorer.mzTargetKeyVsMsFramePntr().isEmpty());
+    QVERIFY(scorer.ms1ScanNumberVsScanPoints()->isEmpty());
+    scorer.reset();
+    QCOMPARE(scorer.init(parameters, &firstReader), eNoError);
+    QVERIFY(scorer.isInit());
+    QVERIFY(!scorer.diaTargetFrames()->isEmpty());
+}
+
+void TargetDecoyCandidatePairScoretronTests::invalidInitializationClearsPreviousFile() {
+    const QString dataFile = QDir(qApp->applicationDirPath())
+        .filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
+    const PythiaParameters parameters = PythiaParameterReader::genericPythiaParametersForTests();
+    MsReaderPointerAcc reader;
+    QCOMPARE(reader.openFile(dataFile), eNoError);
+    TargetDecoyCandidatePairScoretron2 scorer;
+    QCOMPARE(scorer.init(parameters, &reader), eNoError);
+    QVERIFY(scorer.isInit());
+    QVERIFY(scorer.init(parameters, nullptr) != eNoError);
+    QVERIFY(!scorer.isInit());
+    QVERIFY(scorer.diaTargetFrames()->isEmpty());
+    QVERIFY(scorer.mzTargetKeyVsMsFramePntr().isEmpty());
+    QVERIFY(scorer.ms1ScanNumberVsScanPoints()->isEmpty());
+    MsReaderPointerAcc unopenedReader;
+    QVERIFY(scorer.init(parameters, &unopenedReader) != eNoError);
+    QVERIFY(!scorer.isInit());
 }
 
 void TargetDecoyCandidatePairScoretronTests::loadModelTest() {

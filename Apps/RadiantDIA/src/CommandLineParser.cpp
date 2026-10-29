@@ -16,6 +16,7 @@ namespace {
     const QString ARG_DATAFILE_PATH = QStringLiteral("data-file-path");
     const QString ARG_OUTPUT_FOLDER = QStringLiteral("output-folder");
     const QString ARG_THERMO_RAW_READER = QStringLiteral("thermo-raw-reader");
+    const QString ARG_PER_FILE_LOGS = QStringLiteral("per-file-logs");
 } // END NAMESPACE
 
 CommandLineParser::CommandLineParser() {
@@ -23,12 +24,20 @@ CommandLineParser::CommandLineParser() {
     addPositionalArgument(ARG_LIBRARY_PATH, QObject::tr("library file (e.g. *.tsv)"));
     addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.radiantConfig file"));
-    addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data path (*.mzML, Thermo *.raw, or Bruker *.d)"));
+    addPositionalArgument(ARG_DATAFILE_PATH,
+                          QObject::tr("One or more data paths (*.mzML, Thermo *.raw, or Bruker *.d), "
+                                      "processed sequentially with one library load."),
+                          QStringLiteral("<data-file-path> [data-file-path ...]"));
 
     addOption(QCommandLineOption(
         {ARG_OUTPUT_FOLDER},
         QObject::tr("Set the output folder path."),
         QObject::tr("path")
+    ));
+    addOption(QCommandLineOption(
+        {ARG_PER_FILE_LOGS},
+        QObject::tr("Also write each input's processing diagnostics to "
+                    "<input-filename>.log alongside its output.")
     ));
     QCommandLineOption thermoRawReaderOption(
         {ARG_THERMO_RAW_READER},
@@ -44,12 +53,11 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     // Process the arguments first to avoid "call process() or parse() before isSet" error
     this->process(args);
 
-    QStringList argumentsLocal(args);
     const QStringList positional = positionalArguments();
     if (positional.size() < 4) {
-        qCritical() << QStringLiteral("Expected 4 arguments.  Received %1").arg(positional.size());
-        argumentsLocal.append("-h");
-        process(argumentsLocal);
+        qCritical() << QStringLiteral("Expected library, FASTA, config, and at least one data path. "
+                                     "Received %1 arguments").arg(positional.size());
+        qInfo().noquote() << helpText();
         return false;
     }
 
@@ -64,8 +72,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             );
     if (!fragLibFilePathIsValid) {
         qCritical() << QStringLiteral("First command line argument must be a library file (e.g. *.tsv)");
-        argumentsLocal.append("-h");
-        process(argumentsLocal);
+        qInfo().noquote() << helpText();
         return false;
     }
 
@@ -79,8 +86,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     );
     if (!fragLibBackgroundFilePathIsValid) {
         qCritical() << QStringLiteral("Second command line argument: expected a FASTA file with .fasta or .fas extension");
-        argumentsLocal.append("-h");
-        process(argumentsLocal);
+        qInfo().noquote() << helpText();
         return false;
     }
 
@@ -95,34 +101,30 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             );
     if (!pythiaPathIsValid) {
         qCritical() << QStringLiteral("Third command line argument *.radiantConfig argument invalid");
-        argumentsLocal.append("-h");
-        process(argumentsLocal);
+        qInfo().noquote() << helpText();
         return false;
     }
 
-    m_cliParams.msDataFile = positional[3];
-    const bool dataFilesPathIsValid = CommandLineParserUtils::isMassSpectrometryDataPath(m_cliParams.msDataFile);
-    if (!dataFilesPathIsValid) {
-        qCritical() << QStringLiteral("Fourth command line argument must be *.mzML, Thermo *.raw, or Bruker *.d");
-        argumentsLocal.append("-h");
-        process(argumentsLocal);
-        return false;
-    }
+    m_cliParams.msDataFiles = positional.mid(3);
 
     m_cliParams.thermoRawReaderPath = value(ARG_THERMO_RAW_READER);
+    m_cliParams.perFileLogs = isSet(ARG_PER_FILE_LOGS);
 
     if (isSet(ARG_OUTPUT_FOLDER)) {
         m_cliParams.outputFolderPath = value(ARG_OUTPUT_FOLDER);
-        m_cliParams.outputFolderPath = m_cliParams.outputFolderPath.back() == "/"
-                                     ? m_cliParams.outputFolderPath
-                                     : m_cliParams.outputFolderPath + "/";
+        if (m_cliParams.outputFolderPath.isEmpty()) {
+            qCritical() << "The output folder path must not be empty";
+            return false;
+        }
+        m_cliParams.outputFolderPath = QDir::cleanPath(m_cliParams.outputFolderPath) + "/";
 
         QDir dir;
         if (!dir.exists(m_cliParams.outputFolderPath)) {
             if (dir.mkpath(m_cliParams.outputFolderPath)) {
                 qDebug() << "Directory created successfully:" << m_cliParams.outputFolderPath;
             } else {
-                qDebug() << "Failed to create directory:" << m_cliParams.outputFolderPath;
+                qCritical() << "Failed to create directory:" << m_cliParams.outputFolderPath;
+                return false;
             }
         }
     }
@@ -135,7 +137,7 @@ const CommandLineParser::CliParameters &CommandLineParser::getCliParams() const 
     qDebug() << ARG_LIBRARY_PATH << m_cliParams.fragLibFilePath;
     qDebug() << ARG_FASTA_PATH << m_cliParams.fastaFilePath;
     qDebug() << ARG_PYTHIA_PARAMS  << m_cliParams.pythiaParametersFilePath;
-    qDebug() << ARG_DATAFILE_PATH  << m_cliParams.msDataFile;
+    qDebug() << ARG_DATAFILE_PATH  << m_cliParams.msDataFiles;
     qDebug() << ARG_OUTPUT_FOLDER  << m_cliParams.outputFolderPath;
     if (!m_cliParams.thermoRawReaderPath.isEmpty()) {
         qDebug() << ARG_THERMO_RAW_READER << m_cliParams.thermoRawReaderPath;

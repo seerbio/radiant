@@ -46,3 +46,21 @@ Once the project has been built, run `ctest` in the build directory:
 ./test-local.sh
 ```
 
+To compare a shared-library batch with independent searches on real inputs,
+install Python `pyarrow` and run:
+
+```shell
+python3 tools/validate-multi-file.py \
+  --binary build/bin/RadiantDIA --library library.tsv --fasta database.fasta \
+  --config config.radiantConfig --output validation-results \
+  sample1.mzML sample2.mzML
+```
+
+Use a new output directory and inputs with distinct filenames. The helper
+records commands, logs, timing, library-load counts, and full native-output
+comparisons in `summary.json`. It requires identical schemas, nonempty matching
+row counts, exact categorical values, and numerical agreement within absolute
+and relative tolerances of `1e-6` by default. Override the tolerances with
+`--absolute-tolerance` and `--relative-tolerance` when appropriate for the
+validation protocol.
+

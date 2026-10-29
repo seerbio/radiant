@@ -54,6 +54,8 @@ public:
 
     TargetDecoyCandidatePairScoretron2();
     ~TargetDecoyCandidatePairScoretron2();
+    TargetDecoyCandidatePairScoretron2(const TargetDecoyCandidatePairScoretron2 &) = delete;
+    TargetDecoyCandidatePairScoretron2 &operator=(const TargetDecoyCandidatePairScoretron2 &) = delete;
 
     /**
     * @brief Initializes the TargetDecoyCandidatePairScoretron2.
@@ -69,6 +71,9 @@ public:
             const PythiaParameters &pythiaParameters,
             MsReaderPointerAcc *msReaderPointerAcc
             );
+
+    // Release all data and borrowed pointers belonging to the current MS file.
+    void reset();
 
     /**
     * @brief Scores Target-Decoy pairs using parallel processing.
