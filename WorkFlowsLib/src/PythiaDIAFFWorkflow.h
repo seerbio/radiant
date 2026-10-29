@@ -52,6 +52,8 @@ public:
 
     PythiaDIAFFWorkflow();
     ~PythiaDIAFFWorkflow();
+    PythiaDIAFFWorkflow(const PythiaDIAFFWorkflow &) = delete;
+    PythiaDIAFFWorkflow &operator=(const PythiaDIAFFWorkflow &) = delete;
 
     /**
     * @brief Initializes the PythiaDIAFFWorkflow with necessary parameters
@@ -92,6 +94,9 @@ public:
     * The function uses a number of sub-functions and helper classes to achieve the steps. The process includes multiple phases of optimizations as well.
     *
     * @return Err Error status of the function execution, which includes any errors occurred during the file processing
+    *
+    * Calls are sequential. Each call starts with fresh file-specific state and
+    * reuses the library loaded by init(), including after a previous file failed.
     */
     Err processFile(const QString &msDataFilePath);
 
@@ -103,6 +108,8 @@ public:
 
 
 private:
+
+    void resetFileState();
 
     Err mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
@@ -148,6 +155,8 @@ private:
 	QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
 
     PythiaParameters m_pythiaParameters;
+    PythiaParameters m_configuredPythiaParameters;
+    bool m_isInitialized = false;
     QString m_fragLibUri;
     QString m_fastaUri;
     QString m_outputFolderPath;
@@ -162,6 +171,9 @@ private:
     QVector<Features> m_calibratomaticFeatures;
     QVector<Features> m_ppmOptimizationFeatures;
     QVector<Features> m_neuralNetFeatures;
+    QVector<Features> m_configuredCalibratomaticFeatures;
+    QVector<Features> m_configuredPPMOptimizationFeatures;
+    QVector<Features> m_configuredNeuralNetFeatures;
 
     ResultsSummary m_resultsSummary;
 

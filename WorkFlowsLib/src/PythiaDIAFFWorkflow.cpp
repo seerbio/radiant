@@ -32,6 +32,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QScopedValueRollback>
+#include <QScopeGuard>
 #include <QSet>
 #include <QTextStream>
 #include <QThreadPool>
@@ -48,6 +49,9 @@ PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
 , m_calibratomaticFeatures(DiscriminantScoretron::featuresCalibration())
 , m_ppmOptimizationFeatures(DiscriminantScoretron::featuresOptimization())
 , m_neuralNetFeatures(DiscriminantScoretron::featuresNeuralNetwork())
+, m_configuredCalibratomaticFeatures(m_calibratomaticFeatures)
+, m_configuredPPMOptimizationFeatures(m_ppmOptimizationFeatures)
+, m_configuredNeuralNetFeatures(m_neuralNetFeatures)
 {}
 
 PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() = default;
@@ -66,8 +70,14 @@ Err PythiaDIAFFWorkflow::init(
 
     if (!fastaUri.isEmpty()) {
         e = ErrorUtils::fileExists(fastaUri); ree;
-        m_fastaUri = fastaUri;
     }
+
+    m_isInitialized = false;
+    resetFileState();
+    m_targetDecoyPairPntrs.clear();
+    m_targetDecoyCandidatePairManager = TargetDecoyCandidatePairManager();
+    m_fragLibReaderRows.clear();
+    m_fastaUri = fastaUri;
 
     ParallelUtils::printSystemDetails();
 
@@ -105,6 +115,7 @@ Err PythiaDIAFFWorkflow::init(
 #endif
 /**************************/
 
+    m_configuredPythiaParameters = m_pythiaParameters;
     m_fragLibUri = fragLibUri;
     m_outputFolderPath = outputFolderPath;
     m_pythiaParameters.print();
@@ -124,9 +135,25 @@ Err PythiaDIAFFWorkflow::init(
             &m_fragLibReaderRows
             ); ree;
 
-    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree //TODO HERHHERHEHREH
+    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree;
+    m_isInitialized = true;
 
     ERR_RETURN
+}
+
+void PythiaDIAFFWorkflow::resetFileState() {
+    m_targetDecoyCandidatePairScoretron.reset();
+    m_pythiaParameters = m_configuredPythiaParameters;
+    m_msCalibratomatic = MsCalibratomatic();
+    m_targetDecoyCandidatePairsTopScores.clear();
+    m_entered.clear();
+    m_peptideKeyVsTargetDecoyCandidateScoresPntrs.clear();
+    m_candidateScorePairs.clear();
+    m_weights.clear();
+    m_resultsSummary = ResultsSummary();
+    m_calibratomaticFeatures = m_configuredCalibratomaticFeatures;
+    m_ppmOptimizationFeatures = m_configuredPPMOptimizationFeatures;
+    m_neuralNetFeatures = m_configuredNeuralNetFeatures;
 }
 
 namespace {
@@ -587,10 +614,6 @@ namespace {
         QVector<Features> *neuralNetFeatures
         ) {
 
-        *calibratomaticFeatures = DiscriminantScoretron::featuresCalibration();
-        *ppmOptimizationFeatures = DiscriminantScoretron::featuresOptimization();
-        *neuralNetFeatures = DiscriminantScoretron::featuresNeuralNetwork();
-
         if (!hasIonMobility) {
             removeIonMobilityOnlyFeatures(calibratomaticFeatures);
             removeIonMobilityOnlyFeatures(ppmOptimizationFeatures);
@@ -636,8 +659,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
+    resetFileState();
+    e = ErrorUtils::isTrue(m_isInitialized); ree;
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
+    const auto releaseFileState = qScopeGuard([this] {
+        // The scorer borrows scan data from the reader, which is about to close.
+        m_targetDecoyCandidatePairScoretron.reset();
+    });
 
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
     msReaderPointerAcc.setImHandlingMode(m_pythiaParameters.imHandlingMode);
@@ -897,6 +926,7 @@ Err PythiaDIAFFWorkflow::setCalibratomaticFeatures(const QVector<Features> &feat
     ERR_INIT
     e = ErrorUtils::isNotEmpty(features); ree;
     m_calibratomaticFeatures = features;
+    m_configuredCalibratomaticFeatures = features;
     ERR_RETURN
 }
 
@@ -904,6 +934,7 @@ Err PythiaDIAFFWorkflow::setPPMOptimizationFeatures(const QVector<Features> &fea
     ERR_INIT
     e = ErrorUtils::isNotEmpty(features); ree;
     m_ppmOptimizationFeatures = features;
+    m_configuredPPMOptimizationFeatures = features;
     ERR_RETURN
 }
 
@@ -911,6 +942,7 @@ Err PythiaDIAFFWorkflow::setNeuralNetFeatures(const QVector<Features> &features)
     ERR_INIT
     e = ErrorUtils::isNotEmpty(features); ree;
     m_neuralNetFeatures = features;
+    m_configuredNeuralNetFeatures = features;
     ERR_RETURN
 }
 

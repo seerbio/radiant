@@ -56,10 +56,11 @@ apt-get install -y radiantdia_<version>+arm64.deb   # ARM / Apple Silicon
 RadiantDIA --help
 ```
 
-The `RadiantDIA` executable requires four positional arguments:
+The `RadiantDIA` executable requires a library, FASTA, configuration, and one or
+more explicit data paths:
 
 ```shell
-RadiantDIA [options] <fragment-library> <fasta> <radiant-config> <data>
+RadiantDIA [options] <fragment-library> <fasta> <radiant-config> <data> [data ...]
 ```
 
 For example:
@@ -68,6 +69,34 @@ For example:
 RadiantDIA library.tsv database.fasta config.radiantConfig sample.mzML \
   --output-folder radiant-results/
 ```
+
+To process a batch with the same library and configuration:
+
+```shell
+RadiantDIA library.tsv database.fasta config.radiantConfig \
+  sample1.mzML sample2.mzML sample3.mzML --output-folder radiant-results/
+```
+
+Data paths are processed sequentially in the order supplied, with no fixed
+batch-size limit. The spectral library and library-derived candidate pairs are
+loaded once for the process. Each file starts with its own reader, calibration,
+mass-accuracy optimization, candidate scores, and classifier state; fitted
+settings from one file are not used for the next file.
+
+Native outputs retain the existing `<input-filename>.radiantDIA` naming and
+format. Without `--output-folder`, results are written alongside each input.
+With it, results are placed in the shared output folder. A batch whose inputs
+would produce the same output path is rejected before any file is processed.
+Use distinct input filenames or separate invocations for those inputs.
+
+An unsupported, missing, or failed data file is reported as `FAILED`, and
+processing continues with the remaining files. Every successful workflow is
+reported as `COMPLETED`; the final batch summary lists completed and failed
+counts. Exit status is zero only when all files succeed. Library or configuration
+initialization errors stop the entire invocation. Fatal process failures, such
+as termination by the operating system, cannot be recovered within the batch.
+As in single-file runs, a successful workflow with no writable candidates may
+produce no native result file.
 
 The accepted input families are:
 

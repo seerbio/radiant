@@ -336,11 +336,29 @@ TargetDecoyCandidatePairScoretron2::TargetDecoyCandidatePairScoretron2()
 {}
 
 TargetDecoyCandidatePairScoretron2::~TargetDecoyCandidatePairScoretron2() {
+    reset();
+}
+
+void TargetDecoyCandidatePairScoretron2::reset() {
+    clearTargetKeyScoringContextCache();
     delete m_turboXICMS1;
+    m_turboXICMS1 = nullptr;
     delete m_msFrameMS1;
+    m_msFrameMS1 = nullptr;
+    delete m_turboXIC2DMS1;
+    m_turboXIC2DMS1 = nullptr;
     for (MsFrame *msFrame : m_mzTargetKeyVsMsFramePntr) {
         delete msFrame;
     }
+    m_mzTargetKeyVsMsFramePntr.clear();
+    m_diaTargetFrames.clear();
+    m_ms1ScanNumberVsScanPoints.clear();
+    m_scanNumberVsScanTime.clear();
+    m_uniqueTandemMsScanInfos.clear();
+    m_scanTimeMinMax = {};
+    m_msReaderPointerAcc = nullptr;
+    m_pythiaParameters = {};
+    m_useAdaptiveIonMobilityCentering = false;
 }
 
 class TargetDecoyPairParallelInput {
@@ -381,10 +399,12 @@ Err TargetDecoyCandidatePairScoretron2::init(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
+    reset();
 
-    clearTargetKeyScoringContextCache();
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(msReaderPointerAcc != nullptr); ree;
+    e = ErrorUtils::isTrue(!msReaderPointerAcc->ptr.isNull()); ree;
+    e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
 
     m_msReaderPointerAcc = msReaderPointerAcc;
     m_pythiaParameters = pythiaParameters;
@@ -433,7 +453,9 @@ Err TargetDecoyCandidatePairScoretron2::init(
 		e = buildMzTargetKeyVsMsFrames(); ree;
 	}
 
-    e = buildAveragineTable(); ree;
+    if (m_averagineTable.isEmpty()) {
+        e = buildAveragineTable(); ree;
+    }
 
     ERR_RETURN
 }
@@ -449,13 +471,13 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
 
     for (auto it = m_mzTargetKeyVsMsFramePntr.begin(); it != m_mzTargetKeyVsMsFramePntr.end(); ++it) {
         delete it.value();
-        m_mzTargetKeyVsMsFramePntr[it.key()] = nullptr;
     }
+    m_mzTargetKeyVsMsFramePntr.clear();
 
     for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); ++it) {
         auto *msFrame = new MsFrame();
-        e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;
         m_mzTargetKeyVsMsFramePntr.insert(it.key(), msFrame);
+        e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;
     }
 
     ERR_RETURN
@@ -1232,7 +1254,10 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 }
 
 bool TargetDecoyCandidatePairScoretron2::isInit() const {
-    return m_pythiaParameters.isValid();
+    return m_msReaderPointerAcc != nullptr
+        && !m_msReaderPointerAcc->ptr.isNull()
+        && m_msReaderPointerAcc->ptr->isInit()
+        && m_pythiaParameters.isValid();
 }
 
 void TargetDecoyCandidatePairScoretron2::setUseAdaptiveIonMobilityCentering(

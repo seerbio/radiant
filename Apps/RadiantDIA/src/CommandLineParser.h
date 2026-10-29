@@ -18,7 +18,7 @@ public:
         QString fragLibFilePath;
         QString fastaFilePath;
         QString pythiaParametersFilePath;
-        QString msDataFile;
+        QStringList msDataFiles;
         QString outputFolderPath;
         QString thermoRawReaderPath;
     };
