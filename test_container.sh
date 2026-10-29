@@ -54,7 +54,7 @@ docker run --rm "${TEST_IMG}"
 echo "Building app container…"
 build_image app "${APP_IMG}" "${CACHE_TO}"
 
-# Simply invoke the container with no arguments
+# Invoke explicit help to check the executable without requiring search inputs
 # to ensure it's properly packaged
-echo "Running container with no arguments…"
-docker run --rm "${APP_IMG}"
+echo "Running container help…"
+docker run --rm "${APP_IMG}" --help
